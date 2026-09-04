@@ -1,0 +1,48 @@
+name: zameel
+description: "Zameel - Social Platform for Students"
+publish_to: 'none'
+version: 1.3.4+20
+
+environment:
+  sdk: ^3.6.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # ==============================================
+  # المكتبات الأساسية
+  # ==============================================
+  cupertino_icons: ^1.0.8
+  provider: ^6.1.2
+  supabase_flutter: ^2.8.0
+  image_picker: ^1.1.2
+  camera: ^0.11.1
+  file_picker: ^12.2.0
+  flutter_localizations:
+    sdk: flutter
+  intl: any
+
+  # ==============================================
+  # 📦 مكتبات التجربة الاجتماعية والملفات
+  # ==============================================
+  shared_preferences: ^2.3.2
+  google_fonts: ^6.2.1
+  fluttertoast: ^10.0.0
+  url_launcher: ^6.3.0
+  video_player: ^2.9.2
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/branding/
+
