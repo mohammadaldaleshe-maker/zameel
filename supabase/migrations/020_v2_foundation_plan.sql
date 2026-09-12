@@ -1,0 +1,44 @@
+-- Zameel v2 foundation plan
+-- This migration is intentionally NON-DESTRUCTIVE. It documents the target
+-- relational model for V2. Do not run blindly in production until each table
+-- is reconciled with the current schema and RLS tests.
+--
+-- Target academic hierarchy:
+-- university -> college -> major -> academic_year
+--
+-- Target access hierarchy:
+-- global -> university -> college -> major
+--
+-- Study files remain university + college scoped.
+-- Private messages remain private and are never exposed through community RLS.
+
+-- Recommended canonical tables for the next implementation pass:
+-- public.universities(id, name_ar, name_en, is_active)
+-- public.colleges(id, university_id, name_ar, name_en, is_active)
+-- public.majors(id, college_id, name_ar, name_en, is_active)
+-- public.academic_years(id, label_ar, label_en, sort_order)
+--
+-- Recommended community tables:
+-- public.communities(id, scope, university_id, college_id, major_id, name, created_at)
+-- public.community_members(community_id, user_id, role, created_at)
+-- public.community_posts(id, community_id, user_id, type, content, created_at)
+-- public.community_comments(id, post_id, user_id, content, created_at)
+-- public.community_reactions(post_id, user_id, reaction, created_at)
+--
+-- Recommended study tables:
+-- public.courses(id, university_id, college_id, major_id, name, code)
+-- public.course_materials(id, course_id, file_id, title, type, semester, year)
+-- public.study_groups(id, scope, university_id, college_id, major_id, owner_id, name)
+-- public.study_group_members(group_id, user_id, role, created_at)
+--
+-- Recommended campus/future tables:
+-- public.campus_events(...)
+-- public.calendar_items(...)
+-- public.opportunities(...)
+-- public.saved_items(...)
+-- public.reputation_events(...)
+-- public.badges(...)
+--
+-- Security rule: every exposed table must have explicit grants + RLS.
+-- Supabase recommends testing SELECT/INSERT/UPDATE/DELETE policies with
+-- authenticated and anonymous roles before production deployment.
