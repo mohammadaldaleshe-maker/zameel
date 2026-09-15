@@ -161,11 +161,11 @@ class _PublicClipsStripState extends State<PublicClipsStrip> with WidgetsBinding
     }
     if (_clips.isEmpty) return const SizedBox.shrink();
     return Container(
-      color: AppTheme.background,
+      color: Colors.transparent,
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         SizedBox(
-          height: 214,
+          height: 194,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -178,23 +178,84 @@ class _PublicClipsStripState extends State<PublicClipsStrip> with WidgetsBinding
               return InkWell(
                 onTap: () => _open(clip),
                 borderRadius: BorderRadius.circular(16),
-                child: SizedBox(
+                child: Container(
                   width: 116,
-                  child: Column(children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(14),
-                      child: SizedBox(
-                        width: 116,
-                        height: 178,
-                        child: Stack(fit: StackFit.expand, children: [
-                          _ClipAutoPreview(url: clip['video_url']?.toString() ?? '', autoplay: i < 4),
-                          const Center(child: Icon(Icons.play_arrow_rounded, color: Colors.white, size: 34)),
-                        ]),
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.signatureGradient,
+                    borderRadius: BorderRadius.circular(17),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(15),
+                    child: SizedBox(
+                      width: 112,
+                      height: 190,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          _ClipAutoPreview(
+                            url: clip['video_url']?.toString() ?? '',
+                            autoplay: i < 4,
+                          ),
+                          const Center(
+                            child: Icon(
+                              Icons.play_arrow_rounded,
+                              color: Colors.white,
+                              size: 34,
+                            ),
+                          ),
+                          Positioned(
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            child: Container(
+                              padding: const EdgeInsets.fromLTRB(7, 14, 7, 7),
+                              decoration: const BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [Colors.transparent, Colors.black87],
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 8,
+                                    backgroundImage: owner['profile_image']
+                                                ?.toString()
+                                                .isNotEmpty ==
+                                            true
+                                        ? NetworkImage(
+                                            owner['profile_image'].toString())
+                                        : null,
+                                    child: owner['profile_image']
+                                                ?.toString()
+                                                .isNotEmpty ==
+                                            true
+                                        ? null
+                                        : const Icon(Icons.person, size: 10),
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Expanded(
+                                    child: Text(
+                                      publisher.isEmpty ? 'زميل' : publisher,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Row(children:[CircleAvatar(radius:8,backgroundImage:(owner['profile_image']?.toString().isNotEmpty==true)?NetworkImage(owner['profile_image'].toString()):null,child:owner['profile_image']?.toString().isNotEmpty==true?null:const Icon(Icons.person,size:10)),const SizedBox(width:5),Expanded(child:Text(publisher.isEmpty?'زميل':publisher,maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(fontSize:11,fontWeight:FontWeight.w700)))]),
-                  ]),
+                  ),
                 ),
               );
             },

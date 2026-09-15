@@ -1450,7 +1450,7 @@ Future<void> _createUserIfNotExists() async {
           backgroundColor: Colors.white, foregroundColor: primaryColor, elevation: 1,
           leading: Builder(builder: (scaffoldContext) => IconButton(tooltip: isArabic ? 'القائمة' : 'Menu', icon: const Icon(Icons.menu_rounded), onPressed: () => Scaffold.of(scaffoldContext).openDrawer())),
           title: const Text(
-            'Zameel زميل',
+            'Zameel',
             maxLines: 1,
             overflow: TextOverflow.visible,
             style: TextStyle(
@@ -1485,8 +1485,14 @@ Future<void> _createUserIfNotExists() async {
         ),
         body: Stack(
           children: [
-            ColoredBox(
-              color: AppTheme.background,
+            Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [gradientStart, gradientEnd],
+                ),
+              ),
               child: _buildCurrentPage(),
             ),
             Positioned(

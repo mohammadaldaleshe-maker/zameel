@@ -139,7 +139,7 @@ class _ImagePostState extends State<_ImagePost> {
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
-                        color: Colors.black,
+                        color: Colors.white,
                       ),
                     ),
                     const SizedBox(height: 3),
@@ -147,7 +147,7 @@ class _ImagePostState extends State<_ImagePost> {
                       '${isArabic ? (widget.post['department_ar'] ?? '') : (widget.post['department_en'] ?? '')} • '
                       '${isArabic ? (widget.post['time_ar'] ?? '') : (widget.post['time_en'] ?? '')}',
                       style: const TextStyle(
-                        color: Colors.black54,
+                        color: Colors.white60,
                         fontSize: 12,
                       ),
                     ),
@@ -161,7 +161,7 @@ class _ImagePostState extends State<_ImagePost> {
             IconButton(
               icon: const Icon(
                 Icons.more_horiz,
-                color: Colors.black54,
+                color: Colors.white60,
               ),
               tooltip: isArabic ? 'المزيد' : 'More',
               onPressed: () {
@@ -202,7 +202,7 @@ class _ImagePostState extends State<_ImagePost> {
               (isArabic ? widget.post['text_ar'] : widget.post['text_en'])
                   .toString(),
               style: const TextStyle(
-                color: Colors.black,
+                color: Colors.white,
                 fontSize: 16,
                 height: 1.6,
               ),
@@ -235,10 +235,10 @@ class _ImagePostState extends State<_ImagePost> {
                   fit: BoxFit.contain,
                   errorBuilder: (_, __, ___) => Container(
                     alignment: Alignment.center,
-                    color: Colors.black12,
+                    color: Colors.white10,
                     child: const Icon(
                       Icons.broken_image_outlined,
-                      color: Colors.black54,
+                      color: Colors.white54,
                       size: 50,
                     ),
                   ),
@@ -261,17 +261,17 @@ class _ImagePostState extends State<_ImagePost> {
             Icon(
               Icons.favorite_rounded,
               size: 17,
-              color: liked ? accentColor : Colors.black54,
+              color: liked ? accentColor : Colors.white60,
             ),
             const SizedBox(width: 5),
             InkWell(
               onTap: () => _showPostLikesDialog(context, widget.post, isArabic),
-              child: Text('${widget.post['likes'] ?? 0}', style: const TextStyle(color: Colors.black54, fontWeight: FontWeight.w700)),
+              child: Text('${widget.post['likes'] ?? 0}', style: const TextStyle(color: Colors.white60, fontWeight: FontWeight.w700)),
             ),
             const SizedBox(width: 14),
-            const Icon(Icons.repeat_rounded, size: 16, color: Colors.black54),
+            const Icon(Icons.repeat_rounded, size: 16, color: Colors.white60),
             const SizedBox(width: 4),
-            Text('${widget.post['shares'] ?? 0}', style: const TextStyle(color: Colors.black54)),
+            Text('${widget.post['shares'] ?? 0}', style: const TextStyle(color: Colors.white60)),
             const Spacer(),
             Text(
               '${widget.post['comments'] ?? 0} '
@@ -280,13 +280,13 @@ class _ImagePostState extends State<_ImagePost> {
                 languageProvider.currentLanguage,
               )}',
               style: const TextStyle(
-                color: Colors.black54,
+                color: Colors.white60,
               ),
             ),
           ],
         ),
         const Divider(
-          color: Colors.black12,
+          color: Colors.white24,
           height: 25,
         ),
         // ------------------------------------------------------
@@ -303,7 +303,7 @@ class _ImagePostState extends State<_ImagePost> {
               text: isArabic ? 'إعجاب' : 'Like',
               active: liked,
               onTap: widget.onLike,
-              color: Colors.black87,
+              color: Colors.white70,
             ),
             // COMMENTS
             _PostAction(
@@ -322,7 +322,7 @@ class _ImagePostState extends State<_ImagePost> {
                   ),
                 );
               },
-              color: Colors.black87,
+              color: Colors.white70,
             ),
             // SAVE
             _PostAction(
@@ -331,7 +331,7 @@ class _ImagePostState extends State<_ImagePost> {
                   : Icons.bookmark_border_rounded,
               text: isArabic ? 'حفظ' : 'Save',
               active: isSaved,
-              color: isSaved ? accentColor : Colors.black87,
+              color: isSaved ? accentColor : Colors.white70,
               onTap: () {
                 setState(() {
                   widget.post['isSaved'] = !isSaved;
@@ -370,7 +370,7 @@ class _ImagePostState extends State<_ImagePost> {
             _PostAction(
               icon: Icons.share_outlined,
               text: isArabic ? 'مشاركة' : 'Share',
-              color: Colors.black87,
+              color: Colors.white70,
               onTap: () async {
                 if (widget.onShareToProfile != null) {
                   await widget.onShareToProfile!(widget.post);
@@ -452,7 +452,7 @@ class _VideoPostState extends State<_VideoPost> {
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
-                color: Colors.black,
+                color: Colors.white,
               ),
             ),
             const SizedBox(height: 3),
@@ -460,7 +460,7 @@ class _VideoPostState extends State<_VideoPost> {
               '${isArabic ? widget.post['department_ar'] : widget.post['department_en']} • '
               '${isArabic ? widget.post['time_ar'] : widget.post['time_en']}',
               style: const TextStyle(
-                color: Colors.black54,
+                color: Colors.white60,
                 fontSize: 12,
               ),
             ),
@@ -474,7 +474,7 @@ class _VideoPostState extends State<_VideoPost> {
       PopupMenuButton<String>(
         icon: const Icon(
           Icons.more_horiz,
-          color: Colors.black54,
+          color: Colors.white60,
         ),
         onSelected: (value) {
           if (value == 'delete') {
@@ -503,7 +503,7 @@ class _VideoPostState extends State<_VideoPost> {
     else
       const Icon(
         Icons.more_horiz,
-        color: Colors.black54,
+        color: Colors.white60,
       ),
   ],
 ),
@@ -532,20 +532,20 @@ class _VideoPostState extends State<_VideoPost> {
         Text(
           isArabic ? widget.post['text_ar'] : widget.post['text_en'],
           style: const TextStyle(
-            color: Colors.black,
+            color: Colors.white,
             fontSize: 14,
             height: 1.4,
           ),
         ),
         const SizedBox(height: 10),
         Row(children: [
-          InkWell(onTap: () => _showPostLikesDialog(context, widget.post, isArabic), child: Row(children: [const Icon(Icons.favorite_rounded, size: 16, color: Colors.black54), const SizedBox(width: 4), Text('${widget.post['likes'] ?? 0}', style: const TextStyle(color: Colors.black54, fontWeight: FontWeight.w700))])),
+          InkWell(onTap: () => _showPostLikesDialog(context, widget.post, isArabic), child: Row(children: [const Icon(Icons.favorite_rounded, size: 16, color: Colors.white60), const SizedBox(width: 4), Text('${widget.post['likes'] ?? 0}', style: const TextStyle(color: Colors.white60, fontWeight: FontWeight.w700))])),
           const SizedBox(width: 14),
-          const Icon(Icons.repeat_rounded, size: 16, color: Colors.black54), const SizedBox(width: 4),
-          Text('${widget.post['shares'] ?? 0}', style: const TextStyle(color: Colors.black54)),
-          const Spacer(), Text('${widget.post['comments'] ?? 0} ${Translations.translate('comments_title', languageProvider.currentLanguage)}', style: const TextStyle(color: Colors.black54)),
+          const Icon(Icons.repeat_rounded, size: 16, color: Colors.white60), const SizedBox(width: 4),
+          Text('${widget.post['shares'] ?? 0}', style: const TextStyle(color: Colors.white60)),
+          const Spacer(), Text('${widget.post['comments'] ?? 0} ${Translations.translate('comments_title', languageProvider.currentLanguage)}', style: const TextStyle(color: Colors.white60)),
         ]),
-        const Divider(color: Colors.black12, height: 22),
+        const Divider(color: Colors.white24, height: 22),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
@@ -554,7 +554,7 @@ class _VideoPostState extends State<_VideoPost> {
               text: '${widget.post['likes'] ?? 0}',
               active: liked,
               onTap: widget.onLike,
-              color: Colors.black87,
+              color: Colors.white70,
             ),
             _PostAction(
               icon: Icons.comment_rounded,
@@ -569,14 +569,14 @@ class _VideoPostState extends State<_VideoPost> {
                   ),
                 );
               },
-              color: Colors.black87,
+              color: Colors.white70,
             ),
             _PostAction(
               icon: widget.post['isSaved'] == true
                   ? Icons.bookmark_rounded
                   : Icons.bookmark_border_rounded,
               text: isArabic ? 'حفظ' : 'Save',
-              color: widget.post['isSaved'] == true ? accentColor : Colors.black87,
+              color: widget.post['isSaved'] == true ? accentColor : Colors.white70,
               onTap: () {
                 setState(() {
                   widget.post['isSaved'] = !(widget.post['isSaved'] == true);
@@ -596,7 +596,7 @@ class _VideoPostState extends State<_VideoPost> {
             _PostAction(
               icon: Icons.share_rounded,
               text: isArabic ? 'مشاركة' : 'Share',
-              color: Colors.black87,
+              color: Colors.white70,
               onTap: () async {
                 if (widget.onShareToProfile != null) {
                   await widget.onShareToProfile!(widget.post);
@@ -861,16 +861,17 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
     final comments = _count(widget.post['comments_count'] ?? widget.post['comments']);
     final hasMedia = _url.isNotEmpty;
     final ownerId = widget.post['user_id']?.toString();
-    final owner = widget.post['users'] is Map
+    final ownerData = widget.post['users'] is Map
         ? Map<String, dynamic>.from(widget.post['users'] as Map)
         : const <String, dynamic>{};
-    final ownerName = (owner['name'] ??
+    final ownerName = (ownerData['name'] ??
             (isArabic ? widget.post['name_ar'] : widget.post['name_en']) ??
             (isArabic ? 'زميل' : 'Colleague'))
         .toString();
-    final ownerImage = (owner['profile_image'] ?? widget.post['profile_image'])
-            ?.toString() ??
-        '';
+    final ownerImage =
+        (ownerData['profile_image'] ?? widget.post['profile_image'])
+                ?.toString() ??
+            '';
     final title = !hasMedia
         ? (isArabic ? 'المنشور' : 'Post')
         : widget.isVideo
@@ -880,10 +881,10 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
     return Directionality(
       textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
-        backgroundColor: AppTheme.background,
+        backgroundColor: Colors.black,
         appBar: AppBar(
-          backgroundColor: AppTheme.surface,
-          foregroundColor: Colors.black,
+          backgroundColor: Colors.black,
+          foregroundColor: Colors.white,
           title: Text(title),
         ),
         body: SafeArea(
@@ -906,7 +907,7 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
                                         fit: BoxFit.contain,
                                         errorBuilder: (_, __, ___) => const Icon(
                                           Icons.broken_image_outlined,
-                                          color: Colors.black54,
+                                          color: Colors.white54,
                                           size: 64,
                                         ),
                                       ),
@@ -920,7 +921,7 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
                               color: Colors.black,
                               child: Text(
                                 text,
-                                style: const TextStyle(color: Colors.black, height: 1.45),
+                                style: const TextStyle(color: Colors.white, height: 1.45),
                               ),
                             ),
                         ],
@@ -933,15 +934,15 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
                             constraints: const BoxConstraints(maxWidth: 720),
                             padding: const EdgeInsets.all(24),
                             decoration: BoxDecoration(
-                              color: Colors.black12,
+                              color: Colors.white10,
                               borderRadius: BorderRadius.circular(22),
-                              border: Border.all(color: Colors.black12),
+                              border: Border.all(color: Colors.white12),
                             ),
                             child: Text(
                               text,
                               textAlign: TextAlign.start,
                               style: const TextStyle(
-                                color: Colors.black,
+                                color: Colors.white,
                                 fontSize: 20,
                                 height: 1.65,
                               ),
@@ -951,7 +952,7 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
                       ),
               ),
               Material(
-                color: AppTheme.surface,
+                color: Colors.black,
                 child: ListTile(
                   leading: CircleAvatar(
                     backgroundImage: ownerImage.isNotEmpty
@@ -964,17 +965,17 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
                   title: Text(
                     ownerName,
                     style: const TextStyle(
-                      color: Colors.black,
+                      color: Colors.white,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                   subtitle: Text(
                     isArabic ? 'صاحب المنشور' : 'Post author',
-                    style: const TextStyle(color: Colors.black54),
+                    style: const TextStyle(color: Colors.white60),
                   ),
                   trailing: const Icon(
                     Icons.arrow_forward_ios_rounded,
-                    color: AppTheme.primary,
+                    color: AppTheme.accent,
                     size: 16,
                   ),
                   onTap: ownerId == null || ownerId.isEmpty
@@ -983,7 +984,7 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
                 ),
               ),
               Container(
-                color: AppTheme.surface,
+                color: Colors.black.withAlpha(240),
                 padding: const EdgeInsets.fromLTRB(10, 6, 10, 8),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -996,32 +997,32 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
                           onPressed: _toggleLike,
                           icon: Icon(
                             liked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                            color: liked ? accentColor : Colors.black,
+                            color: liked ? accentColor : Colors.white,
                           ),
                         ),
                         IconButton(
                           tooltip: isArabic ? 'تعليق' : 'Comment',
                           onPressed: () => _commentFocus.requestFocus(),
-                          icon: const Icon(Icons.comment_outlined, color: Colors.black),
+                          icon: const Icon(Icons.comment_outlined, color: Colors.white),
                         ),
                         IconButton(
                           tooltip: isArabic ? 'مشاركة' : 'Share',
                           onPressed: _share,
-                          icon: const Icon(Icons.share_rounded, color: Colors.black),
+                          icon: const Icon(Icons.share_rounded, color: Colors.white),
                         ),
                         IconButton(
                           tooltip: isArabic ? 'حفظ' : 'Save',
                           onPressed: _toggleSave,
                           icon: Icon(
                             saved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-                            color: saved ? accentColor : Colors.black,
+                            color: saved ? accentColor : Colors.white,
                           ),
                         ),
                         if (hasMedia)
                           IconButton(
                             tooltip: isArabic ? 'نسخ الرابط' : 'Copy link',
                             onPressed: _copyLink,
-                            icon: const Icon(Icons.link_rounded, color: Colors.black),
+                            icon: const Icon(Icons.link_rounded, color: Colors.white),
                           ),
                       ],
                     ),
@@ -1033,14 +1034,14 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
                             focusNode: _commentFocus,
                             minLines: 1,
                             maxLines: 3,
-                            style: const TextStyle(color: Colors.black),
+                            style: const TextStyle(color: Colors.white),
                             textInputAction: TextInputAction.send,
                             onSubmitted: (_) => _addComment(isArabic),
                             decoration: InputDecoration(
                               hintText: isArabic ? 'اكتب تعليقًا...' : 'Write a comment...',
-                              hintStyle: const TextStyle(color: Colors.black54),
+                              hintStyle: const TextStyle(color: Colors.white54),
                               filled: true,
-                              fillColor: Colors.black12,
+                              fillColor: Colors.white10,
                               isDense: true,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(24),
@@ -1072,7 +1073,7 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
                               ? 'عرض التعليقات ($comments)'
                               : 'View comments ($comments)',
                         ),
-                        style: TextButton.styleFrom(foregroundColor: Colors.black87),
+                        style: TextButton.styleFrom(foregroundColor: Colors.white70),
                       ),
                     ),
                   ],
@@ -1102,7 +1103,7 @@ class _PostAction extends StatelessWidget {
     required this.text,
     this.active = false,
     this.onTap,
-    this.color = Colors.black87,
+    this.color = Colors.white70,
   });
 
   @override
@@ -1203,7 +1204,7 @@ class _TextPostState extends State<_TextPost> {
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
-                        color: Colors.black,
+                        color: Colors.white,
                       ),
                     ),
                     const SizedBox(height: 3),
@@ -1211,7 +1212,7 @@ class _TextPostState extends State<_TextPost> {
                       '${isArabic ? widget.post['department_ar'] : widget.post['department_en']} • '
                       '${isArabic ? widget.post['time_ar'] : widget.post['time_en']}',
                       style: const TextStyle(
-                        color: Colors.black54,
+                        color: Colors.white60,
                         fontSize: 12,
                       ),
                     ),
@@ -1223,7 +1224,7 @@ class _TextPostState extends State<_TextPost> {
             IconButton(
               icon: const Icon(
                 Icons.more_horiz,
-                color: Colors.black54,
+                color: Colors.white60,
               ),
               tooltip: isArabic ? 'المزيد' : 'More',
               onPressed: () {
@@ -1271,7 +1272,7 @@ class _TextPostState extends State<_TextPost> {
           child: Text(
             isArabic ? widget.post['text_ar'] : widget.post['text_en'],
             style: const TextStyle(
-              color: Colors.black,
+              color: Colors.white,
               fontSize: 16,
               height: 1.6,
             ),
@@ -1283,26 +1284,26 @@ class _TextPostState extends State<_TextPost> {
             Icon(
               Icons.favorite_rounded,
               size: 17,
-              color: liked ? accentColor : Colors.black54,
+              color: liked ? accentColor : Colors.white60,
             ),
             const SizedBox(width: 5),
             InkWell(
               onTap: () => _showPostLikesDialog(context, widget.post, isArabic),
-              child: Text('${widget.post['likes'] ?? 0}', style: const TextStyle(color: Colors.black54, fontWeight: FontWeight.w700)),
+              child: Text('${widget.post['likes'] ?? 0}', style: const TextStyle(color: Colors.white60, fontWeight: FontWeight.w700)),
             ),
             const SizedBox(width: 20),
-            const Icon(Icons.repeat_rounded, size: 16, color: Colors.black54),
+            const Icon(Icons.repeat_rounded, size: 16, color: Colors.white60),
             const SizedBox(width: 4),
-            Text('${widget.post['shares'] ?? 0}', style: const TextStyle(color: Colors.black54)),
+            Text('${widget.post['shares'] ?? 0}', style: const TextStyle(color: Colors.white60)),
             const SizedBox(width: 20),
             Text(
               '${widget.post['comments'] ?? 0} ${Translations.translate('comments_title', languageProvider.currentLanguage)}',
-              style: const TextStyle(color: Colors.black54),
+              style: const TextStyle(color: Colors.white60),
             ),
           ],
         ),
         const Divider(
-          color: Colors.black12,
+          color: Colors.white24,
           height: 25,
         ),
         Row(
@@ -1313,7 +1314,7 @@ class _TextPostState extends State<_TextPost> {
               text: isArabic ? 'إعجاب' : 'Like',
               active: liked,
               onTap: widget.onLike,
-              color: Colors.black87,
+              color: Colors.white70,
             ),
             _PostAction(
               icon: Icons.comment_outlined,
@@ -1331,13 +1332,13 @@ class _TextPostState extends State<_TextPost> {
                   ),
                 );
               },
-              color: Colors.black87,
+              color: Colors.white70,
             ),
             _PostAction(
               icon: isSaved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
               text: isArabic ? 'حفظ' : 'Save',
               active: isSaved,
-              color: isSaved ? accentColor : Colors.black87,
+              color: isSaved ? accentColor : Colors.white70,
               onTap: () {
                 setState(() {
                   widget.post['isSaved'] = !isSaved;
@@ -1375,7 +1376,7 @@ class _TextPostState extends State<_TextPost> {
             _PostAction(
               icon: Icons.share_outlined,
               text: isArabic ? 'مشاركة' : 'Share',
-              color: Colors.black87,
+              color: Colors.white70,
               onTap: () async {
                 if (widget.onShareToProfile != null) {
                   await widget.onShareToProfile!(widget.post);
