@@ -161,7 +161,9 @@ class ZameelApp extends StatelessWidget {
           ],
           theme: AppTheme.theme(arabic: languageProvider.isArabic, brightness: Brightness.light),
           darkTheme: AppTheme.theme(arabic: languageProvider.isArabic, brightness: Brightness.dark),
-          themeMode: ThemeMode.system,
+          // Keep the approved light identity active so black text always has
+          // sufficient contrast with application surfaces.
+          themeMode: ThemeMode.light,
           home: const AuthGate(),
         );
       },
@@ -236,18 +238,11 @@ class GlassContainer extends StatelessWidget {
       padding: padding ?? const EdgeInsets.all(16),
       margin: margin ?? EdgeInsets.zero,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppTheme.glassFill,
-            AppTheme.glassSoft,
-          ],
-        ),
+        color: AppTheme.surface,
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(
-          color: AppTheme.glassBorder,
-          width: 1.5,
+          color: AppTheme.border,
+          width: 1,
         ),
         boxShadow: [
           BoxShadow(

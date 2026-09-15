@@ -498,16 +498,7 @@ class _StoriesWidgetState extends State<StoriesWidget> with WidgetsBindingObserv
     final otherGroups = groups.where((group) => group.isNotEmpty && group.every((story) => story['isMine'] != true)).toList();
 
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [AppTheme.primaryLight, AppTheme.secondaryLight],
-        ),
-        border: Border(
-          bottom: BorderSide(color: AppTheme.primary, width: 1),
-        ),
-      ),
+      color: AppTheme.background,
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

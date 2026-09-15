@@ -6,6 +6,7 @@ import 'dart:async';
 import '../../services_social.dart';
 import '../../widgets/video_player_widget.dart';
 import '../profile/profile_screen.dart';
+import '../../theme/app_theme.dart';
 
 class PublicClipsStrip extends StatefulWidget {
   const PublicClipsStrip({super.key});
@@ -160,11 +161,11 @@ class _PublicClipsStripState extends State<PublicClipsStrip> with WidgetsBinding
     }
     if (_clips.isEmpty) return const SizedBox.shrink();
     return Container(
-      color: Colors.white,
+      color: AppTheme.background,
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         SizedBox(
-          height: 126,
+          height: 214,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -178,20 +179,20 @@ class _PublicClipsStripState extends State<PublicClipsStrip> with WidgetsBinding
                 onTap: () => _open(clip),
                 borderRadius: BorderRadius.circular(16),
                 child: SizedBox(
-                  width: 168,
+                  width: 116,
                   child: Column(children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(14),
                       child: SizedBox(
-                        width: 168,
-                        height: 96,
+                        width: 116,
+                        height: 178,
                         child: Stack(fit: StackFit.expand, children: [
                           _ClipAutoPreview(url: clip['video_url']?.toString() ?? '', autoplay: i < 4),
                           const Center(child: Icon(Icons.play_arrow_rounded, color: Colors.white, size: 34)),
                         ]),
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     Row(children:[CircleAvatar(radius:8,backgroundImage:(owner['profile_image']?.toString().isNotEmpty==true)?NetworkImage(owner['profile_image'].toString()):null,child:owner['profile_image']?.toString().isNotEmpty==true?null:const Icon(Icons.person,size:10)),const SizedBox(width:5),Expanded(child:Text(publisher.isEmpty?'زميل':publisher,maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(fontSize:11,fontWeight:FontWeight.w700)))]),
                   ]),
                 ),

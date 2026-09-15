@@ -1449,7 +1449,15 @@ Future<void> _createUserIfNotExists() async {
         appBar: AppBar(
           backgroundColor: Colors.white, foregroundColor: primaryColor, elevation: 1,
           leading: Builder(builder: (scaffoldContext) => IconButton(tooltip: isArabic ? 'القائمة' : 'Menu', icon: const Icon(Icons.menu_rounded), onPressed: () => Scaffold.of(scaffoldContext).openDrawer())),
-          title: const Text('Zameel', maxLines: 1, overflow: TextOverflow.visible, style: TextStyle(fontWeight: FontWeight.w900)),
+          title: const Text(
+            'Zameel زميل',
+            maxLines: 1,
+            overflow: TextOverflow.visible,
+            style: TextStyle(
+              color: AppTheme.primary,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
           actions: [
             IconButton(
               tooltip: isArabic ? 'اتصال' : 'Call',
@@ -1477,14 +1485,8 @@ Future<void> _createUserIfNotExists() async {
         ),
         body: Stack(
           children: [
-            Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [gradientStart, gradientEnd],
-                ),
-              ),
+            ColoredBox(
+              color: AppTheme.background,
               child: _buildCurrentPage(),
             ),
             Positioned(

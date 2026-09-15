@@ -74,8 +74,10 @@ class AppTheme {
   static const Color glassMid = Color(0x33FFFFFF);
 
   static TextTheme _type(bool arabic, Brightness brightness) {
-    final color = brightness == Brightness.dark ? const Color(0xFFF4F5FA) : textPrimary;
-    final secondaryColor = brightness == Brightness.dark ? const Color(0xFFB9BECE) : textSecondary;
+    // Zameel keeps primary reading text black throughout the product. Colored
+    // surfaces that need inverse text still set white explicitly.
+    const color = Colors.black;
+    const secondaryColor = Colors.black87;
     final base = TextTheme(
       headlineLarge: TextStyle(color: color, fontWeight: FontWeight.w800),
       headlineMedium: TextStyle(color: color, fontWeight: FontWeight.w800),
@@ -96,7 +98,7 @@ class AppTheme {
     final bg = dark ? night : background;
     final card = dark ? nightSurface : surface;
     final alt = dark ? nightSurfaceAlt : surfaceAlt;
-    final foreground = dark ? const Color(0xFFF4F5FA) : textPrimary;
+    const foreground = Colors.black;
     final outline = dark ? const Color(0xFF363B51) : border;
     final scheme = ColorScheme.fromSeed(
       seedColor: primary, brightness: brightness, primary: primary,

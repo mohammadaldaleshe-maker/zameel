@@ -578,6 +578,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           callback: (payload) {
             final row = Map<String, dynamic>.from(payload.newRecord);
             if (!mounted || row['sender_id'] == uid) return;
+            if (_messages.any((m) => m['id']?.toString() == row['id']?.toString())) return;
             setState(() => _messages.add(row));
             _markRead();
             _scrollToEnd();
@@ -653,25 +654,24 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   Future<void> _send() async {
     final text = _controller.text.trim();
     if (text.isEmpty || uid == null) return;
-    _controller.clear();
     try {
-      final row = await db
-          .from('messages')
-          .insert({
-            'conversation_id': widget.conversationId,
-            'sender_id': uid,
-            'content': text,
-            'media_url': null,
-            'media_type': null,
-            'is_read': false
-          })
-          .select(
-              'id,content,sender_id,created_at,media_url,media_type,is_read,delivered_at,read_at')
-          .single();
+      final result = await db.rpc('send_direct_message', params: {
+        'target_conversation_id': widget.conversationId,
+        'message_content': text,
+      });
+      final rows = List<Map<String, dynamic>>.from(result as List? ?? const []);
+      if (rows.isEmpty) throw StateError('message_not_saved');
+      final row = rows.first;
       if (mounted) {
-        setState(() => _messages.add(Map<String, dynamic>.from(row)));
+        _controller.clear();
+        if (!_messages.any((m) => m['id']?.toString() == row['id']?.toString())) {
+          setState(() => _messages.add(Map<String, dynamic>.from(row)));
+        }
         _scrollToEnd();
       }
+      // Reconcile with the database so a local bubble is never mistaken for
+      // a message that was not persisted.
+      unawaited(Future<void>.delayed(const Duration(milliseconds: 500), _load));
     } catch (e) {
       if (mounted)
         ScaffoldMessenger.of(context)
