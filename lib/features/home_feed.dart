@@ -61,7 +61,9 @@ void initState() {
 void _startFeedRefreshTimer() {
   _feedRefreshTimer?.cancel();
   _feedRefreshTimer = Timer.periodic(
-    const Duration(minutes: 2),
+    // Realtime already refreshes the feed. This is only a recovery poll for a
+    // dropped socket and intentionally stays infrequent to control API egress.
+    const Duration(minutes: 10),
     (_) => _loadPosts(silent: true),
   );
 }
@@ -501,9 +503,22 @@ Future<void> _loadCurrentProfileImage() async {
 
     if (user != null && loaded.isNotEmpty) {
       try {
+        final loadedIds = loaded
+            .map((post) => post['id']?.toString())
+            .whereType<String>()
+            .where((id) => id.isNotEmpty)
+            .toList(growable: false);
         final personalState = await Future.wait([
-          db.from('likes').select('post_id').eq('user_id', user.id),
-          db.from('saved_posts').select('post_id').eq('user_id', user.id),
+          db
+              .from('likes')
+              .select('post_id')
+              .eq('user_id', user.id)
+              .inFilter('post_id', loadedIds),
+          db
+              .from('saved_posts')
+              .select('post_id')
+              .eq('user_id', user.id)
+              .inFilter('post_id', loadedIds),
         ]);
         final likes = personalState[0];
         final saved = personalState[1];

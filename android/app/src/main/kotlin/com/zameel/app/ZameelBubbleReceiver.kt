@@ -65,15 +65,6 @@ class ZameelBubbleReceiver : FlutterFirebaseMessagingReceiver() {
                     .ifBlank { value(extras, "body") }
                     .ifBlank { "New message" }
 
-                // Update the true overlay when the user has enabled it. The
-                // existing Android conversation notification remains as a fallback.
-                ZameelBubbleService.updateFromMessage(
-                    conversationId = conversationId,
-                    partnerId = senderId,
-                    partnerName = senderName,
-                    preview = preview,
-                )
-
                 showConversationNotification(appContext, extras, avatarSource = null)
 
                 // Upgrade the same notification/bubble with the sender photo in
@@ -225,13 +216,19 @@ class ZameelBubbleReceiver : FlutterFirebaseMessagingReceiver() {
                     bubbleIntent,
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
                 )
-                val bubbleMetadata = Notification.BubbleMetadata.Builder(
+                val bubbleBuilder = Notification.BubbleMetadata.Builder(
                     bubblePendingIntent,
                     bubbleIcon,
                 )
                     .setDesiredHeight(720)
-                    .build()
-                builder.setBubbleMetadata(bubbleMetadata)
+                // When Android accepts the conversation as a bubble, keep the
+                // message in the bubble rather than leaving a duplicate logo in
+                // the status area. If bubbles are disabled, Android still shows
+                // the normal conversation notification as a safe fallback.
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    bubbleBuilder.setSuppressNotification(true)
+                }
+                builder.setBubbleMetadata(bubbleBuilder.build())
             }
         }
 

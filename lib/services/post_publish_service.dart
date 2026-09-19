@@ -9,6 +9,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// `posts.id` as before.
 class PostPublishService {
   static const int maxMediaItems = 10;
+  static const int maxImageBytes = 12 * 1024 * 1024;
+  static const int maxVideoBytes = 80 * 1024 * 1024;
+  static const int maxPostMediaBytes = 150 * 1024 * 1024;
 
   static const List<String> allowedExtensions = <String>[
     'jpg',
@@ -41,9 +44,16 @@ class PostPublishService {
     int limit = maxMediaItems,
   }) async {
     if (limit <= 0) return const <PlatformFile>[];
-    final picked = await FilePicker.pickFiles(type: FileType.media);
+    final picked = await FilePicker.pickFiles(
+      type: FileType.media,
+      allowMultiple: true,
+    );
     if (picked.isEmpty) return const <PlatformFile>[];
-    return picked.where(isSupportedFile).take(limit).toList(growable: false);
+    final selected = picked
+        .where(isSupportedFile)
+        .take(limit)
+        .toList(growable: false);
+    return selected;
   }
 
   static Future<Map<String, dynamic>> publishPost({
@@ -63,6 +73,7 @@ class PostPublishService {
 
     final uploaded = <Map<String, dynamic>>[];
     final uploadedPaths = <String>[];
+    var uploadedBytes = 0;
 
     try {
       for (var index = 0; index < selected.length; index++) {
@@ -73,6 +84,10 @@ class PostPublishService {
         );
         uploaded.add(item.publicItem);
         uploadedPaths.add(item.storagePath);
+        uploadedBytes += item.byteSize;
+        if (uploadedBytes > maxPostMediaBytes) {
+          throw StateError('post_media_too_large_150mb');
+        }
       }
 
       final firstImage = uploaded
@@ -130,15 +145,27 @@ class PostPublishService {
     final safeName = _safeFileName(file.name);
     final storagePath = '$userId/posts/${timestamp}_${index}_$safeName';
     final contentType = _contentType(ext, isVideo: isVideo);
+    final perFileLimit = isVideo ? maxVideoBytes : maxImageBytes;
 
     var uploaded = false;
+    var actualSize = 0;
     if (!kIsWeb && file.path != null && file.path!.isNotEmpty) {
       final localFile = File(file.path!);
       if (await localFile.exists()) {
+        actualSize = await localFile.length();
+        if (actualSize > perFileLimit) {
+          throw StateError(
+            isVideo ? 'video_too_large_80mb' : 'image_too_large_12mb',
+          );
+        }
         await db.storage.from('posts').upload(
               storagePath,
               localFile,
-              fileOptions: FileOptions(contentType: contentType, upsert: false),
+              fileOptions: FileOptions(
+                contentType: contentType,
+                cacheControl: '31536000',
+                upsert: false,
+              ),
             );
         uploaded = true;
       }
@@ -149,16 +176,27 @@ class PostPublishService {
     if (!uploaded) {
       final bytes = await file.readAsBytes();
       if (bytes.isEmpty) throw StateError('media_bytes_unavailable');
+      actualSize = bytes.length;
+      if (bytes.length > perFileLimit) {
+        throw StateError(
+          isVideo ? 'video_too_large_80mb' : 'image_too_large_12mb',
+        );
+      }
       await db.storage.from('posts').uploadBinary(
             storagePath,
             bytes,
-            fileOptions: FileOptions(contentType: contentType, upsert: false),
+            fileOptions: FileOptions(
+              contentType: contentType,
+              cacheControl: '31536000',
+              upsert: false,
+            ),
           );
     }
 
     final url = db.storage.from('posts').getPublicUrl(storagePath);
     return _UploadedPostMedia(
       storagePath: storagePath,
+      byteSize: actualSize,
       publicItem: <String, dynamic>{
         'type': isVideo ? 'video' : 'image',
         'url': url,
@@ -206,14 +244,17 @@ class PostPublishService {
         return 'image/jpeg';
     }
   }
+
 }
 
 class _UploadedPostMedia {
   final String storagePath;
+  final int byteSize;
   final Map<String, dynamic> publicItem;
 
   const _UploadedPostMedia({
     required this.storagePath,
+    required this.byteSize,
     required this.publicItem,
   });
 }

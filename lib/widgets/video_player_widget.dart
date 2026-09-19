@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -31,15 +30,15 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   Future<void> _initialize() async {
     try {
       final rawUrl = widget.videoUrl.trim();
+      // Download once, then play the local file. The previous implementation
+      // streamed the remote video while simultaneously prefetching it, which
+      // could double Supabase cached-egress for every first playback.
       final localPath = kIsWeb
           ? null
           : await MediaCacheService.localPathForUrl(
               rawUrl,
-              downloadIfMissing: false,
+              downloadIfMissing: true,
             );
-      if (!kIsWeb && localPath == null) {
-        unawaited(MediaCacheService.prefetch(<String>[rawUrl], limit: 1));
-      }
       final controller = !kIsWeb && localPath != null
           ? VideoPlayerController.file(File(localPath))
           : VideoPlayerController.networkUrl(Uri.parse(rawUrl));

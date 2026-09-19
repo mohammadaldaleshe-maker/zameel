@@ -6,7 +6,10 @@ import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
-const Duration _maxAge = Duration(days: 2);
+// Social media is immutable because every upload gets a unique object path.
+// Keeping it locally for two weeks prevents the same Supabase CDN object from
+// being downloaded again whenever the user revisits the feed.
+const Duration _maxAge = Duration(days: 14);
 const int _maxTotalBytes = 300 * 1024 * 1024;
 const int _maxSingleFileBytes = 80 * 1024 * 1024;
 

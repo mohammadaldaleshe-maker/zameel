@@ -5,7 +5,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 @pragma('vm:entry-point')
@@ -23,8 +22,6 @@ class PushNotificationService {
   FirebaseMessaging? _messaging;
   final FlutterLocalNotificationsPlugin _local =
       FlutterLocalNotificationsPlugin();
-  static const MethodChannel _overlayChannel =
-      MethodChannel('com.zameel.app/bubble_overlay');
 
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
     'zameel_notifications_v2',
@@ -97,17 +94,6 @@ class PushNotificationService {
       await androidLocal?.createNotificationChannel(_chatBubbleChannel);
       await androidLocal?.createNotificationChannel(_chatBubbleSilentChannel);
       await androidLocal?.requestNotificationsPermission();
-
-      // The true Android floating bubble is opt-in and isolated from the
-      // existing push flow. Native code asks for overlay permission only once
-      // and starts its service only after the user grants that permission.
-      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-        try {
-          await _overlayChannel.invokeMethod<bool>('ensureEnabled');
-        } catch (e) {
-          debugPrint('Zameel overlay bubble unavailable: $e');
-        }
-      }
 
       final messaging = _messaging;
       if (messaging == null) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
+import 'cached_media_image.dart';
 import 'video_player_widget.dart';
 
 class PostMediaItem {
@@ -100,10 +101,10 @@ class _PostMediaGalleryState extends State<PostMediaGallery> {
                 : InteractiveViewer(
                     minScale: .8,
                     maxScale: 5,
-                    child: Image.network(
-                      item.url,
+                    child: CachedMediaImage(
+                      url: item.url,
                       fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => const Icon(
+                      fallback: const Icon(
                         Icons.broken_image_outlined,
                         color: Colors.white54,
                         size: 58,
@@ -191,10 +192,10 @@ class _PostMediaGalleryState extends State<PostMediaGallery> {
                               ),
                             ],
                           )
-                        : Image.network(
-                            item.url,
+                        : CachedMediaImage(
+                            url: item.url,
                             fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) => Container(
+                            fallback: Container(
                               alignment: Alignment.center,
                               color: AppTheme.surfaceAlt,
                               child: const Icon(
@@ -203,14 +204,6 @@ class _PostMediaGalleryState extends State<PostMediaGallery> {
                                 size: 50,
                               ),
                             ),
-                            loadingBuilder: (_, child, progress) {
-                              if (progress == null) return child;
-                              return const Center(
-                                child: CircularProgressIndicator(
-                                  color: AppTheme.primary,
-                                ),
-                              );
-                            },
                           ),
                   ),
                 );
