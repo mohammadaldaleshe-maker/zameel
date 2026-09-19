@@ -615,7 +615,7 @@ Future<void> _createUserIfNotExists() async {
   Future<void> _createPost(
     String text, {
     String? audience,
-    List<PlatformFile> media = const <PlatformFile>[],
+    List<PickedPostMedia> media = const <PickedPostMedia>[],
   }) async {
     final user = Supabase.instance.client.auth.currentUser;
 
@@ -1257,7 +1257,7 @@ Future<void> _createUserIfNotExists() async {
   void createPost() {
     final controller = TextEditingController();
     final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
-    final selectedMedia = <PlatformFile>[];
+    final selectedMedia = <PickedPostMedia>[];
 
     showDialog(
       context: context,
@@ -1349,11 +1349,11 @@ Future<void> _createUserIfNotExists() async {
                                   if (result.isEmpty) return;
 
                                   final existing = selectedMedia
-                                      .map((file) => '${file.name}:${file.path ?? ''}')
+                                      .map((file) => '${file.name}:${file.path}')
                                       .toSet();
                                   for (final file in result) {
                                     if (!PostPublishService.isSupportedFile(file)) continue;
-                                    final key = '${file.name}:${file.path ?? ''}';
+                                    final key = '${file.name}:${file.path}';
                                     if (!existing.add(key)) continue;
                                     if (selectedMedia.length >= PostPublishService.maxMediaItems) break;
                                     selectedMedia.add(file);
@@ -1393,11 +1393,9 @@ Future<void> _createUserIfNotExists() async {
                               ),
                               subtitle: Builder(
                                 builder: (_) {
-                                  final size = file.lengthSync();
+                                  final size = file.lengthSync;
                                   return Text(
-                                    size == null
-                                        ? (video ? 'Video' : 'Image')
-                                        : '${(size / (1024 * 1024)).toStringAsFixed(1)} MB',
+                                    '${(size / (1024 * 1024)).toStringAsFixed(1)} MB',
                                     style: const TextStyle(color: Colors.black54),
                                   );
                                 },
@@ -1433,7 +1431,7 @@ Future<void> _createUserIfNotExists() async {
                     final text = controller.text.trim();
                     if (text.isEmpty && selectedMedia.isEmpty) return;
 
-                    final media = List<PlatformFile>.from(selectedMedia);
+                    final media = List<PickedPostMedia>.from(selectedMedia);
                     Navigator.pop(dialogContext);
                     await _createPost(
                       text,
@@ -2107,6 +2105,131 @@ Future<void> _createUserIfNotExists() async {
   }
 
 
+  Future<void> _openCreateMenu() async {
+    final languageProvider = Provider.of<LanguageProvider>(
+      context,
+      listen: false,
+    );
+    final isArabic = languageProvider.isArabic;
+
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetContext) => Directionality(
+        textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+        child: SafeArea(
+          child: Container(
+            margin: const EdgeInsets.all(12),
+            padding: const EdgeInsets.fromLTRB(18, 10, 18, 18),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(26),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x33000000),
+                  blurRadius: 24,
+                  offset: Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 44,
+                  height: 5,
+                  margin: const EdgeInsets.only(bottom: 14),
+                  decoration: BoxDecoration(
+                    color: Colors.black12,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                Align(
+                  alignment: isArabic
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
+                  child: Text(
+                    isArabic
+                        ? 'ماذا تريد أن تشارك؟'
+                        : 'What would you like to share?',
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 19,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _ComposerMenuAction(
+                        icon: Icons.edit_note_rounded,
+                        label: isArabic ? 'منشور' : 'Post',
+                        onTap: () => Navigator.pop(sheetContext, 'post'),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _ComposerMenuAction(
+                        icon: Icons.image_rounded,
+                        label: isArabic ? 'صورة' : 'Photo',
+                        onTap: () => Navigator.pop(sheetContext, 'image'),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _ComposerMenuAction(
+                        icon: Icons.videocam_rounded,
+                        label: isArabic ? 'فيديو' : 'Video',
+                        onTap: () => Navigator.pop(sheetContext, 'video'),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _ComposerMenuAction(
+                        icon: Icons.smart_display_rounded,
+                        label: isArabic ? 'كليبس' : 'Clip',
+                        onTap: () => Navigator.pop(sheetContext, 'clip'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    if (!mounted || action == null) return;
+
+    switch (action) {
+      case 'post':
+        createPost();
+        break;
+      case 'image':
+        await _pickImage();
+        break;
+      case 'video':
+        await _pickVideo();
+        break;
+      case 'clip':
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ZameelSocialStudio(isArabic: isArabic),
+          ),
+        );
+        break;
+    }
+  }
+
   Widget _buildCreateBox() {
     final languageProvider = Provider.of<LanguageProvider>(context);
 
@@ -2128,7 +2251,7 @@ Future<void> _createUserIfNotExists() async {
               const SizedBox(width: 10),
               Expanded(
                 child: InkWell(
-                  onTap: createPost,
+                  onTap: _openCreateMenu,
                   borderRadius: BorderRadius.circular(25),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
@@ -2157,41 +2280,22 @@ Future<void> _createUserIfNotExists() async {
             color: Colors.white24,
             height: 28,
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _CreateAction(
-                icon: Icons.videocam_outlined,
-                text: Translations.translate(
-                  'feed_video',
-                  languageProvider.currentLanguage,
-                ),
-                onTap: _pickVideo,
+          Center(
+            child: _CreateAction(
+              icon: Icons.menu_book_outlined,
+              text: Translations.translate(
+                'feed_book',
+                languageProvider.currentLanguage,
               ),
-              _CreateAction(
-                icon: Icons.image_outlined,
-                text: Translations.translate(
-                  'feed_image',
-                  languageProvider.currentLanguage,
-                ),
-                onTap: _pickImage,
-              ),
-              _CreateAction(
-                icon: Icons.menu_book_outlined,
-                text: Translations.translate(
-                  'feed_book',
-                  languageProvider.currentLanguage,
-                ),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const BooksScreen(),
-                    ),
-                  );
-                },
-              ),
-            ],
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const BooksScreen(),
+                  ),
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -2470,6 +2574,62 @@ Future<void> _createUserIfNotExists() async {
           },
         ),
       ],
+    );
+  }
+}
+
+class _ComposerMenuAction extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _ComposerMenuAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFFF3F1FF),
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF6A1B9A), Color(0xFF245BDB)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: Colors.white, size: 25),
+              ),
+              const SizedBox(height: 9),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.black,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

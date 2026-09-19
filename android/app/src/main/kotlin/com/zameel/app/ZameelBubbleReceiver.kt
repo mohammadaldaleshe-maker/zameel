@@ -42,8 +42,10 @@ import kotlin.math.max
 class ZameelBubbleReceiver : FlutterFirebaseMessagingReceiver() {
     companion object {
         private const val TAG = "ZameelBubble"
-        private const val CHAT_CHANNEL = "zameel_chat_bubbles_v1"
-        private const val CHAT_SILENT_CHANNEL = "zameel_chat_bubbles_silent_v1"
+        // v2 intentionally creates fresh Android channels. Bubble capability
+        // is effectively sticky once a channel exists on many OEM builds.
+        private const val CHAT_CHANNEL = "zameel_chat_bubbles_v2"
+        private const val CHAT_SILENT_CHANNEL = "zameel_chat_bubbles_silent_v2"
         private const val PRIMARY = 0xFF3152E8.toInt()
         private const val SECONDARY = 0xFF4B23B7.toInt()
         private const val ACCENT = 0xFF27C7C7.toInt()
@@ -226,6 +228,7 @@ class ZameelBubbleReceiver : FlutterFirebaseMessagingReceiver() {
                 // the status area. If bubbles are disabled, Android still shows
                 // the normal conversation notification as a safe fallback.
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    bubbleBuilder.setAutoExpandBubble(true)
                     bubbleBuilder.setSuppressNotification(true)
                 }
                 builder.setBubbleMetadata(bubbleBuilder.build())
@@ -283,7 +286,7 @@ class ZameelBubbleReceiver : FlutterFirebaseMessagingReceiver() {
             enableVibration(true)
             setSound(thunderSoundUri(context), attributes)
             setShowBadge(true)
-            if (Build.VERSION.SDK_INT == Build.VERSION_CODES.Q) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 setAllowBubbles(true)
             }
         }
@@ -298,7 +301,7 @@ class ZameelBubbleReceiver : FlutterFirebaseMessagingReceiver() {
             enableVibration(true)
             setSound(null, null)
             setShowBadge(true)
-            if (Build.VERSION.SDK_INT == Build.VERSION_CODES.Q) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 setAllowBubbles(true)
             }
         }

@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:file_picker/file_picker.dart';
 
 import '../../providers/user_provider.dart';
 import '../../providers/language_provider.dart';
@@ -1125,7 +1124,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _composeRichPost(bool ar) async {
     final controller = TextEditingController();
     var audience = _profile?['default_post_audience']?.toString() ?? 'public';
-    final selectedMedia = <PlatformFile>[];
+    final selectedMedia = <PickedPostMedia>[];
 
     final publish = await showDialog<bool>(
       context: context,
@@ -1179,11 +1178,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               if (result.isEmpty) return;
 
                               final existing = selectedMedia
-                                  .map((file) => '${file.name}:${file.path ?? ''}')
+                                  .map((file) => '${file.name}:${file.path}')
                                   .toSet();
                               for (final file in result) {
                                 if (!PostPublishService.isSupportedFile(file)) continue;
-                                final key = '${file.name}:${file.path ?? ''}';
+                                final key = '${file.name}:${file.path}';
                                 if (!existing.add(key)) continue;
                                 if (selectedMedia.length >= PostPublishService.maxMediaItems) break;
                                 selectedMedia.add(file);
@@ -1255,7 +1254,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       await PostPublishService.publishPost(
         text: text,
         audience: audience,
-        media: List<PlatformFile>.from(selectedMedia),
+        media: List<PickedPostMedia>.from(selectedMedia),
       );
       await _load();
       if (mounted) {

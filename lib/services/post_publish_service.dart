@@ -1,7 +1,20 @@
 import 'dart:io';
-import 'package:file_picker/file_picker.dart';
+
 import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+class PickedPostMedia {
+  final XFile source;
+  final int byteSize;
+
+  const PickedPostMedia({required this.source, required this.byteSize});
+
+  String get name => source.name;
+  String get path => source.path;
+  int get lengthSync => byteSize;
+  Future<Uint8List> readAsBytes() => source.readAsBytes();
+}
 
 /// Additive publisher for normal feed posts that can contain up to ten mixed
 /// media items. Engagement still targets the single row in `posts`, so likes,
@@ -19,6 +32,8 @@ class PostPublishService {
     'png',
     'webp',
     'gif',
+    'heic',
+    'heif',
     'mp4',
     'mov',
     'm4v',
@@ -32,34 +47,36 @@ class PostPublishService {
     'webm',
   };
 
-  static bool isVideoFile(PlatformFile file) =>
+  static bool isVideoFile(PickedPostMedia file) =>
       _videoExtensions.contains(_extension(file.name));
 
-  static bool isSupportedFile(PlatformFile file) =>
+  static bool isSupportedFile(PickedPostMedia file) =>
       allowedExtensions.contains(_extension(file.name));
 
   /// Uses the native mixed-media picker so one selection can contain
   /// multiple photos and videos. file_picker 12.x returns the list directly.
-  static Future<List<PlatformFile>> pickMultipleMedia({
+  static Future<List<PickedPostMedia>> pickMultipleMedia({
     int limit = maxMediaItems,
   }) async {
-    if (limit <= 0) return const <PlatformFile>[];
-    final picked = await FilePicker.pickFiles(
-      type: FileType.media,
-      allowMultiple: true,
-    );
-    if (picked.isEmpty) return const <PlatformFile>[];
-    final selected = picked
-        .where(isSupportedFile)
-        .take(limit)
-        .toList(growable: false);
+    if (limit <= 0) return const <PickedPostMedia>[];
+    final picked = await ImagePicker().pickMultipleMedia(imageQuality: 90);
+    if (picked.isEmpty) return const <PickedPostMedia>[];
+
+    final selected = <PickedPostMedia>[];
+    for (final source in picked.take(limit)) {
+      final item = PickedPostMedia(
+        source: source,
+        byteSize: await source.length(),
+      );
+      if (isSupportedFile(item)) selected.add(item);
+    }
     return selected;
   }
 
   static Future<Map<String, dynamic>> publishPost({
     required String text,
     required String audience,
-    List<PlatformFile> media = const <PlatformFile>[],
+    List<PickedPostMedia> media = const <PickedPostMedia>[],
   }) async {
     final db = Supabase.instance.client;
     final user = db.auth.currentUser;
@@ -134,7 +151,7 @@ class PostPublishService {
   }
 
   static Future<_UploadedPostMedia> _uploadMedia({
-    required PlatformFile file,
+    required PickedPostMedia file,
     required String userId,
     required int index,
   }) async {
@@ -149,8 +166,8 @@ class PostPublishService {
 
     var uploaded = false;
     var actualSize = 0;
-    if (!kIsWeb && file.path != null && file.path!.isNotEmpty) {
-      final localFile = File(file.path!);
+    if (!kIsWeb && file.path.isNotEmpty) {
+      final localFile = File(file.path);
       if (await localFile.exists()) {
         actualSize = await localFile.length();
         if (actualSize > perFileLimit) {
@@ -171,8 +188,7 @@ class PostPublishService {
       }
     }
 
-    // Some Android document/media providers do not expose a durable file path.
-    // Fall back to PlatformFile's own reader so content:// and cached picks still upload.
+    // Fall back to XFile bytes for providers that do not expose a durable path.
     if (!uploaded) {
       final bytes = await file.readAsBytes();
       if (bytes.isEmpty) throw StateError('media_bytes_unavailable');
@@ -240,6 +256,10 @@ class PostPublishService {
         return 'image/webp';
       case 'gif':
         return 'image/gif';
+      case 'heic':
+        return 'image/heic';
+      case 'heif':
+        return 'image/heif';
       default:
         return 'image/jpeg';
     }

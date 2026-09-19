@@ -44,7 +44,7 @@ class PushNotificationService {
   );
   static const AndroidNotificationChannel _chatBubbleChannel =
       AndroidNotificationChannel(
-    'zameel_chat_bubbles_v1',
+      'zameel_chat_bubbles_v2',
     'Zameel chat bubbles',
     description: 'Direct Zameel messages and Android conversation bubbles.',
     importance: Importance.max,
@@ -54,7 +54,7 @@ class PushNotificationService {
   );
   static const AndroidNotificationChannel _chatBubbleSilentChannel =
       AndroidNotificationChannel(
-    'zameel_chat_bubbles_silent_v1',
+      'zameel_chat_bubbles_silent_v2',
     'Zameel chat bubbles (silent)',
     description: 'Direct Zameel messages when notification sounds are disabled.',
     importance: Importance.max,
