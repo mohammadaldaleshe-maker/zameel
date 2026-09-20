@@ -1,0 +1,40 @@
+Zameel 071 Full Maintenance Final — validation summary
+Date: 2026-09-20
+
+Source basis:
+- Zameel_CURRENT_SOURCE_070_COMPOSER_MENU_FIXED_2026-09-19(2).zip
+
+Completed source-level validation:
+- General structural/static audit: 60 PASS, 0 FAIL
+- Supabase schema column audit: 764 query-column usages checked, PASS
+- RPC parameter audit: 85 client calls checked against 133 SQL function definitions, PASS
+- Migration-order/schema audit: 61 migrations, 73 known tables, PASS
+- Kotlin parser smoke check: no syntax-like diagnostics
+- Edge TypeScript parser smoke check: no syntax-like diagnostics (Deno/remote import resolution excluded in this container)
+- YAML/XML parsing: PASS
+- Local imports, part directives, assets, Android components/raw resources: PASS
+- Git conflict marker scan: PASS
+- Embedded privileged-secret scan: PASS
+- ZIP integrity check is performed after packaging.
+
+Major repaired areas:
+- Multi-image selection from Photo shortcut
+- Multi-video selection from Video shortcut
+- Mixed photos + videos + text in a single post
+- Shared publishing path for home/profile
+- Pre-upload per-file/total-size guards and failed-upload cleanup
+- Real Android app-over-app chat bubble with permission flow and fallback notification
+- Foreground-state detection based on MainActivity visibility
+- Cold-start deep-link wait for Flutter Navigator
+- Push queue duplicate-claim protection and stale processing recovery
+- Media caching / repeated video download reductions
+- Firebase/Codemagic validation hardening
+- messages schema compatibility (body/content/media/read columns)
+- conversation_members joined_at migration-order repair
+- story_views viewer_id/user_id compatibility policy hardening
+
+Deployment/runtime boundary:
+This environment does not contain the Flutter SDK, Android SDK, a physical Android phone,
+or the user's live Supabase/Firebase credentials. Therefore flutter analyze/test/build and
+physical FCM/overlay behavior are enforced by codemagic.yaml and must run in Codemagic/device.
+The source maintenance itself is complete; no runtime success is fabricated from static checks.

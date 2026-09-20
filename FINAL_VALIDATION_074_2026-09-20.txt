@@ -1,0 +1,27 @@
+Zameel 074 maintenance validation
+Date: 2026-09-20
+
+Targeted 11-point maintenance contracts: 25/25 PASS
+YAML parse: PASS
+Android XML parse: PASS
+Local Dart import/part targets: PASS
+pubspec asset paths: PASS
+Git conflict marker scan: PASS
+Direct dart:io boundary: PASS
+Migration numbering: PASS
+Centralized auth sign-out/token cleanup: PASS
+TypeScript syntax transpile scan: PASS
+Required 074 migration/services/docs: PASS
+Multi-image/multi-video publishing regression contracts: PASS
+
+Runtime/build boundary:
+Flutter and Android SDK are not installed in this repair container. Run locally/Codemagic:
+  flutter pub get
+  flutter analyze
+  flutter test
+then build Android only after all pass.
+
+Production rollout order:
+1) Apply migration 074.
+2) Deploy send-push-notifications Edge Function.
+3) Build/install 074 client.

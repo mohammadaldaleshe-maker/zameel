@@ -1,0 +1,29 @@
+Zameel 073 Final Bubble Architecture — validation summary
+Date: 2026-09-20
+
+Runtime truth:
+- A normal third-party Android app cannot force a floating bubble on every Android device.
+- Android 11+ system bubbles remain user-controlled.
+- Android 15+ restricts background foreground-service starts.
+
+073 implements the strongest compliant hybrid:
+- TYPE_APPLICATION_OVERLAY primary path after explicit user permission.
+- One-time on-device overlay self-test using WindowManager.addView().
+- Foreground host started while MainActivity is visible.
+- High-priority FCM restart attempt if Android/OEM killed the host; exceptions fall back safely.
+- Official Android Conversation/Bubble fallback with long-lived shortcut.
+- Android 11+ BubbleMetadata uses the shortcut-id constructor.
+- App opens Android's official bubble settings when bubbles are disabled.
+- Removed reliance on NotificationChannel.setAllowBubbles(true), ignored on Android 11+.
+- Removed background auto-expand behavior.
+
+Static validation in this environment:
+- Kotlin syntax smoke scan: PASS
+- XML parse: PASS
+- YAML parse: PASS
+- Bubble architecture contracts: 12/12 PASS
+- Required source/test files: PASS
+
+Device boundary:
+- Flutter analyze/test/build must still run in the user's Flutter/Android environment.
+- The on-device overlay self-test is intentionally part of the app because OEM Android behavior cannot be proven in a container.

@@ -1,0 +1,123 @@
+# Zameel CI/CD - Codemagic
+# Keep this file at the repository root.
+
+workflows:
+  android-test:
+    name: Zameel Android Release APK
+    max_build_duration: 60
+
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+      cancel_previous_builds: true
+
+    environment:
+      flutter: 3.47.1
+      groups:
+        - google_play
+      vars:
+        SUPABASE_URL: "https://jwuqyykjmltroneqtjoc.supabase.co"
+        SUPABASE_PUBLISHABLE_KEY: "sb_publishable_TC_UtlL14Q0LVhLejd27lQ_MZphnhlv"
+        ZAMEEL_VERSION: "2.0.0+9"
+
+    scripts:
+      - name: Configure Firebase for push notifications
+        script: |
+          if [ -z "$GOOGLE_SERVICES_JSON_BASE64" ]; then
+            echo "ERROR: GOOGLE_SERVICES_JSON_BASE64 is required. A test APK without Firebase cannot validate chat notifications or bubbles."
+            exit 1
+          fi
+          echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > android/app/google-services.json
+          test -s android/app/google-services.json || { echo "ERROR: google-services.json is empty after decode."; exit 1; }
+          grep -Eq '"project_id"[[:space:]]*:[[:space:]]*"zameel-81ff6"' android/app/google-services.json || { echo "ERROR: Firebase project_id does not match zameel-81ff6."; exit 1; }
+          grep -Eq '"package_name"[[:space:]]*:[[:space:]]*"com.zameel.app"' android/app/google-services.json || { echo "ERROR: Firebase Android package does not match com.zameel.app."; exit 1; }
+          echo "Firebase configuration installed and identity verified."
+      - name: Get packages
+        script: flutter pub get
+      - name: Static analysis
+        script: flutter analyze --no-pub
+      - name: Tests
+        script: flutter test --no-pub
+      - name: Build release APK
+        script: |
+          flutter build apk --release \
+            --dart-define=SUPABASE_URL="$SUPABASE_URL" \
+            --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY" \
+            --dart-define=WEBRTC_TURN_URL="$WEBRTC_TURN_URL" \
+            --dart-define=WEBRTC_TURN_USERNAME="$WEBRTC_TURN_USERNAME" \
+            --dart-define=WEBRTC_TURN_CREDENTIAL="$WEBRTC_TURN_CREDENTIAL" \
+            --dart-define=ZAMEEL_VERSION="$ZAMEEL_VERSION"
+
+    artifacts:
+      - build/app/outputs/flutter-apk/app-release.apk
+
+  android-internal:
+    name: Zameel Android Internal Testing
+    max_build_duration: 60
+
+    triggering:
+      events:
+        - tag
+      tag_patterns:
+        - pattern: "v*"
+          include: true
+
+    environment:
+      flutter: 3.47.1
+      android_signing:
+        - zameel_upload_key
+      groups:
+        - google_play
+      vars:
+        PACKAGE_NAME: "com.zameel.app"
+        GOOGLE_PLAY_TRACK: "internal"
+        SUPABASE_URL: "https://jwuqyykjmltroneqtjoc.supabase.co"
+        SUPABASE_PUBLISHABLE_KEY: "sb_publishable_TC_UtlL14Q0LVhLejd27lQ_MZphnhlv"
+        ZAMEEL_VERSION: "2.0.0+9"
+
+    scripts:
+      - name: Configure Firebase for push notifications
+        script: |
+          if [ -z "$GOOGLE_SERVICES_JSON_BASE64" ]; then
+            echo "ERROR: GOOGLE_SERVICES_JSON_BASE64 is not configured in Codemagic."
+            exit 1
+          fi
+          echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > android/app/google-services.json
+          test -s android/app/google-services.json || { echo "ERROR: google-services.json is empty after decode."; exit 1; }
+          grep -Eq '"project_id"[[:space:]]*:[[:space:]]*"zameel-81ff6"' android/app/google-services.json || { echo "ERROR: Firebase project_id does not match zameel-81ff6."; exit 1; }
+          grep -Eq '"package_name"[[:space:]]*:[[:space:]]*"com.zameel.app"' android/app/google-services.json || { echo "ERROR: Firebase Android package does not match com.zameel.app."; exit 1; }
+      - name: Get packages
+        script: flutter pub get
+      - name: Static analysis
+        script: flutter analyze --no-pub
+      - name: Tests
+        script: flutter test --no-pub
+      - name: Build signed AAB
+        script: |
+          LATEST_BUILD_NUMBER=$(google-play get-latest-build-number --package-name "$PACKAGE_NAME" --tracks="$GOOGLE_PLAY_TRACK" 2>/dev/null || true)
+          if [ -n "$LATEST_BUILD_NUMBER" ]; then
+            BUILD_NUMBER=$((LATEST_BUILD_NUMBER + 1))
+          else
+            BUILD_NUMBER=17
+          fi
+          flutter build appbundle --release \
+            --build-number="$BUILD_NUMBER" \
+            --dart-define=SUPABASE_URL="$SUPABASE_URL" \
+            --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY" \
+            --dart-define=WEBRTC_TURN_URL="$WEBRTC_TURN_URL" \
+            --dart-define=WEBRTC_TURN_USERNAME="$WEBRTC_TURN_USERNAME" \
+            --dart-define=WEBRTC_TURN_CREDENTIAL="$WEBRTC_TURN_CREDENTIAL" \
+            --dart-define=ZAMEEL_VERSION="$ZAMEEL_VERSION"
+
+    artifacts:
+      - build/app/outputs/bundle/release/app-release.aab
+      - build/app/outputs/mapping/release/mapping.txt
+
+    publishing:
+      google_play:
+        credentials: $GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+        submit_as_draft: true

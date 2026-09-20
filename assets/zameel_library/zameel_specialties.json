@@ -1,0 +1,2175 @@
+{
+  "version": "056-bilingual-index-v2",
+  "generated_at": "2026-09-16",
+  "source_note": "Expanded from the user-provided Arab/Jordan specialties index plus existing Zameel categories and common regional majors.",
+  "groups": [
+    {
+      "name": "التخصصات الطبية والصحية",
+      "specialties": [
+        {
+          "name": "دكتور في الطب",
+          "aliases": [
+            "الطب - تاريخي",
+            "الطب والفلسفة - تاريخي",
+            "Doctor of Medicine"
+          ],
+          "name_en": "Doctor of Medicine"
+        },
+        {
+          "name": "طب الأسنان",
+          "aliases": [
+            "Dentistry"
+          ],
+          "name_en": "Dentistry"
+        },
+        {
+          "name": "الصيدلة",
+          "aliases": [
+            "Pharmacy"
+          ],
+          "name_en": "Pharmacy"
+        },
+        {
+          "name": "العلوم الطبية المخبرية",
+          "aliases": [
+            "Medical Laboratory Sciences"
+          ],
+          "name_en": "Medical Laboratory Sciences"
+        },
+        {
+          "name": "العلاج الطبيعي",
+          "aliases": [
+            "Physical Therapy"
+          ],
+          "name_en": "Physical Therapy"
+        },
+        {
+          "name": "الأطراف الصناعية",
+          "aliases": [
+            "Prosthetics and Orthotics"
+          ],
+          "name_en": "Prosthetics and Orthotics"
+        },
+        {
+          "name": "علوم السمع والنطق",
+          "aliases": [
+            "Audiology and Speech Sciences"
+          ],
+          "name_en": "Audiology and Speech Sciences"
+        },
+        {
+          "name": "التمريض",
+          "aliases": [
+            "التمريض والصحة العامة",
+            "Nursing"
+          ],
+          "name_en": "Nursing"
+        },
+        {
+          "name": "تغذية الإنسان والحميات",
+          "aliases": [
+            "التغذية",
+            "Human Nutrition and Dietetics"
+          ],
+          "name_en": "Human Nutrition and Dietetics"
+        },
+        {
+          "name": "علم النفس السريري",
+          "aliases": [
+            "Clinical Psychology"
+          ],
+          "name_en": "Clinical Psychology"
+        },
+        {
+          "name": "تقنيات الأسنان",
+          "aliases": [
+            "Dental Technology"
+          ],
+          "name_en": "Dental Technology"
+        },
+        {
+          "name": "تقنيات الأشعة الطبية",
+          "aliases": [
+            "Medical Radiologic Technology"
+          ],
+          "name_en": "Medical Radiologic Technology"
+        },
+        {
+          "name": "التخدير والإنعاش القلبي الرئوي",
+          "aliases": [
+            "Anesthesia and Cardiopulmonary Resuscitation"
+          ],
+          "name_en": "Anesthesia and Cardiopulmonary Resuscitation"
+        },
+        {
+          "name": "العلاج الوظيفي",
+          "aliases": [
+            "Occupational Therapy"
+          ],
+          "name_en": "Occupational Therapy"
+        },
+        {
+          "name": "التجميل التطبيقي",
+          "aliases": [
+            "Applied Cosmetology"
+          ],
+          "name_en": "Applied Cosmetology"
+        },
+        {
+          "name": "نظم المعلومات الصحية",
+          "aliases": [
+            "Health Information Systems"
+          ],
+          "name_en": "Health Information Systems"
+        },
+        {
+          "name": "علوم صحة الفم",
+          "aliases": [
+            "Oral Health Sciences"
+          ],
+          "name_en": "Oral Health Sciences"
+        },
+        {
+          "name": "الأحياء الدقيقة ومكافحة العدوى",
+          "aliases": [
+            "Microbiology and Infection Control"
+          ],
+          "name_en": "Microbiology and Infection Control"
+        },
+        {
+          "name": "الهندسة الطبية الحيوية",
+          "aliases": [
+            "Biomedical Engineering"
+          ],
+          "name_en": "Biomedical Engineering"
+        },
+        {
+          "name": "القبالة",
+          "aliases": [
+            "Midwifery"
+          ],
+          "name_en": "Midwifery"
+        },
+        {
+          "name": "تقنيات الأشعة",
+          "aliases": [
+            "Radiologic Technology"
+          ],
+          "name_en": "Radiologic Technology"
+        },
+        {
+          "name": "خدمات الطوارئ الطبية",
+          "aliases": [
+            "Emergency Medical Services"
+          ],
+          "name_en": "Emergency Medical Services"
+        },
+        {
+          "name": "تمريض الرعاية المزمنة",
+          "aliases": [
+            "Chronic Care Nursing"
+          ],
+          "name_en": "Chronic Care Nursing"
+        },
+        {
+          "name": "الصحة العامة",
+          "aliases": [
+            "Public Health"
+          ],
+          "name_en": "Public Health"
+        },
+        {
+          "name": "العلوم الطبية الأساسية",
+          "aliases": [
+            "Basic Medical Sciences"
+          ],
+          "name_en": "Basic Medical Sciences"
+        },
+        {
+          "name": "الطب البيطري",
+          "aliases": [
+            "Veterinary Medicine"
+          ],
+          "name_en": "Veterinary Medicine"
+        },
+        {
+          "name": "البصريات وعلوم الرؤية",
+          "aliases": [
+            "Optometry and Vision Science"
+          ],
+          "name_en": "Optometry and Vision Science"
+        },
+        {
+          "name": "العلاج التنفسي",
+          "aliases": [
+            "Respiratory Therapy"
+          ],
+          "name_en": "Respiratory Therapy"
+        },
+        {
+          "name": "إدارة المستشفيات والخدمات الصحية",
+          "aliases": [
+            "Hospital and Health Services Management"
+          ],
+          "name_en": "Hospital and Health Services Management"
+        },
+        {
+          "name": "الصيدلة السريرية",
+          "aliases": [
+            "Clinical Pharmacy"
+          ],
+          "name_en": "Clinical Pharmacy"
+        },
+        {
+          "name": "علوم الأدوية والسموم",
+          "aliases": [
+            "Pharmacology and Toxicology"
+          ],
+          "name_en": "Pharmacology and Toxicology"
+        },
+        {
+          "name": "التكنولوجيا الحيوية الطبية",
+          "aliases": [
+            "Medical Biotechnology"
+          ],
+          "name_en": "Medical Biotechnology"
+        },
+        {
+          "name": "الطب النووي",
+          "aliases": [
+            "Nuclear Medicine"
+          ],
+          "name_en": "Nuclear Medicine"
+        },
+        {
+          "name": "الوراثة الطبية",
+          "aliases": [
+            "Medical Genetics"
+          ],
+          "name_en": "Medical Genetics"
+        },
+        {
+          "name": "إدارة المختبرات وضمان جودتها",
+          "aliases": [
+            "Laboratory Management and Quality Assurance"
+          ],
+          "name_en": "Laboratory Management and Quality Assurance"
+        },
+        {
+          "name": "تحليل السلوك التطبيقي",
+          "aliases": [
+            "Applied Behavior Analysis"
+          ],
+          "name_en": "Applied Behavior Analysis"
+        },
+        {
+          "name": "القانون الطبي والأخلاقيات",
+          "aliases": [
+            "Medical Law and Ethics"
+          ],
+          "name_en": "Medical Law and Ethics"
+        },
+        {
+          "name": "بيولوجيا الفم",
+          "aliases": [
+            "Oral Biology"
+          ],
+          "name_en": "Oral Biology"
+        }
+      ],
+      "name_en": "Medical and Health Specialties"
+    },
+    {
+      "name": "التخصصات الهندسية والتقنية",
+      "specialties": [
+        {
+          "name": "هندسة العمارة",
+          "aliases": [
+            "العمارة",
+            "Architecture"
+          ],
+          "name_en": "Architecture"
+        },
+        {
+          "name": "الهندسة الكهربائية",
+          "aliases": [
+            "Electrical Engineering"
+          ],
+          "name_en": "Electrical Engineering"
+        },
+        {
+          "name": "هندسة الميكاترونكس",
+          "aliases": [
+            "Mechatronics Engineering"
+          ],
+          "name_en": "Mechatronics Engineering"
+        },
+        {
+          "name": "الهندسة الكيميائية",
+          "aliases": [
+            "Chemical Engineering"
+          ],
+          "name_en": "Chemical Engineering"
+        },
+        {
+          "name": "الهندسة الصناعية",
+          "aliases": [
+            "Industrial Engineering"
+          ],
+          "name_en": "Industrial Engineering"
+        },
+        {
+          "name": "الهندسة المدنية",
+          "aliases": [
+            "Civil Engineering"
+          ],
+          "name_en": "Civil Engineering"
+        },
+        {
+          "name": "الهندسة الميكانيكية",
+          "aliases": [
+            "Mechanical Engineering"
+          ],
+          "name_en": "Mechanical Engineering"
+        },
+        {
+          "name": "هندسة الحاسوب",
+          "aliases": [
+            "Computer Engineering"
+          ],
+          "name_en": "Computer Engineering"
+        },
+        {
+          "name": "تكنولوجيا أشباه الموصلات",
+          "aliases": [
+            "Semiconductor Technology"
+          ],
+          "name_en": "Semiconductor Technology"
+        },
+        {
+          "name": "هندسة المباني الذكية",
+          "aliases": [
+            "Smart Building Engineering"
+          ],
+          "name_en": "Smart Building Engineering"
+        },
+        {
+          "name": "هندسة الإنشاءات",
+          "aliases": [
+            "Structural Engineering"
+          ],
+          "name_en": "Structural Engineering"
+        },
+        {
+          "name": "الهندسة الكهربائية والإلكترونية",
+          "aliases": [
+            "Electrical and Electronic Engineering"
+          ],
+          "name_en": "Electrical and Electronic Engineering"
+        },
+        {
+          "name": "تكنولوجيا الطائرات بدون طيار",
+          "aliases": [
+            "Drone Technology"
+          ],
+          "name_en": "Drone Technology"
+        },
+        {
+          "name": "تكنولوجيا الأنظمة الكهربائية الذكية",
+          "aliases": [
+            "Smart Electrical Systems Technology"
+          ],
+          "name_en": "Smart Electrical Systems Technology"
+        },
+        {
+          "name": "تكنولوجيا النانو وعلوم المواد",
+          "aliases": [
+            "Nanotechnology and Materials Science"
+          ],
+          "name_en": "Nanotechnology and Materials Science"
+        },
+        {
+          "name": "تكنولوجيا العمليات المستدامة",
+          "aliases": [
+            "Sustainable Process Technology"
+          ],
+          "name_en": "Sustainable Process Technology"
+        },
+        {
+          "name": "تكنولوجيا المركبات الكهربائية والهجينة",
+          "aliases": [
+            "Electric and Hybrid Vehicle Technology"
+          ],
+          "name_en": "Electric and Hybrid Vehicle Technology"
+        },
+        {
+          "name": "تكنولوجيا إنشاء المباني والطرق",
+          "aliases": [
+            "Building and Road Construction Technology"
+          ],
+          "name_en": "Building and Road Construction Technology"
+        },
+        {
+          "name": "تكنولوجيا التدفئة والتهوية والتكييف",
+          "aliases": [
+            "Heating, Ventilation and Air Conditioning Technology"
+          ],
+          "name_en": "Heating, Ventilation and Air Conditioning Technology"
+        },
+        {
+          "name": "هندسة الأنظمة الذكية",
+          "aliases": [
+            "الهندسة",
+            "الهندسة والفيزياء",
+            "Intelligent Systems Engineering"
+          ],
+          "name_en": "Intelligent Systems Engineering"
+        },
+        {
+          "name": "هندسة المواد المتقدمة",
+          "aliases": [
+            "Advanced Materials Engineering"
+          ],
+          "name_en": "Advanced Materials Engineering"
+        },
+        {
+          "name": "صيانة الطائرات",
+          "aliases": [
+            "Aircraft Maintenance"
+          ],
+          "name_en": "Aircraft Maintenance"
+        },
+        {
+          "name": "إدارة الطيران",
+          "aliases": [
+            "Aviation Management"
+          ],
+          "name_en": "Aviation Management"
+        },
+        {
+          "name": "علوم الطيران الإلكتروني",
+          "aliases": [
+            "Avionics"
+          ],
+          "name_en": "Avionics"
+        },
+        {
+          "name": "الهندسة البحرية",
+          "aliases": [
+            "Marine Engineering"
+          ],
+          "name_en": "Marine Engineering"
+        },
+        {
+          "name": "هندسة أشباه الموصلات",
+          "aliases": [
+            "Semiconductor Engineering"
+          ],
+          "name_en": "Semiconductor Engineering"
+        },
+        {
+          "name": "هندسة الطاقة المتجددة والتقنيات الخضراء",
+          "aliases": [
+            "Renewable Energy Engineering and Green Technologies"
+          ],
+          "name_en": "Renewable Energy Engineering and Green Technologies"
+        },
+        {
+          "name": "هندسة النفط والغاز",
+          "aliases": [
+            "Oil and Gas Engineering"
+          ],
+          "name_en": "Oil and Gas Engineering"
+        },
+        {
+          "name": "هندسة البترول",
+          "aliases": [
+            "Petroleum Engineering"
+          ],
+          "name_en": "Petroleum Engineering"
+        },
+        {
+          "name": "هندسة التعدين",
+          "aliases": [
+            "Mining Engineering"
+          ],
+          "name_en": "Mining Engineering"
+        },
+        {
+          "name": "هندسة الاتصالات",
+          "aliases": [
+            "Telecommunications Engineering"
+          ],
+          "name_en": "Telecommunications Engineering"
+        },
+        {
+          "name": "هندسة الإلكترونيات",
+          "aliases": [
+            "Electronics Engineering"
+          ],
+          "name_en": "Electronics Engineering"
+        },
+        {
+          "name": "الهندسة البيئية",
+          "aliases": [
+            "Environmental Engineering"
+          ],
+          "name_en": "Environmental Engineering"
+        },
+        {
+          "name": "هندسة الطاقة",
+          "aliases": [
+            "Energy Engineering"
+          ],
+          "name_en": "Energy Engineering"
+        },
+        {
+          "name": "هندسة الطيران",
+          "aliases": [
+            "Aeronautical Engineering"
+          ],
+          "name_en": "Aeronautical Engineering"
+        },
+        {
+          "name": "هندسة الفضاء",
+          "aliases": [
+            "Aerospace Engineering"
+          ],
+          "name_en": "Aerospace Engineering"
+        },
+        {
+          "name": "هندسة الروبوتات",
+          "aliases": [
+            "Robotics Engineering"
+          ],
+          "name_en": "Robotics Engineering"
+        },
+        {
+          "name": "هندسة التحكم والأتمتة",
+          "aliases": [
+            "Control and Automation Engineering"
+          ],
+          "name_en": "Control and Automation Engineering"
+        },
+        {
+          "name": "الهندسة الجيوماتيكية",
+          "aliases": [
+            "Geomatics Engineering"
+          ],
+          "name_en": "Geomatics Engineering"
+        },
+        {
+          "name": "الهندسة الزراعية",
+          "aliases": [
+            "Agricultural Engineering"
+          ],
+          "name_en": "Agricultural Engineering"
+        },
+        {
+          "name": "الهندسة النووية",
+          "aliases": [
+            "Nuclear Engineering"
+          ],
+          "name_en": "Nuclear Engineering"
+        },
+        {
+          "name": "الهندسة الصناعية والإدارية",
+          "aliases": [
+            "Industrial and Management Engineering"
+          ],
+          "name_en": "Industrial and Management Engineering"
+        },
+        {
+          "name": "هندسة المركبات الكهربائية والهجينة",
+          "aliases": [
+            "Electric and Hybrid Vehicle Engineering"
+          ],
+          "name_en": "Electric and Hybrid Vehicle Engineering"
+        },
+        {
+          "name": "هندسة المعادن",
+          "aliases": [
+            "Metallurgical Engineering"
+          ],
+          "name_en": "Metallurgical Engineering"
+        }
+      ],
+      "name_en": "Engineering and Technical Specialties"
+    },
+    {
+      "name": "تخصصات تكنولوجيا المعلومات وعلوم الحاسوب",
+      "specialties": [
+        {
+          "name": "علم الحاسوب",
+          "aliases": [
+            "علوم الحاسوب",
+            "Computer Science"
+          ],
+          "name_en": "Computer Science"
+        },
+        {
+          "name": "الأمن السيبراني",
+          "aliases": [
+            "Cybersecurity"
+          ],
+          "name_en": "Cybersecurity"
+        },
+        {
+          "name": "الذكاء الاصطناعي",
+          "aliases": [
+            "الذكاء الاصطناعي وعلوم البيانات",
+            "Artificial Intelligence"
+          ],
+          "name_en": "Artificial Intelligence"
+        },
+        {
+          "name": "علم البيانات والإحصاء",
+          "aliases": [
+            "Data Science and Statistics"
+          ],
+          "name_en": "Data Science and Statistics"
+        },
+        {
+          "name": "التكنولوجيا المالية",
+          "aliases": [
+            "Financial Technology"
+          ],
+          "name_en": "Financial Technology"
+        },
+        {
+          "name": "تطبيقات الأجهزة الذكية",
+          "aliases": [
+            "Smart Device Applications"
+          ],
+          "name_en": "Smart Device Applications"
+        },
+        {
+          "name": "ذكاء الأعمال",
+          "aliases": [
+            "Business Intelligence"
+          ],
+          "name_en": "Business Intelligence"
+        },
+        {
+          "name": "الرسوم المتحركة وتصميم الألعاب",
+          "aliases": [
+            "Animation and Game Design"
+          ],
+          "name_en": "Animation and Game Design"
+        },
+        {
+          "name": "تكنولوجيا الأفلام والوسائط المتعددة",
+          "aliases": [
+            "Film and Multimedia Technology"
+          ],
+          "name_en": "Film and Multimedia Technology"
+        },
+        {
+          "name": "الوسائط المتعددة",
+          "aliases": [
+            "Multimedia"
+          ],
+          "name_en": "Multimedia"
+        },
+        {
+          "name": "إنترنت الأشياء",
+          "aliases": [
+            "Internet of Things"
+          ],
+          "name_en": "Internet of Things"
+        },
+        {
+          "name": "تطبيقات الوسائط الرقمية",
+          "aliases": [
+            "Digital Media Applications"
+          ],
+          "name_en": "Digital Media Applications"
+        },
+        {
+          "name": "فنون وألعاب الرسوم المتحركة",
+          "aliases": [
+            "Animation Arts and Games"
+          ],
+          "name_en": "Animation Arts and Games"
+        },
+        {
+          "name": "البرمجة التطبيقية",
+          "aliases": [
+            "Applied Programming"
+          ],
+          "name_en": "Applied Programming"
+        },
+        {
+          "name": "هندسة البرمجيات",
+          "aliases": [
+            "Software Engineering"
+          ],
+          "name_en": "Software Engineering"
+        },
+        {
+          "name": "تطوير الألعاب",
+          "aliases": [
+            "Game Development"
+          ],
+          "name_en": "Game Development"
+        },
+        {
+          "name": "تحليل البيانات وذكاء الأعمال",
+          "aliases": [
+            "Data Analytics and Business Intelligence"
+          ],
+          "name_en": "Data Analytics and Business Intelligence"
+        },
+        {
+          "name": "تطوير الألعاب الرقمية",
+          "aliases": [
+            "Digital Game Development"
+          ],
+          "name_en": "Digital Game Development"
+        },
+        {
+          "name": "نظم المعلومات",
+          "aliases": [
+            "Information Systems"
+          ],
+          "name_en": "Information Systems"
+        },
+        {
+          "name": "نظم المعلومات الإدارية",
+          "aliases": [
+            "Management Information Systems"
+          ],
+          "name_en": "Management Information Systems"
+        },
+        {
+          "name": "الحوسبة السحابية",
+          "aliases": [
+            "Cloud Computing"
+          ],
+          "name_en": "Cloud Computing"
+        },
+        {
+          "name": "الحوسبة والبيانات الضخمة",
+          "aliases": [
+            "Computing and Big Data"
+          ],
+          "name_en": "Computing and Big Data"
+        },
+        {
+          "name": "هندسة الشبكات",
+          "aliases": [
+            "Network Engineering"
+          ],
+          "name_en": "Network Engineering"
+        },
+        {
+          "name": "أمن المعلومات",
+          "aliases": [
+            "Information Security"
+          ],
+          "name_en": "Information Security"
+        },
+        {
+          "name": "الواقع الافتراضي والمعزز",
+          "aliases": [
+            "Virtual and Augmented Reality"
+          ],
+          "name_en": "Virtual and Augmented Reality"
+        },
+        {
+          "name": "علم المعلوماتية",
+          "aliases": [
+            "Informatics"
+          ],
+          "name_en": "Informatics"
+        },
+        {
+          "name": "المعلوماتية الحيوية",
+          "aliases": [
+            "Bioinformatics"
+          ],
+          "name_en": "Bioinformatics"
+        },
+        {
+          "name": "الحوسبة المتنقلة",
+          "aliases": [
+            "Mobile Computing"
+          ],
+          "name_en": "Mobile Computing"
+        },
+        {
+          "name": "تجربة المستخدم وتصميم الواجهات",
+          "aliases": [
+            "User Experience and Interface Design"
+          ],
+          "name_en": "User Experience and Interface Design"
+        }
+      ],
+      "name_en": "Information Technology and Computer Science"
+    },
+    {
+      "name": "تخصصات الأعمال والإدارة والقانون",
+      "specialties": [
+        {
+          "name": "المحاسبة والضرائب",
+          "aliases": [
+            "Accounting and Taxation"
+          ],
+          "name_en": "Accounting and Taxation"
+        },
+        {
+          "name": "المالية والمصرفية والتأمين",
+          "aliases": [
+            "التمويل",
+            "Finance, Banking and Insurance"
+          ],
+          "name_en": "Finance, Banking and Insurance"
+        },
+        {
+          "name": "الإدارة والأعمال",
+          "aliases": [
+            "إدارة الأعمال",
+            "Management and Business"
+          ],
+          "name_en": "Management and Business"
+        },
+        {
+          "name": "التسويق والإعلان",
+          "aliases": [
+            "التسويق",
+            "Marketing and Advertising"
+          ],
+          "name_en": "Marketing and Advertising"
+        },
+        {
+          "name": "القانون",
+          "aliases": [
+            "القانون الدستوري",
+            "القانون والفلسفة",
+            "Law"
+          ],
+          "name_en": "Law"
+        },
+        {
+          "name": "المحاسبة القانونية",
+          "aliases": [
+            "Legal Accounting"
+          ],
+          "name_en": "Legal Accounting"
+        },
+        {
+          "name": "التدقيق والمحاسبة الدولية",
+          "aliases": [
+            "Auditing and International Accounting"
+          ],
+          "name_en": "Auditing and International Accounting"
+        },
+        {
+          "name": "إدارة الضرائب والجمارك",
+          "aliases": [
+            "Tax and Customs Administration"
+          ],
+          "name_en": "Tax and Customs Administration"
+        },
+        {
+          "name": "إدارة اللوجستيات",
+          "aliases": [
+            "Logistics Management"
+          ],
+          "name_en": "Logistics Management"
+        },
+        {
+          "name": "إدارة سلاسل التوريد واللوجستيات الرقمية",
+          "aliases": [
+            "Supply Chain Management and Digital Logistics"
+          ],
+          "name_en": "Supply Chain Management and Digital Logistics"
+        },
+        {
+          "name": "إدارة الفعاليات",
+          "aliases": [
+            "Event Management"
+          ],
+          "name_en": "Event Management"
+        },
+        {
+          "name": "الأعمال والتجارة الإلكترونية",
+          "aliases": [
+            "E-Business and E-Commerce"
+          ],
+          "name_en": "E-Business and E-Commerce"
+        },
+        {
+          "name": "العلاقات العامة والإعلان الرقمي",
+          "aliases": [
+            "Public Relations and Digital Advertising"
+          ],
+          "name_en": "Public Relations and Digital Advertising"
+        },
+        {
+          "name": "محاسبة الضرائب",
+          "aliases": [
+            "Tax Accounting"
+          ],
+          "name_en": "Tax Accounting"
+        },
+        {
+          "name": "إدارة الموارد البشرية",
+          "aliases": [
+            "Human Resources Management"
+          ],
+          "name_en": "Human Resources Management"
+        },
+        {
+          "name": "إدارة الهندسة",
+          "aliases": [
+            "Engineering Management"
+          ],
+          "name_en": "Engineering Management"
+        },
+        {
+          "name": "إدارة الجودة والعمليات",
+          "aliases": [
+            "Quality and Operations Management"
+          ],
+          "name_en": "Quality and Operations Management"
+        },
+        {
+          "name": "التسويق الرقمي",
+          "aliases": [
+            "Digital Marketing"
+          ],
+          "name_en": "Digital Marketing"
+        },
+        {
+          "name": "المحاسبة",
+          "aliases": [
+            "Accounting"
+          ],
+          "name_en": "Accounting"
+        },
+        {
+          "name": "الإدارة العامة",
+          "aliases": [
+            "Public Administration"
+          ],
+          "name_en": "Public Administration"
+        },
+        {
+          "name": "ريادة الأعمال",
+          "aliases": [
+            "Entrepreneurship"
+          ],
+          "name_en": "Entrepreneurship"
+        },
+        {
+          "name": "الاقتصاد الإسلامي",
+          "aliases": [
+            "Islamic Economics"
+          ],
+          "name_en": "Islamic Economics"
+        },
+        {
+          "name": "المصارف الإسلامية",
+          "aliases": [
+            "Islamic Banking"
+          ],
+          "name_en": "Islamic Banking"
+        },
+        {
+          "name": "القانون الدولي",
+          "aliases": [
+            "International Law"
+          ],
+          "name_en": "International Law"
+        },
+        {
+          "name": "القانون التجاري",
+          "aliases": [
+            "Commercial Law"
+          ],
+          "name_en": "Commercial Law"
+        },
+        {
+          "name": "القانون الجنائي",
+          "aliases": [
+            "Criminal Law"
+          ],
+          "name_en": "Criminal Law"
+        },
+        {
+          "name": "القانون المدني",
+          "aliases": [
+            "Civil Law"
+          ],
+          "name_en": "Civil Law"
+        },
+        {
+          "name": "القانون العام",
+          "aliases": [
+            "Public Law"
+          ],
+          "name_en": "Public Law"
+        },
+        {
+          "name": "التحكيم التجاري",
+          "aliases": [
+            "Commercial Arbitration"
+          ],
+          "name_en": "Commercial Arbitration"
+        },
+        {
+          "name": "إدارة المشاريع",
+          "aliases": [
+            "Project Management"
+          ],
+          "name_en": "Project Management"
+        },
+        {
+          "name": "إدارة الأعمال الدولية",
+          "aliases": [
+            "International Business Management"
+          ],
+          "name_en": "International Business Management"
+        },
+        {
+          "name": "إدارة المخاطر",
+          "aliases": [
+            "Risk Management"
+          ],
+          "name_en": "Risk Management"
+        },
+        {
+          "name": "العلوم الاكتوارية",
+          "aliases": [
+            "Actuarial Science"
+          ],
+          "name_en": "Actuarial Science"
+        },
+        {
+          "name": "المحاسبة الجنائية",
+          "aliases": [
+            "Forensic Accounting"
+          ],
+          "name_en": "Forensic Accounting"
+        },
+        {
+          "name": "إدارة وسياسة عامة",
+          "aliases": [
+            "Public Management and Policy"
+          ],
+          "name_en": "Public Management and Policy"
+        },
+        {
+          "name": "العدالة الجنائية",
+          "aliases": [
+            "Criminal Justice"
+          ],
+          "name_en": "Criminal Justice"
+        }
+      ],
+      "name_en": "Business, Management and Law"
+    },
+    {
+      "name": "التخصصات الإنسانية والفنية والاجتماعية",
+      "specialties": [
+        {
+          "name": "التقنيات السمعية والبصرية وإنتاج الوسائط",
+          "aliases": [
+            "Audiovisual Technologies and Media Production"
+          ],
+          "name_en": "Audiovisual Technologies and Media Production"
+        },
+        {
+          "name": "تصميم الأزياء والتصميم الداخلي والصناعي",
+          "aliases": [
+            "Fashion, Interior and Industrial Design"
+          ],
+          "name_en": "Fashion, Interior and Industrial Design"
+        },
+        {
+          "name": "الفنون الجميلة",
+          "aliases": [
+            "Fine Arts"
+          ],
+          "name_en": "Fine Arts"
+        },
+        {
+          "name": "الحرف اليدوية",
+          "aliases": [
+            "Handicrafts"
+          ],
+          "name_en": "Handicrafts"
+        },
+        {
+          "name": "الموسيقى والفنون الأدائية",
+          "aliases": [
+            "Music and Performing Arts"
+          ],
+          "name_en": "Music and Performing Arts"
+        },
+        {
+          "name": "الدين واللاهوت",
+          "aliases": [
+            "Religion and Theology"
+          ],
+          "name_en": "Religion and Theology"
+        },
+        {
+          "name": "التاريخ والآثار",
+          "aliases": [
+            "التاريخ",
+            "التاريخ السياسي",
+            "History and Archaeology"
+          ],
+          "name_en": "History and Archaeology"
+        },
+        {
+          "name": "الفلسفة والأخلاق",
+          "aliases": [
+            "الفلسفة",
+            "الفلسفة السياسية",
+            "الفلسفة والسياسة",
+            "الفلسفة والعلوم",
+            "Philosophy and Ethics"
+          ],
+          "name_en": "Philosophy and Ethics"
+        },
+        {
+          "name": "اكتساب اللغة",
+          "aliases": [
+            "Language Acquisition"
+          ],
+          "name_en": "Language Acquisition"
+        },
+        {
+          "name": "الأدب واللغويات",
+          "aliases": [
+            "الأدب",
+            "الأدب والفكر",
+            "Literature and Linguistics"
+          ],
+          "name_en": "Literature and Linguistics"
+        },
+        {
+          "name": "الاقتصاد",
+          "aliases": [
+            "الاقتصاد والديموغرافيا",
+            "الاقتصاد والفلسفة",
+            "Economics"
+          ],
+          "name_en": "Economics"
+        },
+        {
+          "name": "العلوم السياسية والمدنية",
+          "aliases": [
+            "الاقتصاد السياسي",
+            "العلوم السياسية",
+            "العلوم السياسية والاجتماع",
+            "العلوم السياسية والاقتصاد",
+            "العلوم السياسية والفلسفة",
+            "Political and Civic Sciences"
+          ],
+          "name_en": "Political and Civic Sciences"
+        },
+        {
+          "name": "علم النفس",
+          "aliases": [
+            "علم النفس التربوي",
+            "علم النفس السياسي",
+            "علم النفس والفسيولوجيا",
+            "علم النفس والفلسفة",
+            "Psychology"
+          ],
+          "name_en": "Psychology"
+        },
+        {
+          "name": "علم الاجتماع والدراسات الثقافية",
+          "aliases": [
+            "علم الاجتماع",
+            "علم الاجتماع السياسي",
+            "Sociology and Cultural Studies"
+          ],
+          "name_en": "Sociology and Cultural Studies"
+        },
+        {
+          "name": "الصحافة والتقارير",
+          "aliases": [
+            "الإعلام والصحافة",
+            "Journalism and Reporting"
+          ],
+          "name_en": "Journalism and Reporting"
+        },
+        {
+          "name": "المكتبات والمعلومات والأرشيف",
+          "aliases": [
+            "Library, Information and Archival Studies"
+          ],
+          "name_en": "Library, Information and Archival Studies"
+        },
+        {
+          "name": "اللغات الحديثة / الإسبانية-الإنجليزية",
+          "aliases": [
+            "Modern Languages / Spanish-English"
+          ],
+          "name_en": "Modern Languages / Spanish-English"
+        },
+        {
+          "name": "الترجمة التطبيقية",
+          "aliases": [
+            "Applied Translation"
+          ],
+          "name_en": "Applied Translation"
+        },
+        {
+          "name": "اللغة الإنجليزية التطبيقية",
+          "aliases": [
+            "اللغة الإنجليزية",
+            "Applied English Language"
+          ],
+          "name_en": "Applied English Language"
+        },
+        {
+          "name": "اللغات الصينية-الإنجليزية",
+          "aliases": [
+            "Chinese-English Languages"
+          ],
+          "name_en": "Chinese-English Languages"
+        },
+        {
+          "name": "الدراسات الدينية",
+          "aliases": [
+            "Religious Studies"
+          ],
+          "name_en": "Religious Studies"
+        },
+        {
+          "name": "الإذاعة والتلفزيون",
+          "aliases": [
+            "Radio and Television"
+          ],
+          "name_en": "Radio and Television"
+        },
+        {
+          "name": "تعليم الطفولة المبكرة",
+          "aliases": [
+            "Early Childhood Education"
+          ],
+          "name_en": "Early Childhood Education"
+        },
+        {
+          "name": "الإرشاد والصحة النفسية",
+          "aliases": [
+            "Counseling and Mental Health"
+          ],
+          "name_en": "Counseling and Mental Health"
+        },
+        {
+          "name": "القيادة التربوية",
+          "aliases": [
+            "التربية",
+            "التربية والفلسفة",
+            "Educational Leadership"
+          ],
+          "name_en": "Educational Leadership"
+        },
+        {
+          "name": "المناهج والتعلم الإلكتروني",
+          "aliases": [
+            "Curriculum and E-Learning"
+          ],
+          "name_en": "Curriculum and E-Learning"
+        },
+        {
+          "name": "العلاقات الدولية",
+          "aliases": [
+            "التاريخ والعلاقات الدولية",
+            "الجيوبوليتيك",
+            "International Relations"
+          ],
+          "name_en": "International Relations"
+        },
+        {
+          "name": "الدبلوماسية",
+          "aliases": [
+            "Diplomacy"
+          ],
+          "name_en": "Diplomacy"
+        },
+        {
+          "name": "الدراسات الأمنية",
+          "aliases": [
+            "Security Studies"
+          ],
+          "name_en": "Security Studies"
+        },
+        {
+          "name": "الدراسات الاستراتيجية",
+          "aliases": [
+            "Strategic Studies"
+          ],
+          "name_en": "Strategic Studies"
+        },
+        {
+          "name": "حقوق الإنسان",
+          "aliases": [
+            "Human Rights"
+          ],
+          "name_en": "Human Rights"
+        },
+        {
+          "name": "دراسات السلام والنزاعات",
+          "aliases": [
+            "Peace and Conflict Studies"
+          ],
+          "name_en": "Peace and Conflict Studies"
+        },
+        {
+          "name": "الخدمة الاجتماعية",
+          "aliases": [
+            "Social Work"
+          ],
+          "name_en": "Social Work"
+        },
+        {
+          "name": "اللغة العربية",
+          "aliases": [
+            "Arabic Language"
+          ],
+          "name_en": "Arabic Language"
+        },
+        {
+          "name": "اللغة الفرنسية",
+          "aliases": [
+            "French Language"
+          ],
+          "name_en": "French Language"
+        },
+        {
+          "name": "اللغة الألمانية",
+          "aliases": [
+            "German Language"
+          ],
+          "name_en": "German Language"
+        },
+        {
+          "name": "الجغرافيا",
+          "aliases": [
+            "Geography"
+          ],
+          "name_en": "Geography"
+        },
+        {
+          "name": "علم الآثار",
+          "aliases": [
+            "Archaeology"
+          ],
+          "name_en": "Archaeology"
+        },
+        {
+          "name": "الشريعة",
+          "aliases": [
+            "Sharia"
+          ],
+          "name_en": "Sharia"
+        },
+        {
+          "name": "الفقه وأصوله",
+          "aliases": [
+            "Islamic Jurisprudence and its Foundations"
+          ],
+          "name_en": "Islamic Jurisprudence and its Foundations"
+        },
+        {
+          "name": "أصول الدين",
+          "aliases": [
+            "Fundamentals of Religion"
+          ],
+          "name_en": "Fundamentals of Religion"
+        },
+        {
+          "name": "الدراسات الإسلامية",
+          "aliases": [
+            "Islamic Studies"
+          ],
+          "name_en": "Islamic Studies"
+        },
+        {
+          "name": "التربية الخاصة",
+          "aliases": [
+            "Special Education"
+          ],
+          "name_en": "Special Education"
+        },
+        {
+          "name": "معلم صف",
+          "aliases": [
+            "Classroom Teaching"
+          ],
+          "name_en": "Classroom Teaching"
+        },
+        {
+          "name": "تكنولوجيا التعليم",
+          "aliases": [
+            "Educational Technology"
+          ],
+          "name_en": "Educational Technology"
+        },
+        {
+          "name": "علم المكتبات والمعلومات",
+          "aliases": [
+            "Library and Information Science"
+          ],
+          "name_en": "Library and Information Science"
+        },
+        {
+          "name": "التصميم الجرافيكي",
+          "aliases": [
+            "Graphic Design"
+          ],
+          "name_en": "Graphic Design"
+        },
+        {
+          "name": "الاتصال والإعلام الرقمي",
+          "aliases": [
+            "Digital Communication and Media"
+          ],
+          "name_en": "Digital Communication and Media"
+        },
+        {
+          "name": "علم الإنسان",
+          "aliases": [
+            "Anthropology"
+          ],
+          "name_en": "Anthropology"
+        },
+        {
+          "name": "الدراسات الثقافية",
+          "aliases": [
+            "Cultural Studies"
+          ],
+          "name_en": "Cultural Studies"
+        },
+        {
+          "name": "الأمن الوطني",
+          "aliases": [
+            "National Security"
+          ],
+          "name_en": "National Security"
+        },
+        {
+          "name": "تصميم المحتوى الرقمي",
+          "aliases": [
+            "Digital Content Design"
+          ],
+          "name_en": "Digital Content Design"
+        },
+        {
+          "name": "اللغويات التطبيقية الإسبانية",
+          "aliases": [
+            "Applied Spanish Linguistics"
+          ],
+          "name_en": "Applied Spanish Linguistics"
+        },
+        {
+          "name": "اللغة الصينية",
+          "aliases": [
+            "Chinese Language"
+          ],
+          "name_en": "Chinese Language"
+        },
+        {
+          "name": "تكنولوجيا الإعلام الرقمي",
+          "aliases": [
+            "Digital Media Technology"
+          ],
+          "name_en": "Digital Media Technology"
+        },
+        {
+          "name": "الترجمة التحريرية والشفوية",
+          "aliases": [
+            "Written and Oral Translation"
+          ],
+          "name_en": "Written and Oral Translation"
+        }
+      ],
+      "name_en": "Humanities, Arts and Social Sciences"
+    },
+    {
+      "name": "التخصصات الزراعية والبيئية والعلوم الطبيعية",
+      "specialties": [
+        {
+          "name": "الأحياء",
+          "aliases": [
+            "Biology"
+          ],
+          "name_en": "Biology"
+        },
+        {
+          "name": "الكيمياء الحيوية",
+          "aliases": [
+            "Biochemistry"
+          ],
+          "name_en": "Biochemistry"
+        },
+        {
+          "name": "العلوم البيئية",
+          "aliases": [
+            "Environmental Sciences"
+          ],
+          "name_en": "Environmental Sciences"
+        },
+        {
+          "name": "الكيمياء",
+          "aliases": [
+            "Chemistry"
+          ],
+          "name_en": "Chemistry"
+        },
+        {
+          "name": "علوم الأرض",
+          "aliases": [
+            "الجيولوجيا",
+            "Earth Sciences"
+          ],
+          "name_en": "Earth Sciences"
+        },
+        {
+          "name": "الفيزياء",
+          "aliases": [
+            "الفيزياء والرياضيات",
+            "الفيزياء والفسيولوجيا",
+            "الفيزياء والكيمياء",
+            "Physics"
+          ],
+          "name_en": "Physics"
+        },
+        {
+          "name": "الرياضيات",
+          "aliases": [
+            "الرياضيات والأدب",
+            "الرياضيات والمنطق",
+            "الرياضيات وفلسفة العلوم",
+            "المنطق والرياضيات",
+            "Mathematics"
+          ],
+          "name_en": "Mathematics"
+        },
+        {
+          "name": "الإحصاء",
+          "aliases": [
+            "الإحصاء التطبيقي",
+            "Statistics"
+          ],
+          "name_en": "Statistics"
+        },
+        {
+          "name": "الإنتاج الحيواني",
+          "aliases": [
+            "Animal Production"
+          ],
+          "name_en": "Animal Production"
+        },
+        {
+          "name": "علوم وتكنولوجيا الغذاء",
+          "aliases": [
+            "Food Science and Technology"
+          ],
+          "name_en": "Food Science and Technology"
+        },
+        {
+          "name": "الهيدروجين الأخضر",
+          "aliases": [
+            "Green Hydrogen"
+          ],
+          "name_en": "Green Hydrogen"
+        },
+        {
+          "name": "الكيمياء التطبيقية",
+          "aliases": [
+            "Applied Chemistry"
+          ],
+          "name_en": "Applied Chemistry"
+        },
+        {
+          "name": "الكيمياء الصناعية",
+          "aliases": [
+            "Industrial Chemistry"
+          ],
+          "name_en": "Industrial Chemistry"
+        },
+        {
+          "name": "الكيمياء والتصنيع الدوائي",
+          "aliases": [
+            "Chemistry and Pharmaceutical Manufacturing"
+          ],
+          "name_en": "Chemistry and Pharmaceutical Manufacturing"
+        },
+        {
+          "name": "هندسة المعلومات المائية والبيئية",
+          "aliases": [
+            "Hydroinformatics and Environmental Engineering"
+          ],
+          "name_en": "Hydroinformatics and Environmental Engineering"
+        },
+        {
+          "name": "تقنيات الإنتاج الزراعي الذكي المستدام",
+          "aliases": [
+            "Smart Sustainable Agricultural Production Technologies"
+          ],
+          "name_en": "Smart Sustainable Agricultural Production Technologies"
+        },
+        {
+          "name": "الفيزياء التطبيقية",
+          "aliases": [
+            "Applied Physics"
+          ],
+          "name_en": "Applied Physics"
+        },
+        {
+          "name": "التشريح وعلم الأنسجة",
+          "aliases": [
+            "Anatomy and Histology"
+          ],
+          "name_en": "Anatomy and Histology"
+        },
+        {
+          "name": "الطب الشخصي والتكنولوجيا الحيوية الطبية",
+          "aliases": [
+            "Personalized Medicine and Medical Biotechnology"
+          ],
+          "name_en": "Personalized Medicine and Medical Biotechnology"
+        },
+        {
+          "name": "الزراعة",
+          "aliases": [
+            "Agriculture"
+          ],
+          "name_en": "Agriculture"
+        },
+        {
+          "name": "علوم البحار",
+          "aliases": [
+            "Marine Sciences"
+          ],
+          "name_en": "Marine Sciences"
+        },
+        {
+          "name": "علوم الحياة",
+          "aliases": [
+            "Life Sciences"
+          ],
+          "name_en": "Life Sciences"
+        },
+        {
+          "name": "علم الوراثة",
+          "aliases": [
+            "الوراثة",
+            "Genetics"
+          ],
+          "name_en": "Genetics"
+        },
+        {
+          "name": "التكنولوجيا الحيوية",
+          "aliases": [
+            "Biotechnology"
+          ],
+          "name_en": "Biotechnology"
+        },
+        {
+          "name": "علوم النبات",
+          "aliases": [
+            "Plant Sciences"
+          ],
+          "name_en": "Plant Sciences"
+        },
+        {
+          "name": "علوم الحيوان",
+          "aliases": [
+            "Animal Sciences"
+          ],
+          "name_en": "Animal Sciences"
+        },
+        {
+          "name": "وقاية النبات",
+          "aliases": [
+            "Plant Protection"
+          ],
+          "name_en": "Plant Protection"
+        },
+        {
+          "name": "البستنة والمحاصيل",
+          "aliases": [
+            "Horticulture and Crops"
+          ],
+          "name_en": "Horticulture and Crops"
+        },
+        {
+          "name": "الاقتصاد الزراعي",
+          "aliases": [
+            "Agricultural Economics"
+          ],
+          "name_en": "Agricultural Economics"
+        },
+        {
+          "name": "إدارة الموارد الطبيعية",
+          "aliases": [
+            "Natural Resources Management"
+          ],
+          "name_en": "Natural Resources Management"
+        },
+        {
+          "name": "الأرصاد الجوية",
+          "aliases": [
+            "Meteorology"
+          ],
+          "name_en": "Meteorology"
+        },
+        {
+          "name": "علم الفلك",
+          "aliases": [
+            "Astronomy"
+          ],
+          "name_en": "Astronomy"
+        },
+        {
+          "name": "علوم الفضاء",
+          "aliases": [
+            "Space Sciences"
+          ],
+          "name_en": "Space Sciences"
+        },
+        {
+          "name": "الثروة السمكية",
+          "aliases": [
+            "Fisheries"
+          ],
+          "name_en": "Fisheries"
+        },
+        {
+          "name": "الغابات والمراعي",
+          "aliases": [
+            "Forestry and Rangeland Management"
+          ],
+          "name_en": "Forestry and Rangeland Management"
+        }
+      ],
+      "name_en": "Agriculture, Environment and Natural Sciences"
+    },
+    {
+      "name": "التخصصات الخدمية والتقنية والمهنية",
+      "specialties": [
+        {
+          "name": "الفنادق والمطاعم والتموين",
+          "aliases": [
+            "Hotels, Restaurants and Catering"
+          ],
+          "name_en": "Hotels, Restaurants and Catering"
+        },
+        {
+          "name": "الرياضة",
+          "aliases": [
+            "Sports"
+          ],
+          "name_en": "Sports"
+        },
+        {
+          "name": "إدارة فنون الطهي",
+          "aliases": [
+            "Culinary Arts Management"
+          ],
+          "name_en": "Culinary Arts Management"
+        },
+        {
+          "name": "إدارة عمليات وكالات السفر",
+          "aliases": [
+            "Travel Agency Operations Management"
+          ],
+          "name_en": "Travel Agency Operations Management"
+        },
+        {
+          "name": "نظم المعلومات الجغرافية",
+          "aliases": [
+            "Geographic Information Systems"
+          ],
+          "name_en": "Geographic Information Systems"
+        },
+        {
+          "name": "مسح الطرق وتقدير الكميات",
+          "aliases": [
+            "Road Surveying and Quantity Estimation"
+          ],
+          "name_en": "Road Surveying and Quantity Estimation"
+        },
+        {
+          "name": "تكنولوجيا معالجة المياه العادمة",
+          "aliases": [
+            "Wastewater Treatment Technology"
+          ],
+          "name_en": "Wastewater Treatment Technology"
+        },
+        {
+          "name": "التربية البدنية والصحية",
+          "aliases": [
+            "Physical and Health Education"
+          ],
+          "name_en": "Physical and Health Education"
+        },
+        {
+          "name": "إدارة سلاسل التوريد",
+          "aliases": [
+            "Supply Chain Management"
+          ],
+          "name_en": "Supply Chain Management"
+        },
+        {
+          "name": "تكنولوجيا الطاقة",
+          "aliases": [
+            "Energy Technology"
+          ],
+          "name_en": "Energy Technology"
+        },
+        {
+          "name": "تكنولوجيا الطاقة الشمسية",
+          "aliases": [
+            "Solar Energy Technology"
+          ],
+          "name_en": "Solar Energy Technology"
+        },
+        {
+          "name": "تكنولوجيا التحكم الصناعي",
+          "aliases": [
+            "Industrial Control Technology"
+          ],
+          "name_en": "Industrial Control Technology"
+        },
+        {
+          "name": "تقنيات صيانة وترميم المباني التاريخية والتراثية",
+          "aliases": [
+            "Historic and Heritage Building Maintenance and Restoration Techniques"
+          ],
+          "name_en": "Historic and Heritage Building Maintenance and Restoration Techniques"
+        },
+        {
+          "name": "التصوير الرقمي المعماري التطبيقي",
+          "aliases": [
+            "Applied Architectural Digital Photography"
+          ],
+          "name_en": "Applied Architectural Digital Photography"
+        },
+        {
+          "name": "الإرشاد السياحي التفاعلي",
+          "aliases": [
+            "Interactive Tour Guiding"
+          ],
+          "name_en": "Interactive Tour Guiding"
+        },
+        {
+          "name": "التسويق الرقمي للمواقع التراثية",
+          "aliases": [
+            "Digital Marketing for Heritage Sites"
+          ],
+          "name_en": "Digital Marketing for Heritage Sites"
+        },
+        {
+          "name": "إدارة السياحة التراثية والفعاليات والضيافة",
+          "aliases": [
+            "Heritage Tourism, Events and Hospitality Management"
+          ],
+          "name_en": "Heritage Tourism, Events and Hospitality Management"
+        },
+        {
+          "name": "تقييم العقارات",
+          "aliases": [
+            "Real Estate Valuation"
+          ],
+          "name_en": "Real Estate Valuation"
+        },
+        {
+          "name": "المختبرات الطبية",
+          "aliases": [
+            "Medical Laboratories"
+          ],
+          "name_en": "Medical Laboratories"
+        },
+        {
+          "name": "تكنولوجيا إنتاج الملابس والإكسسوارات",
+          "aliases": [
+            "Apparel and Accessories Production Technology"
+          ],
+          "name_en": "Apparel and Accessories Production Technology"
+        },
+        {
+          "name": "الرعاية الصحية البيطرية",
+          "aliases": [
+            "Veterinary Health Care"
+          ],
+          "name_en": "Veterinary Health Care"
+        },
+        {
+          "name": "صيانة المركبات الكهربائية والهجينة",
+          "aliases": [
+            "Electric and Hybrid Vehicle Maintenance"
+          ],
+          "name_en": "Electric and Hybrid Vehicle Maintenance"
+        },
+        {
+          "name": "تقدير الكميات الهندسية",
+          "aliases": [
+            "Engineering Quantity Surveying"
+          ],
+          "name_en": "Engineering Quantity Surveying"
+        },
+        {
+          "name": "النقل البحري",
+          "aliases": [
+            "Maritime Transport"
+          ],
+          "name_en": "Maritime Transport"
+        },
+        {
+          "name": "التعليم المساند",
+          "aliases": [
+            "Learning Support"
+          ],
+          "name_en": "Learning Support"
+        },
+        {
+          "name": "التسويق الإلكتروني",
+          "aliases": [
+            "E-Marketing"
+          ],
+          "name_en": "E-Marketing"
+        },
+        {
+          "name": "إدارة الأعمال الإلكترونية",
+          "aliases": [
+            "E-Business Management"
+          ],
+          "name_en": "E-Business Management"
+        },
+        {
+          "name": "إدارة السجلات الطبية",
+          "aliases": [
+            "Medical Records Management"
+          ],
+          "name_en": "Medical Records Management"
+        },
+        {
+          "name": "الوسائط الرقمية",
+          "aliases": [
+            "Digital Media"
+          ],
+          "name_en": "Digital Media"
+        },
+        {
+          "name": "تكنولوجيا الأزياء والتريكو",
+          "aliases": [
+            "Fashion and Knitwear Technology"
+          ],
+          "name_en": "Fashion and Knitwear Technology"
+        },
+        {
+          "name": "الأرشفة الرقمية",
+          "aliases": [
+            "Digital Archiving"
+          ],
+          "name_en": "Digital Archiving"
+        },
+        {
+          "name": "التصميم الداخلي",
+          "aliases": [
+            "Interior Design"
+          ],
+          "name_en": "Interior Design"
+        },
+        {
+          "name": "تكنولوجيا صيانة المركبات",
+          "aliases": [
+            "Vehicle Maintenance Technology"
+          ],
+          "name_en": "Vehicle Maintenance Technology"
+        },
+        {
+          "name": "هندسة البناء والتشييد - الهندسة المدنية",
+          "aliases": [
+            "Building and Construction Engineering - Civil Engineering"
+          ],
+          "name_en": "Building and Construction Engineering - Civil Engineering"
+        },
+        {
+          "name": "إنتاج الوسائط الإبداعية - التصوير الرقمي",
+          "aliases": [
+            "Creative Media Production - Digital Photography"
+          ],
+          "name_en": "Creative Media Production - Digital Photography"
+        },
+        {
+          "name": "تطوير واختبار البرمجيات",
+          "aliases": [
+            "Software Development and Testing"
+          ],
+          "name_en": "Software Development and Testing"
+        },
+        {
+          "name": "علوم الحركة والرياضة التطبيقية",
+          "aliases": [
+            "Applied Kinesiology and Sport Sciences"
+          ],
+          "name_en": "Applied Kinesiology and Sport Sciences"
+        },
+        {
+          "name": "التدريب الرياضي",
+          "aliases": [
+            "Sports Coaching"
+          ],
+          "name_en": "Sports Coaching"
+        },
+        {
+          "name": "إدارة الضيافة والسياحة المستدامة",
+          "aliases": [
+            "السياحة والضيافة",
+            "Sustainable Hospitality and Tourism Management"
+          ],
+          "name_en": "Sustainable Hospitality and Tourism Management"
+        },
+        {
+          "name": "سلامة العمليات وهندسة الأنظمة الذكية",
+          "aliases": [
+            "Process Safety and Intelligent Systems Engineering"
+          ],
+          "name_en": "Process Safety and Intelligent Systems Engineering"
+        },
+        {
+          "name": "التحكيم في عقود البناء",
+          "aliases": [
+            "Construction Contracts Arbitration"
+          ],
+          "name_en": "Construction Contracts Arbitration"
+        },
+        {
+          "name": "إدارة التكنولوجيا والسياسات",
+          "aliases": [
+            "Technology Management and Policy"
+          ],
+          "name_en": "Technology Management and Policy"
+        },
+        {
+          "name": "الإرشاد للأشخاص ذوي الاحتياجات الخاصة وأسرهم",
+          "aliases": [
+            "Counseling for Persons with Special Needs and Their Families"
+          ],
+          "name_en": "Counseling for Persons with Special Needs and Their Families"
+        },
+        {
+          "name": "إدارة المنشآت الرياضية",
+          "aliases": [
+            "Sports Facilities Management"
+          ],
+          "name_en": "Sports Facilities Management"
+        },
+        {
+          "name": "علوم الطهي",
+          "aliases": [
+            "Culinary Science"
+          ],
+          "name_en": "Culinary Science"
+        },
+        {
+          "name": "التصميم الجرافيكي التطبيقي",
+          "aliases": [
+            "Applied Graphic Design"
+          ],
+          "name_en": "Applied Graphic Design"
+        },
+        {
+          "name": "إدارة الموانئ والشحن",
+          "aliases": [
+            "Port and Shipping Management"
+          ],
+          "name_en": "Port and Shipping Management"
+        },
+        {
+          "name": "السلامة والصحة المهنية",
+          "aliases": [
+            "Occupational Safety and Health"
+          ],
+          "name_en": "Occupational Safety and Health"
+        },
+        {
+          "name": "إدارة الكوارث والطوارئ",
+          "aliases": [
+            "Disaster and Emergency Management"
+          ],
+          "name_en": "Disaster and Emergency Management"
+        },
+        {
+          "name": "الخدمات اللوجستية والنقل",
+          "aliases": [
+            "Logistics and Transportation"
+          ],
+          "name_en": "Logistics and Transportation"
+        },
+        {
+          "name": "تقنيات التجميل والعناية الشخصية",
+          "aliases": [
+            "Beauty and Personal Care Technologies"
+          ],
+          "name_en": "Beauty and Personal Care Technologies"
+        },
+        {
+          "name": "اللياقة البدنية",
+          "aliases": [
+            "Physical Fitness"
+          ],
+          "name_en": "Physical Fitness"
+        },
+        {
+          "name": "تكنولوجيا التعليم لذوي اضطراب التوحد",
+          "aliases": [
+            "Educational Technology for Autism Spectrum Disorder"
+          ],
+          "name_en": "Educational Technology for Autism Spectrum Disorder"
+        }
+      ],
+      "name_en": "Service, Technical and Vocational Specialties"
+    },
+    {
+      "name": "تخصصات الدكتوراه",
+      "specialties": [
+        {
+          "name": "هندسة الحاسوب (دكتوراه)",
+          "aliases": [
+            "دكتوراه هندسة الحاسوب",
+            "هندسة الحاسوب - دكتوراه",
+            "Computer Engineering (PhD)"
+          ],
+          "name_en": "Computer Engineering (PhD)"
+        },
+        {
+          "name": "فلسفة الإعلام",
+          "aliases": [
+            "Philosophy of Media"
+          ],
+          "name_en": "Philosophy of Media"
+        },
+        {
+          "name": "فلسفة العمل الاجتماعي",
+          "aliases": [
+            "Philosophy of Social Work"
+          ],
+          "name_en": "Philosophy of Social Work"
+        },
+        {
+          "name": "ممارسة التمريض",
+          "aliases": [
+            "Nursing Practice"
+          ],
+          "name_en": "Nursing Practice"
+        }
+      ],
+      "name_en": "Doctoral Specialties"
+    }
+  ],
+  "specialties_total": 295
+}
