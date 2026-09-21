@@ -107,14 +107,30 @@ class _NameEntryScreenState extends State<NameEntryScreen> {
     final grandfatherName = _grandfatherNameController.text.trim();
     final familyName = _familyNameController.text.trim();
 
-    if (firstName.isEmpty || fatherName.isEmpty) {
+    final validName = RegExp(r"^[\p{L}][\p{L}\s'-]{1,59}$", unicode: true);
+    if (firstName.isEmpty || fatherName.isEmpty || familyName.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             isArabic
-                ? 'الرجاء إدخال الاسم الأول واسم الأب'
-                : "Please enter first name and father's name",
+                ? 'الاسم الأول واسم الأب واسم العائلة مطلوبة'
+                : "First, father and family names are required",
           ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (!validName.hasMatch(firstName) ||
+        !validName.hasMatch(fatherName) ||
+        !validName.hasMatch(familyName) ||
+        (grandfatherName.isNotEmpty && !validName.hasMatch(grandfatherName))) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(isArabic
+              ? 'استخدم أحرف الأسماء فقط، دون أرقام أو رموز غير مناسبة'
+              : 'Use name letters only, without numbers or invalid symbols'),
           backgroundColor: Colors.red,
         ),
       );
@@ -259,7 +275,7 @@ class _NameEntryScreenState extends State<NameEntryScreen> {
                   _NameField(
                     controller: _familyNameController,
                     label:
-                        isArabic ? 'اسم العائلة' : 'Family Name',
+                        isArabic ? 'اسم العائلة (مطلوب)' : 'Family Name (Required)',
                     icon: Icons.family_restroom_rounded,
                   ),
 

@@ -200,32 +200,18 @@ class _ProfilePictureScreenState
               .toString()
               .trim();
 
-      final grandfatherName =
-          (fullName['grandfatherName'] ?? '')
-              .toString()
-              .trim();
-
       final familyName =
           (fullName['familyName'] ?? '')
               .toString()
               .trim();
 
-      final nameParts = [
-        firstName,
-        fatherName,
-        grandfatherName,
-        familyName,
-      ].where(
-        (part) => part.isNotEmpty,
-      ).toList();
-
-      final fullNameText =
-          nameParts.isEmpty
-              ? (
-                  user.userMetadata?['name'] ??
-                  'مستخدم'
-                ).toString()
-              : nameParts.join(' ');
+      final displayFormat =
+          (widget.userData['displayNameFormat'] ?? 'first_family').toString();
+      final fullNameText = switch (displayFormat) {
+        'first_father' => '$firstName $fatherName'.trim(),
+        'full_three' => '$firstName $fatherName $familyName'.trim(),
+        _ => '$firstName $familyName'.trim(),
+      };
 
       // ========================================================
       // SAVE USER PROFILE
@@ -238,6 +224,8 @@ class _ProfilePictureScreenState
               (widget.userData['email'] ?? '')
                   .toString(),
           'name': fullNameText,
+          'display_name_format': displayFormat,
+          'onboarding_complete': true,
           'university':
               (widget.userData['university'] ?? '')
                   .toString(),

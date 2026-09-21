@@ -102,6 +102,8 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
+  String _verificationMethod = 'email';
+  String _displayNameFormat = 'first_family';
 
   bool _isValidEmail(String email) {
     final value = email.trim();
@@ -265,6 +267,66 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                                 fillColor:
                                     Colors.white.withAlpha(25),
                               ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          GlassContainer(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  isArabic ? 'اختر وسيلة التحقق' : 'Choose verification method',
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                ),
+                                RadioListTile<String>(
+                                  value: 'email',
+                                  groupValue: _verificationMethod,
+                                  activeColor: Colors.white,
+                                  title: Text(isArabic ? 'رمز إلى البريد الإلكتروني' : 'Code by email', style: const TextStyle(color: Colors.white)),
+                                  onChanged: (value) => setState(() => _verificationMethod = value!),
+                                ),
+                                RadioListTile<String>(
+                                  value: 'phone',
+                                  groupValue: _verificationMethod,
+                                  activeColor: Colors.white,
+                                  title: Text(isArabic ? 'رمز SMS إلى رقم الهاتف' : 'SMS code to phone', style: const TextStyle(color: Colors.white)),
+                                  onChanged: (value) => setState(() => _verificationMethod = value!),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          GlassContainer(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  isArabic ? 'كيف يظهر اسمك؟' : 'How should your name appear?',
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                ),
+                                RadioListTile<String>(
+                                  value: 'first_father', groupValue: _displayNameFormat,
+                                  activeColor: Colors.white,
+                                  title: Text(isArabic ? 'الاسم + اسم الأب' : 'First + father name', style: const TextStyle(color: Colors.white)),
+                                  onChanged: (value) => setState(() => _displayNameFormat = value!),
+                                ),
+                                RadioListTile<String>(
+                                  value: 'first_family', groupValue: _displayNameFormat,
+                                  activeColor: Colors.white,
+                                  title: Text(isArabic ? 'الاسم + اسم العائلة' : 'First + family name', style: const TextStyle(color: Colors.white)),
+                                  onChanged: (value) => setState(() => _displayNameFormat = value!),
+                                ),
+                                RadioListTile<String>(
+                                  value: 'full_three', groupValue: _displayNameFormat,
+                                  activeColor: Colors.white,
+                                  title: Text(isArabic ? 'الاسم + اسم الأب + اسم العائلة' : 'First + father + family name', style: const TextStyle(color: Colors.white)),
+                                  onChanged: (value) => setState(() => _displayNameFormat = value!),
+                                ),
+                              ],
                             ),
                           ),
 
@@ -467,6 +529,8 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                                 'gender': widget.gender,
                                 'email': email.toLowerCase(),
                                 'phone': phone,
+                                'verificationMethod': _verificationMethod,
+                                'displayNameFormat': _displayNameFormat,
                                 'address':
                                     _addressController.text.trim(),
                                 'university':

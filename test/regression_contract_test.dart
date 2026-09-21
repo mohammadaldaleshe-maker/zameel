@@ -363,6 +363,7 @@ void main() {
         'lib/services/media_cache_service_io.dart',
         'lib/services/post_media_storage_uploader_io.dart',
         'lib/widgets/cached_media_image_io.dart',
+        'lib/services/social_daily_file_service_io.dart',
       };
       final directIoImports = Directory('lib')
           .listSync(recursive: true)
@@ -377,6 +378,36 @@ void main() {
     test('control-flow-in-finally is no longer suppressed', () {
       final analysis = _read('analysis_options.yaml');
       expect(analysis, isNot(contains('control_flow_in_finally: ignore')));
+    });
+
+    test('verified registration cannot be skipped and keeps legal data private', () {
+      final migration = _read('supabase/migrations/076_registration_radio_college_challenge.sql');
+      final gate = _read('lib/features/auth_app.dart');
+      final verification = _read('lib/screens/auth/contact_verification_screen.dart');
+      expect(migration, contains('zameel_registration_profiles'));
+      expect(migration, contains('registration_owner_read'));
+      expect(migration, contains('registration_one_verified_channel'));
+      expect(gate, contains("profile['onboarding_complete'] != true"));
+      expect(verification, contains("'first_name'"));
+      expect(verification, contains("'father_name'"));
+      expect(verification, contains("'family_name'"));
+      expect(verification, contains("'verification_method'"));
+    });
+
+    test('radio and beautiful college remain independent destinations', () {
+      final home = _read('lib/features/home_feed.dart');
+      final radio = _read('lib/screens/social/zameel_radio_screen.dart');
+      final challenge = _read('lib/screens/social/beautiful_college_screen.dart');
+      final migration = _read('supabase/migrations/076_registration_radio_college_challenge.sql');
+      expect(home, contains("case 'radio':"));
+      expect(home, contains("case 'beautiful_college':"));
+      expect(radio, contains('duration_seconds'));
+      expect(radio, contains('zameel_mute_radio_author'));
+      expect(migration, contains("now()+interval '7 days'"));
+      expect(challenge, contains('zameel_toggle_college_like'));
+      expect(challenge, contains('download'));
+      expect(migration, contains('zameel_radio_two_reports'));
+      expect(migration, contains('zameel_college_two_reports'));
     });
   });
 

@@ -1,0 +1,282 @@
+import 'dart:async';
+
+import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:record/record.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../../theme/app_theme.dart';
+import '../../services/social_daily_file_service.dart';
+
+class ZameelRadioScreen extends StatefulWidget {
+  const ZameelRadioScreen({super.key});
+
+  @override
+  State<ZameelRadioScreen> createState() => _ZameelRadioScreenState();
+}
+
+class _ZameelRadioScreenState extends State<ZameelRadioScreen> {
+  final _recorder = AudioRecorder();
+  final _player = AudioPlayer();
+  List<Map<String, dynamic>> _posts = [];
+  bool _loading = true;
+  bool _recording = false;
+  bool _anonymous = false;
+  bool _publishing = false;
+  int _seconds = 0;
+  String? _recordPath;
+  String? _playingId;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+    _player.onPlayerComplete.listen((_) {
+      if (mounted) setState(() => _playingId = null);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _recorder.dispose();
+    _player.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    try {
+      final rows = await Supabase.instance.client.rpc('zameel_radio_feed');
+      if (mounted) setState(() => _posts = List<Map<String, dynamic>>.from(rows));
+    } catch (error) {
+      _notice('تعذر تحميل راديو زميل: $error');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _toggleRecording() async {
+    if (kIsWeb) {
+      _notice('التسجيل الصوتي متاح حاليًا على تطبيق الهاتف.');
+      return;
+    }
+    if (_recording) {
+      final path = await _recorder.stop();
+      _timer?.cancel();
+      setState(() {
+        _recording = false;
+        _recordPath = path;
+      });
+      return;
+    }
+    if (!await _recorder.hasPermission()) {
+      _notice('اسمح لـ Zameel باستخدام الميكروفون للتسجيل.');
+      return;
+    }
+    final directory = await getTemporaryDirectory();
+    final path = '${directory.path}/zameel_radio_${DateTime.now().millisecondsSinceEpoch}.m4a';
+    await _recorder.start(const RecordConfig(encoder: AudioEncoder.aacLc), path: path);
+    setState(() {
+      _seconds = 0;
+      _recordPath = null;
+      _recording = true;
+    });
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) async {
+      if (!mounted || !_recording) return;
+      setState(() => _seconds++);
+      if (_seconds >= 120) await _toggleRecording();
+    });
+  }
+
+  DateTime _nextReset() {
+    final now = DateTime.now();
+    var reset = DateTime(now.year, now.month, now.day, 7);
+    if (!reset.isAfter(now)) reset = reset.add(const Duration(days: 1));
+    return reset;
+  }
+
+  Future<void> _publish() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null || _recordPath == null || _seconds < 1 || _publishing) return;
+    setState(() => _publishing = true);
+    try {
+      final path = '${DateTime.now().microsecondsSinceEpoch}_${user.id.hashCode.abs()}.m4a';
+      final bytes = await SocialDailyFileService.readPathBytes(_recordPath!);
+      await Supabase.instance.client.storage.from('zameel-radio').uploadBinary(
+        path,
+        bytes,
+        fileOptions: const FileOptions(contentType: 'audio/mp4', upsert: false),
+      );
+      await Supabase.instance.client.from('zameel_radio_posts').insert({
+        'user_id': user.id,
+        'storage_path': path,
+        'duration_seconds': _seconds.clamp(1, 120),
+        'is_anonymous': _anonymous,
+        'expires_at': _nextReset().toUtc().toIso8601String(),
+      });
+      setState(() {
+        _recordPath = null;
+        _seconds = 0;
+      });
+      _notice('تم نشر المقطع حتى الساعة 7 صباحًا.', success: true);
+      await _load();
+    } catch (error) {
+      _notice('تعذر نشر التسجيل: $error');
+    } finally {
+      if (mounted) setState(() => _publishing = false);
+    }
+  }
+
+  Future<void> _play(Map<String, dynamic> post) async {
+    final id = post['id'].toString();
+    if (_playingId == id) {
+      await _player.stop();
+      setState(() => _playingId = null);
+      return;
+    }
+    try {
+      final url = await Supabase.instance.client.storage
+          .from('zameel-radio')
+          .createSignedUrl(post['storage_path'].toString(), 600);
+      await _player.play(UrlSource(url));
+      setState(() => _playingId = id);
+    } catch (_) {
+      _notice('تعذر تشغيل هذا المقطع.');
+    }
+  }
+
+  Future<void> _report(Map<String, dynamic> post) async {
+    final controller = TextEditingController();
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('الإبلاغ عن المقطع'),
+        content: TextField(controller: controller, maxLength: 300, decoration: const InputDecoration(hintText: 'سبب البلاغ')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, controller.text.trim()), child: const Text('إرسال')),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (reason == null || reason.length < 2) return;
+    try {
+      await Supabase.instance.client.from('zameel_radio_reports').insert({
+        'post_id': post['id'],
+        'reporter_id': Supabase.instance.client.auth.currentUser!.id,
+        'reason': reason,
+      });
+      _notice('تم استلام البلاغ. يُخفى المقطع تلقائيًا بعد بلاغين مستقلين.', success: true);
+      await _load();
+    } catch (_) {
+      _notice('سبق أن أبلغت عن هذا المقطع أو تعذر إرسال البلاغ.');
+    }
+  }
+
+  Future<void> _mute(Map<String, dynamic> post) async {
+    final me = Supabase.instance.client.auth.currentUser?.id;
+    if (me == null) return;
+    await Supabase.instance.client.rpc('zameel_mute_radio_author', params: {'p_post_id': post['id']});
+    _notice('تم كتم المشارك لمدة أسبوع.', success: true);
+    await _load();
+  }
+
+  void _notice(String text, {bool success = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(text), backgroundColor: success ? Colors.green : null));
+  }
+
+  String _duration(int seconds) => '${(seconds ~/ 60).toString().padLeft(2, '0')}:${(seconds % 60).toString().padLeft(2, '0')}';
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        appBar: AppBar(title: const Text('راديو Zameel')),
+        body: RefreshIndicator(
+          onRefresh: _load,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(gradient: AppTheme.signatureGradient, borderRadius: BorderRadius.circular(22)),
+                child: Column(
+                  children: [
+                    const Text('صوت الجامعة ليوم واحد', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900)),
+                    const SizedBox(height: 6),
+                    const Text('موقف مضحك أو قصة قصيرة بحد أقصى دقيقتين. تُحذف الدورة يوميًا الساعة 7 صباحًا.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white70)),
+                    const SizedBox(height: 14),
+                    Text(_duration(_seconds), style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 10),
+                    FilledButton.icon(
+                      style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: _recording ? Colors.red : AppTheme.primary),
+                      onPressed: _publishing ? null : _toggleRecording,
+                      icon: Icon(_recording ? Icons.stop_circle_rounded : Icons.mic_rounded),
+                      label: Text(_recording ? 'إيقاف التسجيل' : 'ابدأ التسجيل'),
+                    ),
+                    SwitchListTile(
+                      value: _anonymous,
+                      onChanged: (value) => setState(() => _anonymous = value),
+                      activeColor: Colors.white,
+                      title: const Text('النشر مجهول الهوية', style: TextStyle(color: Colors.white)),
+                    ),
+                    if (_recordPath != null)
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          onPressed: _publishing ? null : _publish,
+                          icon: const Icon(Icons.send_rounded),
+                          label: Text(_publishing ? 'جارٍ النشر...' : 'نشر المقطع'),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+              if (_loading)
+                const Center(child: CircularProgressIndicator())
+              else if (_posts.isEmpty)
+                const Padding(padding: EdgeInsets.all(32), child: Center(child: Text('لا توجد مقاطع في دورة اليوم بعد.')))
+              else
+                ..._posts.map((post) {
+                  final anonymous = post['is_anonymous'] == true;
+                  final name = anonymous ? 'زميل مجهول' : (post['author_name']?.toString() ?? 'زميل');
+                  final image = anonymous ? null : post['author_image']?.toString();
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: ListTile(
+                      leading: CircleAvatar(backgroundImage: image != null && image.isNotEmpty ? NetworkImage(image) : null, child: image == null || image.isEmpty ? const Icon(Icons.graphic_eq_rounded) : null),
+                      title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: Text('مدة المقطع ${_duration((post['duration_seconds'] as num?)?.toInt() ?? 0)}'),
+                      onTap: () => _play(post),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(onPressed: () => _play(post), icon: Icon(_playingId == post['id'].toString() ? Icons.stop_rounded : Icons.play_arrow_rounded)),
+                          PopupMenuButton<String>(
+                            onSelected: (value) => value == 'report' ? _report(post) : _mute(post),
+                            itemBuilder: (_) => const [
+                              PopupMenuItem(value: 'report', child: Text('إبلاغ')),
+                              PopupMenuItem(value: 'mute', child: Text('كتم أسبوعًا')),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

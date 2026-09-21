@@ -100,6 +100,7 @@ Future<void> _loadArcShortcuts() async {
 List<String> get _arcShortcutIdsAllowed => const <String>[
   'home', 'books', 'chat', 'colleagues', 'campus', 'meet', 'jobs',
   'calendar', 'polls', 'groups', 'ai', 'partners', 'profile', 'clips', 'lamma',
+  'radio', 'beautiful_college',
 ];
 
 Future<void> _saveArcShortcuts(List<String> ids) async {
@@ -116,6 +117,8 @@ List<_ArcItemData> _arcShortcutCatalog(bool ar) => <_ArcItemData>[
   _ArcItemData('chat', Icons.chat_bubble_rounded, ar ? 'الدردشة' : 'Chat', () => _openMenuDestination('chat')),
   _ArcItemData('colleagues', Icons.people_rounded, ar ? 'زملاء' : 'Colleagues', () => _openMenuDestination('colleagues')),
   _ArcItemData('lamma', Icons.diversity_2_rounded, ar ? 'لَمّة' : 'Lamma', () => _openMenuDestination('lamma')),
+  _ArcItemData('radio', Icons.podcasts_rounded, ar ? 'راديو Zameel' : 'Zameel Radio', () => _openMenuDestination('radio')),
+  _ArcItemData('beautiful_college', Icons.photo_camera_back_rounded, ar ? 'أجمل كلية' : 'Beautiful College', () => _openMenuDestination('beautiful_college')),
   _ArcItemData('campus', Icons.map_rounded, ar ? 'الحرم الجامعي' : 'Campus', () => _openMenuDestination('campus')),
   _ArcItemData('meet', Icons.video_call_rounded, ar ? 'اجتمع بالزملاء' : 'Meet', () => _openMenuDestination('meet')),
   _ArcItemData('jobs', Icons.work_rounded, ar ? 'وظائف' : 'Jobs', () => _openMenuDestination('jobs')),
@@ -144,6 +147,12 @@ void _openMenuDestination(String id) {
       break;
     case 'lamma':
       Navigator.push(context, MaterialPageRoute(builder: (_) => const LammaScreen()));
+      break;
+    case 'radio':
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const ZameelRadioScreen()));
+      break;
+    case 'beautiful_college':
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const BeautifulCollegeScreen()));
       break;
     case 'campus':
       Navigator.push(context, MaterialPageRoute(builder: (_) => const CampusScreen()));
@@ -1462,6 +1471,20 @@ Future<void> _createUserIfNotExists() async {
               title: isArabic ? 'لَمّة' : 'Lamma',
               onTap: () {
                 Navigator.push(context, MaterialPageRoute(builder: (_) => const LammaScreen()));
+              },
+            ),
+            _DrawerItem(
+              icon: Icons.podcasts_rounded,
+              title: isArabic ? 'راديو Zameel' : 'Zameel Radio',
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const ZameelRadioScreen()));
+              },
+            ),
+            _DrawerItem(
+              icon: Icons.photo_camera_back_rounded,
+              title: isArabic ? 'تحدي أجمل كلية' : 'Beautiful College Challenge',
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const BeautifulCollegeScreen()));
               },
             ),
             _DrawerItem(

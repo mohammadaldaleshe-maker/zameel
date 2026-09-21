@@ -45,12 +45,16 @@ class _AuthGateState extends State<AuthGate> {
 
       final profile = await supabase
           .from('users')
-          .select('university, college, department')
+          .select('university, college, department, onboarding_complete')
           .eq('id', user.id)
           .maybeSingle();
 
       if (profile == null) {
-        return const UniversityScreen();
+        return const RegistrationRequiredScreen();
+      }
+
+      if (profile['onboarding_complete'] != true) {
+        return const RegistrationRequiredScreen();
       }
 
       final universityName =
@@ -118,6 +122,55 @@ class _AuthGateState extends State<AuthGate> {
   void dispose() {
     _authSubscription?.cancel();
     super.dispose();
+  }
+}
+
+class RegistrationRequiredScreen extends StatelessWidget {
+  const RegistrationRequiredScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        body: Container(
+          decoration: const BoxDecoration(gradient: AppTheme.signatureGradient),
+          child: SafeArea(
+            child: Center(
+              child: Card(
+                margin: const EdgeInsets.all(24),
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.verified_user_outlined, size: 64, color: AppTheme.primary),
+                      const SizedBox(height: 16),
+                      const Text('التسجيل غير مكتمل', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+                      const SizedBox(height: 8),
+                      const Text('لا يمكن دخول التطبيق قبل إكمال الاسم وبيانات الجامعة والهاتف والبريد والتحقق من إحداهما.', textAlign: TextAlign.center),
+                      const SizedBox(height: 20),
+                      FilledButton(
+                        onPressed: () async {
+                          try {
+                            await Supabase.instance.client.rpc('delete_my_account');
+                          } catch (_) {
+                            await AuthSessionService.signOut();
+                          }
+                          if (!context.mounted) return;
+                          Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const WelcomeScreen()), (_) => false);
+                        },
+                        child: const Text('إعادة بدء التسجيل الآمن'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -428,4 +481,3 @@ String translateText(String arabicText, String lang) {
 // ============================================================
 // UNIVERSITY MODELS - جميع الجامعات الأردنية
 // ============================================================
-

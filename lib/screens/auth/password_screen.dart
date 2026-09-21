@@ -3,10 +3,9 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../providers/language_provider.dart';
-import 'profile_picture_screen.dart';
+import 'contact_verification_screen.dart';
 import 'package:zameel/theme/app_theme.dart';
 
 // ============================================================
@@ -226,248 +225,18 @@ class _PasswordScreenState extends State<PasswordScreen> {
       return;
     }
 
-    final email =
-        (widget.userData['email'] ?? '')
-            .toString()
-            .trim()
-            .toLowerCase();
-
-    if (email.isEmpty) {
-      _showMessage(
-        'البريد الإلكتروني غير موجود.',
-      );
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final supabase =
-          Supabase.instance.client;
-
-      final password =
-          _passwordController.text;
-
-      // ========================================================
-      // CREATE SUPABASE AUTH ACCOUNT ONCE
-      // ========================================================
-
-      final response =
-          await supabase.auth.signUp(
-        email: email,
-        password: password,
-        data: {
-          'name': _buildFullName(),
-          'role':
-              (widget.userData['role'] ?? '').toString() == 'business'
-                  ? 'company'
-                  : (widget.userData['role'] ?? 'student').toString(),
-          'gender':
-              (widget.userData['role'] ?? '').toString() == 'business' ||
-                      (widget.userData['role'] ?? '').toString() == 'company'
-                  ? 'male'
-                  : (widget.userData['gender'] ?? '').toString().trim().isEmpty
-                      ? null
-                      : (widget.userData['gender'] ?? '').toString(),
-        },
-      );
-
-      final user = response.user;
-
-      if (user == null) {
-        throw const AuthException(
-          'تعذر إنشاء حساب المستخدم.',
-        );
-      }
-
-      // ========================================================
-      // DEVELOPMENT MODE
-      //
-      // Confirm email = OFF
-      // We expect a session immediately.
-      // ========================================================
-
-      if (response.session == null) {
-        throw const AuthException(
-          'تم إنشاء الحساب، لكن الجلسة لم تُنشأ. '
-          'تأكد من أن Confirm email معطل في Supabase.',
-        );
-      }
-
-      // ========================================================
-      // PREPARE USERS DATA
-      // ========================================================
-
-      final fullName = _buildFullName();
-
-      await supabase.from('users').upsert(
-        {
-          'id': user.id,
-          'email': user.email ?? email,
-          'name': fullName,
-          'university':
-              (widget.userData['university'] ?? '')
-                  .toString(),
-          'college':
-              (widget.userData['college'] ?? '')
-                  .toString(),
-          'department':
-              (widget.userData['department'] ?? '')
-                  .toString(),
-          'role':
-              (widget.userData['role'] ?? '').toString() == 'business'
-                  ? 'company'
-                  : (widget.userData['role'] ?? 'student').toString(),
-          'gender':
-              (widget.userData['role'] ?? '').toString() == 'business' ||
-                      (widget.userData['role'] ?? '').toString() == 'company'
-                  ? 'male'
-                  : (widget.userData['gender'] ?? '').toString().trim().isEmpty
-                      ? null
-                      : (widget.userData['gender'] ?? '').toString(),
-        },
-        onConflict: 'id',
-      );
-
-      if (!mounted) return;
-
-      // ========================================================
-      // SUCCESS
-      // ========================================================
-
-      _showMessage(
-        'تم إنشاء حسابك بنجاح',
-        success: true,
-      );
-
-      await Future.delayed(
-        const Duration(milliseconds: 400),
-      );
-
-      if (!mounted) return;
-
-      // ========================================================
-      // GO TO PROFILE PICTURE
-      // ========================================================
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) =>
-              ProfilePictureScreen(
-            userData: {
-              ...widget.userData,
-              'email': email,
-              'supabase_user_id':
-                  user.id,
-              'email_verified': false,
-            },
-          ),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ContactVerificationScreen(
+          userData: {
+            ...widget.userData,
+            'password': _passwordController.text,
+            'fullDisplayName': _buildFullName(),
+          },
         ),
-      );
-    } on AuthException catch (e) {
-      if (!mounted) return;
-
-      _showMessage(
-        _translateAuthError(e.message),
-      );
-    } catch (e) {
-      if (!mounted) return;
-
-      _showMessage(
-        'حدث خطأ أثناء إنشاء الحساب.',
-      );
-
-      debugPrint(
-        'Create account error: $e',
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  // ============================================================
-  // SHOW MESSAGE
-  // ============================================================
-
-  void _showMessage(
-    String message, {
-    bool success = false,
-  }) {
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(
-            message,
-            textAlign: TextAlign.center,
-          ),
-          backgroundColor:
-              success
-                  ? Colors.green.shade700
-                  : Colors.red.shade700,
-          behavior:
-              SnackBarBehavior.floating,
-          duration:
-              const Duration(seconds: 3),
-        ),
-      );
-  }
-
-  // ============================================================
-  // AUTH ERROR TRANSLATION
-  // ============================================================
-
-  String _translateAuthError(
-    String message,
-  ) {
-    final lower =
-        message.toLowerCase();
-
-    if (lower.contains(
-          'already registered',
-        ) ||
-        lower.contains(
-          'already exists',
-        ) ||
-        lower.contains(
-          'user already',
-        )) {
-      return 'هذا البريد الإلكتروني مستخدم بالفعل.';
-    }
-
-    if (lower.contains(
-      'invalid email',
-    )) {
-      return 'البريد الإلكتروني غير صالح.';
-    }
-
-    if (lower.contains(
-      'password',
-    ) &&
-        lower.contains(
-          'weak',
-        )) {
-      return 'كلمة المرور ضعيفة.';
-    }
-
-    if (lower.contains(
-      'rate limit',
-    )) {
-      return 'تم تجاوز عدد المحاولات. حاول لاحقًا.';
-    }
-
-    return message.isNotEmpty
-        ? message
-        : 'حدث خطأ غير متوقع.';
+      ),
+    );
   }
 
   // ============================================================

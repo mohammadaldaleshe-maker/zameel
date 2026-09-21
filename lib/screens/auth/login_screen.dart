@@ -212,12 +212,12 @@ class _LoginScreenState extends State<LoginScreen> {
   // ============================================================
 
   Future<void> _login() async {
-    final email = _emailController.text.trim();
+    final identifier = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
-    if (email.isEmpty || password.isEmpty) {
+    if (identifier.isEmpty || password.isEmpty) {
       Fluttertoast.showToast(
-        msg: '❌ الرجاء إدخال البريد الإلكتروني وكلمة المرور',
+        msg: '❌ أدخل البريد الإلكتروني أو رقم الهاتف وكلمة المرور',
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
         backgroundColor: Colors.red,
@@ -235,9 +235,12 @@ class _LoginScreenState extends State<LoginScreen> {
       // SUPABASE LOGIN
       // ========================================================
 
-      final response = await Supabase.instance.client.auth
-          .signInWithPassword(
-        email: email,
+      var normalizedPhone = identifier.replaceAll(RegExp(r'[^0-9+]'), '');
+      if (normalizedPhone.startsWith('00962')) normalizedPhone = '+962${normalizedPhone.substring(5)}';
+      if (normalizedPhone.startsWith('07')) normalizedPhone = '+962${normalizedPhone.substring(1)}';
+      final response = await Supabase.instance.client.auth.signInWithPassword(
+        email: identifier.contains('@') ? identifier.toLowerCase() : null,
+        phone: identifier.contains('@') ? null : normalizedPhone,
         password: password,
       );
 
@@ -416,14 +419,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       decoration: InputDecoration(
                         labelText: isArabic
-                            ? 'البريد الإلكتروني'
-                            : 'Email',
+                            ? 'البريد الإلكتروني أو رقم الهاتف'
+                            : 'Email or phone number',
                         labelStyle:
                             const TextStyle(
                           color: Colors.white70,
                         ),
                         prefixIcon: const Icon(
-                          Icons.email_rounded,
+                          Icons.alternate_email_rounded,
                           color: Colors.white70,
                         ),
                         border: OutlineInputBorder(
