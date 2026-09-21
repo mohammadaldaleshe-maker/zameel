@@ -99,7 +99,7 @@ Future<void> _loadArcShortcuts() async {
 
 List<String> get _arcShortcutIdsAllowed => const <String>[
   'home', 'books', 'chat', 'colleagues', 'campus', 'meet', 'jobs',
-  'calendar', 'polls', 'groups', 'ai', 'partners', 'profile', 'clips',
+  'calendar', 'polls', 'groups', 'ai', 'partners', 'profile', 'clips', 'lamma',
 ];
 
 Future<void> _saveArcShortcuts(List<String> ids) async {
@@ -115,6 +115,7 @@ List<_ArcItemData> _arcShortcutCatalog(bool ar) => <_ArcItemData>[
   _ArcItemData('books', Icons.menu_book_rounded, ar ? 'الكتب' : 'Books', () => _openMenuDestination('books')),
   _ArcItemData('chat', Icons.chat_bubble_rounded, ar ? 'الدردشة' : 'Chat', () => _openMenuDestination('chat')),
   _ArcItemData('colleagues', Icons.people_rounded, ar ? 'زملاء' : 'Colleagues', () => _openMenuDestination('colleagues')),
+  _ArcItemData('lamma', Icons.diversity_2_rounded, ar ? 'لَمّة' : 'Lamma', () => _openMenuDestination('lamma')),
   _ArcItemData('campus', Icons.map_rounded, ar ? 'الحرم الجامعي' : 'Campus', () => _openMenuDestination('campus')),
   _ArcItemData('meet', Icons.video_call_rounded, ar ? 'اجتمع بالزملاء' : 'Meet', () => _openMenuDestination('meet')),
   _ArcItemData('jobs', Icons.work_rounded, ar ? 'وظائف' : 'Jobs', () => _openMenuDestination('jobs')),
@@ -140,6 +141,9 @@ void _openMenuDestination(String id) {
       break;
     case 'colleagues':
       Navigator.push(context, MaterialPageRoute(builder: (_) => const FriendsScreen()));
+      break;
+    case 'lamma':
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const LammaScreen()));
       break;
     case 'campus':
       Navigator.push(context, MaterialPageRoute(builder: (_) => const CampusScreen()));
@@ -1451,6 +1455,13 @@ Future<void> _createUserIfNotExists() async {
                     builder: (_) => const FriendsScreen(),
                   ),
                 );
+              },
+            ),
+            _DrawerItem(
+              icon: Icons.diversity_2_rounded,
+              title: isArabic ? 'لَمّة' : 'Lamma',
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const LammaScreen()));
               },
             ),
             _DrawerItem(

@@ -41,6 +41,7 @@ import 'screens/saved_posts_screen.dart';
 import 'screens/stats_screen.dart';
 import 'screens/social/zameel_social_studio.dart';
 import 'screens/social/public_clips_strip.dart';
+import 'screens/social/lamma_screen.dart';
 import 'screens/chat/contact_calls_screen.dart';
 import 'screens/polls_screen.dart';
 import 'screens/private_groups_screen.dart';

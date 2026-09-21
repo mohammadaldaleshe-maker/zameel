@@ -6,6 +6,32 @@ import 'package:zameel/services/secure_media_service.dart';
 String _read(String path) => File(path).readAsStringSync();
 
 void main() {
+  group('Zameel 075 private social discovery contracts', () {
+    test('Insijam is opt-in and private by default', () {
+      final sql = _read('supabase/migrations/075_lamma_social_discovery.sql');
+      final screen = _read('lib/screens/social/lamma_screen.dart');
+      final profile = _read('lib/screens/profile/profile_screen.dart');
+
+      expect(sql, contains('enabled boolean not null default false'));
+      expect(sql, contains('social_profile_self'));
+      expect(sql, isNot(contains('social_profile_public')));
+      expect(sql, contains("decision in ('like','pass')"));
+      expect(sql, contains('revoke all on function public.get_social_discovery_candidates'));
+      expect(screen, contains("'enabled':true"));
+      expect(screen, contains("'enabled':false"));
+      expect(screen, contains("matched=await db.rpc('react_social_discovery'"));
+      expect(profile, isNot(contains('social_discovery_profiles')));
+    });
+
+    test('Lamma and Insijam remain separate experiences', () {
+      final screen = _read('lib/screens/social/lamma_screen.dart');
+      expect(screen, contains('TabController(length:2'));
+      expect(screen, contains('join_social_lamma'));
+      expect(screen, contains('get_social_discovery_candidates'));
+      expect(screen, contains('Adults 18+ only'));
+    });
+  });
+
   group('Zameel 072 publishing regression contracts', () {
     test('home photo and video shortcuts remain multi-select', () {
       final home = _read('lib/features/home_feed.dart');
