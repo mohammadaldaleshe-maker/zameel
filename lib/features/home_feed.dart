@@ -2168,21 +2168,34 @@ Future<void> _createUserIfNotExists() async {
             color: Colors.white24,
             height: 28,
           ),
-          Center(
-            child: _CreateAction(
-              icon: Icons.menu_book_outlined,
-              text: Translations.translate(
-                'feed_book',
-                languageProvider.currentLanguage,
-              ),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const BooksScreen(),
-                  ),
-                );
-              },
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _CreateAction(
+                  icon: Icons.menu_book_outlined,
+                  text: Translations.translate('feed_book', languageProvider.currentLanguage),
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BooksScreen())),
+                ),
+                const SizedBox(width: 14),
+                _CreateAction(
+                  icon: Icons.groups_rounded,
+                  text: languageProvider.isArabic ? 'لَمّة' : 'Lamma',
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LammaScreen())),
+                ),
+                const SizedBox(width: 14),
+                _CreateAction(
+                  icon: Icons.podcasts_rounded,
+                  text: languageProvider.isArabic ? 'راديو زميل' : 'Zameel Radio',
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ZameelRadioScreen())),
+                ),
+                const SizedBox(width: 14),
+                _CreateAction(
+                  icon: Icons.photo_camera_back_rounded,
+                  text: languageProvider.isArabic ? 'أجمل كلية' : 'Beautiful College',
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BeautifulCollegeScreen())),
+                ),
+              ],
             ),
           ),
         ],

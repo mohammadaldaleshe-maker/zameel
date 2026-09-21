@@ -1,3 +1,4 @@
+import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -14,10 +15,12 @@ import '../platform/video_controller_factory.dart';
 /// soon as the current vertical page is replaced.
 class VerticalAutoplayVideoPlayer extends StatefulWidget {
   final String videoUrl;
+  final ValueChanged<bool>? onControlsVisibilityChanged;
 
   const VerticalAutoplayVideoPlayer({
     super.key,
     required this.videoUrl,
+    this.onControlsVisibilityChanged,
   });
 
   @override
@@ -35,6 +38,8 @@ class _VerticalAutoplayVideoPlayerState
   bool _appActive = true;
   bool _routeCurrent = true;
   bool _syncScheduled = false;
+  bool _controlsVisible = true;
+  Timer? _controlsTimer;
 
   bool get _shouldPlay =>
       _initialized && _appActive && _routeCurrent && !_pausedByUser;
@@ -85,6 +90,7 @@ class _VerticalAutoplayVideoPlayerState
     try {
       await previous?.pause();
     } catch (_) {}
+    previous?.removeListener(_refreshProgress);
     await previous?.dispose();
     if (mounted) setState(() {});
     await _initialize();
@@ -114,6 +120,7 @@ class _VerticalAutoplayVideoPlayerState
       await controller.initialize();
       await controller.setLooping(true);
       await controller.setVolume(_muted ? 0 : 1);
+      controller.addListener(_refreshProgress);
       if (!mounted || _controller != controller) {
         await controller.dispose();
         return;
@@ -121,6 +128,7 @@ class _VerticalAutoplayVideoPlayerState
       _initialized = true;
       if (_shouldPlay) await controller.play();
       if (mounted) setState(() {});
+      _scheduleControlsHide();
     } catch (error) {
       if (_controller == controller) {
         try {
@@ -161,12 +169,50 @@ class _VerticalAutoplayVideoPlayerState
       if (controller.value.isPlaying) {
         _pausedByUser = true;
         await controller.pause();
+        _setControlsVisible(true);
       } else {
         _pausedByUser = false;
         if (_appActive && _routeCurrent) await controller.play();
+        _scheduleControlsHide();
       }
       if (mounted) setState(() {});
     } catch (_) {}
+  }
+
+  void _refreshProgress() {
+    if (mounted) setState(() {});
+  }
+
+  void _setControlsVisible(bool visible) {
+    _controlsTimer?.cancel();
+    if (_controlsVisible != visible && mounted) setState(() => _controlsVisible = visible);
+    widget.onControlsVisibilityChanged?.call(visible);
+  }
+
+  void _scheduleControlsHide() {
+    _controlsTimer?.cancel();
+    if (_controller?.value.isPlaying != true) return;
+    _controlsTimer = Timer(const Duration(seconds: 2), () => _setControlsVisible(false));
+  }
+
+  void _toggleControls() {
+    if (_controlsVisible) {
+      _setControlsVisible(false);
+    } else {
+      _setControlsVisible(true);
+      _scheduleControlsHide();
+    }
+  }
+
+  String _time(Duration value) {
+    final minutes = value.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = value.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return value.inHours > 0 ? '${value.inHours}:$minutes:$seconds' : '$minutes:$seconds';
+  }
+
+  Duration _remaining(VideoPlayerController controller) {
+    final value = controller.value.duration - controller.value.position;
+    return value.isNegative ? Duration.zero : value;
   }
 
   Future<void> _toggleMute() async {
@@ -180,8 +226,10 @@ class _VerticalAutoplayVideoPlayerState
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _controlsTimer?.cancel();
     final controller = _controller;
     _controller = null;
+    controller?.removeListener(_refreshProgress);
     controller?.pause();
     controller?.dispose();
     super.dispose();
@@ -214,11 +262,19 @@ class _VerticalAutoplayVideoPlayerState
         : controller.value.aspectRatio;
     return AspectRatio(
       aspectRatio: ratio,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          VideoPlayer(controller),
-          Center(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: _toggleControls,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            VideoPlayer(controller),
+            AnimatedOpacity(
+              opacity: _controlsVisible ? 1 : 0,
+              duration: const Duration(milliseconds: 180),
+              child: IgnorePointer(
+                ignoring: !_controlsVisible,
+                child: Center(
             child: Material(
               color: Colors.black45,
               shape: const CircleBorder(),
@@ -235,17 +291,51 @@ class _VerticalAutoplayVideoPlayerState
               ),
             ),
           ),
-          Positioned(
+              ),
+            ),
+            Positioned(
             right: 8,
-            bottom: 8,
-            child: IconButton.filledTonal(
-              onPressed: _toggleMute,
-              icon: Icon(
-                _muted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
+            bottom: 42,
+            child: AnimatedOpacity(
+              opacity: _controlsVisible ? 1 : 0,
+              duration: const Duration(milliseconds: 180),
+              child: IgnorePointer(
+                ignoring: !_controlsVisible,
+                child: IconButton.filledTonal(
+                  onPressed: _toggleMute,
+                  icon: Icon(_muted ? Icons.volume_off_rounded : Icons.volume_up_rounded),
+                ),
               ),
             ),
           ),
-        ],
+            Positioned(
+              left: 8,
+              right: 8,
+              bottom: 4,
+              child: AnimatedOpacity(
+                opacity: _controlsVisible ? 1 : 0,
+                duration: const Duration(milliseconds: 180),
+                child: IgnorePointer(
+                  ignoring: !_controlsVisible,
+                  child: Row(
+                    children: [
+                      Text(_time(controller.value.position), style: const TextStyle(color: Colors.white, fontSize: 11)),
+                      Expanded(
+                        child: VideoProgressIndicator(
+                          controller,
+                          allowScrubbing: true,
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                          colors: const VideoProgressColors(playedColor: Colors.deepPurpleAccent, bufferedColor: Colors.white38, backgroundColor: Colors.white24),
+                        ),
+                      ),
+                      Text('-${_time(_remaining(controller))}', style: const TextStyle(color: Colors.white, fontSize: 11)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

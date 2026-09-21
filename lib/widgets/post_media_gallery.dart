@@ -83,36 +83,10 @@ class _PostMediaGalleryState extends State<PostMediaGallery> {
     super.dispose();
   }
 
-  void _openDefault(PostMediaItem item) {
+  void _openDefault(List<PostMediaItem> items, int index) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => Scaffold(
-          backgroundColor: Colors.black,
-          appBar: AppBar(
-            backgroundColor: Colors.black,
-            foregroundColor: Colors.white,
-          ),
-          body: Center(
-            child: item.isVideo
-                ? Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    child: VideoPlayerWidget(videoUrl: item.url),
-                  )
-                : InteractiveViewer(
-                    minScale: .8,
-                    maxScale: 5,
-                    child: CachedMediaImage(
-                      url: item.url,
-                      fit: BoxFit.contain,
-                      fallback: const Icon(
-                        Icons.broken_image_outlined,
-                        color: Colors.white54,
-                        size: 58,
-                      ),
-                    ),
-                  ),
-          ),
-        ),
+        builder: (_) => _FullScreenPostMedia(items: items, initialIndex: index),
       ),
     );
   }
@@ -141,7 +115,7 @@ class _PostMediaGalleryState extends State<PostMediaGallery> {
                       if (widget.onOpen != null) {
                         widget.onOpen!(item, index);
                       } else {
-                        _openDefault(item);
+                        _openDefault(items, index);
                       }
                     },
                     child: item.isVideo
@@ -252,6 +226,103 @@ class _PostMediaGalleryState extends State<PostMediaGallery> {
                         borderRadius: BorderRadius.circular(99),
                       ),
                     ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FullScreenPostMedia extends StatefulWidget {
+  final List<PostMediaItem> items;
+  final int initialIndex;
+
+  const _FullScreenPostMedia({required this.items, required this.initialIndex});
+
+  @override
+  State<_FullScreenPostMedia> createState() => _FullScreenPostMediaState();
+}
+
+class _FullScreenPostMediaState extends State<_FullScreenPostMedia> {
+  late final PageController _pages;
+  late int _index;
+  bool _controlsVisible = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _index = widget.initialIndex;
+    _pages = PageController(initialPage: _index);
+  }
+
+  @override
+  void dispose() {
+    _pages.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            PageView.builder(
+              controller: _pages,
+              itemCount: widget.items.length,
+              onPageChanged: (value) => setState(() {
+                _index = value;
+                _controlsVisible = true;
+              }),
+              itemBuilder: (_, index) {
+                final item = widget.items[index];
+                if (item.isVideo) {
+                  return Center(
+                    child: VideoPlayerWidget(
+                      videoUrl: item.url,
+                      onControlsVisibilityChanged: (visible) {
+                        if (mounted && _controlsVisible != visible) setState(() => _controlsVisible = visible);
+                      },
+                    ),
+                  );
+                }
+                return GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => setState(() => _controlsVisible = !_controlsVisible),
+                  child: Center(
+                    child: InteractiveViewer(
+                      minScale: .8,
+                      maxScale: 5,
+                      child: CachedMediaImage(
+                        url: item.url,
+                        fit: BoxFit.contain,
+                        fallback: const Icon(Icons.broken_image_outlined, color: Colors.white54, size: 58),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+            if (_controlsVisible)
+              PositionedDirectional(
+                top: 4,
+                start: 4,
+                child: IconButton.filledTonal(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close_rounded)),
+              ),
+            if (_controlsVisible && widget.items.length > 1)
+              PositionedDirectional(
+                top: 12,
+                end: 12,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(18)),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    child: Text('${_index + 1}/${widget.items.length}', style: const TextStyle(color: Colors.white)),
                   ),
                 ),
               ),

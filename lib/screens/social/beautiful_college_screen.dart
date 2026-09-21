@@ -34,7 +34,7 @@ class _BeautifulCollegeScreenState extends State<BeautifulCollegeScreen> {
       final client = Supabase.instance.client;
       final rows = await client
           .from('zameel_college_entries')
-          .select('id,user_id,image_path,caption,place_name,university,like_count,cycle_day,created_at,users(name,profile_image)')
+          .select('id,user_id,image_path,caption,place_name,university,like_count,cycle_day,created_at,users!zameel_college_entries_user_id_fkey(name,profile_image)')
           .order('like_count', ascending: false)
           .order('created_at');
       final likes = await client.from('zameel_college_likes').select('entry_id').eq('user_id', client.auth.currentUser!.id);
@@ -62,7 +62,8 @@ class _BeautifulCollegeScreenState extends State<BeautifulCollegeScreen> {
         });
       }
     } catch (error) {
-      _notice('تعذر تحميل التحدي: $error');
+      debugPrint('BeautifulCollege load failed: $error');
+      _notice('تعذر تحميل صور التحدي. حاول مرة أخرى.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }

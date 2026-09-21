@@ -1,4 +1,6 @@
 
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
@@ -8,8 +10,9 @@ import '../platform/video_controller_factory.dart';
 
 class VideoPlayerWidget extends StatefulWidget {
   final String videoUrl;
+  final ValueChanged<bool>? onControlsVisibilityChanged;
 
-  const VideoPlayerWidget({super.key, required this.videoUrl});
+  const VideoPlayerWidget({super.key, required this.videoUrl, this.onControlsVisibilityChanged});
 
   @override
   State<VideoPlayerWidget> createState() => _VideoPlayerWidgetState();
@@ -20,6 +23,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   Object? _error;
   bool _isInitialized = false;
   bool _muted = false;
+  bool _controlsVisible = true;
+  Timer? _controlsTimer;
 
   @override
   void initState() {
@@ -45,8 +50,10 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       _controller = controller;
       await controller.initialize();
       await controller.setLooping(true);
+      controller.addListener(_refreshProgress);
       if (!mounted) return;
       setState(() => _isInitialized = true);
+      _scheduleControlsHide();
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = e);
@@ -55,6 +62,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   @override
   void dispose() {
+    _controlsTimer?.cancel();
+    _controller?.removeListener(_refreshProgress);
     _controller?.dispose();
     super.dispose();
   }
@@ -65,13 +74,56 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     try {
       if (controller.value.isPlaying) {
         await controller.pause();
+        _showControls(permanent: true);
       } else {
         await controller.play();
+        _scheduleControlsHide();
       }
       if (mounted) setState(() {});
     } catch (e) {
       if (mounted) setState(() => _error = e);
     }
+  }
+
+  void _refreshProgress() {
+    if (mounted) setState(() {});
+  }
+
+  void _showControls({bool permanent = false}) {
+    _controlsTimer?.cancel();
+    if (mounted) setState(() => _controlsVisible = true);
+    widget.onControlsVisibilityChanged?.call(true);
+    if (!permanent) _scheduleControlsHide();
+  }
+
+  void _scheduleControlsHide() {
+    _controlsTimer?.cancel();
+    if (_controller?.value.isPlaying != true) return;
+    _controlsTimer = Timer(const Duration(seconds: 2), () {
+      if (mounted) setState(() => _controlsVisible = false);
+      widget.onControlsVisibilityChanged?.call(false);
+    });
+  }
+
+  void _toggleControls() {
+    if (_controlsVisible) {
+      _controlsTimer?.cancel();
+      setState(() => _controlsVisible = false);
+      widget.onControlsVisibilityChanged?.call(false);
+    } else {
+      _showControls();
+    }
+  }
+
+  String _time(Duration value) {
+    final minutes = value.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = value.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return value.inHours > 0 ? '${value.inHours}:$minutes:$seconds' : '$minutes:$seconds';
+  }
+
+  Duration _remaining(VideoPlayerController controller) {
+    final value = controller.value.duration - controller.value.position;
+    return value.isNegative ? Duration.zero : value;
   }
 
   Future<void> _toggleMute() async {
@@ -112,11 +164,19 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
     return AspectRatio(
       aspectRatio: controller.value.aspectRatio == 0 ? 16 / 9 : controller.value.aspectRatio,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          VideoPlayer(controller),
-          Center(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: _toggleControls,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            VideoPlayer(controller),
+            AnimatedOpacity(
+              opacity: _controlsVisible ? 1 : 0,
+              duration: const Duration(milliseconds: 180),
+              child: IgnorePointer(
+                ignoring: !_controlsVisible,
+                child: Center(
             child: Material(
               color: Colors.black45,
               shape: const CircleBorder(),
@@ -131,15 +191,51 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
               ),
             ),
           ),
-          Positioned(
+              ),
+            ),
+            Positioned(
             right: 8,
-            bottom: 8,
-            child: IconButton.filledTonal(
-              onPressed: _toggleMute,
-              icon: Icon(_muted ? Icons.volume_off_rounded : Icons.volume_up_rounded),
+            bottom: 42,
+            child: AnimatedOpacity(
+              opacity: _controlsVisible ? 1 : 0,
+              duration: const Duration(milliseconds: 180),
+              child: IgnorePointer(
+                ignoring: !_controlsVisible,
+                child: IconButton.filledTonal(
+                  onPressed: _toggleMute,
+                  icon: Icon(_muted ? Icons.volume_off_rounded : Icons.volume_up_rounded),
+                ),
+              ),
             ),
           ),
-        ],
+            Positioned(
+              left: 8,
+              right: 8,
+              bottom: 4,
+              child: AnimatedOpacity(
+                opacity: _controlsVisible ? 1 : 0,
+                duration: const Duration(milliseconds: 180),
+                child: IgnorePointer(
+                  ignoring: !_controlsVisible,
+                  child: Row(
+                    children: [
+                      Text(_time(controller.value.position), style: const TextStyle(color: Colors.white, fontSize: 11)),
+                      Expanded(
+                        child: VideoProgressIndicator(
+                          controller,
+                          allowScrubbing: true,
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                          colors: const VideoProgressColors(playedColor: AppTheme.primary, bufferedColor: Colors.white38, backgroundColor: Colors.white24),
+                        ),
+                      ),
+                      Text('-${_time(_remaining(controller))}', style: const TextStyle(color: Colors.white, fontSize: 11)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

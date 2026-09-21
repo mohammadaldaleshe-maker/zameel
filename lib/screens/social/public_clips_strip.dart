@@ -354,6 +354,7 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
   late final PageController _pageController;
   late List<Map<String, dynamic>> _clips;
   late int _currentIndex;
+  bool _controlsVisible = true;
 
   @override
   void initState() {
@@ -472,7 +473,10 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
         scrollDirection: Axis.vertical,
         itemCount: _clips.length,
         onPageChanged: (index) {
-          if (mounted) setState(() => _currentIndex = index);
+          if (mounted) setState(() {
+            _currentIndex = index;
+            _controlsVisible = true;
+          });
           _prefetchAround(index);
         },
         itemBuilder: (_, index) {
@@ -492,6 +496,9 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
                   child: index == _currentIndex
                       ? VerticalAutoplayVideoPlayer(
                           videoUrl: clip['video_url']?.toString() ?? '',
+                          onControlsVisibilityChanged: (visible) {
+                            if (mounted && _controlsVisible != visible) setState(() => _controlsVisible = visible);
+                          },
                         )
                       : const ColoredBox(
                           color: Colors.black,
@@ -504,7 +511,7 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
                           ),
                         ),
                 ),
-                Positioned(
+                if (_controlsVisible) Positioned(
                   top: 8,
                   left: 8,
                   child: IconButton.filledTonal(
@@ -512,7 +519,7 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
                     icon: const Icon(Icons.close_rounded),
                   ),
                 ),
-                Positioned(
+                if (_controlsVisible) Positioned(
                   left: 12,
                   right: 12,
                   bottom: 16,

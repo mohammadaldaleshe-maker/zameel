@@ -402,12 +402,36 @@ void main() {
       expect(home, contains("case 'radio':"));
       expect(home, contains("case 'beautiful_college':"));
       expect(radio, contains('duration_seconds'));
-      expect(radio, contains('zameel_mute_radio_author'));
+      expect(radio, contains('zameel_admin_mute_radio_author'));
       expect(migration, contains("now()+interval '7 days'"));
       expect(challenge, contains('zameel_toggle_college_like'));
       expect(challenge, contains('download'));
       expect(migration, contains('zameel_radio_two_reports'));
       expect(migration, contains('zameel_college_two_reports'));
+    });
+
+    test('077 social runtime repairs keep moderation and group chat server-side', () {
+      final migration = _read('supabase/migrations/077_social_runtime_media_repairs.sql');
+      final radio = _read('lib/screens/social/zameel_radio_screen.dart');
+      final college = _read('lib/screens/social/beautiful_college_screen.dart');
+      final lamma = _read('lib/screens/social/lamma_screen.dart');
+      final lammaChat = _read('lib/screens/social/lamma_chat_screen.dart');
+      final video = _read('lib/widgets/video_player_widget.dart');
+      final clips = _read('lib/widgets/vertical_autoplay_video_player.dart');
+      final home = _read('lib/features/home_feed.dart');
+
+      expect(migration, contains("moderation_status='pending_review'"));
+      expect(migration, contains('zameel_toggle_radio_like'));
+      expect(migration, contains('zameel_lamma_creator_member'));
+      expect(radio, contains('onPlayerComplete'));
+      expect(radio, contains('zameel_remove_radio_post'));
+      expect(college, contains('users!zameel_college_entries_user_id_fkey'));
+      expect(lamma, contains('LammaChatScreen'));
+      expect(lammaChat, contains('social_lamma_messages'));
+      expect(video, contains('VideoProgressIndicator'));
+      expect(clips, contains('onControlsVisibilityChanged'));
+      expect(home, contains('const ZameelRadioScreen()'));
+      expect(home, contains('const BeautifulCollegeScreen()'));
     });
   });
 

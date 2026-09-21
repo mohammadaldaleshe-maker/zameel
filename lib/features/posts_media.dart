@@ -734,6 +734,7 @@ class ZameelMediaViewer extends StatefulWidget {
 class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
   bool _busy = false;
   bool _sendingComment = false;
+  bool _controlsVisible = true;
   final TextEditingController _commentController = TextEditingController();
   final FocusNode _commentFocus = FocusNode();
 
@@ -971,11 +972,9 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
       textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
         backgroundColor: Colors.black,
-        appBar: AppBar(
-          backgroundColor: Colors.black,
-          foregroundColor: Colors.white,
-          title: Text(title),
-        ),
+        appBar: _controlsVisible
+            ? AppBar(backgroundColor: Colors.black, foregroundColor: Colors.white, title: Text(title))
+            : null,
         body: SafeArea(
           top: false,
           child: Column(
@@ -991,6 +990,9 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
                                       ? (widget.videoActive
                                           ? VerticalAutoplayVideoPlayer(
                                               videoUrl: _url,
+                                              onControlsVisibilityChanged: (visible) {
+                                                if (mounted && _controlsVisible != visible) setState(() => _controlsVisible = visible);
+                                              },
                                             )
                                           : const ColoredBox(
                                               color: Colors.black,
@@ -1002,23 +1004,32 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
                                                 ),
                                               ),
                                             ))
-                                      : VideoPlayerWidget(videoUrl: _url))
-                                  : InteractiveViewer(
-                                      minScale: 0.5,
-                                      maxScale: 5,
-                                      child: Image.network(
-                                        _url,
-                                        fit: BoxFit.contain,
-                                        errorBuilder: (_, __, ___) => const Icon(
-                                          Icons.broken_image_outlined,
-                                          color: Colors.white54,
-                                          size: 64,
+                                      : VideoPlayerWidget(
+                                          videoUrl: _url,
+                                          onControlsVisibilityChanged: (visible) {
+                                            if (mounted && _controlsVisible != visible) setState(() => _controlsVisible = visible);
+                                          },
+                                        ))
+                                  : GestureDetector(
+                                      behavior: HitTestBehavior.opaque,
+                                      onTap: () => setState(() => _controlsVisible = !_controlsVisible),
+                                      child: InteractiveViewer(
+                                        minScale: 0.5,
+                                        maxScale: 5,
+                                        child: Image.network(
+                                          _url,
+                                          fit: BoxFit.contain,
+                                          errorBuilder: (_, __, ___) => const Icon(
+                                            Icons.broken_image_outlined,
+                                            color: Colors.white54,
+                                            size: 64,
+                                          ),
                                         ),
                                       ),
                                     ),
                             ),
                           ),
-                          if (text.trim().isNotEmpty)
+                          if (_controlsVisible && text.trim().isNotEmpty)
                             Container(
                               width: double.infinity,
                               padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
@@ -1055,7 +1066,7 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
                         ),
                       ),
               ),
-              Material(
+              if (_controlsVisible) Material(
                 color: Colors.black,
                 child: ListTile(
                   leading: CircleAvatar(
@@ -1087,7 +1098,7 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
                       : () => _openUserProfile(context, ownerId),
                 ),
               ),
-              Container(
+              if (_controlsVisible) Container(
                 color: Colors.black.withAlpha(240),
                 padding: const EdgeInsets.fromLTRB(10, 6, 10, 8),
                 child: Column(

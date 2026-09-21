@@ -28,6 +28,7 @@ class _ZameelRadioScreenState extends State<ZameelRadioScreen> {
   int _seconds = 0;
   String? _recordPath;
   String? _playingId;
+  String? _loadingPlayId;
   Timer? _timer;
 
   @override
@@ -35,7 +36,13 @@ class _ZameelRadioScreenState extends State<ZameelRadioScreen> {
     super.initState();
     _load();
     _player.onPlayerComplete.listen((_) {
-      if (mounted) setState(() => _playingId = null);
+      if (!mounted) return;
+      final completedId = _playingId;
+      setState(() => _playingId = null);
+      final index = _posts.indexWhere((post) => post['id'].toString() == completedId);
+      if (index >= 0 && index + 1 < _posts.length) {
+        _play(_posts[index + 1], forcePlay: true);
+      }
     });
   }
 
@@ -131,21 +138,84 @@ class _ZameelRadioScreenState extends State<ZameelRadioScreen> {
     }
   }
 
-  Future<void> _play(Map<String, dynamic> post) async {
+  Future<void> _play(Map<String, dynamic> post, {bool forcePlay = false}) async {
     final id = post['id'].toString();
-    if (_playingId == id) {
+    if (!forcePlay && _playingId == id) {
       await _player.stop();
-      setState(() => _playingId = null);
+      if (mounted) setState(() => _playingId = null);
       return;
     }
+    if (_loadingPlayId == id) return;
+    setState(() {
+      _loadingPlayId = id;
+      _playingId = id;
+    });
     try {
+      await _player.stop();
       final url = await Supabase.instance.client.storage
           .from('zameel-radio')
           .createSignedUrl(post['storage_path'].toString(), 600);
       await _player.play(UrlSource(url));
-      setState(() => _playingId = id);
     } catch (_) {
+      if (mounted) setState(() => _playingId = null);
       _notice('تعذر تشغيل هذا المقطع.');
+    } finally {
+      if (mounted) setState(() => _loadingPlayId = null);
+    }
+  }
+
+  Future<void> _toggleLike(Map<String, dynamic> post) async {
+    try {
+      await Supabase.instance.client.rpc('zameel_toggle_radio_like', params: {'p_post_id': post['id']});
+      await _load();
+    } catch (_) {
+      _notice('تعذر تحديث الإعجاب الآن.');
+    }
+  }
+
+  Future<void> _deletePost(Map<String, dynamic> post) async {
+    final approved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('حذف التسجيل؟'),
+        content: const Text('سيختفي التسجيل من الراديو فورًا.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('إلغاء')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('حذف')),
+        ],
+      ),
+    );
+    if (approved != true) return;
+    try {
+      await Supabase.instance.client.rpc('zameel_remove_radio_post', params: {'p_post_id': post['id']});
+      if (_playingId == post['id'].toString()) await _player.stop();
+      _notice('تم حذف التسجيل.', success: true);
+      await _load();
+    } catch (_) {
+      _notice('لا تملك صلاحية حذف هذا التسجيل.');
+    }
+  }
+
+  Future<void> _reviewPost(Map<String, dynamic> post, bool restore) async {
+    try {
+      await Supabase.instance.client.rpc('zameel_admin_review_radio', params: {
+        'p_post_id': post['id'],
+        'p_action': restore ? 'restore' : 'remove',
+      });
+      _notice(restore ? 'تمت إعادة التسجيل.' : 'تم حذف التسجيل بعد المراجعة.', success: true);
+      await _load();
+    } catch (_) {
+      _notice('هذا الإجراء متاح للإدارة فقط.');
+    }
+  }
+
+  Future<void> _adminMute(Map<String, dynamic> post) async {
+    try {
+      await Supabase.instance.client.rpc('zameel_admin_mute_radio_author', params: {'p_post_id': post['id']});
+      _notice('تم كتم صاحب التسجيل إداريًا لمدة أسبوع.', success: true);
+      await _load();
+    } catch (_) {
+      _notice('هذا الإجراء متاح للإدارة فقط.');
     }
   }
 
@@ -175,14 +245,6 @@ class _ZameelRadioScreenState extends State<ZameelRadioScreen> {
     } catch (_) {
       _notice('سبق أن أبلغت عن هذا المقطع أو تعذر إرسال البلاغ.');
     }
-  }
-
-  Future<void> _mute(Map<String, dynamic> post) async {
-    final me = Supabase.instance.client.auth.currentUser?.id;
-    if (me == null) return;
-    await Supabase.instance.client.rpc('zameel_mute_radio_author', params: {'p_post_id': post['id']});
-    _notice('تم كتم المشارك لمدة أسبوع.', success: true);
-    await _load();
   }
 
   void _notice(String text, {bool success = false}) {
@@ -250,22 +312,53 @@ class _ZameelRadioScreenState extends State<ZameelRadioScreen> {
                   final anonymous = post['is_anonymous'] == true;
                   final name = anonymous ? 'زميل مجهول' : (post['author_name']?.toString() ?? 'زميل');
                   final image = anonymous ? null : post['author_image']?.toString();
+                  final pendingReview = post['moderation_status'] == 'pending_review';
+                  final isAdmin = post['is_admin'] == true;
+                  final canDelete = post['can_delete'] == true;
+                  final liked = post['liked'] == true;
+                  final likeCount = (post['like_count'] as num?)?.toInt() ?? 0;
                   return Card(
                     margin: const EdgeInsets.only(bottom: 12),
-                    child: ListTile(
-                      leading: CircleAvatar(backgroundImage: image != null && image.isNotEmpty ? NetworkImage(image) : null, child: image == null || image.isEmpty ? const Icon(Icons.graphic_eq_rounded) : null),
-                      title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: Text('مدة المقطع ${_duration((post['duration_seconds'] as num?)?.toInt() ?? 0)}'),
-                      onTap: () => _play(post),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Column(
                         children: [
-                          IconButton(onPressed: () => _play(post), icon: Icon(_playingId == post['id'].toString() ? Icons.stop_rounded : Icons.play_arrow_rounded)),
-                          PopupMenuButton<String>(
-                            onSelected: (value) => value == 'report' ? _report(post) : _mute(post),
-                            itemBuilder: (_) => const [
-                              PopupMenuItem(value: 'report', child: Text('إبلاغ')),
-                              PopupMenuItem(value: 'mute', child: Text('كتم أسبوعًا')),
+                          if (pendingReview)
+                            const ListTile(
+                              dense: true,
+                              leading: Icon(Icons.shield_outlined, color: Colors.orange),
+                              title: Text('مخفي مؤقتًا بعد بلاغين وينتظر مراجعة الإدارة'),
+                            ),
+                          ListTile(
+                            leading: CircleAvatar(backgroundImage: image != null && image.isNotEmpty ? NetworkImage(image) : null, child: image == null || image.isEmpty ? const Icon(Icons.graphic_eq_rounded) : null),
+                            title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                            subtitle: Text('مدة المقطع ${_duration((post['duration_seconds'] as num?)?.toInt() ?? 0)}'),
+                            onTap: pendingReview ? null : () => _play(post),
+                            trailing: IconButton(
+                              onPressed: pendingReview ? null : () => _play(post),
+                              icon: _loadingPlayId == post['id'].toString()
+                                  ? const SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                                  : Icon(_playingId == post['id'].toString() ? Icons.stop_rounded : Icons.play_arrow_rounded),
+                            ),
+                          ),
+                          ButtonBar(
+                            alignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              TextButton.icon(
+                                onPressed: pendingReview ? null : () => _toggleLike(post),
+                                icon: Icon(liked ? Icons.favorite_rounded : Icons.favorite_border_rounded, color: liked ? Colors.red : null),
+                                label: Text('$likeCount'),
+                              ),
+                              if (!pendingReview && !canDelete)
+                                TextButton.icon(onPressed: () => _report(post), icon: const Icon(Icons.flag_outlined), label: const Text('إبلاغ')),
+                              if (canDelete)
+                                TextButton.icon(onPressed: () => _deletePost(post), icon: const Icon(Icons.delete_outline), label: const Text('حذف')),
+                              if (isAdmin && pendingReview) ...[
+                                TextButton(onPressed: () => _reviewPost(post, true), child: const Text('إعادة')),
+                                TextButton(onPressed: () => _reviewPost(post, false), child: const Text('حذف نهائي')),
+                              ],
+                              if (isAdmin)
+                                IconButton(onPressed: () => _adminMute(post), tooltip: 'كتم إداري لأسبوع', icon: const Icon(Icons.volume_off_outlined)),
                             ],
                           ),
                         ],
