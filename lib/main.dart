@@ -62,6 +62,8 @@ import 'services/screen_awake_service.dart';
 import 'services/media_cache_service.dart';
 import 'services/post_publish_service.dart';
 import 'services/feature_control.dart';
+import 'services/call_invitation_guard.dart';
+import 'services/message_notification_grouping.dart';
 import 'widgets/post_media_gallery.dart';
 import 'platform/local_image_provider.dart';
 
@@ -100,6 +102,7 @@ Future<void> _openZameelDeepLink(Uri uri) async {
   if (nav == null) return;
 
   if (uri.host == 'graduation') {
+    if (!await FeatureControl.instance.check(nav.context, 'graduation_book')) return;
     final parts = uri.pathSegments.where((e) => e.isNotEmpty).toList();
     if (parts.isEmpty) return;
     final token = uri.queryParameters['token'];
@@ -113,6 +116,7 @@ Future<void> _openZameelDeepLink(Uri uri) async {
   }
 
   if (uri.host == 'chat') {
+    if (!await FeatureControl.instance.check(nav.context, 'direct_chat')) return;
     final conversationId = uri.queryParameters['conversation_id']?.trim() ?? '';
     var partnerId = uri.queryParameters['partner_id']?.trim() ?? '';
     var partnerName = uri.queryParameters['partner_name']?.trim() ?? '';
@@ -203,6 +207,7 @@ Future<void> _handlePushNavigationData(Map<String, dynamic> data) async {
         } catch (_) {}
       }
       if (partnerId.isNotEmpty) {
+        if (!await FeatureControl.instance.check(nav.context, 'direct_chat')) return;
         nav.push(MaterialPageRoute(
           builder: (_) => ChatDetailScreen(
             conversationId: conversationId,
@@ -216,8 +221,9 @@ Future<void> _handlePushNavigationData(Map<String, dynamic> data) async {
   }
 
   if (type == 'incoming_video_call' || type == 'incoming_voice_call') {
+    if (!await FeatureControl.instance.check(nav.context, 'direct_calls')) return;
     final roomId = data['room_id']?.toString() ?? '';
-    if (roomId.isEmpty) return;
+    if (!await CallInvitationGuard.isRinging(roomId)) return;
     final video = data['video'] == true ||
         data['video']?.toString().toLowerCase() == 'true' ||
         type == 'incoming_video_call';
@@ -239,7 +245,7 @@ Future<void> _handlePushNavigationData(Map<String, dynamic> data) async {
     final accepted = await nav.push<bool>(
       MaterialPageRoute(
         fullscreenDialog: true,
-        builder: (_) => IncomingCallScreen(callerName: callerName, callerImage: callerImage, video: video),
+        builder: (_) => IncomingCallScreen(roomId: roomId, callerName: callerName, callerImage: callerImage, video: video),
       ),
     );
     if (accepted != true) {
@@ -251,6 +257,7 @@ Future<void> _handlePushNavigationData(Map<String, dynamic> data) async {
       } catch (_) {}
       return;
     }
+    if (!await CallInvitationGuard.isRinging(roomId)) return;
     nav.push(
       MaterialPageRoute(
         builder: (_) => MeetScreen(

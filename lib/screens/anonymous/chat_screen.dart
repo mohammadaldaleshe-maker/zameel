@@ -1,5 +1,6 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import '../../services/feature_control.dart';
 import 'package:provider/provider.dart';
 import '../../providers/language_provider.dart';
 import '../../l10n/translations.dart';
@@ -202,13 +203,8 @@ class _ChatScreenState extends State<ChatScreen> {
           backgroundColor: Colors.white,
           foregroundColor: Colors.black,
           actions: [
-            IconButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AnonymousScreen()),
-                );
-              },
+            if (FeatureControl.instance.visible('anonymous_messages')) IconButton(
+              onPressed: () => FeatureControl.instance.open(context, 'anonymous_messages', () => const AnonymousScreen()),
               icon: const Icon(Icons.visibility_off_rounded),
               tooltip: isArabic ? 'الرسائل المجهولة' : 'Anonymous Messages',
             ),

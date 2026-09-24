@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../services/feature_control.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -46,7 +47,7 @@ class _LammaScreenState extends State<LammaScreen> with SingleTickerProviderStat
     }catch(e){if(mounted){setState(()=>_loading=false);_error(e);}}
   }
 
-  void _error(Object e)=>ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر إكمال العملية: $e')));
+  void _error(Object e)=>ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(FeatureControl.errorMessage(e, 'تعذر إكمال العملية'))));
   bool get _ar=>Provider.of<LanguageProvider>(context,listen:false).isArabic;
 
   Future<void> _setupDiscovery() async {

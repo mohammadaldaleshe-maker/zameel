@@ -1394,7 +1394,7 @@ class _MeetingRoomScreenState extends State<MeetingRoomScreen> {
             'answered_at': DateTime.now().toUtc().toIso8601String(),
           })
           .eq('room_id', roomId)
-          .neq('status', 'ended');
+          .eq('status', 'ringing');
     } catch (e) {
       debugPrint('Zameel WebRTC mark answered error: $e');
     }

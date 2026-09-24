@@ -58,7 +58,8 @@ class ZameelBubbleReceiver : FlutterFirebaseMessagingReceiver() {
         val extras = intent.extras
 
         if (extras != null && isDirectMessage(extras)) {
-            val overlayAllowed = ZameelOverlayService.canDrawOverlays(appContext)
+            val bubbleEnabled = value(extras, "bubble_enabled").lowercase() != "false"
+            val overlayAllowed = bubbleEnabled && ZameelOverlayService.canDrawOverlays(appContext)
             val appInForeground = MainActivity.isVisible
 
             // Prefer a real app-over-app chat head when Zameel is behind another
@@ -130,6 +131,7 @@ class ZameelBubbleReceiver : FlutterFirebaseMessagingReceiver() {
             .ifBlank { value(extras, "body") }
             .ifBlank { "New message" }
         val playSound = value(extras, "play_sound").lowercase() != "false"
+        val bubbleEnabled = value(extras, "bubble_enabled").lowercase() != "false"
 
         ensureChannels(context)
 
@@ -213,7 +215,7 @@ class ZameelBubbleReceiver : FlutterFirebaseMessagingReceiver() {
 
             // Android 11+ requires the valid long-lived conversation shortcut.
             // Android 10 can bubble without that Android-11 requirement.
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+            if (bubbleEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
                 (Build.VERSION.SDK_INT < Build.VERSION_CODES.R || shortcutReady)
             ) {
                 val bubbleBuilder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {

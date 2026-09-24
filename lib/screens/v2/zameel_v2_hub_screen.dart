@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../services/feature_control.dart';
 
 import '../ai/ai_screen.dart';
 import '../books/books_screen.dart';
@@ -25,19 +26,19 @@ class ZameelV2HubScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final modules = <_V2Module>[
-      _V2Module('🏠', 'Zameel Daily', 'الرئيسية اليومية', ZameelDailyHub(isArabic: true, onStories: () {}, onChat: () {}, onCalendar: () {}, onGroups: () {}, onBooks: () {}, onCreatePost: () {}, onSocial: () {})),
-      _V2Module('🌐', 'Community', 'المجتمع', const _InfoModuleScreen(title: 'المجتمع', subtitle: 'العامة • جامعتي • كليتي • تخصصي • مجموعاتي')),
-      _V2Module('📚', 'Study', 'الدراسة', const BooksScreen()),
-      _V2Module('🤖', 'AI Study', 'Zameel AI', const AIScreen()),
-      _V2Module('👥', 'Classmates', 'زملائي', const FriendsScreen()),
-      _V2Module('🎓', 'Study Groups', 'مجموعات الدراسة', const GroupsScreen()),
-      _V2Module('💬', 'Messages', 'الرسائل', const ChatScreen()),
+      _V2Module('🏠', 'Zameel Daily', 'الرئيسية اليومية', ZameelDailyHub(isArabic: true, onStories: () {}, onChat: () {}, onCalendar: () {}, onGroups: () {}, onBooks: () {}, onCreatePost: () {}, onSocial: () {}), featureKey: 'feed_posts'),
+      _V2Module('🌐', 'Community', 'المجتمع', const _InfoModuleScreen(title: 'المجتمع', subtitle: 'العامة • جامعتي • كليتي • تخصصي • مجموعاتي'), featureKey: 'feed_posts'),
+      _V2Module('📚', 'Study', 'الدراسة', const BooksScreen(), featureKey: 'books_market'),
+      _V2Module('🤖', 'AI Study', 'Zameel AI', const AIScreen(), featureKey: 'zameel_ai'),
+      _V2Module('👥', 'Classmates', 'زملائي', const FriendsScreen(), featureKey: 'suggested_colleagues'),
+      _V2Module('🎓', 'Study Groups', 'مجموعات الدراسة', const GroupsScreen(), featureKey: 'groups'),
+      _V2Module('💬', 'Messages', 'الرسائل', const ChatScreen(), featureKey: 'direct_chat'),
       _V2Module('🔔', 'Notifications', 'الإشعارات', const NotificationsScreen()),
-      _V2Module('📅', 'Calendar', 'التقويم', CalendarScreen()),
-      _V2Module('🏫', 'Campus', 'الحرم الجامعي', const CampusScreen()),
-      _V2Module('💼', 'Jobs', 'الفرص والوظائف', const JobsScreen()),
-      _V2Module('🔎', 'Search', 'البحث الشامل', const SearchScreen()),
-    ];
+      _V2Module('📅', 'Calendar', 'التقويم', CalendarScreen(), featureKey: 'university_calendar'),
+      _V2Module('🏫', 'Campus', 'الحرم الجامعي', const CampusScreen(), featureKey: 'campus_world'),
+      _V2Module('💼', 'Jobs', 'الفرص والوظائف', const JobsScreen(), featureKey: 'jobs_training'),
+      _V2Module('🔎', 'Search', 'البحث الشامل', const SearchScreen(), featureKey: 'global_search'),
+    ].where((module) => module.featureKey == null || FeatureControl.instance.visible(module.featureKey!)).toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -83,7 +84,9 @@ class ZameelV2HubScreen extends StatelessWidget {
                 final module = modules[index];
                 return InkWell(
                   borderRadius: BorderRadius.circular(20),
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => module.page)),
+                  onTap: () => module.featureKey == null
+                      ? Navigator.push(context, MaterialPageRoute(builder: (_) => module.page))
+                      : FeatureControl.instance.open(context, module.featureKey!, () => module.page),
                   child: Ink(
                     decoration: BoxDecoration(
                       color: Theme.of(context).colorScheme.surface,
@@ -125,7 +128,8 @@ class _V2Module {
   final String en;
   final String ar;
   final Widget page;
-  const _V2Module(this.icon, this.en, this.ar, this.page);
+  final String? featureKey;
+  const _V2Module(this.icon, this.en, this.ar, this.page, {this.featureKey});
 }
 
 class _InfoModuleScreen extends StatelessWidget {

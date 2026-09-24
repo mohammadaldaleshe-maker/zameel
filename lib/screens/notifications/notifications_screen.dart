@@ -14,6 +14,9 @@ import '../stories/stories_screen.dart';
 import '../books/books_screen.dart';
 import 'package:zameel/theme/app_theme.dart';
 import '../../services/secure_media_service.dart';
+import '../../services/call_invitation_guard.dart';
+import '../../services/feature_control.dart';
+import '../../services/message_notification_grouping.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -27,7 +30,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   bool _loading=true;
   RealtimeChannel? _notificationsChannel;
   Timer? _reloadDebounce;
-  int get _unread=>_items.where((e)=>e['is_read']==false).length;
+  List<Map<String, dynamic>> get _displayItems =>
+      MessageNotificationGrouping.collapse(_items);
+  int get _unread => _displayItems.where((e) => e['is_read'] == false).length;
 
   @override
   void initState(){
@@ -70,7 +75,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر تحميل الإشعارات: $e')));}
     finally{if(mounted)setState(()=>_loading=false);}
   }
-  Future<void> _read(Map<String,dynamic> n) async { if(n['is_read']==true)return; try{await db.from('notifications').update({'is_read':true}).eq('id',n['id']);if(mounted)setState(()=>n['is_read']=true);}catch(_){}}
+  Future<void> _read(Map<String,dynamic> n) async {
+    final ids = n['_group_ids'] is List
+        ? List<String>.from(n['_group_ids'] as List)
+        : <String>[n['id'].toString()];
+    try {
+      await db.from('notifications').update({'is_read': true}).inFilter('id', ids);
+      if (mounted) setState(() {
+        for (final item in _items) {
+          if (ids.contains(item['id']?.toString())) item['is_read'] = true;
+        }
+      });
+    } catch (_) {}
+  }
   Future<void> _markAll() async { try{await db.from('notifications').update({'is_read':true}).eq('user_id',uid!);await _load();}catch(_){}}
   Future<void> _clear() async { try{await db.from('notifications').delete().eq('user_id',uid!);await _load();}catch(_){}}
 
@@ -84,7 +101,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Future<void> _openIncomingCall(Map<String, dynamic> n) async {
     final data = _notificationData(n);
     final roomId = data['room_id']?.toString() ?? '';
-    if (roomId.isEmpty) return;
+    if (!await CallInvitationGuard.isRinging(roomId)) return;
     final type = n['type']?.toString() ?? '';
     final video = data['video'] == true ||
         data['video']?.toString().toLowerCase() == 'true' ||
@@ -100,6 +117,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       MaterialPageRoute(
         fullscreenDialog: true,
         builder: (_) => IncomingCallScreen(
+          roomId: roomId,
           callerName: callerName,
           callerImage: actor is Map ? actor['profile_image']?.toString() : null,
           video: video,
@@ -112,7 +130,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       } catch (_) {}
       return;
     }
-    if (!mounted) return;
+    if (!await CallInvitationGuard.isRinging(roomId) || !mounted) return;
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -132,14 +150,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final type = n['type']?.toString() ?? '';
     final data = _notificationData(n);
     if (type.startsWith('friend_request')) {
+      if (!await FeatureControl.instance.check(context, 'suggested_colleagues')) return;
       Navigator.push(context, MaterialPageRoute(builder: (_) => const FriendsScreen(initialTab: 1)));
       return;
     }
     if (type == 'incoming_video_call' || type == 'incoming_voice_call') {
+      if (!await FeatureControl.instance.check(context, 'direct_calls')) return;
       await _openIncomingCall(n);
       return;
     }
     if (type == 'book_exchange_request' || type == 'book_exchange_response') {
+      if (!await FeatureControl.instance.check(context, 'books_market')) return;
       final requestId = data['request_id']?.toString();
       if (mounted) {
         Navigator.push(
@@ -156,6 +177,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
     final postId = (data['post_id'] ?? data['target_post_id'])?.toString() ?? '';
     if (postId.isNotEmpty) {
+      if (!await FeatureControl.instance.check(context, 'feed_posts') ||
+          !await FeatureControl.instance.check(context, 'comments')) return;
       try {
         final post = await db.from('posts').select('*, users(name,profile_image,gender,role,university,college,department)').eq('id', postId).maybeSingle();
         if (post != null && mounted) {
@@ -170,6 +193,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final conversationId = data['conversation_id']?.toString() ?? '';
     final actorId = n['actor_id']?.toString() ?? data['sender_id']?.toString() ?? '';
     if (conversationId.isNotEmpty && actorId.isNotEmpty) {
+      if (!await FeatureControl.instance.check(context, 'direct_chat')) return;
       final actor = n['actor'];
       final name = actor is Map ? actor['name']?.toString() : null;
       if (mounted) {
@@ -179,6 +203,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
     final storyId = data['story_id']?.toString() ?? '';
     if (storyId.isNotEmpty && mounted) {
+      if (!await FeatureControl.instance.check(context, 'stories')) return;
       Navigator.push(context, MaterialPageRoute(builder: (_) => const Scaffold(body: SafeArea(child: StoriesWidget()))));
     }
   }
@@ -208,21 +233,22 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ),
         body: _loading
             ? const Center(child: CircularProgressIndicator())
-            : _items.isEmpty
+            : _displayItems.isEmpty
                 ? Center(
                     child: Text(
                       ar
                           ? 'لا توجد إشعارات بعد'
                           : 'No notifications yet',
+                      style: const TextStyle(color: Colors.black87),
                     ),
                   )
                 : RefreshIndicator(
                     onRefresh: _load,
                     child: ListView.builder(
                       padding: const EdgeInsets.all(12),
-                      itemCount: _items.length,
+                      itemCount: _displayItems.length,
                       itemBuilder: (_, i) {
-                        final n = _items[i];
+                        final n = _displayItems[i];
                         final type = n['type']?.toString() ?? '';
                         final icon = type.startsWith('friend_request')
                             ? Icons.person_add_alt_1_rounded
@@ -254,35 +280,31 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               child: Icon(icon, color: color),
                             ),
                             title: Text(
-                              ((ar
-                                          ? n['title_ar']
-                                          : n['title_en'])
-                                      ?.toString()
-                                      .trim()
-                                      .isNotEmpty ==
-                                  true)
+                              type == 'message' && n['actor'] is Map &&
+                                      (n['actor'] as Map)['name']?.toString().isNotEmpty == true
                                   ? (ar
-                                      ? n['title_ar'].toString()
-                                      : n['title_en'].toString())
-                                  : (n['message']?.toString() ?? ''),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w800,
-                              ),
+                                      ? '${(n['actor'] as Map)['name']} أرسل لك رسالة'
+                                      : '${(n['actor'] as Map)['name']} sent you a message')
+                                  : ((ar ? n['title_ar'] : n['title_en'])?.toString().trim().isNotEmpty == true
+                                      ? (ar ? n['title_ar'] : n['title_en']).toString()
+                                      : n['message']?.toString() ?? ''),
+                              style: const TextStyle(fontWeight: FontWeight.w800,
+                                  color: Colors.black87),
                             ),
-                            subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start,children:[Text(
-                              ((ar
-                                          ? n['body_ar']
-                                          : n['body_en'])
-                                      ?.toString()
-                                      .trim()
-                                      .isNotEmpty ==
-                                  true)
-                                  ? (ar
-                                      ? n['body_ar'].toString()
-                                      : n['body_en'].toString())
-                                  : (n['type']?.toString() ?? '')),
-                              const SizedBox(height:4),Text(_formatTime(n['created_at'],ar),style:TextStyle(fontSize:11,color:AppTheme.muted.shade600)),
-                            ]),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  (ar ? n['body_ar'] : n['body_en'])?.toString().trim().isNotEmpty == true
+                                      ? (ar ? n['body_ar'] : n['body_en']).toString()
+                                      : n['type']?.toString() ?? '',
+                                  style: const TextStyle(color: Colors.black87),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(_formatTime(n['created_at'], ar),
+                                    style: const TextStyle(fontSize: 11, color: Colors.black54)),
+                              ],
+                            ),
                             trailing: n['is_read'] == true
                                 ? null
                                 : const Icon(

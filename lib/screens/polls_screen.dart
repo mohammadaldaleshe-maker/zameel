@@ -1,5 +1,6 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import '../services/feature_control.dart';
 import 'package:provider/provider.dart';
 import '../providers/language_provider.dart';
 import 'package:zameel/theme/app_theme.dart';
@@ -98,10 +99,10 @@ class _PollsScreenState extends State<PollsScreen> {
           backgroundColor: Colors.green,
         ),
       );
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(isArabic ? 'تعذر تسجيل التصويت' : 'Could not record vote')),
+        SnackBar(content: Text(FeatureControl.errorMessage(error, isArabic ? 'تعذر تسجيل التصويت' : 'Could not record vote'))),
       );
     }
   }
@@ -200,10 +201,10 @@ class _PollsScreenState extends State<PollsScreen> {
                 if (!mounted) return;
                 if (dialogContext.mounted) Navigator.pop(dialogContext);
                 await _loadPolls();
-              } catch (_) {
+              } catch (error) {
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(isArabic ? 'تعذر إنشاء الاستطلاع' : 'Could not create poll')),
+                  SnackBar(content: Text(FeatureControl.errorMessage(error, isArabic ? 'تعذر إنشاء الاستطلاع' : 'Could not create poll'))),
                 );
               }
             },

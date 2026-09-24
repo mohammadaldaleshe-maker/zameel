@@ -147,6 +147,29 @@ Deno.serve(async (req) => {
         continue;
       }
 
+      // A queued call invitation can arrive long after the caller hung up.
+      if (notification.type === "incoming_video_call" ||
+          notification.type === "incoming_voice_call") {
+        const roomId = String(notification.data?.room_id ?? "");
+        const { data: session, error: sessionError } = await supabase
+          .from("direct_call_sessions")
+          .select("status,callee_id,created_at")
+          .eq("room_id", roomId)
+          .maybeSingle();
+        if (sessionError) throw sessionError;
+        const created = Date.parse(String(session?.created_at ?? ""));
+        if (!session || session.status !== "ringing" ||
+            session.callee_id !== notification.user_id ||
+            !Number.isFinite(created) || created > Date.now() ||
+            Date.now() - created > 90_000) {
+          await supabase.from("push_notification_queue").update({
+            status: "sent", processed_at: new Date().toISOString(),
+            last_error: "call_invitation_expired",
+          }).eq("id", item.id);
+          continue;
+        }
+      }
+
       const { data: recipient } = await supabase
         .from("users")
         .select("notifications_enabled,call_sounds_enabled,notification_sounds_enabled")
@@ -250,6 +273,13 @@ Deno.serve(async (req) => {
           data.sender_name = messageSenderName || String(title);
           data.sender_avatar = messageSenderAvatar;
           data.message_preview = String(body);
+          const { data: bubbleFlag } = await supabase.from("feature_flags")
+            .select("is_enabled,display_mode")
+            .eq("feature_key", "floating_chat_bubble")
+            .eq("scope_type", "global").eq("scope_value", "*")
+            .maybeSingle();
+          data.bubble_enabled = String(!bubbleFlag ||
+            (bubbleFlag.is_enabled === true && bubbleFlag.display_mode === "enabled"));
         }
 
         const incomingCall = notification.type === "incoming_video_call" ||
@@ -283,10 +313,18 @@ Deno.serve(async (req) => {
         // instead of FCM also creating a duplicate standard notification.
         if (!androidBubbleMessage) {
           fcmMessage.notification = { title, body };
+          const conversationId = directMessage
+            ? String(notification.data?.conversation_id ?? "").trim() : "";
           fcmMessage.apns = {
-            headers: { "apns-priority": "10" },
+            headers: {
+              "apns-priority": "10",
+              ...(conversationId
+                ? { "apns-collapse-id": `zameel-chat-${conversationId}` }
+                : {}),
+            },
             payload: {
               aps: {
+                ...(conversationId ? { "thread-id": `zameel-chat-${conversationId}` } : {}),
                 sound: playSound
                   ? (incomingCall ? "zameel_ringtone.wav" : "zameel_notification.wav")
                   : undefined,

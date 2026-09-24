@@ -1,6 +1,7 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../../services/feature_control.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:video_player/video_player.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -76,9 +77,10 @@ class _PublicClipsStripState extends State<PublicClipsStrip> with WidgetsBinding
   }
 
   Future<void> _comment(Map<String, dynamic> clip) async {
+    if (!await FeatureControl.instance.check(context, 'comments')) return;
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => ClipCommentsScreen(clip: clip)),
+      MaterialPageRoute(builder: (_) => FeatureControl.instance.page('comments', ClipCommentsScreen(clip: clip))),
     );
     await _load(silent: true);
   }
@@ -412,7 +414,7 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تعذر حذف الكليبس: $error')),
+          SnackBar(content: Text(FeatureControl.errorMessage(error, 'تعذر حذف الكليبس'))),
         );
       }
     }
@@ -447,9 +449,10 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
   }
 
   Future<void> _comment(Map<String, dynamic> clip) async {
+    if (!await FeatureControl.instance.check(context, 'comments')) return;
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => ClipCommentsScreen(clip: clip)),
+      MaterialPageRoute(builder: (_) => FeatureControl.instance.page('comments', ClipCommentsScreen(clip: clip))),
     );
     final engagement = await ZameelSocialService.loadClipEngagement(
       clip['id']?.toString() ?? '',

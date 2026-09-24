@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../../services/feature_control.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -60,7 +61,7 @@ class _ZameelRadioScreenState extends State<ZameelRadioScreen> {
       final rows = await Supabase.instance.client.rpc('zameel_radio_feed');
       if (mounted) setState(() => _posts = List<Map<String, dynamic>>.from(rows));
     } catch (error) {
-      _notice('تعذر تحميل راديو زميل: $error');
+      _notice(FeatureControl.errorMessage(error, 'تعذر تحميل راديو زميل'));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -132,7 +133,7 @@ class _ZameelRadioScreenState extends State<ZameelRadioScreen> {
       _notice('تم نشر المقطع حتى الساعة 7 صباحًا.', success: true);
       await _load();
     } catch (error) {
-      _notice('تعذر نشر التسجيل: $error');
+      _notice(FeatureControl.errorMessage(error, 'تعذر نشر التسجيل'));
     } finally {
       if (mounted) setState(() => _publishing = false);
     }

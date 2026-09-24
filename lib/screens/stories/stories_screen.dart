@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../services/feature_control.dart';
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:video_player/video_player.dart';
@@ -330,7 +331,12 @@ class _StoriesWidgetState extends State<StoriesWidget> with WidgetsBindingObserv
                 try {
                   final remoteId = await _publishRemote(mediaType: 'text', caption: caption);
                   if (remoteId != null) localStory['id'] = remoteId;
-                } catch (_) {
+                } catch (error) {
+                  if (FeatureControl.isSuspendedError(error)) {
+                    if (mounted) setState(() => _stories.remove(localStory));
+                    _showMessage(FeatureControl.suspendedMessage);
+                    return;
+                  }
                   _showMessage(isArabic ? 'نُشرت محليًا، وتعذرت المزامنة حاليًا' : 'Published locally; sync is currently unavailable');
                 }
                 if (!mounted || !dialogContext.mounted) return;
@@ -384,7 +390,12 @@ class _StoriesWidgetState extends State<StoriesWidget> with WidgetsBindingObserv
         audience: _storyAudience,
       );
       if (remoteId != null) localStory['id'] = remoteId;
-    } catch (_) {
+    } catch (error) {
+      if (FeatureControl.isSuspendedError(error)) {
+        if (mounted) setState(() => _stories.remove(localStory));
+        _showMessage(FeatureControl.suspendedMessage);
+        return;
+      }
       _showMessage(isArabic ? 'نُشرت محليًا، وتعذرت المزامنة حاليًا' : 'Published locally; sync is currently unavailable');
     }
     if (!mounted) return;
@@ -429,7 +440,12 @@ class _StoriesWidgetState extends State<StoriesWidget> with WidgetsBindingObserv
         audience: _storyAudience,
       );
       if (remoteId != null) localStory['id'] = remoteId;
-    } catch (_) {
+    } catch (error) {
+      if (FeatureControl.isSuspendedError(error)) {
+        if (mounted) setState(() => _stories.remove(localStory));
+        _showMessage(FeatureControl.suspendedMessage);
+        return;
+      }
       _showMessage(isArabic ? 'نُشرت محليًا، وتعذرت المزامنة حاليًا' : 'Published locally; sync is currently unavailable');
     }
     if (!mounted) return;
@@ -1354,7 +1370,7 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              isArabic ? 'تعذر حذف الحالة: $e' : 'Could not delete story: $e',
+              FeatureControl.errorMessage(e, isArabic ? 'تعذر حذف الحالة' : 'Could not delete story'),
             ),
           ),
         );

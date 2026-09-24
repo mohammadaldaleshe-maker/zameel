@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import '../../services/feature_control.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -107,7 +108,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
       if (!mounted) return;
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('تعذر تحميل التعليقات: $error')),
+        SnackBar(content: Text(FeatureControl.errorMessage(error, 'تعذر تحميل التعليقات'))),
       );
     }
   }
@@ -131,7 +132,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تعذر إضافة التعليق: $error')),
+          SnackBar(content: Text(FeatureControl.errorMessage(error, 'تعذر إضافة التعليق'))),
         );
       }
     } finally {
@@ -184,7 +185,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
         comment['likes_count'] = previousCount;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('تعذر تحديث الإعجاب: $error')),
+        SnackBar(content: Text(FeatureControl.errorMessage(error, 'تعذر تحديث الإعجاب'))),
       );
     }
   }
@@ -238,7 +239,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تعذر تعديل التعليق: $error')),
+          SnackBar(content: Text(FeatureControl.errorMessage(error, 'تعذر تعديل التعليق'))),
         );
       }
     }
@@ -285,7 +286,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تعذر حذف التعليق: $error')),
+          SnackBar(content: Text(FeatureControl.errorMessage(error, 'تعذر حذف التعليق'))),
         );
       }
     }

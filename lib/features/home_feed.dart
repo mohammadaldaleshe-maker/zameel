@@ -371,8 +371,11 @@ Future<void> _loadUnreadNotifications() async {
   final user = Supabase.instance.client.auth.currentUser;
   if (user == null) return;
   try {
-    final rows = await Supabase.instance.client.from('notifications').select('id').eq('user_id', user.id).eq('is_read', false);
-    if (mounted) setState(() => _unreadNotifications = rows.length);
+    final rows = await Supabase.instance.client.from('notifications')
+        .select('id,type,data,actor_id').eq('user_id', user.id).eq('is_read', false);
+    final count = MessageNotificationGrouping.collapse(
+        List<Map<String, dynamic>>.from(rows)).length;
+    if (mounted) setState(() => _unreadNotifications = count);
   } catch (_) {}
 }
 
@@ -417,6 +420,7 @@ Map<String, dynamic> _notificationData(Map<String, dynamic> n) {
 
 Future<void> _handleIncomingCallNotification(Map<String, dynamic> n) async {
   if (!mounted || _incomingCallDialogOpen) return;
+  if (!await FeatureControl.instance.check(context, 'direct_calls')) return;
   final notificationId = n['id']?.toString() ?? '';
   if (notificationId.isEmpty || _handledIncomingCalls.contains(notificationId)) {
     return;
@@ -424,7 +428,7 @@ Future<void> _handleIncomingCallNotification(Map<String, dynamic> n) async {
 
   final data = _notificationData(n);
   final roomId = data['room_id']?.toString() ?? '';
-  if (roomId.isEmpty) return;
+  if (!await CallInvitationGuard.isRinging(roomId)) return;
 
   _handledIncomingCalls.add(notificationId);
   _incomingCallDialogOpen = true;
@@ -457,7 +461,7 @@ Future<void> _handleIncomingCallNotification(Map<String, dynamic> n) async {
   final accepted = await Navigator.of(context, rootNavigator: true).push<bool>(
     MaterialPageRoute(
       fullscreenDialog: true,
-      builder: (_) => IncomingCallScreen(callerName: callerName, callerImage: callerImage, video: video),
+      builder: (_) => IncomingCallScreen(roomId: roomId, callerName: callerName, callerImage: callerImage, video: video),
     ),
   );
   _incomingCallDialogOpen = false;
@@ -473,6 +477,7 @@ Future<void> _handleIncomingCallNotification(Map<String, dynamic> n) async {
     try { await Supabase.instance.client.from('direct_call_sessions').update({'status':'declined','ended_at':DateTime.now().toUtc().toIso8601String()}).eq('room_id',roomId).eq('status','ringing'); } catch (_) {}
     return;
   }
+  if (!await CallInvitationGuard.isRinging(roomId)) return;
   if (!mounted) return;
   Navigator.of(context, rootNavigator: true).push(
     MaterialPageRoute(
@@ -702,7 +707,7 @@ Future<void> _createUserIfNotExists() async {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ فشل النشر: $e'),
+            content: Text(FeatureControl.errorMessage(e, '❌ فشل النشر')),
             backgroundColor: Colors.red,
           ),
         );
@@ -763,7 +768,7 @@ Future<void> _createUserIfNotExists() async {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('❌ فشل النشر: $e'),
+          content: Text(FeatureControl.errorMessage(e, '❌ فشل النشر')),
           backgroundColor: Colors.red,
         ),
       );
@@ -822,7 +827,7 @@ Future<void> _createUserIfNotExists() async {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('❌ فشل الحذف: $e'),
+          content: Text(FeatureControl.errorMessage(e, '❌ فشل الحذف')),
           backgroundColor: Colors.red,
         ),
       );
@@ -931,7 +936,7 @@ Future<void> _createUserIfNotExists() async {
         post['likes_count'] = oldCount;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('تعذر تحديث الإعجاب: $e')),
+        SnackBar(content: Text(FeatureControl.errorMessage(e, 'تعذر تحديث الإعجاب'))),
       );
     }
   }
@@ -941,6 +946,7 @@ Future<void> _createUserIfNotExists() async {
   // ============================================================
 
   Future<void> _toggleSavePost(int index) async {
+    if (!await FeatureControl.instance.check(context, 'saved_posts')) return;
     final post = posts[index];
     final user = Supabase.instance.client.auth.currentUser;
 
@@ -1055,7 +1061,7 @@ Future<void> _createUserIfNotExists() async {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('فشل اختيار/نشر الصور: $e'),
+          content: Text(FeatureControl.errorMessage(e, 'فشل اختيار/نشر الصور')),
           backgroundColor: Colors.red,
         ),
       );
@@ -1101,7 +1107,7 @@ Future<void> _createUserIfNotExists() async {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('فشل اختيار/نشر الفيديوهات: $e'),
+          content: Text(FeatureControl.errorMessage(e, 'فشل اختيار/نشر الفيديوهات')),
           backgroundColor: Colors.red,
         ),
       );
@@ -1733,7 +1739,7 @@ Future<void> _createUserIfNotExists() async {
             ? FloatingActionButton(
                 backgroundColor: primaryColor,
                 foregroundColor: Colors.white,
-                onPressed: () async { await FeatureControl.instance.refresh(force: true); if (FeatureControl.instance.enabled('feed_posts') && mounted) createPost(); },
+                onPressed: () async { if (await FeatureControl.instance.check(context, 'feed_posts') && mounted) createPost(); },
                 child: const Icon(Icons.add_rounded),
               )
             : null,
@@ -1745,27 +1751,27 @@ Future<void> _createUserIfNotExists() async {
   Widget _buildCurrentPage() {
     switch (currentIndex) {
       case 0:
-        return FeatureControl.instance.enabled('feed_posts') ? _buildFeed() : const Center(child: Text('المنشورات معلّقة مؤقتًا'));
+        return FeatureControl.instance.enabled('feed_posts') ? _buildFeed() : const Center(child: Text(FeatureControl.suspendedMessage));
       case 1:
-        return const BooksScreen();
+        return FeatureControl.instance.page('books_market', const BooksScreen());
       case 2:
-        return const ChatScreen();
+        return FeatureControl.instance.page('direct_chat', const ChatScreen());
       case 3:
-        return const FriendsScreen();
+        return FeatureControl.instance.page('suggested_colleagues', const FriendsScreen());
       case 4:
-        return const CampusScreen();
+        return FeatureControl.instance.page('campus_world', const CampusScreen());
       case 5:
-        return const MeetScreen();
+        return FeatureControl.instance.page('zameel_meet', const MeetScreen());
       case 6:
-        return const JobsScreen();
+        return FeatureControl.instance.page('jobs_training', const JobsScreen());
       case 7:
-        return CalendarScreen();
+        return FeatureControl.instance.page('university_calendar', CalendarScreen());
       case 8:
-        return const PollsScreen();
+        return FeatureControl.instance.page('polls', const PollsScreen());
       case 9:
-        return const PrivateGroupsScreen();
+        return FeatureControl.instance.page('groups', const PrivateGroupsScreen());
       case 10:
-        return const AIScreen();
+        return FeatureControl.instance.page('zameel_ai', const AIScreen());
       case 11:
         return _buildProfilePage();
       default:
@@ -1788,7 +1794,7 @@ Future<void> _createUserIfNotExists() async {
       await _loadPosts();
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ تمت مشاركة المنشور على ملفك الشخصي')));
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر مشاركة المنشور: $e')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(FeatureControl.errorMessage(e, 'تعذر مشاركة المنشور'))));
     }
   }
 
@@ -1801,7 +1807,7 @@ Future<void> _createUserIfNotExists() async {
       if (!mounted) return;
       showModalBottomSheet(context: context, showDragHandle: true, builder: (_) => Directionality(textDirection: ar ? TextDirection.rtl : TextDirection.ltr, child: SizedBox(height: 480, child: Column(children: [Padding(padding: const EdgeInsets.all(16), child: Text(ar ? 'الأشخاص الذين أعجبوا بالمنشور' : 'People who liked this post', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800))), Expanded(child: rows.isEmpty ? Center(child: Text(ar ? 'لا توجد إعجابات بعد' : 'No likes yet')) : ListView.builder(itemCount: rows.length, itemBuilder: (_, i) { final u = rows[i]['users']; final name = u is Map ? (u['name']?.toString() ?? 'User') : 'User'; final image = u is Map ? u['profile_image']?.toString() : null; return ListTile(leading: CircleAvatar(backgroundImage: image != null && image.isNotEmpty ? NetworkImage(image) : null, child: image == null || image.isEmpty ? const Icon(Icons.person) : null), title: Text(name, style: const TextStyle(fontWeight: FontWeight.w700))); }))]))));
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر تحميل الإعجابات: $e')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(FeatureControl.errorMessage(e, 'تعذر تحميل الإعجابات'))));
     }
   }
 
@@ -1824,9 +1830,11 @@ Future<void> _createUserIfNotExists() async {
             ? (isArabic ? 'منشورات التخصص' : 'Major posts')
             : (isArabic ? 'المنشورات العامة' : 'Global posts');
     final children = <Widget>[
-      const StoriesWidget(),
+      if (FeatureControl.instance.visible('stories'))
+        FeatureControl.instance.page('stories', const StoriesWidget(), embedded: true),
       _buildCreateBox(),
-      const PublicClipsStrip(),
+      if (FeatureControl.instance.visible('clips'))
+        FeatureControl.instance.page('clips', const PublicClipsStrip(), embedded: true),
       Padding(
         padding: const EdgeInsets.fromLTRB(14, 8, 14, 2),
         child: Row(children: [
@@ -1898,7 +1906,9 @@ Future<void> _createUserIfNotExists() async {
           ),
         );
         if (postIndex == 4 && visiblePosts.length >= 5) {
-          children.add(const SuggestedColleaguesSection());
+          if (FeatureControl.instance.visible('suggested_colleagues')) {
+            children.add(FeatureControl.instance.page('suggested_colleagues', const SuggestedColleaguesSection(), embedded: true));
+          }
         }
       }
     }

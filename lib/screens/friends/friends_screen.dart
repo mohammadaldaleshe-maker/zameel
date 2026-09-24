@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import '../../services/feature_control.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../providers/language_provider.dart';
@@ -161,7 +162,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
     final shown=_friends.where(_matches).toList();
     return RefreshIndicator(onRefresh: _load, child: ListView.builder(padding: const EdgeInsets.all(14), itemCount: shown.length, itemBuilder: (_, i) {
       final f = shown[i]; final name = f['name']?.toString() ?? 'User';
-      return Card(child: ListTile(leading: _avatar(f), title: Text(name, style: const TextStyle(fontWeight: FontWeight.w800)), subtitle: Text('${f['department'] ?? ''} • ${f['university'] ?? ''}'), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ProfileScreen(userId: f['id'].toString()))), trailing: Wrap(children: [IconButton(tooltip: ar ? 'دردشة' : 'Chat', onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ChatScreen(partnerId: f['id'].toString(), partnerName: name))), icon: const Icon(Icons.chat_bubble_rounded)), IconButton(tooltip: ar ? 'إزالة' : 'Remove', onPressed: () => _removeFriend(f['request_id'].toString()), icon: const Icon(Icons.person_remove_rounded, color: Colors.red)), IconButton(tooltip: ar ? 'حظر' : 'Block', onPressed: () async { try { await db.from('user_blocks').upsert({'blocker_id': uid, 'blocked_id': f['id']}); await _removeFriend(f['request_id'].toString()); } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر حظر المستخدم: $e'))); } }, icon: const Icon(Icons.block_rounded, color: Colors.redAccent))])));
+      return Card(child: ListTile(leading: _avatar(f), title: Text(name, style: const TextStyle(fontWeight: FontWeight.w800)), subtitle: Text('${f['department'] ?? ''} • ${f['university'] ?? ''}'), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ProfileScreen(userId: f['id'].toString()))), trailing: Wrap(children: [IconButton(tooltip: ar ? 'دردشة' : 'Chat', onPressed: () => FeatureControl.instance.open(context, 'direct_chat', () => ChatScreen(partnerId: f['id'].toString(), partnerName: name)), icon: const Icon(Icons.chat_bubble_rounded)), IconButton(tooltip: ar ? 'إزالة' : 'Remove', onPressed: () => _removeFriend(f['request_id'].toString()), icon: const Icon(Icons.person_remove_rounded, color: Colors.red)), IconButton(tooltip: ar ? 'حظر' : 'Block', onPressed: () async { try { await db.from('user_blocks').upsert({'blocker_id': uid, 'blocked_id': f['id']}); await _removeFriend(f['request_id'].toString()); } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر حظر المستخدم: $e'))); } }, icon: const Icon(Icons.block_rounded, color: Colors.redAccent))])));
     }));
   }
 

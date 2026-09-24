@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../services/feature_control.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/remaining_services.dart';
@@ -63,10 +64,10 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
       await RemainingServices.sendGroupMessage(widget.groupId, text);
       _controller.clear();
       await _load();
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تعذر إرسال الرسالة إلى المجموعة')),
+        SnackBar(content: Text(FeatureControl.errorMessage(error, 'تعذر إرسال الرسالة إلى المجموعة'))),
       );
     } finally {
       if (mounted) setState(() => _sending = false);
@@ -169,11 +170,13 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                   Expanded(
                     child: TextField(
                       controller: _controller,
+                      style: const TextStyle(color: Colors.black87),
                       minLines: 1,
                       maxLines: 4,
                       textInputAction: TextInputAction.newline,
                       decoration: InputDecoration(
                         hintText: 'اكتب رسالة للمجموعة...',
+                        hintStyle: const TextStyle(color: Colors.black54),
                         filled: true,
                         fillColor: Colors.white,
                         border: OutlineInputBorder(

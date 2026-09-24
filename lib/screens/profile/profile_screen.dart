@@ -23,6 +23,7 @@ import '../../widgets/video_player_widget.dart';
 import '../../widgets/post_media_gallery.dart';
 import '../../services/post_publish_service.dart';
 import '../../services/secure_media_service.dart';
+import '../../services/feature_control.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String? userId;
@@ -494,6 +495,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _openChatWithColleague(String name) async {
+    if (!await FeatureControl.instance.check(context, 'direct_chat')) return;
     final partner = widget.userId;
     if (partner == null) return;
     try {
@@ -608,7 +610,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             slivers: [
               SliverToBoxAdapter(child: _buildHero(ar, name, image, cover, username, headline, bio, role)),
               SliverToBoxAdapter(child: _buildQuickDashboard(ar)),
-              if (isMe) SliverToBoxAdapter(child: _bookButton(ar)),
+              if (isMe && FeatureControl.instance.visible('graduation_book')) SliverToBoxAdapter(child: _bookButton(ar)),
               SliverToBoxAdapter(child: _buildSectionHeader(ar)),
               if (_posts.isEmpty && _sharedPosts.isEmpty)
                 SliverToBoxAdapter(child: _emptyPosts(ar))
@@ -833,16 +835,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 spacing: 4,
                 runSpacing: 12,
                 children: [
-                  _shortcut(Icons.insights_rounded, ar ? 'إحصاءاتي' : 'Insights', _openStats),
-                  _shortcut(Icons.timeline_rounded, ar ? 'نشاطي' : 'Activity', _openActivity),
-                  _shortcut(Icons.emoji_events_rounded, ar ? 'إنجازاتي' : 'Achievements', _openAchievements),
-                  _shortcut(Icons.bookmark_rounded, ar ? 'المحفوظات' : 'Saved', _openSaved),
-                  _shortcut(Icons.local_library_rounded, ar ? 'مكتبتي' : 'My Library', _openMyLibrary),
-                  _shortcut(Icons.menu_book_rounded, ar ? 'سوق الكتب' : 'Books', _openBooks),
-                  _shortcut(Icons.groups_rounded, ar ? 'مجموعاتي' : 'Groups', _openGroups),
-                  _shortcut(Icons.video_library_rounded, ar ? 'مقاطع الفيديو' : 'Videos', _openSocial),
-                  _shortcut(Icons.business_center_rounded, ar ? 'شركاء Zameel' : 'Zameel Partners', _openBusiness),
-                  _shortcut(Icons.school_rounded, ar ? 'كتاب الخريجين' : 'Alumni Book', _openGraduation),
+                  if (FeatureControl.instance.visible('activity_stats')) _shortcut(Icons.insights_rounded, ar ? 'إحصاءاتي' : 'Insights', _openStats),
+                  if (FeatureControl.instance.visible('activity_stats')) _shortcut(Icons.timeline_rounded, ar ? 'نشاطي' : 'Activity', _openActivity),
+                  if (FeatureControl.instance.visible('activity_stats')) _shortcut(Icons.emoji_events_rounded, ar ? 'إنجازاتي' : 'Achievements', _openAchievements),
+                  if (FeatureControl.instance.visible('saved_posts')) _shortcut(Icons.bookmark_rounded, ar ? 'المحفوظات' : 'Saved', _openSaved),
+                  if (FeatureControl.instance.visible('books_market')) _shortcut(Icons.local_library_rounded, ar ? 'مكتبتي' : 'My Library', _openMyLibrary),
+                  if (FeatureControl.instance.visible('books_market')) _shortcut(Icons.menu_book_rounded, ar ? 'سوق الكتب' : 'Books', _openBooks),
+                  if (FeatureControl.instance.visible('groups')) _shortcut(Icons.groups_rounded, ar ? 'مجموعاتي' : 'Groups', _openGroups),
+                  if (FeatureControl.instance.visible('clips')) _shortcut(Icons.video_library_rounded, ar ? 'مقاطع الفيديو' : 'Videos', _openSocial),
+                  if (FeatureControl.instance.visible('business_partners')) _shortcut(Icons.business_center_rounded, ar ? 'شركاء Zameel' : 'Zameel Partners', _openBusiness),
+                  if (FeatureControl.instance.visible('graduation_book')) _shortcut(Icons.school_rounded, ar ? 'كتاب الخريجين' : 'Alumni Book', _openGraduation),
                 ],
             ),],
           ]),
@@ -1007,8 +1009,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Row(
               children: [
                 Expanded(child: _postAction(Icons.favorite_border_rounded, ar ? 'إعجاب' : 'Like', liked, () => _toggleLike(post))),
-                Expanded(child: _postAction(Icons.chat_bubble_outline_rounded, ar ? 'تعليق' : 'Comment', false, () => Navigator.push(context, MaterialPageRoute(builder: (_) => CommentsScreen(post: post))))),
-                Expanded(child: _postAction(Icons.bookmark_border_rounded, ar ? 'حفظ' : 'Save', false, () => _save(post))),
+                if (FeatureControl.instance.visible('comments')) Expanded(child: _postAction(Icons.chat_bubble_outline_rounded, ar ? 'تعليق' : 'Comment', false, () => _openPost(post))),
+                if (FeatureControl.instance.visible('saved_posts')) Expanded(child: _postAction(Icons.bookmark_border_rounded, ar ? 'حفظ' : 'Save', false, () => _save(post))),
                 Expanded(child: _postAction(Icons.share_outlined, ar ? 'مشاركة' : 'Share', false, () => _share(post))),
               ],
             ),
@@ -1020,7 +1022,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _postAction(IconData icon, String label, bool active, VoidCallback onTap) => InkWell(onTap: onTap, borderRadius: BorderRadius.circular(10), child: Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Column(children: [Icon(active ? Icons.favorite_rounded : icon, size: 20, color: active ? AppTheme.accent : AppTheme.textSecondary), const SizedBox(height: 3), Text(label, style: TextStyle(fontSize: 11, color: active ? AppTheme.accent : AppTheme.textSecondary))])));
 
-  void _openPost(Map<String, dynamic> post) => Navigator.push(context, MaterialPageRoute(builder: (_) => CommentsScreen(post: post)));
+  void _openPost(Map<String, dynamic> post) => FeatureControl.instance.open(context, 'comments', () => CommentsScreen(post: post));
 
   bool _ownsPost(Map<String, dynamic> post) =>
       post['user_id']?.toString() == Supabase.instance.client.auth.currentUser?.id;
@@ -1446,9 +1448,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _save(Map<String, dynamic> post) async {
+    if (!await FeatureControl.instance.check(context, 'saved_posts')) return;
     final me = Supabase.instance.client.auth.currentUser;
     if (me == null || post['id'] == null) return;
-    try { await Supabase.instance.client.from('saved_posts').upsert({'user_id': me.id, 'post_id': post['id']}); if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم حفظ المنشور ✓'))); } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر الحفظ: $e'))); }
+    try { await Supabase.instance.client.from('saved_posts').upsert({'user_id': me.id, 'post_id': post['id']}); if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم حفظ المنشور ✓'))); } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(FeatureControl.errorMessage(e, 'تعذر الحفظ')))); }
   }
 
   Future<void> _share(Map<String, dynamic> post) async {
@@ -1526,10 +1529,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try { final d = DateTime.parse(value.toString()); final diff = DateTime.now().difference(d); if (diff.inMinutes < 1) return 'الآن'; if (diff.inHours < 1) return 'منذ ${diff.inMinutes} د'; if (diff.inDays < 1) return 'منذ ${diff.inHours} س'; return 'منذ ${diff.inDays} ي'; } catch (_) { return ''; }
   }
 
-  void _openActivity() => Navigator.push(context, MaterialPageRoute(builder: (_) => ProfileActivityScreen(posts: _posts, ar: Provider.of<LanguageProvider>(context, listen: false).isArabic)));
-  void _openAchievements() => Navigator.push(context, MaterialPageRoute(builder: (_) => ProfileAchievementsScreen(posts: _posts.length, likes: _likesReceived, followers: _followers, clips: _clips, ar: Provider.of<LanguageProvider>(context, listen: false).isArabic)));
-  void _openStats() => Navigator.push(context, MaterialPageRoute(builder: (_) => StatsScreen(postsCount: _posts.length, likesCount: _likesReceived, commentsCount: _comments, friendsCount: _followers, savedBooksCount: _saved, activeDays: 0)));
+  void _openActivity() => FeatureControl.instance.open(context, 'activity_stats', () => ProfileActivityScreen(posts: _posts, ar: Provider.of<LanguageProvider>(context, listen: false).isArabic));
+  void _openAchievements() => FeatureControl.instance.open(context, 'activity_stats', () => ProfileAchievementsScreen(posts: _posts.length, likes: _likesReceived, followers: _followers, clips: _clips, ar: Provider.of<LanguageProvider>(context, listen: false).isArabic));
+  void _openStats() => FeatureControl.instance.open(context, 'activity_stats', () => StatsScreen(postsCount: _posts.length, likesCount: _likesReceived, commentsCount: _comments, friendsCount: _followers, savedBooksCount: _saved, activeDays: 0));
   Future<void> _openSaved() async {
+    if (!await FeatureControl.instance.check(context, 'saved_posts')) return;
     final me = Supabase.instance.client.auth.currentUser;
     if (me == null) return;
     try {
@@ -1545,17 +1549,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
       await SecureMediaService.resolvePosts(saved);
       if (!mounted) return;
-      Navigator.push(context, MaterialPageRoute(builder: (_) => SavedPostsScreen(savedPosts: saved)));
+      Navigator.push(context, MaterialPageRoute(builder: (_) => FeatureControl.instance.page('saved_posts', SavedPostsScreen(savedPosts: saved))));
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر فتح المحفوظات: $e')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(FeatureControl.errorMessage(e, 'تعذر فتح المحفوظات'))));
     }
   }
-  void _openBooks() => Navigator.push(context, MaterialPageRoute(builder: (_) => const BooksScreen()));
-  void _openMyLibrary() => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyLibraryScreen()));
-  void _openGroups() => Navigator.push(context, MaterialPageRoute(builder: (_) => const GroupsScreen()));
-  void _openSocial() => Navigator.push(context, MaterialPageRoute(builder: (_) => ZameelSocialStudio(isArabic: Provider.of<LanguageProvider>(context, listen: false).isArabic)));
-  void _openBusiness() => Navigator.push(context, MaterialPageRoute(builder: (_) => const BusinessScreen()));
-  void _openGraduation() => Navigator.push(context, MaterialPageRoute(builder: (_) => GraduationBookScreen(ownerId: _profile?['id']?.toString() ?? Supabase.instance.client.auth.currentUser?.id, studentName: pString('name').isEmpty ? 'طالب Zameel' : pString('name'), university: pString('university'), major: pString('department'), graduationYear: DateTime.now().year.toString())));
+  void _openBooks() => FeatureControl.instance.open(context, 'books_market', () => const BooksScreen());
+  void _openMyLibrary() => FeatureControl.instance.open(context, 'books_market', () => const MyLibraryScreen());
+  void _openGroups() => FeatureControl.instance.open(context, 'groups', () => const GroupsScreen());
+  void _openSocial() => FeatureControl.instance.open(context, 'clips', () => ZameelSocialStudio(isArabic: Provider.of<LanguageProvider>(context, listen: false).isArabic));
+  void _openBusiness() => FeatureControl.instance.open(context, 'business_partners', () => const BusinessScreen());
+  void _openGraduation() => FeatureControl.instance.open(context, 'graduation_book', () => GraduationBookScreen(ownerId: _profile?['id']?.toString() ?? Supabase.instance.client.auth.currentUser?.id, studentName: pString('name').isEmpty ? 'طالب Zameel' : pString('name'), university: pString('university'), major: pString('department'), graduationYear: DateTime.now().year.toString()));
 
   void _showMore() {
     final ar = Provider.of<LanguageProvider>(context, listen: false).isArabic;

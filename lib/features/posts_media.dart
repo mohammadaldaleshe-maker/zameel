@@ -377,20 +377,21 @@ class _ImagePostState extends State<_ImagePost> {
                 'comments_title',
                 languageProvider.currentLanguage,
               ),
-              onTap: () {
+              onTap: () async {
+                if (!await FeatureControl.instance.check(context, 'comments')) return;
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => CommentsScreen(
+                    builder: (_) => FeatureControl.instance.page('comments', CommentsScreen(
                       post: widget.post,
-                    ),
+                    )),
                   ),
                 );
               },
               color: Colors.white70,
             ),
             // SAVE
-            _PostAction(
+            if (FeatureControl.instance.visible('saved_posts')) _PostAction(
               icon: isSaved
                   ? Icons.bookmark_rounded
                   : Icons.bookmark_border_rounded,
@@ -639,19 +640,20 @@ class _VideoPostState extends State<_VideoPost> {
             _PostAction(
               icon: Icons.comment_rounded,
               text: '${widget.post['comments']}',
-              onTap: () {
+              onTap: () async {
+                if (!await FeatureControl.instance.check(context, 'comments')) return;
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => CommentsScreen(
+                    builder: (_) => FeatureControl.instance.page('comments', CommentsScreen(
                       post: widget.post,
-                    ),
+                    )),
                   ),
                 );
               },
               color: Colors.white70,
             ),
-            _PostAction(
+            if (FeatureControl.instance.visible('saved_posts')) _PostAction(
               icon: widget.post['isSaved'] == true
                   ? Icons.bookmark_rounded
                   : Icons.bookmark_border_rounded,
@@ -700,7 +702,7 @@ Future<void> _showPostLikesDialog(BuildContext context, Map<String, dynamic> pos
     if (!context.mounted) return;
     showModalBottomSheet(context: context, showDragHandle: true, builder: (_) => Directionality(textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr, child: SizedBox(height: 480, child: Column(children: [Padding(padding: const EdgeInsets.all(16), child: Text(isArabic ? 'الأشخاص الذين أعجبوا بالمنشور' : 'People who liked this post', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800))), Expanded(child: rows.isEmpty ? Center(child: Text(isArabic ? 'لا توجد إعجابات بعد' : 'No likes yet')) : ListView.builder(itemCount: rows.length, itemBuilder: (_, i) { final u = rows[i]['users']; final name = u is Map ? (u['name']?.toString() ?? 'User') : 'User'; final image = u is Map ? u['profile_image']?.toString() : null; return ListTile(leading: CircleAvatar(backgroundImage: image != null && image.isNotEmpty ? NetworkImage(image) : null, child: image == null || image.isEmpty ? const Icon(Icons.person) : null), title: Text(name, style: const TextStyle(fontWeight: FontWeight.w700))); }))]))));
   } catch (e) {
-    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر تحميل قائمة الإعجابات: $e')));
+    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(FeatureControl.errorMessage(e, 'تعذر تحميل قائمة الإعجابات'))));
   }
 }
 
@@ -796,7 +798,7 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تعذر تحديث الإعجاب: $e')),
+          SnackBar(content: Text(FeatureControl.errorMessage(e, 'تعذر تحديث الإعجاب'))),
         );
       }
     } finally {
@@ -805,6 +807,7 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
   }
 
   Future<void> _toggleSave() async {
+    if (!await FeatureControl.instance.check(context, 'saved_posts')) return;
     final user = Supabase.instance.client.auth.currentUser;
     final postId = widget.post['id'];
     if (_busy) return;
@@ -832,7 +835,7 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تعذر تحديث الحفظ: $e')),
+          SnackBar(content: Text(FeatureControl.errorMessage(e, 'تعذر تحديث الحفظ'))),
         );
       }
     } finally {
@@ -877,6 +880,7 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
   }
 
   Future<void> _addComment(bool isArabic) async {
+    if (!await FeatureControl.instance.check(context, 'comments')) return;
     final text = _commentController.text.trim();
     final user = Supabase.instance.client.auth.currentUser;
     final postId = widget.post['id'];
@@ -917,7 +921,7 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(isArabic ? 'تعذر إضافة التعليق: $e' : 'Could not add comment: $e'),
+            content: Text(FeatureControl.errorMessage(e, isArabic ? 'تعذر إضافة التعليق' : 'Could not add comment')),
           ),
         );
       }
@@ -927,9 +931,10 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
   }
 
   Future<void> _openComments() async {
+    if (!await FeatureControl.instance.check(context, 'comments')) return;
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => CommentsScreen(post: widget.post)),
+      MaterialPageRoute(builder: (_) => FeatureControl.instance.page('comments', CommentsScreen(post: widget.post))),
     );
     if (mounted) setState(() {});
   }
@@ -1115,7 +1120,7 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
                             color: liked ? accentColor : Colors.white,
                           ),
                         ),
-                        IconButton(
+                        if (FeatureControl.instance.visible('comments')) IconButton(
                           tooltip: isArabic ? 'تعليق' : 'Comment',
                           onPressed: () => _commentFocus.requestFocus(),
                           icon: const Icon(Icons.comment_outlined, color: Colors.white),
@@ -1125,7 +1130,7 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
                           onPressed: _share,
                           icon: const Icon(Icons.share_rounded, color: Colors.white),
                         ),
-                        IconButton(
+                        if (FeatureControl.instance.visible('saved_posts')) IconButton(
                           tooltip: isArabic ? 'حفظ' : 'Save',
                           onPressed: _toggleSave,
                           icon: Icon(
@@ -1530,19 +1535,20 @@ class _TextPostState extends State<_TextPost> {
                 'comments_title',
                 languageProvider.currentLanguage,
               ),
-              onTap: () {
+              onTap: () async {
+                if (!await FeatureControl.instance.check(context, 'comments')) return;
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => CommentsScreen(
+                    builder: (_) => FeatureControl.instance.page('comments', CommentsScreen(
                       post: widget.post,
-                    ),
+                    )),
                   ),
                 );
               },
               color: Colors.white70,
             ),
-            _PostAction(
+            if (FeatureControl.instance.visible('saved_posts')) _PostAction(
               icon: isSaved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
               text: isArabic ? 'حفظ' : 'Save',
               active: isSaved,

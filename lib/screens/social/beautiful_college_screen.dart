@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../../services/feature_control.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -129,7 +130,7 @@ class _BeautifulCollegeScreenState extends State<BeautifulCollegeScreen> {
       _notice('تمت إضافة صورتك إلى تحدي اليوم.', success: true);
       await _load();
     } catch (error) {
-      _notice('تعذر نشر الصورة. يُسمح بصورة واحدة في كل دورة: $error');
+      _notice(FeatureControl.errorMessage(error, 'تعذر نشر الصورة. يُسمح بصورة واحدة في كل دورة'));
     } finally {
       place.dispose();
       caption.dispose();

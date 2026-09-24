@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import '../../services/feature_control.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
@@ -140,11 +141,8 @@ class _ChatScreenState extends State<ChatScreen> {
             title: Text(ar ? '💬 الدردشة' : '💬 Chat'),
             centerTitle: true,
             actions: [
-              IconButton(
-                  onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const AnonymousScreen())),
+              if (FeatureControl.instance.visible('anonymous_messages')) IconButton(
+                  onPressed: () => FeatureControl.instance.open(context, 'anonymous_messages', () => const AnonymousScreen()),
                   icon: const Icon(Icons.visibility_off_rounded)),
               IconButton(
                   onPressed: _load, icon: const Icon(Icons.refresh_rounded))
@@ -1068,6 +1066,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   }
 
   Future<void> _call({required bool video}) async {
+    if (!await FeatureControl.instance.check(context, 'direct_calls')) return;
     final me = uid;
     if (me == null) return;
     final roomId =

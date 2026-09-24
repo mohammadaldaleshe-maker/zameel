@@ -17,6 +17,36 @@ class FeatureControl {
   bool visible(String key) => mode(key) != 'hidden';
   bool enabled(String key) => mode(key) == 'enabled';
 
+  static const suspendedMessage = 'هذه الميزة معلقة حالياً';
+
+  static bool isSuspendedError(Object error) {
+    final message = error is PostgrestException ? error.message : error.toString();
+    return RegExp(r'\b[a-z_]+_temporarily_unavailable\b').hasMatch(message);
+  }
+
+  /// Converts backend feature guards to one safe, consistent UI message.
+  /// Other errors retain the caller's existing explanation.
+  static String errorMessage(Object error, String fallback) {
+    if (isSuspendedError(error)) {
+      return suspendedMessage;
+    }
+    return '$fallback: $error';
+  }
+
+  Future<bool> check(BuildContext context, String key) async {
+    await refresh(force: true);
+    if (!context.mounted) return false;
+    if (enabled(key)) return true;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text(suspendedMessage)),
+    );
+    return false;
+  }
+
+  /// Also covers a screen reached through an old link or while its switch changes.
+  Widget page(String key, Widget child, {bool embedded = false}) =>
+      _FeaturePage(featureKey: key, embedded: embedded, child: child);
+
   Future<void> refresh({bool force = false}) {
     if (_pending != null) return _pending!;
     if (!force && _lastRefresh != null &&
@@ -53,14 +83,47 @@ class FeatureControl {
   }
 
   Future<void> open(BuildContext context, String key, Widget Function() page) async {
-    await refresh(force: true);
-    if (!context.mounted) return;
-    if (!enabled(key)) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
-        mode(key) == 'hidden' ? 'هذه الميزة غير متاحة حاليًا' : 'هذه الميزة معلّقة مؤقتًا',
-      )));
-      return;
-    }
-    await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => page()));
+    if (!await check(context, key) || !context.mounted) return;
+    await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => this.page(key, page())));
   }
+}
+
+class _FeaturePage extends StatefulWidget {
+  const _FeaturePage({required this.featureKey, required this.child,
+      required this.embedded});
+  final String featureKey;
+  final Widget child;
+  final bool embedded;
+
+  @override
+  State<_FeaturePage> createState() => _FeaturePageState();
+}
+
+class _FeaturePageState extends State<_FeaturePage> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    FeatureControl.instance.refresh(force: true);
+    _timer = Timer.periodic(const Duration(seconds: 45),
+        (_) => FeatureControl.instance.refresh(force: true));
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => ValueListenableBuilder<int>(
+    valueListenable: FeatureControl.instance.changes,
+    builder: (context, _, __) => FeatureControl.instance.enabled(widget.featureKey)
+        ? widget.child
+        : widget.embedded
+            ? const Padding(padding: EdgeInsets.all(16),
+                child: Text(FeatureControl.suspendedMessage))
+            : const Scaffold(body: Center(child: Text(FeatureControl.suspendedMessage))),
+  );
 }

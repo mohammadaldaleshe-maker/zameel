@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import '../../services/feature_control.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -67,7 +68,7 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
       if (!mounted) return;
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('تعذر تحميل التعليقات: $error')),
+        SnackBar(content: Text(FeatureControl.errorMessage(error, 'تعذر تحميل التعليقات'))),
       );
     }
   }
@@ -93,7 +94,7 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تعذر إضافة التعليق: $error')),
+          SnackBar(content: Text(FeatureControl.errorMessage(error, 'تعذر إضافة التعليق'))),
         );
       }
     } finally {
@@ -127,7 +128,7 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
         comment['likes_count'] = oldCount;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('تعذر تحديث الإعجاب: $error')),
+        SnackBar(content: Text(FeatureControl.errorMessage(error, 'تعذر تحديث الإعجاب'))),
       );
     }
   }
@@ -165,7 +166,7 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تعذر تعديل التعليق: $error')),
+          SnackBar(content: Text(FeatureControl.errorMessage(error, 'تعذر تعديل التعليق'))),
         );
       }
     }
@@ -204,7 +205,7 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تعذر حذف التعليق: $error')),
+          SnackBar(content: Text(FeatureControl.errorMessage(error, 'تعذر حذف التعليق'))),
         );
       }
     }

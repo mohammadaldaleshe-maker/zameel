@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 
 import '../meet/meet_screen.dart';
 import '../../services/screen_awake_service.dart';
+import '../../services/feature_control.dart';
 
 class ContactCallsScreen extends StatefulWidget {
   const ContactCallsScreen({super.key});
@@ -92,6 +93,7 @@ class _ContactCallsScreenState extends State<ContactCallsScreen> {
   }
 
   Future<void> _call(_PhoneContact c, bool video) async {
+    if (!await FeatureControl.instance.check(context, 'direct_calls')) return;
     final u=c.zameel; if (u==null) { await _invite(c); return; }
     if (u['allow_calls']==false) { if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('هذا المستخدم لا يسمح بالمكالمات حاليًا.'))); return; }
     try {

@@ -6,6 +6,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'call_invitation_guard.dart';
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -112,9 +113,10 @@ class PushNotificationService {
       );
 
       await messaging.setForegroundNotificationPresentationOptions(
-        alert: true,
+        // Local notifications handle foreground display for every platform.
+        alert: false,
         badge: true,
-        sound: true,
+        sound: false,
       );
 
       FirebaseMessaging.onMessage.listen(_onForegroundMessage);
@@ -261,6 +263,8 @@ class PushNotificationService {
     final body = notification?.body ?? message.data['body']?.toString() ?? '';
     final incomingCall =
         type == 'incoming_video_call' || type == 'incoming_voice_call';
+    if (incomingCall && !await CallInvitationGuard.isRinging(
+        message.data['room_id']?.toString() ?? '')) return;
     var playSound = true;
     final me = Supabase.instance.client.auth.currentUser?.id;
     if (me != null) {
@@ -276,8 +280,13 @@ class PushNotificationService {
       } catch (_) {}
     }
 
+    final conversationId = type == 'message'
+        ? message.data['conversation_id']?.toString() ?? '' : '';
     await _local.show(
-      id: message.hashCode,
+      id: conversationId.isNotEmpty
+          ? conversationId.codeUnits.fold<int>(5381,
+              (value, unit) => ((value * 33) ^ unit) & 0x7fffffff)
+          : message.hashCode,
       title: title,
       body: body,
       notificationDetails: NotificationDetails(

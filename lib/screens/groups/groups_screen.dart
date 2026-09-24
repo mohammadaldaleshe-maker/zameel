@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../services/feature_control.dart';
 import 'package:provider/provider.dart';
 import '../../providers/language_provider.dart';
 import 'package:zameel/theme/app_theme.dart';
@@ -119,6 +120,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
                 children: [
                   TextField(
                     controller: nameController,
+                    style: const TextStyle(color: Colors.black87),
                     decoration: InputDecoration(
                       labelText: isArabic ? 'اسم المجموعة' : 'Group Name',
                       border: const OutlineInputBorder(),
@@ -153,6 +155,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
                   const SizedBox(height: 12),
                   TextField(
                     controller: descriptionController,
+                    style: const TextStyle(color: Colors.black87),
                     maxLines: 3,
                     decoration: InputDecoration(
                       labelText: isArabic ? 'وصف المجموعة (اختياري)' : 'Group Description (Optional)',
@@ -215,10 +218,10 @@ class _GroupsScreenState extends State<GroupsScreen> {
                         backgroundColor: Colors.green,
                       ),
                     );
-                  } catch (_) {
+                  } catch (error) {
                     if (!mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(isArabic ? 'تعذر إنشاء المجموعة' : 'Could not create group')),
+                      SnackBar(content: Text(FeatureControl.errorMessage(error, isArabic ? 'تعذر إنشاء المجموعة' : 'Could not create group'))),
                     );
                   }
                 },
@@ -263,10 +266,10 @@ class _GroupsScreenState extends State<GroupsScreen> {
           backgroundColor: requested ? AppTheme.primary : Colors.green,
         ),
       );
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(isArabic ? 'تعذر الانضمام للمجموعة' : 'Could not join group')),
+        SnackBar(content: Text(FeatureControl.errorMessage(error, isArabic ? 'تعذر الانضمام للمجموعة' : 'Could not join group'))),
       );
     }
   }
@@ -619,6 +622,7 @@ class _GroupCard extends StatelessWidget {
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
+                        color: Colors.black87,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -1044,6 +1048,7 @@ class _InfoCard extends StatelessWidget {
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
+                color: Colors.black87,
               ),
             ),
             Text(

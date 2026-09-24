@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../../services/feature_control.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:video_player/video_player.dart';
 
@@ -338,15 +339,13 @@ class _ClipPreviewPublishScreenState extends State<_ClipPreviewPublishScreen> {
       if (id == null) throw StateError('clip_not_created');
       if (!mounted) return;
       Navigator.pop(context, true);
-    } catch (_) {
+    } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              ar
-                  ? 'تعذر نشر الكليبس. تحقق من الاتصال وحاول مجددًا.'
-                  : 'Could not publish the clip. Check your connection and try again.',
-            ),
+            content: Text(FeatureControl.errorMessage(error,
+                ar ? 'تعذر نشر الكليبس. تحقق من الاتصال وحاول مجددًا.'
+                   : 'Could not publish the clip. Check your connection and try again.')),
           ),
         );
       }
