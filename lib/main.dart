@@ -61,6 +61,7 @@ import 'services/secure_media_service.dart';
 import 'services/screen_awake_service.dart';
 import 'services/media_cache_service.dart';
 import 'services/post_publish_service.dart';
+import 'services/feature_control.dart';
 import 'widgets/post_media_gallery.dart';
 import 'platform/local_image_provider.dart';
 

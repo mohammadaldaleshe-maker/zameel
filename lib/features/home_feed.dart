@@ -56,7 +56,12 @@ void initState() {
   _loadArcMenuPosition();
   _loadArcShortcuts();
   _loadFeedScope();
+  FeatureControl.instance.changes.addListener(_onFeatureChange);
+  FeatureControl.instance.refresh(force: true);
 }
+
+void _onFeatureChange() { if (mounted) setState(() {}); }
+
 
 void _startFeedRefreshTimer() {
   _feedRefreshTimer?.cancel();
@@ -131,52 +136,65 @@ List<_ArcItemData> _arcShortcutCatalog(bool ar) => <_ArcItemData>[
   _ArcItemData('clips', Icons.movie_creation_rounded, ar ? 'كليبسات' : 'Clips', () => _openMenuDestination('clips')),
 ];
 
+String _featureForShortcut(String id) => const <String, String>{
+  'books':'books_market', 'chat':'direct_chat', 'colleagues':'suggested_colleagues',
+  'lamma':'lamma', 'radio':'zameel_radio', 'beautiful_college':'beautiful_college',
+  'campus':'campus_world', 'meet':'zameel_meet', 'jobs':'jobs_training',
+  'calendar':'university_calendar', 'polls':'polls', 'groups':'groups',
+  'ai':'zameel_ai', 'partners':'business_partners', 'clips':'clips',
+}[id] ?? id;
+
 void _openMenuDestination(String id) {
+  final feature = _featureForShortcut(id);
+  if (!FeatureControl.instance.enabled(feature)) {
+    FeatureControl.instance.open(context, feature, () => const SizedBox.shrink());
+    return;
+  }
   switch (id) {
     case 'home':
       setState(() => currentIndex = 0);
       break;
     case 'books':
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const BooksScreen()));
+      FeatureControl.instance.open(context, 'books_market', () => const BooksScreen());
       break;
     case 'chat':
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatScreen()));
+      FeatureControl.instance.open(context, 'direct_chat', () => const ChatScreen());
       break;
     case 'colleagues':
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const FriendsScreen()));
+      FeatureControl.instance.open(context, 'suggested_colleagues', () => const FriendsScreen());
       break;
     case 'lamma':
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const LammaScreen()));
+      FeatureControl.instance.open(context, 'lamma', () => const LammaScreen());
       break;
     case 'radio':
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const ZameelRadioScreen()));
+      FeatureControl.instance.open(context, 'zameel_radio', () => const ZameelRadioScreen());
       break;
     case 'beautiful_college':
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const BeautifulCollegeScreen()));
+      FeatureControl.instance.open(context, 'beautiful_college', () => const BeautifulCollegeScreen());
       break;
     case 'campus':
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const CampusScreen()));
+      FeatureControl.instance.open(context, 'campus_world', () => const CampusScreen());
       break;
     case 'meet':
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const MeetScreen()));
+      FeatureControl.instance.open(context, 'zameel_meet', () => const MeetScreen());
       break;
     case 'jobs':
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const JobsScreen()));
+      FeatureControl.instance.open(context, 'jobs_training', () => const JobsScreen());
       break;
     case 'calendar':
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const CalendarScreen()));
+      FeatureControl.instance.open(context, 'university_calendar', () => const CalendarScreen());
       break;
     case 'polls':
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const PollsScreen()));
+      FeatureControl.instance.open(context, 'polls', () => const PollsScreen());
       break;
     case 'groups':
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const GroupsScreen()));
+      FeatureControl.instance.open(context, 'groups', () => const GroupsScreen());
       break;
     case 'ai':
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const AIScreen()));
+      FeatureControl.instance.open(context, 'zameel_ai', () => const AIScreen());
       break;
     case 'partners':
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const BusinessScreen()));
+      FeatureControl.instance.open(context, 'business_partners', () => const BusinessScreen());
       break;
     case 'profile':
       final user = Supabase.instance.client.auth.currentUser;
@@ -186,7 +204,7 @@ void _openMenuDestination(String id) {
       break;
     case 'clips':
       final ar = Provider.of<LanguageProvider>(context, listen: false).isArabic;
-      Navigator.push(context, MaterialPageRoute(builder: (_) => ZameelSocialStudio(isArabic: ar)));
+      FeatureControl.instance.open(context, 'clips', () => ZameelSocialStudio(isArabic: ar));
       break;
   }
 }
@@ -194,7 +212,7 @@ void _openMenuDestination(String id) {
 Future<void> _showArcShortcutCustomizer() async {
   final ar = Provider.of<LanguageProvider>(context, listen: false).isArabic;
   var selected = List<String>.from(_arcShortcutIds);
-  final catalog = _arcShortcutCatalog(ar);
+  final catalog = _arcShortcutCatalog(ar).where((e) => FeatureControl.instance.visible(_featureForShortcut(e.id))).toList();
   final result = await showDialog<List<String>>(
     context: context,
     builder: (dialogContext) => StatefulBuilder(
@@ -271,6 +289,7 @@ List<Map<String, dynamic>> get _visiblePosts {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    FeatureControl.instance.changes.removeListener(_onFeatureChange);
     _notificationReloadDebounce?.cancel();
     _notificationsChannel?.unsubscribe();
     _feedReloadDebounce?.cancel();
@@ -284,6 +303,7 @@ List<Map<String, dynamic>> get _visiblePosts {
 void didChangeAppLifecycleState(AppLifecycleState state) {
   if (state == AppLifecycleState.resumed) {
     _startFeedRefreshTimer();
+    FeatureControl.instance.refresh(force: true);
     _loadPosts(silent: true);
     _loadUnreadNotifications();
   } else if (state == AppLifecycleState.inactive ||
@@ -1430,167 +1450,109 @@ Future<void> _createUserIfNotExists() async {
               },
               isSelected: currentIndex == 0,
             ),
-            _DrawerItem(
+            if (FeatureControl.instance.visible('books_market')) _DrawerItem(
               icon: Icons.menu_book_rounded,
               title: isArabic ? 'الكتب' : 'Books',
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const BooksScreen(),
-                  ),
-                );
+                FeatureControl.instance.open(context, 'books_market', () => const BooksScreen());
               },
             ),
-            _DrawerItem(
+            if (FeatureControl.instance.visible('direct_chat')) _DrawerItem(
               icon: Icons.chat_bubble_rounded,
               title: isArabic ? 'الدردشة' : 'Chat',
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const ChatScreen(),
-                  ),
-                );
+                FeatureControl.instance.open(context, 'direct_chat', () => const ChatScreen());
               },
             ),
-            _DrawerItem(
+            if (FeatureControl.instance.visible('suggested_colleagues')) _DrawerItem(
               icon: Icons.people_rounded,
               title: isArabic ? 'زملاء' : 'Colleagues',
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const FriendsScreen(),
-                  ),
-                );
+                FeatureControl.instance.open(context, 'suggested_colleagues', () => const FriendsScreen());
               },
             ),
-            _DrawerItem(
+            if (FeatureControl.instance.visible('lamma')) _DrawerItem(
               icon: Icons.diversity_2_rounded,
               title: isArabic ? 'لَمّة' : 'Lamma',
               onTap: () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const LammaScreen()));
+                FeatureControl.instance.open(context, 'lamma', () => const LammaScreen());
               },
             ),
-            _DrawerItem(
+            if (FeatureControl.instance.visible('zameel_radio')) _DrawerItem(
               icon: Icons.podcasts_rounded,
               title: isArabic ? 'راديو Zameel' : 'Zameel Radio',
               onTap: () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const ZameelRadioScreen()));
+                FeatureControl.instance.open(context, 'zameel_radio', () => const ZameelRadioScreen());
               },
             ),
-            _DrawerItem(
+            if (FeatureControl.instance.visible('beautiful_college')) _DrawerItem(
               icon: Icons.photo_camera_back_rounded,
               title: isArabic ? 'تحدي أجمل كلية' : 'Beautiful College Challenge',
               onTap: () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const BeautifulCollegeScreen()));
+                FeatureControl.instance.open(context, 'beautiful_college', () => const BeautifulCollegeScreen());
               },
             ),
-            _DrawerItem(
+            if (FeatureControl.instance.visible('campus_world')) _DrawerItem(
               icon: Icons.map_rounded,
               title: isArabic ? 'الحرم الجامعي' : 'Campus',
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const CampusScreen(),
-                  ),
-                );
+                FeatureControl.instance.open(context, 'campus_world', () => const CampusScreen());
               },
             ),
-            _DrawerItem(
+            if (FeatureControl.instance.visible('zameel_meet')) _DrawerItem(
               icon: Icons.video_call_rounded,
               title: isArabic ? 'اجتمع بالزملاء' : 'Meet',
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const MeetScreen(),
-                  ),
-                );
+                FeatureControl.instance.open(context, 'zameel_meet', () => const MeetScreen());
               },
             ),
-            _DrawerItem(
+            if (FeatureControl.instance.visible('jobs_training')) _DrawerItem(
               icon: Icons.work_rounded,
               title: isArabic ? 'وظائف' : 'Jobs',
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const JobsScreen(),
-                  ),
-                );
+                FeatureControl.instance.open(context, 'jobs_training', () => const JobsScreen());
               },
             ),
-            _DrawerItem(
+            if (FeatureControl.instance.visible('university_calendar')) _DrawerItem(
               icon: Icons.calendar_month_rounded,
               title: isArabic ? 'تقويم' : 'Calendar',
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => CalendarScreen(),
-                  ),
-                );
+                FeatureControl.instance.open(context, 'university_calendar', () => CalendarScreen());
               },
             ),
-            _DrawerItem(
+            if (FeatureControl.instance.visible('polls')) _DrawerItem(
               icon: Icons.poll_rounded,
               title: isArabic ? 'استطلاعات' : 'Polls',
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const PollsScreen(),
-                  ),
-                );
+                FeatureControl.instance.open(context, 'polls', () => const PollsScreen());
               },
             ),
-            _DrawerItem(
+            if (FeatureControl.instance.visible('groups')) _DrawerItem(
               icon: Icons.group_rounded,
               title: isArabic ? 'مجموعات' : 'Groups',
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const GroupsScreen(),
-                  ),
-                );
+                FeatureControl.instance.open(context, 'groups', () => const GroupsScreen());
               },
             ),
-            _DrawerItem(
+            if (FeatureControl.instance.visible('clips')) _DrawerItem(
               icon: Icons.movie_creation_rounded,
               title: isArabic ? 'كليبسات' : 'Clips',
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => ZameelSocialStudio(isArabic: isArabic),
-                  ),
-                );
+                FeatureControl.instance.open(context, 'clips', () => ZameelSocialStudio(isArabic: isArabic));
               },
             ),
-            _DrawerItem(
+            if (FeatureControl.instance.visible('zameel_ai')) _DrawerItem(
               icon: Icons.auto_awesome_rounded,
               title: isArabic ? 'Zameel AI' : 'Zameel AI',
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const AIScreen(),
-                  ),
-                );
+                FeatureControl.instance.open(context, 'zameel_ai', () => const AIScreen());
               },
             ),
-            _DrawerItem(
+            if (FeatureControl.instance.visible('business_partners')) _DrawerItem(
               icon: Icons.business_center_rounded,
               title: isArabic ? 'شركاء Zameel' : 'Zameel Partners',
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const BusinessScreen()),
-                );
+                FeatureControl.instance.open(context, 'business_partners', () => const BusinessScreen());
               },
             ),
             _DrawerItem(
@@ -1716,10 +1678,10 @@ Future<void> _createUserIfNotExists() async {
             ),
           ),
           actions: [
-            IconButton(
+            if (FeatureControl.instance.visible('direct_calls')) IconButton(
               tooltip: isArabic ? 'اتصال' : 'Call',
               icon: const Icon(Icons.add_call),
-              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ContactCallsScreen())),
+              onPressed: () => FeatureControl.instance.open(context, 'direct_calls', () => const ContactCallsScreen()),
             ),
             PopupMenuButton<String>(
               tooltip: isArabic ? 'فلترة المنشورات' : 'Filter posts',
@@ -1732,7 +1694,7 @@ Future<void> _createUserIfNotExists() async {
                 CheckedPopupMenuItem(value: 'department', checked: _feedScope == 'department', child: Text(isArabic ? 'التخصص' : 'Major')),
               ],
             ),
-            IconButton(tooltip: isArabic ? 'البحث' : 'Search', icon: const Icon(Icons.search_rounded), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchScreen()))),
+            if (FeatureControl.instance.visible('global_search')) IconButton(tooltip: isArabic ? 'البحث' : 'Search', icon: const Icon(Icons.search_rounded), onPressed: () => FeatureControl.instance.open(context, 'global_search', () => const SearchScreen())),
             Stack(alignment: Alignment.center, children: [
               IconButton(tooltip: isArabic ? 'الإشعارات' : 'Notifications', icon: const Icon(Icons.notifications_none_rounded), onPressed: () async { await Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen())); _loadUnreadNotifications(); }),
               if (_unreadNotifications > 0) Positioned(top: 7, right: 5, child: Container(constraints: const BoxConstraints(minWidth: 16, minHeight: 16), alignment: Alignment.center, padding: const EdgeInsets.symmetric(horizontal: 3), decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle), child: Text(_unreadNotifications > 99 ? '99+' : '$_unreadNotifications', style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)))),
@@ -1758,7 +1720,7 @@ Future<void> _createUserIfNotExists() async {
               child: _ZameelArcMenu(
                   isArabic: isArabic,
                   items: _arcShortcutCatalog(isArabic)
-                      .where((item) => _arcShortcutIds.contains(item.id))
+                      .where((item) => _arcShortcutIds.contains(item.id) && FeatureControl.instance.visible(_featureForShortcut(item.id)))
                       .toList()
                     ..sort((a, b) => _arcShortcutIds.indexOf(a.id).compareTo(_arcShortcutIds.indexOf(b.id))),
                   onDrag: _moveArcMenu,
@@ -1767,11 +1729,11 @@ Future<void> _createUserIfNotExists() async {
             )
           ],
         ),
-        floatingActionButton: currentIndex == 0
+        floatingActionButton: currentIndex == 0 && FeatureControl.instance.visible('feed_posts')
             ? FloatingActionButton(
                 backgroundColor: primaryColor,
                 foregroundColor: Colors.white,
-                onPressed: createPost,
+                onPressed: () async { await FeatureControl.instance.refresh(force: true); if (FeatureControl.instance.enabled('feed_posts') && mounted) createPost(); },
                 child: const Icon(Icons.add_rounded),
               )
             : null,
@@ -1783,7 +1745,7 @@ Future<void> _createUserIfNotExists() async {
   Widget _buildCurrentPage() {
     switch (currentIndex) {
       case 0:
-        return _buildFeed();
+        return FeatureControl.instance.enabled('feed_posts') ? _buildFeed() : const Center(child: Text('المنشورات معلّقة مؤقتًا'));
       case 1:
         return const BooksScreen();
       case 2:
@@ -2172,28 +2134,28 @@ Future<void> _createUserIfNotExists() async {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _CreateAction(
+                if (FeatureControl.instance.visible('books_market')) _CreateAction(
                   icon: Icons.menu_book_outlined,
                   text: Translations.translate('feed_book', languageProvider.currentLanguage),
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BooksScreen())),
+                  onTap: () => FeatureControl.instance.open(context, 'books_market', () => const BooksScreen()),
                 ),
                 const SizedBox(width: 14),
-                _CreateAction(
+                if (FeatureControl.instance.visible('lamma')) _CreateAction(
                   icon: Icons.groups_rounded,
                   text: languageProvider.isArabic ? 'لَمّة' : 'Lamma',
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LammaScreen())),
+                  onTap: () => FeatureControl.instance.open(context, 'lamma', () => const LammaScreen()),
                 ),
                 const SizedBox(width: 14),
-                _CreateAction(
+                if (FeatureControl.instance.visible('zameel_radio')) _CreateAction(
                   icon: Icons.podcasts_rounded,
                   text: languageProvider.isArabic ? 'راديو زميل' : 'Zameel Radio',
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ZameelRadioScreen())),
+                  onTap: () => FeatureControl.instance.open(context, 'zameel_radio', () => const ZameelRadioScreen()),
                 ),
                 const SizedBox(width: 14),
-                _CreateAction(
+                if (FeatureControl.instance.visible('beautiful_college')) _CreateAction(
                   icon: Icons.photo_camera_back_rounded,
                   text: languageProvider.isArabic ? 'أجمل كلية' : 'Beautiful College',
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BeautifulCollegeScreen())),
+                  onTap: () => FeatureControl.instance.open(context, 'beautiful_college', () => const BeautifulCollegeScreen()),
                 ),
               ],
             ),
