@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'services/feature_control.dart';
 
 class ZameelStudyFilesService {
   static final SupabaseClient db = Supabase.instance.client;
@@ -16,6 +17,10 @@ class ZameelStudyFilesService {
   }) async {
     final userId = uid;
     if (userId == null) throw Exception('Authentication required');
+    await FeatureControl.instance.refresh(force: true);
+    if (!FeatureControl.instance.enabled('study_files')) {
+      throw StateError('study_files_temporarily_unavailable');
+    }
 
     final profile = await db.from('users').select('university,college,department').eq('id', userId).maybeSingle();
     final university = profile?['university']?.toString().trim() ?? '';
@@ -83,6 +88,10 @@ class ZameelStudyFilesService {
 
   static Future<Uint8List> downloadFile(String path) async {
     if (!signedIn) throw Exception('Authentication required');
+    await FeatureControl.instance.refresh(force: true);
+    if (!FeatureControl.instance.enabled('study_files')) {
+      throw StateError('study_files_temporarily_unavailable');
+    }
     if (path.trim().isEmpty) throw Exception('Missing file path');
     return db.storage.from('study_files').download(path);
   }

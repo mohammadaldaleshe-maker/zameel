@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services_study_files.dart';
+import '../../services/feature_control.dart';
 import '../../services_book_exchange.dart';
 import 'package:provider/provider.dart';
 import '../../providers/language_provider.dart';
@@ -173,6 +174,8 @@ class _BooksScreenState extends State<BooksScreen> {
     _loadAcademicProfile();
     _loadBooks();
     _loadStudyFiles();
+    FeatureControl.instance.changes.addListener(_onStudyFeatureChanged);
+    FeatureControl.instance.refresh(force: true);
     if (widget.initialRequestId?.isNotEmpty == true) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
@@ -182,6 +185,20 @@ class _BooksScreenState extends State<BooksScreen> {
         );
       });
     }
+  }
+
+  void _onStudyFeatureChanged() {
+    if (!mounted) return;
+    setState(() {
+      if (!FeatureControl.instance.visible('study_files')) showStudyFiles = false;
+      if (!FeatureControl.instance.enabled('study_files')) studyFiles = [];
+    });
+  }
+
+  @override
+  void dispose() {
+    FeatureControl.instance.changes.removeListener(_onStudyFeatureChanged);
+    super.dispose();
   }
 
   Future<void> _loadBooks() async {
@@ -397,6 +414,8 @@ class _BooksScreenState extends State<BooksScreen> {
 
   Future<void> _loadStudyFiles() async {
     if (!ZameelStudyFilesService.signedIn) return;
+    await FeatureControl.instance.refresh(force: true);
+    if (!mounted || !FeatureControl.instance.enabled('study_files')) return;
     setState(() => loadingStudyFiles = true);
     try {
       final files = await ZameelStudyFilesService.listFiles();
@@ -410,6 +429,7 @@ class _BooksScreenState extends State<BooksScreen> {
   }
 
   Future<void> _pickStudyFile() async {
+    if (!await FeatureControl.instance.check(context, 'study_files')) return;
     final isArabic = Provider.of<LanguageProvider>(context, listen: false).isArabic;
     final picked = await FilePicker.pickFile(
       type: FileType.custom,
@@ -535,6 +555,7 @@ class _BooksScreenState extends State<BooksScreen> {
   }
 
   Future<void> _openStudyFile(Map<String, dynamic> file) async {
+    if (!await FeatureControl.instance.check(context, 'study_files')) return;
     final isArabic = Provider.of<LanguageProvider>(context, listen: false).isArabic;
     try {
       final path = file['storage_path']?.toString() ?? '';
@@ -1024,14 +1045,19 @@ class _BooksScreenState extends State<BooksScreen> {
                     icon: const Icon(Icons.menu_book_rounded),
                     label: Text(isArabic ? 'الكتب' : 'Books'),
                   ),
-                  ButtonSegment<bool>(
+                  if (FeatureControl.instance.visible('study_files')) ButtonSegment<bool>(
                     value: true,
                     icon: const Icon(Icons.folder_copy_rounded),
                     label: Text(isArabic ? 'ملفات دراسية' : 'Study Files'),
                   ),
                 ],
                 selected: {showStudyFiles},
-                onSelectionChanged: (value) => setState(() => showStudyFiles = value.first),
+                onSelectionChanged: (value) async {
+                  if (value.first && !await FeatureControl.instance.check(context, 'study_files')) return;
+                  if (!mounted) return;
+                  setState(() => showStudyFiles = value.first);
+                  if (value.first) await _loadStudyFiles();
+                },
               ),
             ),
 
@@ -1129,6 +1155,8 @@ class _BooksScreenState extends State<BooksScreen> {
                                 ),
                               ),
               ),
+            ] else if (!FeatureControl.instance.enabled('study_files')) ...[
+              const Expanded(child: Center(child: Text(FeatureControl.suspendedMessage))),
             ] else ...[
               Padding(
                 padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
