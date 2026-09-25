@@ -79,6 +79,24 @@ serve(async (req) => {
   if (rawMessage.length > 12000) return response({ error: "message_too_long", message: "النص طويل جدًا. قسّمه إلى أجزاء أصغر." }, 413);
 
   const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+  const { data: aiFeature, error: aiFeatureError } = await admin
+    .from("feature_flags")
+    .select("is_enabled,display_mode")
+    .eq("feature_key", "zameel_ai")
+    .eq("scope_type", "global")
+    .eq("scope_value", "*")
+    .maybeSingle();
+
+  if (aiFeatureError || !aiFeature) {
+    return response({ error: "ai_feature_status_unavailable" }, 503);
+  }
+  if (aiFeature.is_enabled !== true || aiFeature.display_mode !== "enabled") {
+    return response({
+      error: "zameel_ai_temporarily_unavailable",
+      message: "هذه الميزة معلقة حالياً",
+    }, 409);
+  }
+
   const { data: profile } = await admin
     .from("users")
     .select("name,university,college,department,ai_memory_enabled")
