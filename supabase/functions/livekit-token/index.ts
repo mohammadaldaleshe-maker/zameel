@@ -60,6 +60,26 @@ Deno.serve(async (req) => {
   if (!roomCode) return reply({ error: "room_code_required" }, 400);
 
   const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+  if (action === "token") {
+    const { data: feature, error: featureError } = await admin
+      .from("feature_flags")
+      .select("is_enabled,display_mode")
+      .eq("feature_key", "zameel_meet")
+      .eq("scope_type", "global")
+      .eq("scope_value", "*")
+      .maybeSingle();
+
+    if (featureError || !feature) {
+      return reply({ error: "meeting_feature_status_unavailable" }, 503);
+    }
+    if (feature.is_enabled !== true || feature.display_mode !== "enabled") {
+      return reply({
+        error: "zameel_meet_temporarily_unavailable",
+        message: "هذه الميزة معلقة حالياً",
+      }, 409);
+    }
+  }
+
   const { data: meeting } = await admin
     .from("meeting_rooms")
     .select("room_code,title,host_id,is_active")
