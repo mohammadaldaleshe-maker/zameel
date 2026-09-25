@@ -176,7 +176,10 @@ Deno.serve(async (req) => {
         .eq("id", notification.user_id)
         .maybeSingle();
 
-      if (recipient?.notifications_enabled === false) {
+      // Account decisions must reach the affected user even if optional
+      // social notifications were switched off in their preferences.
+      if (recipient?.notifications_enabled === false &&
+          notification.type !== "admin_account_state") {
         await supabase.from("push_notification_queue").update({
           status: "sent",
           processed_at: new Date().toISOString(),

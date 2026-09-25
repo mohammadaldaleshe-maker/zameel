@@ -64,6 +64,7 @@ import 'services/post_publish_service.dart';
 import 'services/feature_control.dart';
 import 'services/call_invitation_guard.dart';
 import 'services/message_notification_grouping.dart';
+import 'services/account_access_monitor.dart';
 import 'widgets/post_media_gallery.dart';
 import 'platform/local_image_provider.dart';
 

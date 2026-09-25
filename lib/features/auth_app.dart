@@ -215,10 +215,12 @@ class ZameelApp extends StatelessWidget {
           theme: AppTheme.theme(arabic: languageProvider.isArabic, brightness: Brightness.light),
           darkTheme: AppTheme.theme(arabic: languageProvider.isArabic, brightness: Brightness.dark),
           themeMode: ThemeMode.system,
-          builder: (context, child) => Listener(
-            behavior: HitTestBehavior.translucent,
-            onPointerDown: (_) => ScreenAwakeService.registerActivity(),
-            child: child ?? const SizedBox.shrink(),
+          builder: (context, child) => AccountAccessMonitor(
+            child: Listener(
+              behavior: HitTestBehavior.translucent,
+              onPointerDown: (_) => ScreenAwakeService.registerActivity(),
+              child: child ?? const SizedBox.shrink(),
+            ),
           ),
           home: const AuthGate(),
         );
