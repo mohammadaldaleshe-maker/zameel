@@ -1701,8 +1701,8 @@ Future<void> _createUserIfNotExists() async {
               ],
             ),
             if (FeatureControl.instance.visible('global_search')) IconButton(tooltip: isArabic ? 'البحث' : 'Search', icon: const Icon(Icons.search_rounded), onPressed: () => FeatureControl.instance.open(context, 'global_search', () => const SearchScreen())),
-            Stack(alignment: Alignment.center, children: [
-              IconButton(tooltip: isArabic ? 'الإشعارات' : 'Notifications', icon: const Icon(Icons.notifications_none_rounded), onPressed: () async { await Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen())); _loadUnreadNotifications(); }),
+            if (FeatureControl.instance.visible('notifications_center')) Stack(alignment: Alignment.center, children: [
+              IconButton(tooltip: isArabic ? 'الإشعارات' : 'Notifications', icon: const Icon(Icons.notifications_none_rounded), onPressed: () async { await FeatureControl.instance.open(context, 'notifications_center', () => const NotificationsScreen()); _loadUnreadNotifications(); }),
               if (_unreadNotifications > 0) Positioned(top: 7, right: 5, child: Container(constraints: const BoxConstraints(minWidth: 16, minHeight: 16), alignment: Alignment.center, padding: const EdgeInsets.symmetric(horizontal: 3), decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle), child: Text(_unreadNotifications > 99 ? '99+' : '$_unreadNotifications', style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)))),
             ]),
             const SizedBox(width: 4),

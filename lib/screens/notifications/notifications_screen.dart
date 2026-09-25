@@ -209,7 +209,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      FeatureControl.instance.page('notifications_center', _buildNotifications(context));
+
+  Widget _buildNotifications(BuildContext context) {
     final ar = Provider.of<LanguageProvider>(context).isArabic;
 
     return Directionality(

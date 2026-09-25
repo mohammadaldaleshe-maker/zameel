@@ -33,7 +33,7 @@ class ZameelV2HubScreen extends StatelessWidget {
       _V2Module('👥', 'Classmates', 'زملائي', const FriendsScreen(), featureKey: 'suggested_colleagues'),
       _V2Module('🎓', 'Study Groups', 'مجموعات الدراسة', const GroupsScreen(), featureKey: 'groups'),
       _V2Module('💬', 'Messages', 'الرسائل', const ChatScreen(), featureKey: 'direct_chat'),
-      _V2Module('🔔', 'Notifications', 'الإشعارات', const NotificationsScreen()),
+      _V2Module('🔔', 'Notifications', 'الإشعارات', const NotificationsScreen(), featureKey: 'notifications_center'),
       _V2Module('📅', 'Calendar', 'التقويم', CalendarScreen(), featureKey: 'university_calendar'),
       _V2Module('🏫', 'Campus', 'الحرم الجامعي', const CampusScreen(), featureKey: 'campus_world'),
       _V2Module('💼', 'Jobs', 'الفرص والوظائف', const JobsScreen(), featureKey: 'jobs_training'),
