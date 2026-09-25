@@ -14,9 +14,9 @@ class LammaScreen extends StatefulWidget {
   State<LammaScreen> createState() => _LammaScreenState();
 }
 
-class _LammaScreenState extends State<LammaScreen> with SingleTickerProviderStateMixin {
+class _LammaScreenState extends State<LammaScreen> with TickerProviderStateMixin {
   final db = Supabase.instance.client;
-  late final TabController _tabs;
+  late TabController _tabs;
   bool _loading = true;
   Map<String,dynamic>? _discovery;
   List<Map<String,dynamic>> _candidates=[];
@@ -25,9 +25,34 @@ class _LammaScreenState extends State<LammaScreen> with SingleTickerProviderStat
   Set<String> _myLammaIds={};
 
   @override
-  void initState(){super.initState();_tabs=TabController(length:2,vsync:this);_load();}
+  void initState(){
+    super.initState();
+    _tabs=TabController(
+      length:FeatureControl.instance.visible('insijam') ? 2 : 1,
+      vsync:this,
+    );
+    FeatureControl.instance.changes.addListener(_syncFeatureTabs);
+    FeatureControl.instance.refresh(force:true);
+    _load();
+  }
+
+  void _syncFeatureTabs(){
+    if(!mounted)return;
+    final length=FeatureControl.instance.visible('insijam') ? 2 : 1;
+    if(_tabs.length!=length){
+      final previous=_tabs;
+      _tabs=TabController(length:length,vsync:this);
+      previous.dispose();
+    }
+    setState((){});
+  }
+
   @override
-  void dispose(){_tabs.dispose();super.dispose();}
+  void dispose(){
+    FeatureControl.instance.changes.removeListener(_syncFeatureTabs);
+    _tabs.dispose();
+    super.dispose();
+  }
 
   Future<void> _load() async {
     final uid=db.auth.currentUser?.id;if(uid==null)return;
@@ -37,7 +62,7 @@ class _LammaScreenState extends State<LammaScreen> with SingleTickerProviderStat
       final memberships=await db.from('social_lamma_members').select('lamma_id').eq('user_id',uid);
       List<Map<String,dynamic>> candidates=[];
       List<Map<String,dynamic>> matches=[];
-      if(profile?['enabled']==true){
+      if(profile?['enabled']==true && FeatureControl.instance.enabled('insijam')){
         final rows=await db.rpc('get_social_discovery_candidates',params:{'p_limit':30});
         candidates=List<Map<String,dynamic>>.from((rows as List? ?? const []).map((e)=>Map<String,dynamic>.from(e as Map)));
         final matchedRows=await db.rpc('get_my_social_matches');
@@ -113,7 +138,7 @@ class _LammaScreenState extends State<LammaScreen> with SingleTickerProviderStat
                 text: ar ? 'اللّمات' : 'Lammas',
                 icon: const Icon(Icons.groups_rounded),
               ),
-              Tab(
+              if (FeatureControl.instance.visible('insijam')) Tab(
                 text: ar ? 'انسجام' : 'Insijam',
                 icon: const Icon(Icons.favorite_outline_rounded),
               ),
@@ -124,7 +149,7 @@ class _LammaScreenState extends State<LammaScreen> with SingleTickerProviderStat
             ? const Center(child: CircularProgressIndicator())
             : TabBarView(
                 controller: _tabs,
-                children: [_lammaTab(ar), _insijamTab(ar)],
+                children: [_lammaTab(ar), if (FeatureControl.instance.visible('insijam')) FeatureControl.instance.page('insijam', _insijamTab(ar), embedded: true)],
               ),
       ),
     );

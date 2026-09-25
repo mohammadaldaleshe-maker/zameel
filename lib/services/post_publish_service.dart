@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'feature_control.dart';
 import 'post_media_storage_uploader.dart';
 import 'secure_media_service.dart';
 
@@ -25,6 +26,8 @@ class PickedPostMedia {
 /// only for users who pass the existing post RLS rules.
 class PostPublishService {
   static const int maxMediaItems = 10;
+  static int get maxSelectableMedia =>
+      FeatureControl.instance.enabled('multi_media_posts') ? maxMediaItems : 1;
   static const int maxImageBytes = 12 * 1024 * 1024;
   static const int maxVideoBytes = 80 * 1024 * 1024;
   static const int maxPostMediaBytes = 150 * 1024 * 1024;
@@ -94,6 +97,12 @@ class PostPublishService {
     final selected = media.where(isSupportedFile).take(maxMediaItems).toList();
     if (cleanText.isEmpty && selected.isEmpty) throw ArgumentError('empty_post');
     _validateSelection(selected);
+    if (selected.length > 1) {
+      await FeatureControl.instance.refresh(force: true);
+      if (!FeatureControl.instance.enabled('multi_media_posts')) {
+        throw StateError('multi_media_posts_temporarily_unavailable');
+      }
+    }
 
     // Create the RLS-protected entity before private uploads so Storage policy
     // can authorize the owner and later viewers against this exact post id.

@@ -25,7 +25,7 @@ void main() {
 
     test('Lamma and Insijam remain separate experiences', () {
       final screen = _read('lib/screens/social/lamma_screen.dart');
-      expect(screen, contains('TabController(length:2'));
+      expect(screen, contains("FeatureControl.instance.visible('insijam') ? 2 : 1"));
       expect(screen, contains('join_social_lamma'));
       expect(screen, contains('get_social_discovery_candidates'));
       expect(screen, contains('Adults 18+ only'));
@@ -38,11 +38,11 @@ void main() {
 
       expect(
         home,
-        contains('media.addAll(await PostPublishService.pickMultipleImages())'),
+        contains('media.addAll(await PostPublishService.pickMultipleImages(limit: PostPublishService.maxSelectableMedia))'),
       );
       expect(
         home,
-        contains('media.addAll(await PostPublishService.pickMultipleVideos())'),
+        contains('media.addAll(await PostPublishService.pickMultipleVideos(limit: PostPublishService.maxSelectableMedia))'),
       );
       expect(
         home,

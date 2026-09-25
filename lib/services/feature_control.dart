@@ -13,7 +13,17 @@ class FeatureControl {
   DateTime? _lastRefresh;
   Future<void>? _pending;
 
-  String mode(String key) => _modes[key] ?? 'enabled';
+  String mode(String key) {
+    final primary = _modes[key] ?? 'enabled';
+    if (key != 'books_market') return primary;
+
+    final exchange = _modes['book_exchange'] ?? 'enabled';
+    if (primary == 'hidden' || exchange == 'hidden') return 'hidden';
+    if (primary == 'suspended' || exchange == 'suspended') {
+      return 'suspended';
+    }
+    return 'enabled';
+  }
   bool visible(String key) => mode(key) != 'hidden';
   bool enabled(String key) => mode(key) == 'enabled';
 

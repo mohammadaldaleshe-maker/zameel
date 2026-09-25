@@ -1050,7 +1050,7 @@ Future<void> _createUserIfNotExists() async {
         if (image == null) return;
         media.add(PickedPostMedia(source: image, byteSize: await image.length()));
       } else {
-        media.addAll(await PostPublishService.pickMultipleImages());
+        media.addAll(await PostPublishService.pickMultipleImages(limit: PostPublishService.maxSelectableMedia));
       }
       if (media.isEmpty) return;
 
@@ -1096,7 +1096,7 @@ Future<void> _createUserIfNotExists() async {
         if (video == null) return;
         media.add(PickedPostMedia(source: video, byteSize: await video.length()));
       } else {
-        media.addAll(await PostPublishService.pickMultipleVideos());
+        media.addAll(await PostPublishService.pickMultipleVideos(limit: PostPublishService.maxSelectableMedia));
       }
       if (media.isEmpty) return;
 
@@ -1233,11 +1233,11 @@ Future<void> _createUserIfNotExists() async {
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton.icon(
-                          onPressed: selectedMedia.length >= PostPublishService.maxMediaItems
+                          onPressed: selectedMedia.length >= PostPublishService.maxSelectableMedia
                               ? null
                               : () async {
                                   final result = await PostPublishService.pickMultipleMedia(
-                                    limit: PostPublishService.maxMediaItems - selectedMedia.length,
+                                    limit: PostPublishService.maxSelectableMedia - selectedMedia.length,
                                   );
                                   if (result.isEmpty) return;
 
@@ -1248,7 +1248,7 @@ Future<void> _createUserIfNotExists() async {
                                     if (!PostPublishService.isSupportedFile(file)) continue;
                                     final key = '${file.name}:${file.path}';
                                     if (!existing.add(key)) continue;
-                                    if (selectedMedia.length >= PostPublishService.maxMediaItems) break;
+                                    if (selectedMedia.length >= PostPublishService.maxSelectableMedia) break;
                                     selectedMedia.add(file);
                                   }
                                   setDialogState(() {});
@@ -1256,8 +1256,8 @@ Future<void> _createUserIfNotExists() async {
                           icon: const Icon(Icons.collections_rounded),
                           label: Text(
                             languageProvider.isArabic
-                                ? 'إضافة صور وفيديوهات (${selectedMedia.length}/${PostPublishService.maxMediaItems})'
-                                : 'Add photos & videos (${selectedMedia.length}/${PostPublishService.maxMediaItems})',
+                                ? 'إضافة صور وفيديوهات (${selectedMedia.length}/${PostPublishService.maxSelectableMedia})'
+                                : 'Add photos & videos (${selectedMedia.length}/${PostPublishService.maxSelectableMedia})',
                           ),
                         ),
                       ),
