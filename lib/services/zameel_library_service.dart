@@ -13,6 +13,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models_zameel_library.dart';
+import 'feature_control.dart';
 
 class ZameelLibraryService {
   static const _seedAsset = 'assets/zameel_library/zameel_library_index.json';
@@ -909,6 +910,10 @@ class ZameelLibraryService {
     ZameelLibraryItem item, {
     bool arabic = true,
   }) async {
+    await FeatureControl.instance.refresh(force: true);
+    if (!FeatureControl.instance.enabled('zameel_library')) {
+      throw StateError('zameel_library_temporarily_unavailable');
+    }
     Uint8List? bytes;
 
     if (item.isSummary || item.hasDirectContent) {
@@ -1417,6 +1422,10 @@ class ZameelLibraryService {
   }
 
   static Future<bool> openSource(ZameelLibraryItem item) async {
+    await FeatureControl.instance.refresh(force: true);
+    if (!FeatureControl.instance.enabled('zameel_library')) {
+      throw StateError('zameel_library_temporarily_unavailable');
+    }
     final raw = item.sourceUrl?.trim() ?? '';
     if (raw.isEmpty) return false;
     final uri = Uri.tryParse(raw);

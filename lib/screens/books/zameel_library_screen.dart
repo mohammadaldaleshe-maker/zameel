@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../models_zameel_library.dart';
 import '../../providers/language_provider.dart';
 import '../../services/zameel_library_service.dart';
+import '../../services/feature_control.dart';
 import '../../theme/app_theme.dart';
 
 class ZameelLibraryScreen extends StatefulWidget {
@@ -134,7 +135,10 @@ class _ZameelLibraryScreenState extends State<ZameelLibraryScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      FeatureControl.instance.page('zameel_library', _buildLibraryContent(context));
+
+  Widget _buildLibraryContent(BuildContext context) {
     final ar = Provider.of<LanguageProvider>(context).isArabic;
     final allSpecialties = ZameelLibraryService.allSpecialties(_groups);
     final rankedSpecialties =
@@ -500,7 +504,10 @@ class _ZameelLibraryCategoryScreenState
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      FeatureControl.instance.page('zameel_library', _buildLibraryContent(context));
+
+  Widget _buildLibraryContent(BuildContext context) {
     final ar = Provider.of<LanguageProvider>(context).isArabic;
     final typed = _items.where((item) {
       if (_type == 'book') return item.isBook;
@@ -793,7 +800,10 @@ class _ZameelLibraryDetailsScreenState
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      FeatureControl.instance.page('zameel_library', _buildLibraryContent(context));
+
+  Widget _buildLibraryContent(BuildContext context) {
     final ar = Provider.of<LanguageProvider>(context).isArabic;
     final readable = (_content ?? '').trim().isEmpty
         ? ''

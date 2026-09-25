@@ -970,17 +970,16 @@ class _BooksScreenState extends State<BooksScreen> {
               ),
             ),
 
-            Padding(
+            if (FeatureControl.instance.visible('zameel_library')) Padding(
               padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
               child: Card(
                 elevation: 0,
                 clipBehavior: Clip.antiAlias,
                 child: InkWell(
-                  onTap: () => Navigator.push(
+                  onTap: () => FeatureControl.instance.open(
                     context,
-                    MaterialPageRoute(
-                      builder: (_) => const ZameelLibraryScreen(),
-                    ),
+                    'zameel_library',
+                    () => const ZameelLibraryScreen(),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(14),
