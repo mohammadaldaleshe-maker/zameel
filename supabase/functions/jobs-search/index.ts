@@ -50,6 +50,50 @@ function normalize(job: any, provider: string, fallbackLocation: string) {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
+    const gateUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const gateAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+    const gateServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json; charset=utf-8" };
+    if (!gateUrl || !gateAnonKey || !gateServiceKey) {
+      return new Response(JSON.stringify({ error: "service_not_configured" }), {
+        status: 503, headers: jsonHeaders,
+      });
+    }
+
+    const authClient = createClient(gateUrl, gateAnonKey, {
+      global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } },
+      auth: { persistSession: false },
+    });
+    const { data: authData, error: authError } = await authClient.auth.getUser();
+    if (authError || !authData.user) {
+      return new Response(JSON.stringify({ error: "not_authenticated" }), {
+        status: 401, headers: jsonHeaders,
+      });
+    }
+
+    const gateAdmin = createClient(gateUrl, gateServiceKey, {
+      auth: { persistSession: false },
+    });
+    const { data: feature, error: featureError } = await gateAdmin
+      .from("feature_flags")
+      .select("is_enabled,display_mode")
+      .eq("feature_key", "jobs_training")
+      .eq("scope_type", "global")
+      .eq("scope_value", "*")
+      .maybeSingle();
+
+    if (featureError || !feature) {
+      return new Response(JSON.stringify({ error: "feature_status_unavailable" }), {
+        status: 503, headers: jsonHeaders,
+      });
+    }
+    if (feature.is_enabled !== true || feature.display_mode !== "enabled") {
+      return new Response(JSON.stringify({
+        error: "jobs_training_temporarily_unavailable",
+        message: "هذه الميزة معلقة حالياً",
+      }), { status: 409, headers: jsonHeaders });
+    }
+
     const body = await req.json().catch(() => ({}));
     const query = String(body?.q ?? "").trim();
     const location = String(body?.location ?? "Jordan").trim() || "Jordan";
