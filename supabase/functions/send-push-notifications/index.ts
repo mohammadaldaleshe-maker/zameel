@@ -276,13 +276,13 @@ Deno.serve(async (req) => {
           data.sender_name = messageSenderName || String(title);
           data.sender_avatar = messageSenderAvatar;
           data.message_preview = String(body);
-          const { data: bubbleFlag } = await supabase.from("feature_flags")
+          const { data: bubbleFlag, error: bubbleFlagError } = await supabase.from("feature_flags")
             .select("is_enabled,display_mode")
             .eq("feature_key", "floating_chat_bubble")
             .eq("scope_type", "global").eq("scope_value", "*")
             .maybeSingle();
-          data.bubble_enabled = String(!bubbleFlag ||
-            (bubbleFlag.is_enabled === true && bubbleFlag.display_mode === "enabled"));
+          data.bubble_enabled = String(bubbleFlagError === null &&
+            bubbleFlag?.is_enabled === true && bubbleFlag?.display_mode === "enabled");
         }
 
         const incomingCall = notification.type === "incoming_video_call" ||
