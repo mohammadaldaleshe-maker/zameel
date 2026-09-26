@@ -10,6 +10,9 @@ import '../books/books_screen.dart';
 import '../../services_book_exchange.dart';
 import 'package:zameel/theme/app_theme.dart';
 import '../../services/secure_media_service.dart';
+import '../../services/advertising_service.dart';
+import '../../services/feature_control.dart';
+import '../business/advertisement_card.dart';
 
 // ============================================================
 // ADVANCED SEARCH SCREEN
@@ -63,6 +66,7 @@ class _SearchScreenState extends State<SearchScreen> {
   List<Map<String, dynamic>> _filteredUsers = [];
   List<Map<String, dynamic>> _filteredPosts = [];
   List<Map<String, dynamic>> _filteredBooks = [];
+  List<Map<String, dynamic>> _filteredAdvertisements = [];
   bool _isSearching = false;
   String? _searchError;
   Timer? _searchDebounce;
@@ -83,6 +87,7 @@ class _SearchScreenState extends State<SearchScreen> {
         _filteredUsers = [];
         _filteredPosts = [];
         _filteredBooks = [];
+        _filteredAdvertisements = [];
         _isSearching = false;
         _searchError = null;
       });
@@ -117,6 +122,9 @@ class _SearchScreenState extends State<SearchScreen> {
               .order('created_at', ascending: false)
               .limit(30),
           ZameelBookExchangeService.searchBooks(safeQuery, limit: 30),
+          FeatureControl.instance.enabled('partner_advertising')
+              ? AdvertisingService.liveAds(query: safeQuery, limit: 10).catchError((_) => <Map<String, dynamic>>[])
+              : Future.value(<Map<String, dynamic>>[]),
         ]);
 
         final users = List<Map<String, dynamic>>.from(results[0] as List)
@@ -125,12 +133,14 @@ class _SearchScreenState extends State<SearchScreen> {
         final posts = List<Map<String, dynamic>>.from(results[1] as List);
         await SecureMediaService.resolvePosts(posts);
         final books = List<Map<String, dynamic>>.from(results[2] as List);
+        final advertisements = List<Map<String, dynamic>>.from(results[3] as List);
 
         if (!mounted || _searchController.text.trim() != rawQuery) return;
         setState(() {
           _filteredUsers = users;
           _filteredPosts = posts;
           _filteredBooks = books;
+          _filteredAdvertisements = advertisements;
           _isSearching = true;
           _searchError = null;
         });
@@ -140,6 +150,7 @@ class _SearchScreenState extends State<SearchScreen> {
           _filteredUsers = [];
           _filteredPosts = [];
           _filteredBooks = [];
+          _filteredAdvertisements = [];
           _isSearching = true;
           _searchError = e.toString();
         });
@@ -154,6 +165,7 @@ class _SearchScreenState extends State<SearchScreen> {
       _filteredUsers = [];
       _filteredPosts = [];
       _filteredBooks = [];
+      _filteredAdvertisements = [];
       _isSearching = false;
       _searchError = null;
     });
@@ -218,8 +230,8 @@ class _SearchScreenState extends State<SearchScreen> {
                       children: [
                         Text(
                           isArabic
-                              ? 'نتائج البحث: ${_filteredUsers.length + _filteredPosts.length + _filteredBooks.length}'
-                              : 'Results: ${_filteredUsers.length + _filteredPosts.length + _filteredBooks.length}',
+                              ? 'نتائج البحث: ${_filteredUsers.length + _filteredPosts.length + _filteredBooks.length + _filteredAdvertisements.length}'
+                              : 'Results: ${_filteredUsers.length + _filteredPosts.length + _filteredBooks.length + _filteredAdvertisements.length}',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: AppTheme.muted.shade600,
@@ -241,8 +253,8 @@ class _SearchScreenState extends State<SearchScreen> {
                       children: [
                         _SearchTabButton(
                           text: isArabic
-                              ? 'الكل (${_filteredUsers.length + _filteredPosts.length + _filteredBooks.length})'
-                              : 'All (${_filteredUsers.length + _filteredPosts.length + _filteredBooks.length})',
+                              ? 'الكل (${_filteredUsers.length + _filteredPosts.length + _filteredBooks.length + _filteredAdvertisements.length})'
+                              : 'All (${_filteredUsers.length + _filteredPosts.length + _filteredBooks.length + _filteredAdvertisements.length})',
                           isSelected: _selectedTab == 0,
                           onTap: () {
                             setState(() {
@@ -353,13 +365,19 @@ class _SearchScreenState extends State<SearchScreen> {
     }
     if (_filteredUsers.isEmpty &&
         _filteredPosts.isEmpty &&
-        _filteredBooks.isEmpty) {
+        _filteredBooks.isEmpty && _filteredAdvertisements.isEmpty) {
       return _EmptyResult(isArabic);
     }
 
     return ListView(
       padding: const EdgeInsets.all(12),
       children: [
+        if (_filteredAdvertisements.isNotEmpty) ...[
+          Text(isArabic ? 'إعلانات ذات صلة' : 'Related ads',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          ..._filteredAdvertisements.map((ad) => AdvertisementCard(ad: ad, isArabic: isArabic)),
+          const SizedBox(height: 16),
+        ],
         if (_filteredUsers.isNotEmpty) ...[
           Text(
             isArabic ? '👥 مستخدمين' : '👥 Users',

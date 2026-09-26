@@ -25,6 +25,7 @@ import 'screens/groups/groups_screen.dart';
 import 'screens/graduation/graduation_screen.dart';
 import 'screens/chat/chat_screen.dart';
 import 'screens/business/business_screen.dart';
+import 'screens/business/advertisement_card.dart';
 import 'screens/campus/campus_screen.dart';
 import 'screens/meet/meet_screen.dart';
 import 'screens/calls/incoming_call_screen.dart';
@@ -65,6 +66,7 @@ import 'services/feature_control.dart';
 import 'services/call_invitation_guard.dart';
 import 'services/message_notification_grouping.dart';
 import 'services/account_access_monitor.dart';
+import 'services/advertising_service.dart';
 import 'widgets/post_media_gallery.dart';
 import 'platform/local_image_provider.dart';
 

@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../providers/language_provider.dart';
 import '../../services/remaining_services.dart';
+import '../../services/feature_control.dart';
+import 'partner_ads_screen.dart';
 import 'package:zameel/theme/app_theme.dart';
 
 class BusinessScreen extends StatefulWidget {
@@ -323,54 +325,46 @@ class _BusinessScreenState extends State<BusinessScreen> {
         ),
       );
 
-  void _showPartner(Map<String, dynamic> p, bool ar) => showModalBottomSheet(
+  void _showPartner(Map<String, dynamic> p, bool ar) {
+    if (!FeatureControl.instance.enabled('partner_advertising')) {
+      showModalBottomSheet<void>(
         context: context,
         showDragHandle: true,
-        builder: (_) => SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor: AppTheme.accentSoft,
-                  child: Icon(p['icon'] as IconData, color: AppTheme.primaryDark, size: 30),
-                ),
-                const SizedBox(height: 10),
-                Text(p['name']?.toString() ?? '', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
-                const SizedBox(height: 6),
-                Text(p['desc']?.toString() ?? '', textAlign: TextAlign.center, style: const TextStyle(color: AppTheme.muted)),
-                if ((p['website_url']?.toString() ?? '').isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  FilledButton.icon(
-                    onPressed: () => _openPartnerWebsite(p['website_url'].toString(), ar),
-                    icon: const Icon(Icons.open_in_new_rounded),
-                    label: Text(ar ? 'زيارة الموقع' : 'Visit website'),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
+        builder: (_) => SafeArea(child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text(p['name']?.toString() ?? '', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 8),
+            Text(p['desc']?.toString() ?? '', textAlign: TextAlign.center),
+            if ((p['website_url']?.toString() ?? '').isNotEmpty)
+              TextButton.icon(
+                onPressed: () => _openPartnerWebsite(p['website_url'].toString(), ar),
+                icon: const Icon(Icons.open_in_new_rounded),
+                label: Text(ar ? 'زيارة الموقع' : 'Visit website'),
+              ),
+          ]),
+        )),
       );
-
+      return;
+    }
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => PartnerAdsScreen(partner: p, isArabic: ar),
+    ));
+  }
 
   Future<void> _openPartnerWebsite(String rawUrl, bool ar) async {
     final value = rawUrl.trim();
     if (value.isEmpty) return;
     final normalized = value.startsWith('http://') || value.startsWith('https://')
-        ? value
-        : 'https://$value';
+        ? value : 'https://$value';
     final uri = Uri.tryParse(normalized);
     if (uri == null || !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(ar ? 'تعذر فتح موقع الشريك' : 'Could not open partner website')),
-        );
-      }
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(ar ? 'تعذر فتح موقع الشريك' : 'Could not open partner website'),
+      ));
     }
   }
+
 
   Future<void> _showAddPartner(bool ar) async {
     final name = TextEditingController();

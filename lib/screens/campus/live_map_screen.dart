@@ -14,6 +14,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../providers/language_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../services/screen_awake_service.dart';
+import '../../services/advertising_service.dart';
+import '../../services/feature_control.dart';
+import '../business/advertisement_card.dart';
 import 'campus_place_admin_screen.dart';
 
 class LiveMapScreen extends StatefulWidget {
@@ -72,6 +75,7 @@ class _LiveMapScreenState extends State<LiveMapScreen>
   StreamSubscription<Position>? _positionStream;
   List<_CampusData> _campuses = const [];
   List<_CampusPlace> _places = const [];
+  List<Map<String, dynamic>> _partnerAdvertisements = const [];
   _CampusData? _campus;
   _CampusData? _registeredCampus;
   _CampusPlace? _destination;
@@ -135,6 +139,7 @@ class _LiveMapScreenState extends State<LiveMapScreen>
   @override
   void initState() {
     super.initState();
+    _loadPartnerAdvertisements();
     ScreenAwakeService.enterPersistent();
     _world = widget.showUniversityWorldInitially;
     _walk = AnimationController(
@@ -157,6 +162,17 @@ class _LiveMapScreenState extends State<LiveMapScreen>
     });
     _loadActivity();
     _load();
+  }
+
+  Future<void> _loadPartnerAdvertisements() async {
+    if (!FeatureControl.instance.enabled('partner_advertising')) return;
+    try {
+      final ads = await AdvertisingService.liveAds(limit: 50);
+      if (mounted) setState(() => _partnerAdvertisements = ads.where((ad) =>
+          ad['latitude'] is num && ad['longitude'] is num).toList());
+    } catch (_) {
+      // Existing campus map remains usable if the ad service is unavailable.
+    }
   }
 
   String get _activityKey =>
@@ -601,6 +617,24 @@ class _LiveMapScreenState extends State<LiveMapScreen>
                   points: _routePoints, color: AppTheme.primary, strokeWidth: 5)
             ]),
           MarkerLayer(markers: [
+            for (final ad in _partnerAdvertisements)
+              Marker(
+                point: LatLng((ad['latitude'] as num).toDouble(),
+                    (ad['longitude'] as num).toDouble()),
+                width: 130,
+                height: 67,
+                child: GestureDetector(
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                    builder: (_) => AdvertisementDetails(ad: ad, isArabic: ar),
+                  )),
+                  child: Card(child: Center(child: Text(
+                    '📍 ${ad['business_partners'] is Map ? ad['business_partners']['name'] : ad['title']}',
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ))),
+                ),
+              ),
             for (final campus in _campuses)
               Marker(
                   point: campus.center,

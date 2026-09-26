@@ -26,6 +26,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen> with WidgetsBindingObse
   bool isAdmin = false;
   List<Map<String, dynamic>> savedPosts = [];
   List<Map<String, dynamic>> posts = [];
+  List<Map<String, dynamic>> _advertisements = [];
   bool _isLoading = true;
   bool _mediaPublishing = false;
   String _postAudience = 'public';
@@ -49,6 +50,7 @@ void initState() {
   _createUserIfNotExists();
   _loadCurrentProfileImage();
   _loadPosts();
+  _loadAdvertisements();
   _loadUnreadNotifications();
   _subscribeToNotifications();
   _subscribeToFeedUpdates();
@@ -60,7 +62,10 @@ void initState() {
   FeatureControl.instance.refresh(force: true);
 }
 
-void _onFeatureChange() { if (mounted) setState(() {}); }
+void _onFeatureChange() {
+  if (mounted) setState(() {});
+  _loadAdvertisements();
+}
 
 
 void _startFeedRefreshTimer() {
@@ -78,6 +83,20 @@ Future<void> _loadFeedScope() async {
   final saved = prefs.getString('zameel_feed_scope');
   if (mounted && <String>{'global', 'college', 'department'}.contains(saved)) {
     setState(() => _feedScope = saved!);
+  }
+}
+
+Future<void> _loadAdvertisements() async {
+  if (!FeatureControl.instance.enabled('partner_advertising')) {
+    if (mounted && _advertisements.isNotEmpty) setState(() => _advertisements = []);
+    return;
+  }
+  try {
+    final loaded = await AdvertisingService.liveAds(limit: 12);
+    if (mounted) setState(() => _advertisements = loaded);
+  } catch (error) {
+    debugPrint('Error loading advertisements: $error');
+    if (mounted) setState(() => _advertisements = []);
   }
 }
 
@@ -1905,6 +1924,22 @@ Future<void> _createUserIfNotExists() async {
             ),
           ),
         );
+        if ((postIndex + 1) % 5 == 0 &&
+            FeatureControl.instance.enabled('partner_advertising')) {
+          final adIndex = (postIndex + 1) ~/ 5 - 1;
+          if (adIndex < _advertisements.length) {
+            final ad = _advertisements[adIndex];
+            children.add(AdvertisementCard(
+              ad: ad, isArabic: isArabic,
+              onHide: () async {
+                await AdvertisingService.hide(ad['id'].toString());
+                if (mounted) setState(() => _advertisements.removeWhere(
+                  (item) => item['id'] == ad['id'],
+                ));
+              },
+            ));
+          }
+        }
         if (postIndex == 4 && visiblePosts.length >= 5) {
           if (FeatureControl.instance.visible('suggested_colleagues')) {
             children.add(FeatureControl.instance.page('suggested_colleagues', const SuggestedColleaguesSection(), embedded: true));
