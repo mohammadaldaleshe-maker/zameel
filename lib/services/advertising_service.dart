@@ -18,7 +18,9 @@ class AdvertisingService {
       if (query != null) 'query': query,
     });
     final data = response.data;
-    if (data is! Map || data['rows'] is! List) return [];
+    if (data is! Map || data['rows'] is! List) {
+      throw StateError('تعذر تحميل إعلانات الشريك؛ حاول تحديث الصفحة');
+    }
     return (data['rows'] as List)
         .whereType<Map>()
         .map((row) => Map<String, dynamic>.from(row))

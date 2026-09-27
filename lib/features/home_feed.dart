@@ -74,7 +74,10 @@ void _startFeedRefreshTimer() {
     // Realtime already refreshes the feed. This is only a recovery poll for a
     // dropped socket and intentionally stays infrequent to control API egress.
     const Duration(minutes: 10),
-    (_) => _loadPosts(silent: true),
+    (_) {
+      _loadPosts(silent: true);
+      _loadAdvertisements();
+    },
   );
 }
 
@@ -1953,6 +1956,8 @@ Future<void> _createUserIfNotExists() async {
         RefreshIndicator(
           onRefresh: () async {
             await _loadUnreadNotifications();
+            await FeatureControl.instance.refresh(force: true);
+            await _loadAdvertisements();
             await _loadPosts();
           },
           child: ListView(

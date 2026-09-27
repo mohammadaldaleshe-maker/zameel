@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../theme/app_theme.dart';
 import '../../services/advertising_service.dart';
+import '../../services/feature_control.dart';
 import 'advertisement_card.dart';
 
 /// Public partner page. The database exposes only approved, active adverts.
@@ -20,6 +21,7 @@ class _PartnerAdsScreenState extends State<PartnerAdsScreen> {
   late Future<List<Map<String, dynamic>>> _ads = _load();
 
   Future<List<Map<String, dynamic>>> _load() async {
+    await FeatureControl.instance.refresh(force: true);
     return AdvertisingService.liveAds(
       partnerId: widget.partner['id'].toString(), limit: 50,
     );

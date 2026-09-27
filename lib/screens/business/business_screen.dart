@@ -325,25 +325,12 @@ class _BusinessScreenState extends State<BusinessScreen> {
         ),
       );
 
-  void _showPartner(Map<String, dynamic> p, bool ar) {
+  Future<void> _showPartner(Map<String, dynamic> p, bool ar) async {
+    await FeatureControl.instance.refresh(force: true);
+    if (!mounted) return;
     if (!FeatureControl.instance.enabled('partner_advertising')) {
-      showModalBottomSheet<void>(
-        context: context,
-        showDragHandle: true,
-        builder: (_) => SafeArea(child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text(p['name']?.toString() ?? '', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 8),
-            Text(p['desc']?.toString() ?? '', textAlign: TextAlign.center),
-            if ((p['website_url']?.toString() ?? '').isNotEmpty)
-              TextButton.icon(
-                onPressed: () => _openPartnerWebsite(p['website_url'].toString(), ar),
-                icon: const Icon(Icons.open_in_new_rounded),
-                label: Text(ar ? 'زيارة الموقع' : 'Visit website'),
-              ),
-          ]),
-        )),
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(FeatureControl.suspendedMessage)),
       );
       return;
     }
