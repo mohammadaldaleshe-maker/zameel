@@ -1,0 +1,102 @@
+name: Zameel Android APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      signing:
+        description: 'signed: update existing app if key matches; test: may require uninstall'
+        type: choice
+        options:
+          - signed
+          - test
+        default: signed
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      SUPABASE_URL: https://jwuqyykjmltroneqtjoc.supabase.co
+      SUPABASE_PUBLISHABLE_KEY: sb_publishable_TC_UtlL14Q0LVhLejd27lQ_MZphnhlv
+      GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      CM_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+      CM_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      CM_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      WEBRTC_TURN_URL: ${{ secrets.WEBRTC_TURN_URL }}
+      WEBRTC_TURN_USERNAME: ${{ secrets.WEBRTC_TURN_USERNAME }}
+      WEBRTC_TURN_CREDENTIAL: ${{ secrets.WEBRTC_TURN_CREDENTIAL }}
+      CI: 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+      - name: Install Android NDK
+        run: sdkmanager --install 'ndk;28.2.13676358'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.1'
+          cache: true
+
+      - name: Install Firebase configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$GOOGLE_SERVICES_JSON_BASE64" || { echo 'Missing GOOGLE_SERVICES_JSON_BASE64 secret'; exit 1; }
+          printf '%s' "$GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > android/app/google-services.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          config = json.loads(Path('android/app/google-services.json').read_text())
+          assert config['project_info']['project_id'] == 'zameel-81ff6', 'Unexpected Firebase project'
+          assert any(c['client_info']['android_client_info']['package_name'] == 'com.zameel.app'
+                     for c in config['client']), 'Unexpected Android package'
+          PY
+
+      - name: Install release signing key
+        if: inputs.signing == 'signed'
+        shell: bash
+        run: |
+          set -euo pipefail
+          for required in ANDROID_KEYSTORE_BASE64 CM_KEYSTORE_PASSWORD CM_KEY_ALIAS CM_KEY_PASSWORD; do
+            if [[ -z "${!required}" ]]; then
+              echo "Missing GitHub Actions secret for $required"
+              exit 1
+            fi
+          done
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+          test -s android/app/upload-keystore.jks
+          echo "CM_KEYSTORE_PATH=$GITHUB_WORKSPACE/android/app/upload-keystore.jks" >> "$GITHUB_ENV"
+
+      - name: Download Flutter dependencies
+        run: flutter pub get
+
+      - name: Build signed release APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          build_number=$((10000 + GITHUB_RUN_NUMBER))
+          flutter build apk --release --build-number="$build_number" \
+            --dart-define="SUPABASE_URL=$SUPABASE_URL" \
+            --dart-define="SUPABASE_PUBLISHABLE_KEY=$SUPABASE_PUBLISHABLE_KEY" \
+            --dart-define="WEBRTC_TURN_URL=$WEBRTC_TURN_URL" \
+            --dart-define="WEBRTC_TURN_USERNAME=$WEBRTC_TURN_USERNAME" \
+            --dart-define="WEBRTC_TURN_CREDENTIAL=$WEBRTC_TURN_CREDENTIAL" \
+            --dart-define=ZAMEEL_VERSION=2.0.0+9
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: zameel-${{ inputs.signing }}-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+          retention-days: 7
