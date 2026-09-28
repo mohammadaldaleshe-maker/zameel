@@ -26,8 +26,10 @@ class _HomeFeedScreenState extends State<HomeFeedScreen> with WidgetsBindingObse
   bool isAdmin = false;
   List<Map<String, dynamic>> savedPosts = [];
   List<Map<String, dynamic>> posts = [];
+  int _postsRequestVersion = 0;
   List<Map<String, dynamic>> _advertisements = [];
   bool _isLoading = true;
+  bool _loadingMorePosts = false;
   bool _mediaPublishing = false;
   String _postAudience = 'public';
   int _unreadNotifications = 0;
@@ -543,10 +545,11 @@ Future<void> _loadCurrentProfileImage() async {
   // ============================================================
 
  Future<void> _loadPosts({bool silent = false}) async {
+  final requestVersion = ++_postsRequestVersion;
   final oldOffset = _feedScrollController.hasClients ? _feedScrollController.offset : 0.0;
   final oldMaxExtent = _feedScrollController.hasClients ? _feedScrollController.position.maxScrollExtent : 0.0;
   final oldFirstId = posts.isEmpty ? null : posts.first['id']?.toString();
-  if (!silent && mounted) setState(() => _isLoading = true);
+  if (!silent && mounted && posts.isEmpty) setState(() => _isLoading = true);
   try {
     final db = Supabase.instance.client;
     final response = await db
@@ -559,7 +562,19 @@ Future<void> _loadCurrentProfileImage() async {
     // Demo posts use synthetic IDs and cannot participate in DB-backed
     // features such as comments, likes, saves, or sharing.
     final loaded = List<Map<String, dynamic>>.from(response);
-    await SecureMediaService.resolvePosts(loaded);
+    // Only the first screenful can affect time to first content. Resolve the
+    // remaining signed URLs after that screen is already visible.
+    final first = loaded.take(5).toList();
+    final remaining = loaded.skip(5).toList();
+    await SecureMediaService.resolvePosts(first);
+    if (!mounted || requestVersion != _postsRequestVersion) return;
+    setState(() {
+      posts = _diversifyFeed(first);
+      _isLoading = false;
+      _loadingMorePosts = remaining.isNotEmpty;
+    });
+    await SecureMediaService.resolvePosts(remaining);
+    if (!mounted || requestVersion != _postsRequestVersion) return;
     final user = db.auth.currentUser;
 
     if (user != null && loaded.isNotEmpty) {
@@ -595,10 +610,11 @@ Future<void> _loadCurrentProfileImage() async {
       } catch (_) {}
     }
 
-    if (!mounted) return;
+    if (!mounted || requestVersion != _postsRequestVersion) return;
     setState(() {
       posts = _diversifyFeed(loaded);
       _isLoading = false;
+      _loadingMorePosts = false;
     });
     final newFirstId = loaded.isEmpty ? null : loaded.first['id']?.toString();
     if (silent && oldOffset > 20 && oldFirstId != null && newFirstId != oldFirstId) {
@@ -612,7 +628,12 @@ Future<void> _loadCurrentProfileImage() async {
     }
   } catch (e) {
     debugPrint('Error loading posts: $e');
-    if (mounted && !silent) setState(() => _isLoading = false);
+    if (mounted && requestVersion == _postsRequestVersion) {
+      setState(() {
+        _isLoading = false;
+        _loadingMorePosts = false;
+      });
+    }
   }
 }
 
@@ -1840,8 +1861,19 @@ Future<void> _createUserIfNotExists() async {
 
 
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: primaryColor),
+      return ListView(
+        padding: const EdgeInsets.only(bottom: 90),
+        children: [
+          if (FeatureControl.instance.visible('stories'))
+            FeatureControl.instance.page('stories', const StoriesWidget(), embedded: true),
+          _buildCreateBox(),
+          if (FeatureControl.instance.visible('clips'))
+            FeatureControl.instance.page('clips', const PublicClipsStrip(), embedded: true),
+          const Padding(
+            padding: EdgeInsets.all(24),
+            child: Center(child: CircularProgressIndicator(color: primaryColor)),
+          ),
+        ],
       );
     }
 
@@ -1867,7 +1899,12 @@ Future<void> _createUserIfNotExists() async {
       ),
     ];
 
-    if (visiblePosts.isEmpty) {
+    if (visiblePosts.isEmpty && _loadingMorePosts) {
+      children.add(const Padding(
+        padding: EdgeInsets.all(24),
+        child: Center(child: CircularProgressIndicator(color: primaryColor)),
+      ));
+    } else if (visiblePosts.isEmpty) {
       children.add(
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 44),

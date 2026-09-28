@@ -35,6 +35,14 @@ class _SuggestedColleaguesSectionState extends State<SuggestedColleaguesSection>
     try {
       final rows = await ColleagueSuggestionService.suggestions(searchText: searchText);
       if (mounted && version == _loadVersion) setState(() => _items = rows);
+      if (searchText.isEmpty && ColleagueSuggestionService.signalsPending &&
+          mounted && version == _loadVersion) {
+        // Improve ranking once optional contact/location signals are ready,
+        // without delaying the first visible suggestions.
+        ColleagueSuggestionService.suggestions(refreshSignals: true).then((fresh) {
+          if (mounted && version == _loadVersion) setState(() => _items = fresh);
+        }).catchError((Object _) {});
+      }
     } catch (_) {
       if (mounted && version == _loadVersion) setState(() => _items = const []);
     } finally {

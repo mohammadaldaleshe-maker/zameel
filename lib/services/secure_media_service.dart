@@ -72,17 +72,19 @@ class SecureMediaService {
   }
 
   static Future<void> resolvePost(Map<String, dynamic> post) async {
-    post['image_url'] = await resolve(post['image_url']?.toString());
-    post['video_url'] = await resolve(post['video_url']?.toString());
+    final mainUrls = await Future.wait([
+      resolve(post['image_url']?.toString()),
+      resolve(post['video_url']?.toString()),
+    ]);
+    post['image_url'] = mainUrls[0];
+    post['video_url'] = mainUrls[1];
     final raw = post['media_items'];
     if (raw is List) {
-      final resolved = <Map<String, dynamic>>[];
-      for (final entry in raw) {
-        if (entry is! Map) continue;
+      final resolved = await Future.wait(raw.whereType<Map>().map((entry) async {
         final item = Map<String, dynamic>.from(entry);
         item['url'] = await resolve(item['url']?.toString());
-        resolved.add(item);
-      }
+        return item;
+      }));
       post['media_items'] = resolved;
     }
   }

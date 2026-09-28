@@ -32,6 +32,7 @@ class ColleagueSuggestionService {
   static String? _cacheUserId;
   static final Map<String, (DateTime, List<Map<String, dynamic>>)> _resultCache = {};
   static final Map<String, Future<List<Map<String, dynamic>>>> _pending = {};
+  static bool get signalsPending => _signalsPending != null;
 
   static Future<List<Map<String, dynamic>>> suggestions({
     String searchText = '',
@@ -73,11 +74,16 @@ class ColleagueSuggestionService {
 
     if (!cacheFresh) {
       final signalRequest = _signalsPending ??= _loadSignals(_cacheUserId);
-      try {
+      if (refreshSignals) {
         await signalRequest;
-      } finally {
-        if (identical(_signalsPending, signalRequest)) _signalsPending = null;
       }
+      // Contact hashing and the last known location must not hold up the
+      // home feed. A second request can use these signals once available.
+      signalRequest.then((_) {
+        if (identical(_signalsPending, signalRequest)) _signalsPending = null;
+      }, onError: (Object _) {
+        if (identical(_signalsPending, signalRequest)) _signalsPending = null;
+      });
     }
 
     final result = await _db.rpc('get_suggested_colleagues', params: {
