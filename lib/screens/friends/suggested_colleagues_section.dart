@@ -15,6 +15,7 @@ class _SuggestedColleaguesSectionState extends State<SuggestedColleaguesSection>
   final _search = TextEditingController();
   List<Map<String, dynamic>> _items = const [];
   bool _loading = true;
+  int _loadVersion = 0;
 
   @override
   void initState() {
@@ -29,14 +30,15 @@ class _SuggestedColleaguesSectionState extends State<SuggestedColleaguesSection>
   }
 
   Future<void> _load([String searchText = '']) async {
+    final version = ++_loadVersion;
     if (mounted) setState(() => _loading = true);
     try {
       final rows = await ColleagueSuggestionService.suggestions(searchText: searchText);
-      if (mounted) setState(() => _items = rows);
+      if (mounted && version == _loadVersion) setState(() => _items = rows);
     } catch (_) {
-      if (mounted) setState(() => _items = const []);
+      if (mounted && version == _loadVersion) setState(() => _items = const []);
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted && version == _loadVersion) setState(() => _loading = false);
     }
   }
 
@@ -82,7 +84,9 @@ class _SuggestedColleaguesSectionState extends State<SuggestedColleaguesSection>
                   return SizedBox(width: 126, child: InkWell(
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ProfileScreen(userId: u['user_id']?.toString()))),
                     child: Column(children: [
-                      CircleAvatar(radius: 31, backgroundImage: image != null && image.isNotEmpty ? NetworkImage(image) : null, child: image == null || image.isEmpty ? const Icon(Icons.person, size: 30) : null),
+                      CircleAvatar(radius: 31, backgroundImage: image != null && image.isNotEmpty
+                          ? ResizeImage.resizeIfNeeded(200, 200, NetworkImage(image)) : null,
+                        child: image == null || image.isEmpty ? const Icon(Icons.person, size: 30) : null),
                       const SizedBox(height: 5),
                       Text(u['name']?.toString() ?? 'زميل', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800)),
                       Text(u['match_reason']?.toString() ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 10, color: AppTheme.textSecondary)),
