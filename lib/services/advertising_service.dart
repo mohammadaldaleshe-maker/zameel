@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'feature_control.dart';
+import 'media_cache_service.dart';
 
 class AdvertisingService {
   static final _db = Supabase.instance.client;
@@ -21,10 +24,28 @@ class AdvertisingService {
     if (data is! Map || data['rows'] is! List) {
       throw StateError('تعذر تحميل إعلانات الشريك؛ حاول تحديث الصفحة');
     }
-    return (data['rows'] as List)
+    final ads = (data['rows'] as List)
         .whereType<Map>()
         .map((row) => Map<String, dynamic>.from(row))
         .toList();
+    for (final ad in ads.take(2)) {
+      final media = ad['media'];
+      if (media is! List) continue;
+      for (final item in media.whereType<Map>().take(1)) {
+        if (item['type'] == 'image' && item['url'] is String) {
+          unawaited(_warmImage(item['url'] as String));
+        }
+      }
+    }
+    return ads;
+  }
+
+  static Future<void> _warmImage(String url) async {
+    try {
+      await MediaCacheService.localPathForUrl(url);
+    } catch (_) {
+      // The card can still display its normal fallback if a prefetch fails.
+    }
   }
 
   static Future<void> recordView(String id) async {

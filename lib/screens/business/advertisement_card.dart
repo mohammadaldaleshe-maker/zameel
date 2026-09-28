@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../services/advertising_service.dart';
 import '../../services/feature_control.dart';
+import '../../widgets/cached_media_image.dart';
 import '../../widgets/video_player_widget.dart';
+import 'partner_ads_screen.dart';
 
 class AdvertisementCard extends StatelessWidget {
   const AdvertisementCard({super.key, required this.ad, required this.isArabic,
@@ -17,25 +19,39 @@ class AdvertisementCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final partner = ad['business_partners'];
     final name = partner is Map ? partner['name']?.toString() ?? '' : '';
+    final partnerId = ad['partner_id']?.toString() ?? '';
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
       child: InkWell(
         onTap: openOnTap ? () => Navigator.push(context, MaterialPageRoute<void>(
           builder: (_) => AdvertisementDetails(ad: ad, isArabic: isArabic),
         )) : null,
         child: Padding(
-          padding: const EdgeInsets.all(15),
+          padding: const EdgeInsets.all(10),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               const Icon(Icons.campaign_outlined, color: Color(0xFF08736D)),
               const SizedBox(width: 8),
-              Expanded(child: Text(name, style: const TextStyle(fontWeight: FontWeight.bold))),
+              Expanded(child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: TextButton(
+                  onPressed: partnerId.isEmpty ? null : () => Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(builder: (_) => PartnerAdsScreen(
+                      partner: {'id': partnerId, 'name': name}, isArabic: isArabic,
+                    )),
+                  ),
+                  child: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              )),
               Text(isArabic ? 'إعلان' : 'Ad', style: const TextStyle(color: Color(0xFF08736D))),
             ]),
             const SizedBox(height: 9),
             Text(ad['title']?.toString() ?? '', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 5),
-            Text(ad['body']?.toString() ?? '', maxLines: 4, overflow: TextOverflow.ellipsis),
+            Text(ad['body']?.toString() ?? '',
+              maxLines: openOnTap ? 8 : null,
+              overflow: openOnTap ? TextOverflow.ellipsis : null),
             _AdMedia(media: ad['media'], preview: openOnTap),
             const SizedBox(height: 8),
             Text('${ad['view_count'] ?? 0} ${isArabic ? 'مشاهدة' : 'views'}   ·   ${ad['likes_count'] ?? 0} ${isArabic ? 'إعجاب' : 'likes'}   ·   ${ad['comments_count'] ?? 0} ${isArabic ? 'تعليق' : 'comments'}',
@@ -59,31 +75,66 @@ class AdvertisementCard extends StatelessWidget {
   }
 }
 
-class _AdMedia extends StatelessWidget {
+class _AdMedia extends StatefulWidget {
   const _AdMedia({required this.media, required this.preview});
   final Object? media;
   final bool preview;
 
   @override
+  State<_AdMedia> createState() => _AdMediaState();
+}
+
+class _AdMediaState extends State<_AdMedia> {
+  int currentIndex = 0;
+
+  @override
   Widget build(BuildContext context) {
-    final items = media is List ? media as List : const [];
+    final items = widget.media is List ? widget.media as List : const [];
     final urls = items.whereType<Map>().where((m) => m['url'] is String).toList();
     if (urls.isEmpty) return const SizedBox.shrink();
+    final size = MediaQuery.sizeOf(context);
+    final mediaHeight = (size.width - 40) * 16 / 9;
     return SizedBox(
-      height: 240,
-      child: PageView.builder(
-        itemCount: urls.length,
-        itemBuilder: (_, index) {
-          final item = urls[index];
-          final url = item['url'].toString();
-          if (item['type'] == 'video') {
-            return preview
-                ? const Center(child: Icon(Icons.play_circle_outline_rounded, size: 64))
-                : VideoPlayerWidget(videoUrl: url);
-          }
-          return Image.network(url, fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) => const Center(child: Icon(Icons.broken_image_outlined)));
-        },
+      width: double.infinity,
+      height: mediaHeight < size.height * 0.82
+          ? mediaHeight : size.height * 0.82,
+      child: Stack(
+        children: [
+          PageView.builder(
+            itemCount: urls.length,
+            onPageChanged: (index) => setState(() => currentIndex = index),
+            itemBuilder: (_, index) {
+              final item = urls[index];
+              final url = item['url'].toString();
+              if (item['type'] == 'video') {
+                return widget.preview || index != currentIndex
+                    ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                        const Icon(Icons.play_circle_outline_rounded, size: 64),
+                        Text(widget.preview ? 'فيديو · افتح الإعلان للتشغيل' : 'فيديو'),
+                      ]))
+                    : VideoPlayerWidget(videoUrl: url);
+              }
+              return CachedMediaImage(
+                url: url,
+                fit: BoxFit.contain,
+                fallback: const Center(child: Icon(Icons.broken_image_outlined)),
+              );
+            },
+          ),
+          if (urls.length > 1) PositionedDirectional(
+            top: 12,
+            end: 12,
+            child: IgnorePointer(child: DecoratedBox(
+              decoration: BoxDecoration(color: Colors.black87,
+                borderRadius: BorderRadius.circular(14)),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                child: Text('${currentIndex + 1}/${urls.length}',
+                  style: const TextStyle(color: Colors.white)),
+              ),
+            )),
+          ),
+        ],
       ),
     );
   }
