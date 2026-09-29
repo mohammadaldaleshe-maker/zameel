@@ -6,10 +6,8 @@ import 'package:http/http.dart' as http;
 import 'media_cache_service_stub.dart'
     if (dart.library.io) 'media_cache_service_io.dart' as platform;
 
-/// Small, bounded temporary cache for Zameel social media.
-///
-/// The cache lives in the operating-system temporary/cache directory, so the
-/// OS may purge it at any time. Zameel also evicts old/large entries itself.
+/// Stores downloaded social media in application support storage. Entries
+/// expire after six hours without use and are then removed by cleanup.
 class MediaCacheService {
   MediaCacheService._();
 
@@ -41,6 +39,9 @@ class MediaCacheService {
   }
 
   static Future<void> cleanup() => platform.cleanup();
+
+  static Future<void> clearPrivateMediaForUser(String userId) =>
+      platform.clearPrivateMediaForUser(userId);
 
   /// Wait for a just-uploaded public Supabase object to be reachable from its
   /// public URL before the client advertises it as ready. This avoids the

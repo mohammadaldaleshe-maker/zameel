@@ -1,24 +1,23 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 // Social media is immutable because every upload gets a unique object path.
-// Keeping it locally for two weeks prevents the same Supabase CDN object from
-// being downloaded again whenever the user revisits the feed.
-const Duration _maxAge = Duration(days: 14);
-const int _maxTotalBytes = 300 * 1024 * 1024;
-const int _maxSingleFileBytes = 80 * 1024 * 1024;
+// The app-support directory survives ordinary cache purges and app restarts.
+const Duration _maxAge = Duration(hours: 6);
 
 final Map<String, Future<String?>> _inFlight = <String, Future<String?>>{};
 Future<void>? _cleanupFuture;
 
 Future<Directory> _cacheDirectory() async {
-  final root = await getTemporaryDirectory();
-  final dir = Directory('${root.path}${Platform.pathSeparator}zameel_media_cache_v1');
+  final root = await getApplicationSupportDirectory();
+  final dir = Directory('${root.path}${Platform.pathSeparator}zameel_media_cache_v2');
   if (!await dir.exists()) await dir.create(recursive: true);
   return dir;
 }
@@ -38,7 +37,10 @@ String _stableCacheIdentity(String url) {
 
 String _cacheName(String url) {
   final identity = _stableCacheIdentity(url);
-  final digest = sha1.convert(Uri.encodeFull(identity).codeUnits).toString();
+  final signed = Uri.tryParse(url)?.path.contains('/storage/v1/object/sign/') ?? false;
+  final userId = signed ? Supabase.instance.client.auth.currentUser?.id : null;
+  // Never reuse a private signed object across accounts on the same device.
+  final digest = sha1.convert(utf8.encode('${userId ?? ''}:$identity')).toString();
   var extension = 'cache';
   try {
     final path = Uri.parse(identity).path;
@@ -49,7 +51,20 @@ String _cacheName(String url) {
       if (RegExp(r'^[a-z0-9]{1,6}$').hasMatch(candidate)) extension = candidate;
     }
   } catch (_) {}
-  return '$digest.$extension';
+  final prefix = signed ? 'signed_${userId ?? 'guest'}_' : '';
+  return '$prefix$digest.$extension';
+}
+
+Future<void> clearPrivateMediaForUser(String userId) async {
+  if (userId.isEmpty) return;
+  try {
+    final dir = await _cacheDirectory();
+    await for (final entity in dir.list()) {
+      if (entity is File && entity.uri.pathSegments.last.startsWith('signed_${userId}_')) {
+        await entity.delete();
+      }
+    }
+  } catch (_) {}
 }
 
 Future<File> _fileFor(String url) async {
@@ -120,29 +135,18 @@ Future<String?> _resolve(
           return null;
         }
 
-        final expected = response.contentLength;
-        if (expected != null && expected > _maxSingleFileBytes) {
-          await response.stream.drain<void>();
-          return null;
-        }
-
         final sink = temp.openWrite();
         var total = 0;
-        var tooLarge = false;
         try {
           await for (final chunk in response.stream) {
             total += chunk.length;
-            if (total > _maxSingleFileBytes) {
-              tooLarge = true;
-              break;
-            }
             sink.add(chunk);
           }
         } finally {
           await sink.flush();
           await sink.close();
         }
-        if (tooLarge || total <= 0) {
+        if (total <= 0) {
           if (await temp.exists()) await temp.delete();
           return null;
         }
@@ -166,7 +170,7 @@ Future<String?> _resolve(
 
 Future<void> storeBytes(String url, Uint8List bytes) async {
   final normalized = url.trim();
-  if (normalized.isEmpty || bytes.isEmpty || bytes.length > _maxSingleFileBytes) return;
+  if (normalized.isEmpty || bytes.isEmpty) return;
   if (!(normalized.startsWith('http://') || normalized.startsWith('https://'))) return;
   try {
     final target = await _fileFor(normalized);
@@ -208,27 +212,13 @@ Future<void> cleanup() async {
     }
 
     final now = DateTime.now();
-    final kept = <({File file, FileStat stat})>[];
     for (final file in files) {
       try {
         final stat = await file.stat();
         if (stat.size <= 0 || now.difference(stat.modified) > _maxAge) {
           await file.delete();
-        } else {
-          kept.add((file: file, stat: stat));
         }
       } catch (_) {}
-    }
-
-    kept.sort((a, b) => b.stat.modified.compareTo(a.stat.modified));
-    var total = 0;
-    for (final item in kept) {
-      total += item.stat.size;
-      if (total > _maxTotalBytes) {
-        try {
-          await item.file.delete();
-        } catch (_) {}
-      }
     }
   } catch (_) {}
 }

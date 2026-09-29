@@ -1,6 +1,8 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'push_notification_service.dart';
+import 'media_cache_service.dart';
+import 'feed_snapshot_service.dart';
 
 /// Single exit path for a signed-in session.
 ///
@@ -11,9 +13,16 @@ class AuthSessionService {
   AuthSessionService._();
 
   static Future<void> signOut() async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
     try {
       await PushNotificationService.instance.unregisterCurrentDevice();
     } finally {
+      if (userId != null) {
+        try {
+          await FeedSnapshotService.clear(userId);
+          await MediaCacheService.clearPrivateMediaForUser(userId);
+        } catch (_) {}
+      }
       await Supabase.instance.client.auth.signOut();
     }
   }

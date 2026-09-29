@@ -61,6 +61,7 @@ import 'services/auth_session_service.dart';
 import 'services/secure_media_service.dart';
 import 'services/screen_awake_service.dart';
 import 'services/media_cache_service.dart';
+import 'services/feed_snapshot_service.dart';
 import 'services/post_publish_service.dart';
 import 'services/feature_control.dart';
 import 'services/call_invitation_guard.dart';

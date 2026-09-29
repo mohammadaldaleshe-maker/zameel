@@ -27,6 +27,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen> with WidgetsBindingObse
   List<Map<String, dynamic>> savedPosts = [];
   List<Map<String, dynamic>> posts = [];
   int _postsRequestVersion = 0;
+  bool _networkFeedShown = false;
   List<Map<String, dynamic>> _advertisements = [];
   bool _isLoading = true;
   bool _loadingMorePosts = false;
@@ -51,6 +52,7 @@ void initState() {
   WidgetsBinding.instance.addObserver(this);
   _createUserIfNotExists();
   _loadCurrentProfileImage();
+  _restoreRecentFeed();
   _loadPosts();
   _loadAdvertisements();
   _loadUnreadNotifications();
@@ -544,8 +546,40 @@ Future<void> _loadCurrentProfileImage() async {
   // جلب المنشورات من Supabase
   // ============================================================
 
+ Future<void> _restoreRecentFeed() async {
+  final userId = Supabase.instance.client.auth.currentUser?.id;
+  if (userId == null) return;
+  final cached = await FeedSnapshotService.read(userId);
+  if (cached.isEmpty || !mounted || _networkFeedShown || posts.isNotEmpty ||
+      Supabase.instance.client.auth.currentUser?.id != userId) return;
+  setState(() {
+    posts = cached;
+    _isLoading = false;
+  });
+  // Display locally stored media immediately, then refresh expiring URLs
+  // against the original Storage references without blocking the feed.
+  try {
+    final refreshed = cached.map((post) {
+      final copy = Map<String, dynamic>.from(post);
+      final source = copy.remove('_cache_source');
+      if (source is Map) {
+        copy['image_url'] = source['image_url'];
+        copy['video_url'] = source['video_url'];
+        copy['media_items'] = source['media_items'];
+      }
+      return copy;
+    }).toList();
+    await SecureMediaService.resolvePosts(refreshed);
+    if (mounted && !_networkFeedShown &&
+        Supabase.instance.client.auth.currentUser?.id == userId) {
+      setState(() => posts = refreshed);
+    }
+  } catch (_) {}
+ }
+
  Future<void> _loadPosts({bool silent = false}) async {
   final requestVersion = ++_postsRequestVersion;
+  final feedUserId = Supabase.instance.client.auth.currentUser?.id;
   final oldOffset = _feedScrollController.hasClients ? _feedScrollController.offset : 0.0;
   final oldMaxExtent = _feedScrollController.hasClients ? _feedScrollController.position.maxScrollExtent : 0.0;
   final oldFirstId = posts.isEmpty ? null : posts.first['id']?.toString();
@@ -562,19 +596,40 @@ Future<void> _loadCurrentProfileImage() async {
     // Demo posts use synthetic IDs and cannot participate in DB-backed
     // features such as comments, likes, saves, or sharing.
     final loaded = List<Map<String, dynamic>>.from(response);
+    // Retain original refs so a six-hour snapshot can refresh signed links.
+    final snapshotRows = loaded.map((row) => Map<String, dynamic>.from(row)).toList();
+    List<Map<String, dynamic>> snapshotOf(List<Map<String, dynamic>> resolved) {
+      return [
+        for (var i = 0; i < resolved.length; i++)
+          {
+            ...resolved[i],
+            '_cache_source': {
+              'image_url': snapshotRows[i]['image_url'],
+              'video_url': snapshotRows[i]['video_url'],
+              'media_items': snapshotRows[i]['media_items'],
+            },
+          },
+      ];
+    }
     // Only the first screenful can affect time to first content. Resolve the
     // remaining signed URLs after that screen is already visible.
     final first = loaded.take(5).toList();
     final remaining = loaded.skip(5).toList();
     await SecureMediaService.resolvePosts(first);
-    if (!mounted || requestVersion != _postsRequestVersion) return;
+    if (!mounted || requestVersion != _postsRequestVersion ||
+        db.auth.currentUser?.id != feedUserId) return;
     setState(() {
+      _networkFeedShown = true;
       posts = _diversifyFeed(first);
       _isLoading = false;
       _loadingMorePosts = remaining.isNotEmpty;
     });
+    final firstSnapshot = feedUserId == null
+        ? Future<void>.value()
+        : FeedSnapshotService.save(feedUserId, snapshotOf(first));
     await SecureMediaService.resolvePosts(remaining);
-    if (!mounted || requestVersion != _postsRequestVersion) return;
+    if (!mounted || requestVersion != _postsRequestVersion ||
+        db.auth.currentUser?.id != feedUserId) return;
     final user = db.auth.currentUser;
 
     if (user != null && loaded.isNotEmpty) {
@@ -610,12 +665,17 @@ Future<void> _loadCurrentProfileImage() async {
       } catch (_) {}
     }
 
-    if (!mounted || requestVersion != _postsRequestVersion) return;
+    if (!mounted || requestVersion != _postsRequestVersion ||
+        db.auth.currentUser?.id != feedUserId) return;
     setState(() {
       posts = _diversifyFeed(loaded);
       _isLoading = false;
       _loadingMorePosts = false;
     });
+    if (feedUserId != null) {
+      unawaited(firstSnapshot.then((_) =>
+          FeedSnapshotService.save(feedUserId, snapshotOf(loaded))));
+    }
     final newFirstId = loaded.isEmpty ? null : loaded.first['id']?.toString();
     if (silent && oldOffset > 20 && oldFirstId != null && newFirstId != oldFirstId) {
       WidgetsBinding.instance.addPostFrameCallback((_) {

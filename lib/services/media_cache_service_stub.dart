@@ -8,3 +8,4 @@ Future<String?> localPathForUrl(
 
 Future<void> storeBytes(String url, Uint8List bytes) async {}
 Future<void> cleanup() async {}
+Future<void> clearPrivateMediaForUser(String userId) async {}
