@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       signing:
-        description: 'signed: update existing app if key matches; test: may require uninstall'
+        description: 'signed: production key + APK/AAB; test: temporary debug APK only'
         type: choice
         options:
           - signed
@@ -77,10 +77,13 @@ jobs:
           test -s android/app/upload-keystore.jks
           echo "CM_KEYSTORE_PATH=$GITHUB_WORKSPACE/android/app/upload-keystore.jks" >> "$GITHUB_ENV"
 
-      - name: Download Flutter dependencies
-        run: flutter pub get
+      - name: Download Flutter dependencies and check sources
+        run: |
+          flutter pub get
+          flutter analyze
+          flutter test
 
-      - name: Build signed release APK
+      - name: Build universal and device-specific APKs
         shell: bash
         run: |
           set -euo pipefail
@@ -92,11 +95,60 @@ jobs:
             --dart-define="WEBRTC_TURN_USERNAME=$WEBRTC_TURN_USERNAME" \
             --dart-define="WEBRTC_TURN_CREDENTIAL=$WEBRTC_TURN_CREDENTIAL" \
             --dart-define=ZAMEEL_VERSION=2.0.0+9
+          flutter build apk --release --split-per-abi --build-number="$build_number" \
+            --dart-define="SUPABASE_URL=$SUPABASE_URL" \
+            --dart-define="SUPABASE_PUBLISHABLE_KEY=$SUPABASE_PUBLISHABLE_KEY" \
+            --dart-define="WEBRTC_TURN_URL=$WEBRTC_TURN_URL" \
+            --dart-define="WEBRTC_TURN_USERNAME=$WEBRTC_TURN_USERNAME" \
+            --dart-define="WEBRTC_TURN_CREDENTIAL=$WEBRTC_TURN_CREDENTIAL" \
+            --dart-define=ZAMEEL_VERSION=2.0.0+9
+
+      - name: Build Android App Bundle for Google Play
+        if: inputs.signing == 'signed'
+        shell: bash
+        run: |
+          set -euo pipefail
+          build_number=$((10000 + GITHUB_RUN_NUMBER))
+          flutter build appbundle --release --build-number="$build_number" \
+            --dart-define="SUPABASE_URL=$SUPABASE_URL" \
+            --dart-define="SUPABASE_PUBLISHABLE_KEY=$SUPABASE_PUBLISHABLE_KEY" \
+            --dart-define="WEBRTC_TURN_URL=$WEBRTC_TURN_URL" \
+            --dart-define="WEBRTC_TURN_USERNAME=$WEBRTC_TURN_USERNAME" \
+            --dart-define="WEBRTC_TURN_CREDENTIAL=$WEBRTC_TURN_CREDENTIAL" \
+            --dart-define=ZAMEEL_VERSION=2.0.0+9
+
+      - name: Check APK signature
+        shell: bash
+        run: |
+          set -euo pipefail
+          apksigner="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)"
+          test -n "$apksigner"
+          for apk in build/app/outputs/flutter-apk/*.apk; do
+            "$apksigner" verify "$apk"
+            certificate="$($apksigner verify --print-certs "$apk")"
+            if [[ '${{ inputs.signing }}' == 'signed' ]] && grep -qi 'CN=Android Debug' <<< "$certificate"; then
+              echo 'Production APK was signed with the Android Debug certificate'
+              exit 1
+            fi
+          done
+          if [[ '${{ inputs.signing }}' == 'signed' ]]; then
+            test -s build/app/outputs/bundle/release/app-release.aab
+            jarsigner -verify build/app/outputs/bundle/release/app-release.aab
+          fi
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: zameel-${{ inputs.signing }}-release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: zameel-${{ inputs.signing }}-apks
+          path: build/app/outputs/flutter-apk/*.apk
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload Google Play AAB
+        if: inputs.signing == 'signed'
+        uses: actions/upload-artifact@v4
+        with:
+          name: zameel-signed-google-play-aab
+          path: build/app/outputs/bundle/release/app-release.aab
           if-no-files-found: error
           retention-days: 7
