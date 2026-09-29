@@ -52,8 +52,10 @@ void initState() {
   WidgetsBinding.instance.addObserver(this);
   _createUserIfNotExists();
   _loadCurrentProfileImage();
-  _restoreRecentFeed();
-  _loadPosts();
+  // Restore the on-device feed before the network request can replace it.
+  // Starting both at once caused fast responses to discard the snapshot and
+  // left users staring at the loading indicator on every app launch.
+  _openFeed();
   _loadAdvertisements();
   _loadUnreadNotifications();
   _subscribeToNotifications();
@@ -575,6 +577,12 @@ Future<void> _loadCurrentProfileImage() async {
       setState(() => posts = refreshed);
     }
   } catch (_) {}
+ }
+
+ Future<void> _openFeed() async {
+  await _restoreRecentFeed();
+  if (!mounted) return;
+  await _loadPosts(silent: posts.isNotEmpty);
  }
 
  Future<void> _loadPosts({bool silent = false}) async {
