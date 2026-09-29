@@ -677,12 +677,29 @@ class _StoryCirclePreview extends StatefulWidget {
 class _StoryCirclePreviewState extends State<_StoryCirclePreview> {
   VideoPlayerController? _controller;
   Timer? _timer;
+  Future<String?>? _cachedImage;
 
   @override
   void initState() {
     super.initState();
+    _prepareImage();
     final video = widget.story['videoPath']?.toString() ?? '';
     if (video.isNotEmpty) _prepareVideo(video);
+  }
+
+  void _prepareImage() {
+    final image = widget.story['imagePath']?.toString() ?? '';
+    _cachedImage = image.isEmpty || kIsWeb
+        ? null
+        : MediaCacheService.localPathForUrl(image, downloadIfMissing: false);
+  }
+
+  @override
+  void didUpdateWidget(covariant _StoryCirclePreview oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.story['imagePath'] != widget.story['imagePath']) {
+      _prepareImage();
+    }
   }
 
   Future<void> _prepareVideo(String url) async {
@@ -733,7 +750,7 @@ class _StoryCirclePreviewState extends State<_StoryCirclePreview> {
     }
     if (image.isNotEmpty) {
       return FutureBuilder<String?>(
-        future: kIsWeb ? Future<String?>.value(null) : MediaCacheService.localPathForUrl(image),
+        future: _cachedImage,
         builder: (_, snapshot) {
           final local = snapshot.data;
           if (!kIsWeb && local != null) {

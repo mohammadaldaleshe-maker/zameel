@@ -70,7 +70,8 @@ class _PublicClipsStripState extends State<PublicClipsStrip> with WidgetsBinding
       // The 1.5-second preview streams lightly; opening the viewer performs a
       // single cache-aware download of the chosen clip.
     } catch (_) {
-      if (mounted) setState(() => _clips = const []);
+      // Keep the already visible strip during a failed background refresh.
+      if (mounted && !silent) setState(() => _clips = const []);
     } finally {
       if (mounted && (!silent || _loading)) setState(() => _loading = false);
     }

@@ -232,24 +232,28 @@ class ZameelSocialService {
     var stories = List<Map<String, dynamic>>.from(raw);
 
     final userIds = <String>{id, ...stories.map((story) => story['user_id']?.toString()).whereType<String>()}.toList();
-    final users = userIds.isEmpty
-        ? <Map<String, dynamic>>[]
-        : List<Map<String, dynamic>>.from(
-            await db
+    // These lookups depend only on the story list and viewer, so request them
+    // together instead of adding three network round trips to the tray.
+    final lookups = await Future.wait<dynamic>([
+      userIds.isEmpty
+          ? Future<dynamic>.value(<Map<String, dynamic>>[])
+          : db
                 .from('users')
                 .select('id,name,profile_image,university,college,department')
                 .inFilter('id', userIds),
-          );
+      db.from('friend_requests')
+          .select('sender_id,receiver_id,status')
+          .eq('status', 'accepted')
+          .or('sender_id.eq.$id,receiver_id.eq.$id'),
+      db.from('close_friends').select('owner_id').eq('friend_id', id),
+    ]);
+    final users = List<Map<String, dynamic>>.from(lookups[0] as List);
     final byId = <String, Map<String, dynamic>>{
       for (final user in users) user['id'].toString(): user,
     };
     final me = byId[id] ?? const <String, dynamic>{};
 
-    final requests = await db
-        .from('friend_requests')
-        .select('sender_id,receiver_id,status')
-        .eq('status', 'accepted')
-        .or('sender_id.eq.$id,receiver_id.eq.$id');
+    final requests = List<Map<String, dynamic>>.from(lookups[1] as List);
     final friendIds = <String>{id};
     for (final request in requests) {
       final sender = request['sender_id']?.toString();
@@ -258,10 +262,7 @@ class ZameelSocialService {
       if (receiver != null && receiver != id) friendIds.add(receiver);
     }
 
-    final closeFriendRows = await db
-        .from('close_friends')
-        .select('owner_id')
-        .eq('friend_id', id);
+    final closeFriendRows = List<Map<String, dynamic>>.from(lookups[2] as List);
     final closeFriendOwners = closeFriendRows
         .map((row) => row['owner_id']?.toString())
         .whereType<String>()
@@ -329,11 +330,16 @@ class ZameelSocialService {
         .toList();
     if (clipIds.isEmpty) return clips;
 
-    final likedRows = await db
+    final likesRequest = db
         .from('clip_likes')
         .select('clip_id')
         .eq('user_id', currentUserId)
         .inFilter('clip_id', clipIds);
+    final results = await Future.wait<dynamic>([
+      likesRequest,
+      Future.wait(clips.map(SecureMediaService.resolveClip)),
+    ]);
+    final likedRows = List<Map<String, dynamic>>.from(results[0] as List);
     final likedIds = List<Map<String, dynamic>>.from(likedRows)
         .map((row) => row['clip_id']?.toString())
         .whereType<String>()
@@ -341,7 +347,6 @@ class ZameelSocialService {
     for (final clip in clips) {
       clip['liked'] = likedIds.contains(clip['id']?.toString());
     }
-    await Future.wait(clips.map(SecureMediaService.resolveClip));
     return clips;
   }
 

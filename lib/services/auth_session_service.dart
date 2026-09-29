@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'push_notification_service.dart';
 import 'media_cache_service.dart';
 import 'feed_snapshot_service.dart';
+import 'colleague_suggestion_service.dart';
 
 /// Single exit path for a signed-in session.
 ///
@@ -20,6 +21,7 @@ class AuthSessionService {
       if (userId != null) {
         try {
           await FeedSnapshotService.clear(userId);
+          await ColleagueSuggestionService.clearSnapshot(userId);
           await MediaCacheService.clearPrivateMediaForUser(userId);
         } catch (_) {}
       }

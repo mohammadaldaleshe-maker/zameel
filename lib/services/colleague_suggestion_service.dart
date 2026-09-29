@@ -4,6 +4,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 String _phoneHash(String value) {
@@ -23,6 +24,54 @@ List<String> _hashPhones(List<String> numbers) =>
 
 class ColleagueSuggestionService {
   ColleagueSuggestionService._();
+
+  static String _snapshotKey(String userId) => 'zameel_colleagues_v1_$userId';
+
+  static Future<List<Map<String, dynamic>>> recentSuggestions() async {
+    final userId = _db.auth.currentUser?.id;
+    if (userId == null) return [];
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_snapshotKey(userId));
+      if (raw == null) return [];
+      final snapshot = jsonDecode(raw);
+      if (snapshot is! Map) return [];
+      final savedAt = DateTime.tryParse(snapshot['saved_at']?.toString() ?? '');
+      if (savedAt == null || savedAt.isAfter(DateTime.now()) ||
+          DateTime.now().difference(savedAt) > const Duration(hours: 6)) {
+        await prefs.remove(_snapshotKey(userId));
+        return [];
+      }
+      if (_db.auth.currentUser?.id != userId) return [];
+      return (snapshot['rows'] as List? ?? const [])
+          .whereType<Map>()
+          .map((row) => Map<String, dynamic>.from(row))
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  static Future<void> clearSnapshot(String userId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_snapshotKey(userId));
+    } catch (_) {}
+  }
+
+  static Future<void> _saveRecent(String userId, List<Map<String, dynamic>> rows) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (_db.auth.currentUser?.id != userId) return;
+      await prefs.setString(_snapshotKey(userId), jsonEncode({
+        'saved_at': DateTime.now().toIso8601String(),
+        'rows': rows.take(20).map((row) => {
+          for (final key in ['user_id', 'name', 'profile_image',
+            'match_reason', 'request_status']) key: row[key],
+        }).toList(),
+      }));
+    } catch (_) {}
+  }
 
   static final SupabaseClient _db = Supabase.instance.client;
   static List<String>? _cachedContactHashes;
@@ -95,6 +144,10 @@ class ColleagueSuggestionService {
     final rows = List<Map<String, dynamic>>.from(result as List? ?? const []);
     if (key.startsWith('${_db.auth.currentUser?.id ?? ''}:')) {
       _resultCache[key] = (DateTime.now(), rows);
+      if (searchText.isEmpty && _cacheUserId != null) {
+        // Disk writes are best effort and must not delay the first results.
+        _saveRecent(_cacheUserId!, rows);
+      }
     }
     return rows;
   }
@@ -116,6 +169,8 @@ class ColleagueSuggestionService {
       'target_user_id': targetUserId,
     });
     _resultCache.clear();
+    final userId = _db.auth.currentUser?.id;
+    if (userId != null) await clearSnapshot(userId);
   }
 
   static Future<List<String>> _readContactHashes() async {

@@ -21,6 +21,16 @@ class _SuggestedColleaguesSectionState extends State<SuggestedColleaguesSection>
   void initState() {
     super.initState();
     _load();
+    _restore();
+  }
+
+  Future<void> _restore() async {
+    final version = _loadVersion;
+    final rows = await ColleagueSuggestionService.recentSuggestions();
+    if (mounted && version == _loadVersion && _search.text.isEmpty &&
+        _items.isEmpty && rows.isNotEmpty) {
+      setState(() => _items = rows);
+    }
   }
 
   @override
@@ -44,7 +54,10 @@ class _SuggestedColleaguesSectionState extends State<SuggestedColleaguesSection>
         }).catchError((Object _) {});
       }
     } catch (_) {
-      if (mounted && version == _loadVersion) setState(() => _items = const []);
+      // A transient refresh failure should not erase visible suggestions.
+      if (mounted && version == _loadVersion && _items.isEmpty) {
+        setState(() => _items = const []);
+      }
     } finally {
       if (mounted && version == _loadVersion) setState(() => _loading = false);
     }
@@ -61,7 +74,6 @@ class _SuggestedColleaguesSectionState extends State<SuggestedColleaguesSection>
 
   @override
   Widget build(BuildContext context) {
-    if (_loading && _items.isEmpty) return const SizedBox(height: 96, child: Center(child: CircularProgressIndicator()));
     return Card(
       margin: const EdgeInsets.fromLTRB(12, 8, 12, 6),
       child: Padding(
@@ -76,7 +88,9 @@ class _SuggestedColleaguesSectionState extends State<SuggestedColleaguesSection>
             decoration: InputDecoration(prefixIcon: const Icon(Icons.search), hintText: 'ابحث عن زملاء آخرين', suffixIcon: IconButton(onPressed: () => _load(_search.text), icon: const Icon(Icons.arrow_forward)), isDense: true, border: const OutlineInputBorder()),
           ),
           const SizedBox(height: 10),
-          if (_items.isEmpty)
+          if (_loading && _items.isEmpty)
+            const Padding(padding: EdgeInsets.all(10), child: LinearProgressIndicator())
+          else if (_items.isEmpty)
             const Padding(padding: EdgeInsets.all(10), child: Text('لا توجد اقتراحات جديدة حاليًا.'))
           else
             SizedBox(
