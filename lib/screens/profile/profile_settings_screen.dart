@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../providers/language_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:zameel/theme/app_theme.dart';
@@ -83,6 +84,39 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  Future<void> _openPrivacyPolicy(bool ar) async {
+    final uri = Uri.parse('https://zameel-xi.vercel.app/privacy.html');
+    try {
+      if (await launchUrl(uri, mode: LaunchMode.externalApplication)) return;
+    } catch (_) {
+      // Let the user select the public URL if no browser can be opened.
+    }
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(ar ? 'سياسة الخصوصية' : 'Privacy policy'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(ar
+                ? 'تعذر فتح المتصفح. انسخ الرابط وافتحه في متصفحك:'
+                : 'Could not open the browser. Copy this link into your browser:'),
+            const SizedBox(height: 12),
+            SelectableText(uri.toString(), textDirection: TextDirection.ltr),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(ar ? 'إغلاق' : 'Close'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _save() async {
@@ -171,6 +205,18 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         body: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.privacy_tip_outlined),
+                title: Text(ar ? 'سياسة الخصوصية' : 'Privacy policy'),
+                subtitle: Text(ar
+                    ? 'كيف يستخدم زميل بياناتك وخيارات حذف الحساب'
+                    : 'How Zameel uses your data and account deletion options'),
+                trailing: const Icon(Icons.open_in_new_rounded),
+                onTap: () => _openPrivacyPolicy(ar),
+              ),
+            ),
+            const SizedBox(height: 12),
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(18),
