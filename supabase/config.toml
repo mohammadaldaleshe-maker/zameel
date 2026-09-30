@@ -3,3 +3,6 @@ verify_jwt = false
 
 [functions.livekit-token]
 verify_jwt = false
+
+[functions.account-deletion]
+verify_jwt = false

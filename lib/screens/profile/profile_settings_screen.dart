@@ -340,7 +340,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       builder: (dialogContext) => AlertDialog(
         title: Text(ar ? 'حذف الحساب نهائيًا؟' : 'Delete account permanently?'),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
-          Text(ar ? 'لن تتمكن من استعادة الحساب أو المحتوى بعد الحذف. اكتب «حذف حسابي» للتأكيد.' : 'This cannot be undone. Type DELETE MY ACCOUNT to confirm.'),
+          Text(ar ? 'سيبدأ حذف حسابك ومحتواك وملفاتك. الطلب نهائي وقد يستغرق إكماله عدة دقائق. اكتب «حذف حسابي» للتأكيد.' : 'Deletion of your account, content and files will begin. This cannot be undone and may take several minutes. Type DELETE MY ACCOUNT to confirm.'),
           const SizedBox(height: 12),
           TextField(controller: confirmation, decoration: const InputDecoration(border: OutlineInputBorder())),
         ]),
@@ -362,9 +362,14 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     try {
       await Supabase.instance.client.rpc('delete_my_account');
       await AuthSessionService.signOut();
-      if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ar ? 'تم استلام طلب الحذف. يجري تنظيف الحساب والملفات.' : 'Deletion requested. Account and file cleanup is in progress.')));
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ar ? 'تعذر حذف الحساب: $e' : 'Could not delete account: $e')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().contains('account_deletion_requires_review')
+          ? (ar ? 'يتطلب حسابك نقل ملكية موارد مشتركة قبل الحذف. تواصل مع zameel.jo@gmail.com.' : 'Shared resources require an ownership handover. Contact zameel.jo@gmail.com.')
+          : (ar ? 'تعذر إرسال طلب الحذف. حاول مجددًا أو تواصل مع zameel.jo@gmail.com.' : 'Could not request deletion. Retry or contact zameel.jo@gmail.com.'))));
     }
   }
 

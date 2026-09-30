@@ -153,8 +153,12 @@ class RegistrationRequiredScreen extends StatelessWidget {
                         onPressed: () async {
                           try {
                             await Supabase.instance.client.rpc('delete_my_account');
-                          } catch (_) {
                             await AuthSessionService.signOut();
+                          } catch (_) {
+                            if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('تعذر إرسال طلب حذف الحساب. تواصل مع zameel.jo@gmail.com.')),
+                            );
+                            return;
                           }
                           if (!context.mounted) return;
                           Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const WelcomeScreen()), (_) => false);
