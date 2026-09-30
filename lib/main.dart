@@ -70,6 +70,7 @@ import 'services/message_notification_grouping.dart';
 import 'services/account_access_monitor.dart';
 import 'services/advertising_service.dart';
 import 'widgets/post_media_gallery.dart';
+import 'widgets/post_report_menu.dart';
 import 'widgets/cached_media_image.dart';
 import 'platform/local_image_provider.dart';
 

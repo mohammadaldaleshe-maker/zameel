@@ -210,33 +210,12 @@ class _ImagePostState extends State<_ImagePost> {
             // --------------------------------------------------
             // MORE / DELETE
             // --------------------------------------------------
-            IconButton(
-              icon: const Icon(
-                Icons.more_horiz,
-                color: Colors.white60,
-              ),
-              tooltip: isArabic ? 'المزيد' : 'More',
-              onPressed: () {
-                final user = Supabase.instance.client.auth.currentUser;
-                final bool isOwner =
-                    widget.post['user_id']?.toString() == user?.id;
-                final bool canDelete = widget.isAdmin || isOwner;
-
-                if (!canDelete) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        isArabic
-                            ? 'ليس لديك صلاحية لهذا المنشور'
-                            : 'You do not have permission for this post',
-                      ),
-                    ),
-                  );
-                  return;
-                }
-
-                widget.onDelete();
-              },
+            PostReportMenu(
+              postId: widget.post['id']?.toString() ?? '',
+              authorId: widget.post['user_id']?.toString(),
+              ar: isArabic,
+              canDelete: canDelete,
+              onDelete: widget.onDelete,
             ),
           ],
         ),
@@ -529,43 +508,14 @@ class _VideoPostState extends State<_VideoPost> {
         ),
       ),
     ),
-    if (widget.isAdmin ||
-        widget.post['user_id'] ==
-            Supabase.instance.client.auth.currentUser?.id)
-      PopupMenuButton<String>(
-        icon: const Icon(
-          Icons.more_horiz,
-          color: Colors.white60,
-        ),
-        onSelected: (value) {
-          if (value == 'delete') {
-            widget.onDelete();
-          }
-        },
-        itemBuilder: (context) => [
-          PopupMenuItem<String>(
-            value: 'delete',
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.delete_outline_rounded,
-                  color: Colors.red,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  isArabic ? 'حذف' : 'Delete',
-                ),
-              ],
-            ),
-          ),
-        ],
-      )
-    else
-      const Icon(
-        Icons.more_horiz,
-        color: Colors.white60,
-      ),
+    PostReportMenu(
+      postId: widget.post['id']?.toString() ?? '',
+      authorId: widget.post['user_id']?.toString(),
+      ar: isArabic,
+      canDelete: widget.isAdmin || widget.post['user_id']?.toString() ==
+          Supabase.instance.client.auth.currentUser?.id,
+      onDelete: widget.onDelete,
+    ),
   ],
 ),
         const SizedBox(height: 10),
@@ -1412,33 +1362,12 @@ class _TextPostState extends State<_TextPost> {
               ),
             ),
             // زر "..." مع قائمة منبثقة
-            IconButton(
-              icon: const Icon(
-                Icons.more_horiz,
-                color: Colors.white60,
-              ),
-              tooltip: isArabic ? 'المزيد' : 'More',
-              onPressed: () {
-                final user = Supabase.instance.client.auth.currentUser;
-                final bool isOwner =
-                    widget.post['user_id']?.toString() == user?.id;
-                final bool canDelete = widget.isAdmin || isOwner;
-
-                if (!canDelete) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        isArabic
-                            ? 'ليس لديك صلاحية لهذا المنشور'
-                            : 'You do not have permission for this post',
-                      ),
-                    ),
-                  );
-                  return;
-                }
-
-                widget.onDelete();
-              },
+            PostReportMenu(
+              postId: widget.post['id']?.toString() ?? '',
+              authorId: widget.post['user_id']?.toString(),
+              ar: isArabic,
+              canDelete: canDelete,
+              onDelete: widget.onDelete,
             ),
           ],
         ),

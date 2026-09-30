@@ -21,6 +21,7 @@ import '../../theme/app_theme.dart';
 import '../../services_social.dart';
 import '../../widgets/video_player_widget.dart';
 import '../../widgets/post_media_gallery.dart';
+import '../../widgets/post_report_menu.dart';
 import '../../services/post_publish_service.dart';
 import '../../services/secure_media_service.dart';
 import '../../services/feature_control.dart';
@@ -1050,6 +1051,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ListTile(leading: const Icon(Icons.open_in_full_rounded), title: Text(ar ? 'فتح المنشور' : 'Open post'), onTap: () { Navigator.pop(sheetContext); _openPost(post); }),
       ListTile(leading: const Icon(Icons.bookmark_add_outlined), title: Text(ar ? 'حفظ المنشور' : 'Save post'), onTap: () { Navigator.pop(sheetContext); _save(post); }),
       ListTile(leading: const Icon(Icons.share_rounded), title: Text(ar ? 'مشاركة المنشور' : 'Share post'), onTap: () { Navigator.pop(sheetContext); _share(post); }),
+      if (!ownsPost) ListTile(
+        leading: const Icon(Icons.flag_outlined),
+        title: Text(ar ? 'الإبلاغ عن المنشور' : 'Report post'),
+        onTap: () {
+          Navigator.pop(sheetContext);
+          showPostReportDialog(context, post['id'].toString(), ar);
+        },
+      ),
       if (ownsPost) ListTile(
         leading: const Icon(Icons.visibility_outlined),
         title: Text(ar ? 'تعديل خصوصية المنشور' : 'Change post visibility'),
