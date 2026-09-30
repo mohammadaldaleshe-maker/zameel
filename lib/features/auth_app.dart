@@ -10,116 +10,115 @@ class AuthGate extends StatefulWidget {
 class _AuthGateState extends State<AuthGate> {
   late Future<Widget> _initialScreen;
   StreamSubscription<AuthState>? _authSubscription;
+  String? _userId;
+  int _generation = 0;
 
   @override
   void initState() {
     super.initState();
+    _userId = Supabase.instance.client.auth.currentUser?.id;
     _initialScreen = _getInitialScreen();
-
-    _authSubscription = Supabase.instance.client.auth
-        .onAuthStateChange
-        .listen((data) {
+    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
       if (!mounted) return;
-
-      setState(() {
-        _initialScreen = data.session == null
-            ? Future.value(const WelcomeScreen())
-            : _getInitialScreen();
-      });
-      if (data.session != null) {
-        PushNotificationService.instance.registerForCurrentUser();
+      final next = data.session?.user.id;
+      // Refreshing a token must not dispose the home feed and its players.
+      if (next == _userId && (data.event == AuthChangeEvent.tokenRefreshed ||
+          data.event == AuthChangeEvent.initialSession ||
+          data.event == AuthChangeEvent.signedIn)) return;
+      _userId = next;
+      setState(() => _initialScreen = _getInitialScreen());
+      if (next != null) {
+        unawaited(PushNotificationService.instance.registerForCurrentUser());
       }
     });
   }
 
+  Widget _profileScreen(Map<String, dynamic>? profile) {
+    if (profile == null || profile['onboarding_complete'] != true) {
+      return const RegistrationRequiredScreen();
+    }
+    final universityName = (profile['university'] ?? '').toString().trim();
+    final collegeName = (profile['college'] ?? '').toString().trim();
+    final departmentName = (profile['department'] ?? '').toString().trim();
+    if (universityName.isEmpty || collegeName.isEmpty || departmentName.isEmpty) {
+      return const UniversityScreen();
+    }
+    for (final university in universities) {
+      if (university.name != universityName) continue;
+      for (final college in university.colleges) {
+        if (college.name == collegeName) {
+          return HomeFeedScreen(university: university, college: college,
+              department: departmentName);
+        }
+      }
+    }
+    return const UniversityScreen();
+  }
+
   Future<Widget> _getInitialScreen() async {
+    final generation = ++_generation;
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) return const WelcomeScreen();
+    final cached = await HomeSnapshotService.read(userId, 'profile');
+    if (cached.isNotEmpty) {
+      // Cached routing data contains no roles/permissions. AccountAccessMonitor
+      // and server RLS remain authoritative for blocked/suspended accounts.
+      unawaited(_refreshProfile(userId, generation, cached.first));
+      return _profileScreen(cached.first);
+    }
     try {
-      final supabase = Supabase.instance.client;
-      final session = supabase.auth.currentSession;
-
-      if (session == null) {
-        return const WelcomeScreen();
+      final profile = await _fetchProfile(userId);
+      if (profile != null && generation == _generation) {
+        await HomeSnapshotService.save(userId, 'profile', [profile]);
       }
+      return _profileScreen(profile);
+    } catch (error) {
+      debugPrint('Initial profile unavailable: $error');
+      return Scaffold(body: Center(child: Column(mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text('تعذر الاتصال. تحقق من الإنترنت وحاول مجددًا.'),
+          TextButton(onPressed: () {
+            if (mounted) setState(() => _initialScreen = _getInitialScreen());
+          }, child: const Text('إعادة المحاولة')),
+        ],
+      )));
+    }
+  }
 
-      final user = session.user;
-
-      final profile = await supabase
-          .from('users')
+  Future<Map<String, dynamic>?> _fetchProfile(String userId) =>
+      Supabase.instance.client.from('users')
           .select('university, college, department, onboarding_complete')
-          .eq('id', user.id)
-          .maybeSingle();
+          .eq('id', userId).maybeSingle().timeout(const Duration(seconds: 12));
 
-      if (profile == null) {
-        return const RegistrationRequiredScreen();
-      }
-
-      if (profile['onboarding_complete'] != true) {
-        return const RegistrationRequiredScreen();
-      }
-
-      final universityName =
-          (profile['university'] ?? '').toString().trim();
-      final collegeName =
-          (profile['college'] ?? '').toString().trim();
-      final departmentName =
-          (profile['department'] ?? '').toString().trim();
-
-      if (universityName.isEmpty ||
-          collegeName.isEmpty ||
-          departmentName.isEmpty) {
-        return const UniversityScreen();
-      }
-
-      final university = universities.firstWhere(
-        (u) => u.name == universityName,
-        orElse: () => throw Exception(
-          'University not found: $universityName',
-        ),
-      );
-
-      final college = university.colleges.firstWhere(
-        (c) => c.name == collegeName,
-        orElse: () => throw Exception(
-          'College not found: $collegeName',
-        ),
-      );
-
-      return HomeFeedScreen(
-        university: university,
-        college: college,
-        department: departmentName,
-      );
-    } catch (e, stackTrace) {
-      debugPrint('AuthGate error: $e');
-      debugPrintStack(stackTrace: stackTrace);
-      return const WelcomeScreen();
+  Future<void> _refreshProfile(String userId, int generation,
+      Map<String, dynamic> cached) async {
+    try {
+      final profile = await _fetchProfile(userId);
+      if (!mounted || generation != _generation ||
+          Supabase.instance.client.auth.currentUser?.id != userId) return;
+      await HomeSnapshotService.save(userId, 'profile', profile == null ? [] : [profile]);
+      if (!mounted || generation != _generation) return;
+      final changed = profile == null || const [
+        'university', 'college', 'department', 'onboarding_complete',
+      ].any((key) => cached[key] != profile[key]);
+      if (changed) setState(() => _initialScreen = Future.value(_profileScreen(profile)));
+    } catch (_) {
+      // Keep the local home on a transient connection failure.
     }
   }
 
   @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<Widget>(
-      future: _initialScreen,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
-          );
-        }
-
-        if (snapshot.hasError) {
-          return const WelcomeScreen();
-        }
-
-        return snapshot.data ?? const WelcomeScreen();
-      },
-    );
-  }
+  Widget build(BuildContext context) => FutureBuilder<Widget>(
+    key: ValueKey(_userId),
+    future: _initialScreen,
+    builder: (context, snapshot) => snapshot.data ?? const Scaffold(
+      body: Center(child: CircularProgressIndicator()),
+    ),
+  );
 
   @override
   void dispose() {
+    _generation++;
     _authSubscription?.cancel();
     super.dispose();
   }

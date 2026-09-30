@@ -4,9 +4,12 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting, debugPrint;
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../config.dart';
+import 'media_identity.dart';
 
 // Social media is immutable because every upload gets a unique object path.
 // The app-support directory survives ordinary cache purges and app restarts.
@@ -14,31 +17,43 @@ const Duration _maxAge = Duration(hours: 6);
 
 final Map<String, Future<String?>> _inFlight = <String, Future<String?>>{};
 Future<void>? _cleanupFuture;
+DateTime? _lastCleanup;
+
+Future<Directory> Function()? _testDirectory;
+http.Client Function()? _testClient;
+String? Function()? _testUser;
+String? _currentUser() => _testUser != null ? _testUser!() :
+    Supabase.instance.client.auth.currentUser?.id;
+
+@visibleForTesting
+Future<void> configureMediaCacheForTesting({
+  Future<Directory> Function()? directory,
+  http.Client Function()? clientFactory,
+  String? Function()? user,
+}) async {
+  await _cleanupFuture;
+  _testDirectory = directory;
+  _testClient = clientFactory;
+  _testUser = user;
+  _inFlight.clear();
+  _lastCleanup = null;
+}
 
 Future<Directory> _cacheDirectory() async {
+  if (_testDirectory != null) return _testDirectory!();
   final root = await getApplicationSupportDirectory();
   final dir = Directory('${root.path}${Platform.pathSeparator}zameel_media_cache_v2');
   if (!await dir.exists()) await dir.create(recursive: true);
   return dir;
 }
 
-String _stableCacheIdentity(String url) {
-  try {
-    final uri = Uri.parse(url);
-    // Supabase signed URLs rotate their `token` query value while pointing to
-    // the same immutable object. Cache by object path rather than signature so
-    // refreshing a signed URL does not download the same video/image again.
-    if (uri.path.contains('/storage/v1/object/sign/')) {
-      return uri.replace(query: '').toString();
-    }
-  } catch (_) {}
-  return url;
-}
+String _stableCacheIdentity(String url) =>
+    mediaIdentity(url, storageOrigin: ZameelConfig.supabaseUrl);
 
 String _cacheName(String url) {
   final identity = _stableCacheIdentity(url);
-  final signed = Uri.tryParse(url)?.path.contains('/storage/v1/object/sign/') ?? false;
-  final userId = signed ? Supabase.instance.client.auth.currentUser?.id : null;
+  final signed = isStorageMedia(url);
+  final userId = signed ? _currentUser() : null;
   // Never reuse a private signed object across accounts on the same device.
   final digest = sha1.convert(utf8.encode('${userId ?? ''}:$identity')).toString();
   var extension = 'cache';
@@ -72,6 +87,40 @@ Future<File> _fileFor(String url) async {
   return File('${dir.path}${Platform.pathSeparator}${_cacheName(url)}');
 }
 
+// Reuse files written by 119-122 rather than making the first upgrade download
+// every already-cached image again. Signed legacy files remain account scoped.
+Future<String?> _adoptLegacy(String value, File target) async {
+  try {
+    final uri = Uri.tryParse(value);
+    if (uri == null) return null;
+    final candidates = <String>{};
+    if (uri.scheme != 'zameel-private') candidates.add(value);
+    if (uri.scheme == 'zameel-private') {
+      final root = Uri.parse(ZameelConfig.supabaseUrl);
+      candidates.add(root.replace(path: '/storage/v1/object/sign/${uri.host}/${uri.queryParameters['path'] ?? ''}').toString());
+    } else if (uri.path.contains('/storage/v1/object/public/posts/') ||
+        uri.path.contains('/storage/v1/object/public/graduation_book/')) {
+      candidates.add(uri.replace(path: uri.path.replaceFirst('/object/public/', '/object/sign/'), query: '').toString());
+    }
+    for (final candidate in candidates) {
+      final oldUri = Uri.parse(candidate);
+      final signed = oldUri.path.contains('/storage/v1/object/sign/');
+      final identity = signed ? oldUri.replace(query: '').toString() : candidate;
+      final user = signed ? _currentUser() : null;
+      final digest = sha1.convert(utf8.encode('${user ?? ''}:$identity')).toString();
+      final extension = oldUri.path.split('.').last.toLowerCase();
+      final safeExt = RegExp(r'^[a-z0-9]{1,6}$').hasMatch(extension) ? extension : 'cache';
+      final prefix = signed ? 'signed_${user ?? 'guest'}_' : '';
+      final old = File('${target.parent.path}/$prefix$digest.$safeExt');
+      if (old.path != target.path && await _isFresh(old)) {
+        await old.copy(target.path);
+        return target.path;
+      }
+    }
+  } catch (_) {}
+  return null;
+}
+
 Future<bool> _isFresh(File file) async {
   try {
     if (!await file.exists()) return false;
@@ -94,41 +143,49 @@ Future<String?> localPathForUrl(
 }) async {
   final normalized = url.trim();
   if (normalized.isEmpty ||
-      !(normalized.startsWith('http://') || normalized.startsWith('https://'))) {
+      !(normalized.startsWith('http://') || normalized.startsWith('https://') ||
+        normalized.startsWith('zameel-private://'))) {
     return null;
   }
 
-  final existing = _inFlight[normalized];
+  // A cache-only probe must never wait for an unrelated active download.
+  final target = await _fileFor(normalized);
+  if (await _isFresh(target)) return target.path;
+  final adopted = await _adoptLegacy(normalized, target);
+  if (adopted != null) return adopted;
+  if (!downloadIfMissing) return null;
+  final identity = target.path;
+  final existing = _inFlight[identity];
   if (existing != null) return existing;
-
-  final task = _resolve(normalized, downloadIfMissing: downloadIfMissing);
-  _inFlight[normalized] = task;
+  final task = _resolve(normalized, target: target);
+  _inFlight[identity] = task;
   try {
     return await task;
   } finally {
-    _inFlight.remove(normalized);
+    if (identical(_inFlight[identity], task)) _inFlight.remove(identity);
   }
 }
 
 Future<String?> _resolve(
   String url, {
-  required bool downloadIfMissing,
+  required File target,
 }) async {
-  final target = await _fileFor(url);
+  final watch = Stopwatch()..start();
+  final owner = _currentUser();
   if (await _isFresh(target)) return target.path;
-  if (!downloadIfMissing) return null;
 
   final temp = File('${target.path}.part');
-  final client = http.Client();
+  final client = _testClient?.call() ?? http.Client();
   try {
-    for (var attempt = 0; attempt < 3; attempt++) {
+    for (var attempt = 0; attempt < 2; attempt++) {
       try {
         if (await temp.exists()) await temp.delete();
         final request = http.Request('GET', Uri.parse(url));
-        final response = await client.send(request).timeout(const Duration(seconds: 18));
+        final response = await client.send(request).timeout(const Duration(seconds: 12));
         if (response.statusCode < 200 || response.statusCode >= 300) {
           await response.stream.drain<void>();
-          if (attempt < 2) {
+          if (response.statusCode >= 400 && response.statusCode < 500) return null;
+          if (attempt < 1) {
             await Future<void>.delayed(Duration(milliseconds: 400 * (attempt + 1)));
             continue;
           }
@@ -138,7 +195,7 @@ Future<String?> _resolve(
         final sink = temp.openWrite();
         var total = 0;
         try {
-          await for (final chunk in response.stream) {
+          await for (final chunk in response.stream.timeout(const Duration(seconds: 12))) {
             total += chunk.length;
             sink.add(chunk);
           }
@@ -150,13 +207,18 @@ Future<String?> _resolve(
           if (await temp.exists()) await temp.delete();
           return null;
         }
+        if (isStorageMedia(url) && _currentUser() != owner) {
+          if (await temp.exists()) await temp.delete();
+          return null;
+        }
         if (await target.exists()) await target.delete();
         await temp.rename(target.path);
+        debugPrint('Zameel media: downloaded $total bytes in ${watch.elapsedMilliseconds}ms');
         unawaited(_scheduleCleanup());
         return target.path;
       } catch (_) {
         if (await temp.exists()) await temp.delete().catchError((_) => temp);
-        if (attempt < 2) {
+        if (attempt < 1) {
           await Future<void>.delayed(Duration(milliseconds: 400 * (attempt + 1)));
           continue;
         }
@@ -171,7 +233,8 @@ Future<String?> _resolve(
 Future<void> storeBytes(String url, Uint8List bytes) async {
   final normalized = url.trim();
   if (normalized.isEmpty || bytes.isEmpty) return;
-  if (!(normalized.startsWith('http://') || normalized.startsWith('https://'))) return;
+  if (!(normalized.startsWith('http://') || normalized.startsWith('https://') ||
+        normalized.startsWith('zameel-private://'))) return;
   try {
     final target = await _fileFor(normalized);
     await target.writeAsBytes(bytes, flush: true);
@@ -181,6 +244,10 @@ Future<void> storeBytes(String url, Uint8List bytes) async {
 }
 
 Future<void> _scheduleCleanup() {
+  if (_lastCleanup != null && DateTime.now().difference(_lastCleanup!) < const Duration(minutes: 15)) {
+    return Future<void>.value();
+  }
+  _lastCleanup = DateTime.now();
   final current = _cleanupFuture;
   if (current != null) return current;
   final future = cleanup();

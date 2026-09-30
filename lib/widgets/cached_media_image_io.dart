@@ -25,25 +25,28 @@ class CachedMediaImage extends StatefulWidget {
 class _CachedMediaImageState extends State<CachedMediaImage> {
   late Future<String?> _path;
 
-  String _identity(String url) {
-    final uri = Uri.tryParse(url);
-    if (uri != null && uri.path.contains('/storage/v1/object/sign/')) {
-      return uri.replace(query: '').toString();
-    }
-    return url;
+  bool _failed = false;
+  String _identity(String url) => MediaCacheService.identity(url);
+
+  Future<String?> _load() async {
+    final path = await MediaCacheService.localPathForUrl(widget.url);
+    _failed = path == null;
+    return path;
   }
 
   @override
   void initState() {
     super.initState();
-    _path = MediaCacheService.localPathForUrl(widget.url);
+    _path = _load();
   }
 
   @override
   void didUpdateWidget(covariant CachedMediaImage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (_identity(oldWidget.url) != _identity(widget.url)) {
-      _path = MediaCacheService.localPathForUrl(widget.url);
+    if (_identity(oldWidget.url) != _identity(widget.url) ||
+        (_failed && oldWidget.url != widget.url)) {
+      _failed = false;
+      _path = _load();
     }
   }
 
@@ -59,7 +62,8 @@ class _CachedMediaImageState extends State<CachedMediaImage> {
           return Image.file(
             File(path),
             fit: widget.fit,
-            cacheWidth: widget.cacheWidth,
+            cacheWidth: widget.cacheWidth ?? (MediaQuery.sizeOf(context).width *
+                MediaQuery.devicePixelRatioOf(context)).round().clamp(1, 1440).toInt(),
             gaplessPlayback: true,
             errorBuilder: (_, __, ___) => widget.fallback,
           );

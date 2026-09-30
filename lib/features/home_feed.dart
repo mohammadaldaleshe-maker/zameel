@@ -30,7 +30,9 @@ class _HomeFeedScreenState extends State<HomeFeedScreen> with WidgetsBindingObse
   bool _networkFeedShown = false;
   List<Map<String, dynamic>> _advertisements = [];
   bool _isLoading = true;
-  bool _loadingMorePosts = false;
+  Future<void>? _postsPending;
+  Future<void>? _adsPending;
+  bool _adsRestored = false;
   bool _mediaPublishing = false;
   String _postAudience = 'public';
   int _unreadNotifications = 0;
@@ -95,18 +97,55 @@ Future<void> _loadFeedScope() async {
   }
 }
 
-Future<void> _loadAdvertisements() async {
+Future<void> _loadAdvertisements() {
+  return _adsPending ??= _refreshAdvertisements().whenComplete(() => _adsPending = null);
+}
+
+Future<void> _refreshAdvertisements() async {
+  final userId = Supabase.instance.client.auth.currentUser?.id;
+  if (userId == null) return;
   if (!FeatureControl.instance.enabled('partner_advertising')) {
     if (mounted && _advertisements.isNotEmpty) setState(() => _advertisements = []);
     return;
   }
-  try {
-    final loaded = await AdvertisingService.liveAds(limit: 12);
-    if (mounted) setState(() => _advertisements = loaded);
-  } catch (error) {
-    debugPrint('Error loading advertisements: $error');
-    if (mounted) setState(() => _advertisements = []);
+  if (!_adsRestored) {
+    _adsRestored = true;
+    final cached = await HomeSnapshotService.read(userId, 'ads');
+    if (mounted && Supabase.instance.client.auth.currentUser?.id == userId &&
+        FeatureControl.instance.enabled('partner_advertising') && cached.isNotEmpty) {
+      setState(() => _advertisements = cached);
+    }
   }
+  try {
+    final loaded = await AdvertisingService.liveAds(limit: 12)
+        .timeout(const Duration(seconds: 15));
+    if (mounted && Supabase.instance.client.auth.currentUser?.id == userId) {
+      setState(() => _advertisements = FeatureControl.instance.enabled('partner_advertising')
+          ? loaded : []);
+      unawaited(_saveHomeAds(userId, loaded));
+    }
+  } catch (error) {
+    debugPrint('Ad refresh unavailable; retaining local preview: $error');
+  }
+}
+
+Future<void> _saveHomeAds(String userId, List<Map<String, dynamic>> ads) async {
+  try {
+    final db = Supabase.instance.client;
+    if (ads.isEmpty) {
+      await HomeSnapshotService.save(userId, 'ads', []);
+      return;
+    }
+    final rows = await db.from('advertisements').select('id,status,expires_at,deleted_at')
+        .inFilter('id', ads.map((ad) => ad['id'].toString()).toList())
+        .timeout(const Duration(seconds: 12));
+    if (!mounted || db.auth.currentUser?.id != userId) return;
+    final metadata = {for (final row in rows) row['id']: row};
+    await HomeSnapshotService.save(userId, 'ads', [
+      for (final ad in ads)
+        if (metadata[ad['id']] != null) {...ad, ...metadata[ad['id']]!},
+    ]);
+  } catch (_) {}
 }
 
 Future<void> _setFeedScope(String scope) async {
@@ -549,6 +588,7 @@ Future<void> _loadCurrentProfileImage() async {
   // ============================================================
 
  Future<void> _restoreRecentFeed() async {
+  final watch = Stopwatch()..start();
   final userId = Supabase.instance.client.auth.currentUser?.id;
   if (userId == null) return;
   final cached = await FeedSnapshotService.read(userId);
@@ -558,25 +598,9 @@ Future<void> _loadCurrentProfileImage() async {
     posts = cached;
     _isLoading = false;
   });
-  // Display locally stored media immediately, then refresh expiring URLs
-  // against the original Storage references without blocking the feed.
-  try {
-    final refreshed = cached.map((post) {
-      final copy = Map<String, dynamic>.from(post);
-      final source = copy.remove('_cache_source');
-      if (source is Map) {
-        copy['image_url'] = source['image_url'];
-        copy['video_url'] = source['video_url'];
-        copy['media_items'] = source['media_items'];
-      }
-      return copy;
-    }).toList();
-    await SecureMediaService.resolvePosts(refreshed);
-    if (mounted && !_networkFeedShown &&
-        Supabase.instance.client.auth.currentUser?.id == userId) {
-      setState(() => posts = refreshed);
-    }
-  } catch (_) {}
+  debugPrint('Zameel home: local posts visible ${watch.elapsedMilliseconds}ms');
+  // Media widgets resolve only the objects they need. Restoring a local list
+  // must never wait for Storage signing or for any network request.
  }
 
  Future<void> _openFeed() async {
@@ -585,125 +609,72 @@ Future<void> _loadCurrentProfileImage() async {
   await _loadPosts(silent: posts.isNotEmpty);
  }
 
- Future<void> _loadPosts({bool silent = false}) async {
-  final requestVersion = ++_postsRequestVersion;
-  final feedUserId = Supabase.instance.client.auth.currentUser?.id;
-  final oldOffset = _feedScrollController.hasClients ? _feedScrollController.offset : 0.0;
-  final oldMaxExtent = _feedScrollController.hasClients ? _feedScrollController.position.maxScrollExtent : 0.0;
-  final oldFirstId = posts.isEmpty ? null : posts.first['id']?.toString();
-  if (!silent && mounted && posts.isEmpty) setState(() => _isLoading = true);
-  try {
-    final db = Supabase.instance.client;
-    final response = await db
-        .from('posts')
-        .select('*, users(name, profile_image, gender, role, university, college, department)')
-        .order('created_at', ascending: false)
-        .limit(30);
+ Future<void> _loadPosts({bool silent = false}) {
+  return _postsPending ??= _fetchPosts(silent: silent).whenComplete(() => _postsPending = null);
+ }
 
-    // Production feed: use only posts that actually exist in Supabase.
-    // Demo posts use synthetic IDs and cannot participate in DB-backed
-    // features such as comments, likes, saves, or sharing.
-    final loaded = List<Map<String, dynamic>>.from(response);
-    // Retain original refs so a six-hour snapshot can refresh signed links.
-    final snapshotRows = loaded.map((row) => Map<String, dynamic>.from(row)).toList();
-    List<Map<String, dynamic>> snapshotOf(List<Map<String, dynamic>> resolved) {
-      return [
-        for (var i = 0; i < resolved.length; i++)
-          {
-            ...resolved[i],
-            '_cache_source': {
-              'image_url': snapshotRows[i]['image_url'],
-              'video_url': snapshotRows[i]['video_url'],
-              'media_items': snapshotRows[i]['media_items'],
-            },
-          },
-      ];
-    }
-    // Only the first screenful can affect time to first content. Resolve the
-    // remaining signed URLs after that screen is already visible.
-    final first = loaded.take(5).toList();
-    final remaining = loaded.skip(5).toList();
-    await SecureMediaService.resolvePosts(first);
+ Future<void> _fetchPosts({required bool silent}) async {
+  final requestVersion = ++_postsRequestVersion;
+  final db = Supabase.instance.client;
+  final userId = db.auth.currentUser?.id;
+  final watch = Stopwatch()..start();
+  try {
+    final response = await db.from('posts')
+        .select('*, users(name, profile_image, gender, role, university, college, department)')
+        .order('created_at', ascending: false).limit(30)
+        .timeout(const Duration(seconds: 15));
     if (!mounted || requestVersion != _postsRequestVersion ||
-        db.auth.currentUser?.id != feedUserId) return;
+        db.auth.currentUser?.id != userId) return;
+    final loaded = List<Map<String, dynamic>>.from(response);
+    final previous = {for (final row in posts) row['id']: row};
+    for (final row in loaded) {
+      final old = previous[row['id']];
+      if (old != null) {
+        row['liked'] = old['liked'] == true;
+        row['isSaved'] = old['isSaved'] == true;
+      }
+    }
+    // Text, author and media placeholders are usable as soon as the query
+    // arrives. A slow signed object can no longer hold every post hostage.
     setState(() {
       _networkFeedShown = true;
-      posts = _diversifyFeed(first);
+      posts = _diversifyFeed(loaded);
       _isLoading = false;
-      _loadingMorePosts = remaining.isNotEmpty;
     });
-    final firstSnapshot = feedUserId == null
-        ? Future<void>.value()
-        : FeedSnapshotService.save(feedUserId, snapshotOf(first));
-    await SecureMediaService.resolvePosts(remaining);
-    if (!mounted || requestVersion != _postsRequestVersion ||
-        db.auth.currentUser?.id != feedUserId) return;
-    final user = db.auth.currentUser;
-
-    if (user != null && loaded.isNotEmpty) {
+    debugPrint('Zameel home: ${silent ? 'refresh' : 'initial'} posts query + render ${watch.elapsedMilliseconds}ms');
+    final snapshot = userId == null ? Future<void>.value()
+        : FeedSnapshotService.save(userId, loaded);
+    if (userId != null && loaded.isNotEmpty) {
       try {
-        final loadedIds = loaded
-            .map((post) => post['id']?.toString())
-            .whereType<String>()
-            .where((id) => id.isNotEmpty)
-            .toList(growable: false);
-        final personalState = await Future.wait([
-          db
-              .from('likes')
-              .select('post_id')
-              .eq('user_id', user.id)
-              .inFilter('post_id', loadedIds),
-          db
-              .from('saved_posts')
-              .select('post_id')
-              .eq('user_id', user.id)
-              .inFilter('post_id', loadedIds),
-        ]);
-        final likes = personalState[0];
-        final saved = personalState[1];
-        final likedIds = likes.map((r) => r['post_id'].toString()).toSet();
-        final savedIds = saved.map((r) => r['post_id'].toString()).toSet();
-
-        for (final post in loaded) {
-          final id = post['id']?.toString();
-          post['liked'] = id != null && likedIds.contains(id);
-          post['isSaved'] = id != null && savedIds.contains(id);
-          post['shares'] = (post['shares_count'] ?? 0);
+        final ids = loaded.map((row) => row['id'].toString()).toList();
+        final results = await Future.wait([
+          db.from('likes').select('post_id').eq('user_id', userId).inFilter('post_id', ids),
+          db.from('saved_posts').select('post_id').eq('user_id', userId).inFilter('post_id', ids),
+        ]).timeout(const Duration(seconds: 12));
+        if (!mounted || requestVersion != _postsRequestVersion ||
+            db.auth.currentUser?.id != userId) return;
+        final liked = results[0].map((row) => row['post_id']).toSet();
+        final saved = results[1].map((row) => row['post_id']).toSet();
+        setState(() {
+          for (final row in loaded) {
+            row['liked'] = liked.contains(row['id']);
+            row['isSaved'] = saved.contains(row['id']);
+          }
+        });
+        await snapshot;
+        if (db.auth.currentUser?.id == userId) {
+          unawaited(FeedSnapshotService.save(userId, loaded));
         }
       } catch (_) {}
     }
-
-    if (!mounted || requestVersion != _postsRequestVersion ||
-        db.auth.currentUser?.id != feedUserId) return;
-    setState(() {
-      posts = _diversifyFeed(loaded);
-      _isLoading = false;
-      _loadingMorePosts = false;
-    });
-    if (feedUserId != null) {
-      unawaited(firstSnapshot.then((_) =>
-          FeedSnapshotService.save(feedUserId, snapshotOf(loaded))));
-    }
-    final newFirstId = loaded.isEmpty ? null : loaded.first['id']?.toString();
-    if (silent && oldOffset > 20 && oldFirstId != null && newFirstId != oldFirstId) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!_feedScrollController.hasClients) return;
-        final newMax = _feedScrollController.position.maxScrollExtent;
-        final addedExtent = newMax > oldMaxExtent ? newMax - oldMaxExtent : 0.0;
-        final target = oldOffset + addedExtent;
-        _feedScrollController.jumpTo(target > newMax ? newMax : target);
-      });
-    }
-  } catch (e) {
-    debugPrint('Error loading posts: $e');
+  } catch (error) {
+    debugPrint('Post refresh unavailable; retaining local preview: $error');
+  } finally {
     if (mounted && requestVersion == _postsRequestVersion) {
-      setState(() {
-        _isLoading = false;
-        _loadingMorePosts = false;
-      });
+      setState(() => _isLoading = false);
     }
   }
-}
+ }
 
 List<Map<String, dynamic>> _diversifyFeed(
     List<Map<String, dynamic>> source) {
@@ -926,6 +897,8 @@ Future<void> _createUserIfNotExists() async {
       // حذف المنشور من القائمة المحلية
       setState(() {
         posts.removeWhere((p) => p['id'] == post['id']);
+        final userId = Supabase.instance.client.auth.currentUser?.id;
+        if (userId != null) unawaited(FeedSnapshotService.save(userId, posts));
         savedPosts.removeWhere((p) => p['id'] == post['id']);
       });
 
@@ -1928,23 +1901,6 @@ Future<void> _createUserIfNotExists() async {
 
 
 
-    if (_isLoading) {
-      return ListView(
-        padding: const EdgeInsets.only(bottom: 90),
-        children: [
-          if (FeatureControl.instance.visible('stories'))
-            FeatureControl.instance.page('stories', const StoriesWidget(), embedded: true),
-          _buildCreateBox(),
-          if (FeatureControl.instance.visible('clips'))
-            FeatureControl.instance.page('clips', const PublicClipsStrip(), embedded: true),
-          const Padding(
-            padding: EdgeInsets.all(24),
-            child: Center(child: CircularProgressIndicator(color: primaryColor)),
-          ),
-        ],
-      );
-    }
-
     final visiblePosts = _visiblePosts;
     final scopeLabel = _feedScope == 'college'
         ? (isArabic ? 'منشورات الكلية' : 'College posts')
@@ -1953,10 +1909,10 @@ Future<void> _createUserIfNotExists() async {
             : (isArabic ? 'المنشورات العامة' : 'Global posts');
     final children = <Widget>[
       if (FeatureControl.instance.visible('stories'))
-        FeatureControl.instance.page('stories', const StoriesWidget(), embedded: true),
+        FeatureControl.instance.page('stories', const StoriesWidget(key: ValueKey('home_stories')), embedded: true),
       _buildCreateBox(),
       if (FeatureControl.instance.visible('clips'))
-        FeatureControl.instance.page('clips', const PublicClipsStrip(), embedded: true),
+        FeatureControl.instance.page('clips', const PublicClipsStrip(key: ValueKey('home_clips')), embedded: true),
       Padding(
         padding: const EdgeInsets.fromLTRB(14, 8, 14, 2),
         child: Row(children: [
@@ -1967,7 +1923,7 @@ Future<void> _createUserIfNotExists() async {
       ),
     ];
 
-    if (visiblePosts.isEmpty && _loadingMorePosts) {
+    if (visiblePosts.isEmpty && _isLoading) {
       children.add(const Padding(
         padding: EdgeInsets.all(24),
         child: Center(child: CircularProgressIndicator(color: primaryColor)),
@@ -2005,6 +1961,7 @@ Future<void> _createUserIfNotExists() async {
         final isLiked = post['liked'] == true;
         children.add(
           Padding(
+            key: ValueKey('post_${post['id']}'),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             child: GlassContainer(
               child: _PostCard(
@@ -2038,9 +1995,12 @@ Future<void> _createUserIfNotExists() async {
           if (adIndex < _advertisements.length) {
             final ad = _advertisements[adIndex];
             children.add(AdvertisementCard(
+              key: ValueKey('ad_${ad['id']}'),
               ad: ad, isArabic: isArabic,
               onHide: () async {
                 await AdvertisingService.hide(ad['id'].toString());
+                final userId = Supabase.instance.client.auth.currentUser?.id;
+                if (userId != null) await HomeSnapshotService.clear(userId, section: 'ads');
                 if (mounted) setState(() => _advertisements.removeWhere(
                   (item) => item['id'] == ad['id'],
                 ));
@@ -2060,15 +2020,22 @@ Future<void> _createUserIfNotExists() async {
       children: [
         RefreshIndicator(
           onRefresh: () async {
-            await _loadUnreadNotifications();
-            await FeatureControl.instance.refresh(force: true);
-            await _loadAdvertisements();
-            await _loadPosts();
+            await Future.wait([
+              _loadUnreadNotifications(),
+              FeatureControl.instance.refresh(force: true),
+              _loadAdvertisements(),
+              _loadPosts(),
+            ]);
           },
-          child: ListView(
+          child: ListView.builder(
             controller: _feedScrollController,
             padding: const EdgeInsets.only(bottom: 90),
-            children: children,
+            itemCount: children.length,
+            findChildIndexCallback: (key) {
+              final index = children.indexWhere((child) => child.key == key);
+              return index < 0 ? null : index;
+            },
+            itemBuilder: (_, index) => children[index],
           ),
         ),
         Positioned(

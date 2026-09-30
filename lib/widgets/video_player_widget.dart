@@ -1,12 +1,11 @@
 
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:zameel/theme/app_theme.dart';
 import '../services/media_cache_service.dart';
-import '../platform/video_controller_factory.dart';
+import '../services/video_source_service.dart';
 
 class VideoPlayerWidget extends StatefulWidget {
   final String videoUrl;
@@ -25,6 +24,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   bool _muted = false;
   bool _controlsVisible = true;
   Timer? _controlsTimer;
+  int _generation = 0;
 
   @override
   void initState() {
@@ -33,35 +33,43 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   }
 
   Future<void> _initialize() async {
+    final generation = ++_generation;
     try {
       final rawUrl = widget.videoUrl.trim();
-      // Download once, then play the local file. The previous implementation
-      // streamed the remote video while simultaneously prefetching it, which
-      // could double Supabase cached-egress for every first playback.
-      final localPath = kIsWeb
-          ? null
-          : await MediaCacheService.localPathForUrl(
-              rawUrl,
-              downloadIfMissing: true,
-            );
-      final controller = !kIsWeb && localPath != null
-          ? videoControllerFromLocalPath(localPath)
-          : VideoPlayerController.networkUrl(Uri.parse(rawUrl));
+      final controller = await VideoSourceService.controller(rawUrl);
+      if (!mounted || generation != _generation) {
+        await controller.dispose();
+        return;
+      }
       _controller = controller;
       await controller.initialize();
       await controller.setLooping(true);
       controller.addListener(_refreshProgress);
-      if (!mounted) return;
+      if (!mounted || generation != _generation || _controller != controller) return;
       setState(() => _isInitialized = true);
       _scheduleControlsHide();
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || generation != _generation) return;
       setState(() => _error = e);
     }
   }
 
   @override
+  void didUpdateWidget(covariant VideoPlayerWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (MediaCacheService.identity(oldWidget.videoUrl) == MediaCacheService.identity(widget.videoUrl)) return;
+    _controlsTimer?.cancel();
+    _controller?.removeListener(_refreshProgress);
+    _controller?.dispose();
+    _controller = null;
+    _isInitialized = false;
+    _error = null;
+    _initialize();
+  }
+
+  @override
   void dispose() {
+    _generation++;
     _controlsTimer?.cancel();
     _controller?.removeListener(_refreshProgress);
     _controller?.dispose();

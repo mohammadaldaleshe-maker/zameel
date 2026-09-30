@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'services/media_cache_service.dart';
 import 'services/post_media_storage_uploader.dart';
 import 'services/secure_media_service.dart';
+import 'services/home_snapshot_service.dart';
 
 class ZameelSocialService {
   static final SupabaseClient db = Supabase.instance.client;
@@ -166,6 +167,7 @@ class ZameelSocialService {
   }
 
   static Future<void> deleteStory(String storyId) async {
+    if (uid != null) await HomeSnapshotService.clear(uid!, section: 'stories');
     final id = uid;
     if (id == null || storyId.trim().isEmpty) return;
     final row = await db.from('social_stories').select('media_url').eq('id', storyId).eq('user_id', id).maybeSingle();
@@ -220,7 +222,7 @@ class ZameelSocialService {
     }
   }
 
-  static Future<List<Map<String, dynamic>>> loadStories({bool friendsOnly = false}) async {
+  static Future<List<Map<String, dynamic>>> loadStories({bool friendsOnly = false, bool resolveMedia = true}) async {
     if (!signedIn) return [];
     final id = uid!;
     final raw = await db
@@ -310,11 +312,11 @@ class ZameelSocialService {
       return !friendsOnly || friendIds.contains(ownerId);
     }).toList();
 
-    await Future.wait(stories.map(SecureMediaService.resolveStory));
+    if (resolveMedia) await Future.wait(stories.map(SecureMediaService.resolveStory));
     return stories;
   }
 
-  static Future<List<Map<String, dynamic>>> loadClips() async {
+  static Future<List<Map<String, dynamic>>> loadClips({bool resolveMedia = true}) async {
     if (!signedIn) return [];
     final currentUserId = uid!;
     final rows = await db
@@ -337,7 +339,7 @@ class ZameelSocialService {
         .inFilter('clip_id', clipIds);
     final results = await Future.wait<dynamic>([
       likesRequest,
-      Future.wait(clips.map(SecureMediaService.resolveClip)),
+      if (resolveMedia) Future.wait(clips.map(SecureMediaService.resolveClip)),
     ]);
     final likedRows = List<Map<String, dynamic>>.from(results[0] as List);
     final likedIds = List<Map<String, dynamic>>.from(likedRows)
@@ -351,6 +353,7 @@ class ZameelSocialService {
   }
 
   static Future<void> updateClip(String clipId, {String? audience, bool? hidden}) async {
+    if (uid != null) await HomeSnapshotService.clear(uid!, section: 'clips');
     final id = uid;
     if (id == null) return;
     final values = <String, dynamic>{};
@@ -383,6 +386,7 @@ class ZameelSocialService {
   }
 
   static Future<void> deleteClip(String clipId) async {
+    if (uid != null) await HomeSnapshotService.clear(uid!, section: 'clips');
     final id = uid;
     if (id == null) return;
     final row = await db.from('clips').select('video_url').eq('id', clipId).maybeSingle();

@@ -1,11 +1,10 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
 import '../services/media_cache_service.dart';
-import '../platform/video_controller_factory.dart';
+import '../services/video_source_service.dart';
 
 /// Autoplay player used only by the full-screen vertical media viewers.
 ///
@@ -40,6 +39,7 @@ class _VerticalAutoplayVideoPlayerState
   bool _syncScheduled = false;
   bool _controlsVisible = true;
   Timer? _controlsTimer;
+  int _generation = 0;
 
   bool get _shouldPlay =>
       _initialized && _appActive && _routeCurrent && !_pausedByUser;
@@ -54,7 +54,7 @@ class _VerticalAutoplayVideoPlayerState
   @override
   void didUpdateWidget(covariant VerticalAutoplayVideoPlayer oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.videoUrl != widget.videoUrl) {
+    if (MediaCacheService.identity(oldWidget.videoUrl) != MediaCacheService.identity(widget.videoUrl)) {
       _replaceController();
     }
   }
@@ -82,6 +82,7 @@ class _VerticalAutoplayVideoPlayerState
   }
 
   Future<void> _replaceController() async {
+    final replacement = ++_generation;
     final previous = _controller;
     _controller = null;
     _initialized = false;
@@ -93,35 +94,31 @@ class _VerticalAutoplayVideoPlayerState
     previous?.removeListener(_refreshProgress);
     await previous?.dispose();
     if (mounted) setState(() {});
-    await _initialize();
+    if (mounted && replacement == _generation) await _initialize();
   }
 
   Future<void> _initialize() async {
+    final generation = ++_generation;
     final rawUrl = widget.videoUrl.trim();
     if (rawUrl.isEmpty) {
       if (mounted) setState(() => _error = const FormatException('empty_video_url'));
       return;
     }
 
-    // Full-screen playback downloads once into the bounded cache, then plays
-    // the local file. The former stream + prefetch pair could request the same
-    // Supabase object twice on first playback.
-    final cachedPath = kIsWeb
-        ? null
-        : await MediaCacheService.localPathForUrl(
-            rawUrl,
-            downloadIfMissing: true,
-          );
-    final controller = !kIsWeb && cachedPath != null
-        ? videoControllerFromLocalPath(cachedPath)
-        : VideoPlayerController.networkUrl(Uri.parse(rawUrl));
-    _controller = controller;
+    VideoPlayerController? created;
     try {
+      final controller = await VideoSourceService.controller(rawUrl);
+      created = controller;
+      if (!mounted || generation != _generation) {
+        await controller.dispose();
+        return;
+      }
+      _controller = controller;
       await controller.initialize();
       await controller.setLooping(true);
       await controller.setVolume(_muted ? 0 : 1);
       controller.addListener(_refreshProgress);
-      if (!mounted || _controller != controller) {
+      if (!mounted || generation != _generation || _controller != controller) {
         await controller.dispose();
         return;
       }
@@ -130,13 +127,13 @@ class _VerticalAutoplayVideoPlayerState
       if (mounted) setState(() {});
       _scheduleControlsHide();
     } catch (error) {
-      if (_controller == controller) {
+      if (_controller == created) {
         try {
-          await controller.dispose();
+          await created?.dispose();
         } catch (_) {}
         _controller = null;
       }
-      if (mounted) setState(() => _error = error);
+      if (mounted && generation == _generation) setState(() => _error = error);
     }
   }
 
@@ -225,6 +222,7 @@ class _VerticalAutoplayVideoPlayerState
 
   @override
   void dispose() {
+    _generation++;
     WidgetsBinding.instance.removeObserver(this);
     _controlsTimer?.cancel();
     final controller = _controller;

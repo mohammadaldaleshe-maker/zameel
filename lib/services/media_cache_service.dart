@@ -2,6 +2,9 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
+import '../config.dart';
+import 'media_identity.dart';
+import 'secure_media_service.dart';
 
 import 'media_cache_service_stub.dart'
     if (dart.library.io) 'media_cache_service_io.dart' as platform;
@@ -11,14 +14,23 @@ import 'media_cache_service_stub.dart'
 class MediaCacheService {
   MediaCacheService._();
 
+  static String identity(String value) =>
+      mediaIdentity(value, storageOrigin: ZameelConfig.supabaseUrl);
+
   static Future<String?> localPathForUrl(
     String url, {
     bool downloadIfMissing = true,
-  }) =>
-      platform.localPathForUrl(
-        url,
-        downloadIfMissing: downloadIfMissing,
-      );
+  }) async {
+    final local = await platform.localPathForUrl(url, downloadIfMissing: false);
+    if (local != null || !downloadIfMissing) return local;
+    try {
+      final resolved = await SecureMediaService.resolve(url)
+          .timeout(const Duration(seconds: 12));
+      return await platform.localPathForUrl(resolved);
+    } catch (_) {
+      return null;
+    }
+  }
 
   static Future<void> storeBytes(String url, Uint8List bytes) =>
       platform.storeBytes(url, bytes);

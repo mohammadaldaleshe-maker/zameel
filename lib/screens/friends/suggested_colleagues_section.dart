@@ -27,7 +27,7 @@ class _SuggestedColleaguesSectionState extends State<SuggestedColleaguesSection>
   Future<void> _restore() async {
     final version = _loadVersion;
     final rows = await ColleagueSuggestionService.recentSuggestions();
-    if (mounted && version == _loadVersion && _search.text.isEmpty &&
+    if (mounted && _loading && version == _loadVersion && _search.text.isEmpty &&
         _items.isEmpty && rows.isNotEmpty) {
       setState(() => _items = rows);
     }

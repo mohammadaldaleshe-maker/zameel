@@ -295,10 +295,10 @@ class _ImagePostState extends State<_ImagePost> {
               child: SizedBox(
                 width: double.infinity,
                 height: 230,
-                child: Image.network(
-                  imageUrl,
+                child: CachedMediaImage(
+                  url: imageUrl,
                   fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => Container(
+                  fallback: Container(
                     alignment: Alignment.center,
                     color: Colors.white10,
                     child: const Icon(
@@ -307,12 +307,6 @@ class _ImagePostState extends State<_ImagePost> {
                       size: 50,
                     ),
                   ),
-                  loadingBuilder: (_, child, progress) {
-                    if (progress == null) return child;
-                    return const Center(
-                      child: CircularProgressIndicator(color: accentColor),
-                    );
-                  },
                 ),
               ),
             ),
@@ -1021,10 +1015,10 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
                                       child: InteractiveViewer(
                                         minScale: 0.5,
                                         maxScale: 5,
-                                        child: Image.network(
-                                          _url,
+                                        child: CachedMediaImage(
+                                          url: _url,
                                           fit: BoxFit.contain,
-                                          errorBuilder: (_, __, ___) => const Icon(
+                                          fallback: const Icon(
                                             Icons.broken_image_outlined,
                                             color: Colors.white54,
                                             size: 64,
@@ -1250,7 +1244,7 @@ class _VerticalPostVideoViewerState
           .order('created_at', ascending: false)
           .limit(50);
       final resolvedRows = List<Map<String, dynamic>>.from(rows);
-      await SecureMediaService.resolvePosts(resolvedRows);
+      // Players resolve only the visible video, avoiding a batch of 50 signing requests.
       final initialId = widget.initialPost['id']?.toString();
       final additional = resolvedRows.where((post) {
         final id = post['id']?.toString();

@@ -9,6 +9,9 @@ import '../../providers/language_provider.dart';
 import 'package:zameel/theme/app_theme.dart';
 import '../../services_social.dart';
 import '../../services/media_cache_service.dart';
+import '../../services/home_snapshot_service.dart';
+import '../../services/video_source_service.dart';
+import '../../widgets/cached_media_image.dart';
 import '../profile/profile_screen.dart';
 import '../../platform/video_controller_factory.dart';
 import '../../platform/local_image_widget.dart';
@@ -60,12 +63,15 @@ class _StoriesWidgetState extends State<StoriesWidget> with WidgetsBindingObserv
   bool _loading = true;
   String _storyAudience = 'public';
   Timer? _refreshTimer;
+  bool _refreshing = false;
+  bool _remoteShown = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _stories = widget.stories.map((story) => Map<String, dynamic>.from(story)).toList();
+    _restoreStories();
     _loadStories();
     _refreshTimer = Timer.periodic(const Duration(minutes: 2), (_) => _loadStories());
   }
@@ -88,13 +94,31 @@ class _StoriesWidgetState extends State<StoriesWidget> with WidgetsBindingObserv
     }
   }
 
+  Future<void> _restoreStories() async {
+    final userId = ZameelSocialService.uid;
+    if (userId == null || widget.friendsOnly) return;
+    final cached = await HomeSnapshotService.read(userId, 'stories');
+    if (!mounted || _remoteShown || ZameelSocialService.uid != userId || cached.isEmpty) return;
+    setState(() {
+      _stories..clear()..addAll(cached);
+      _loading = false;
+    });
+  }
+
   Future<void> _loadStories() async {
+    if (_refreshing) return;
     if (!ZameelSocialService.signedIn) {
       if (mounted) setState(() => _loading = false);
       return;
     }
+    _refreshing = true;
+    final userId = ZameelSocialService.uid;
     try {
-      final remote = await ZameelSocialService.loadStories(friendsOnly: widget.friendsOnly);
+      final remote = await ZameelSocialService.loadStories(
+          friendsOnly: widget.friendsOnly, resolveMedia: false)
+          .timeout(const Duration(seconds: 15));
+      if (!mounted || ZameelSocialService.uid != userId) return;
+      _remoteShown = true;
       final currentUserId = ZameelSocialService.uid;
       final normalized = remote.map((story) {
         final createdAt = DateTime.tryParse(story['created_at']?.toString() ?? '');
@@ -127,11 +151,16 @@ class _StoriesWidgetState extends State<StoriesWidget> with WidgetsBindingObserv
           _loading = false;
         });
       }
+      if (userId != null && !widget.friendsOnly) {
+        unawaited(HomeSnapshotService.save(userId, 'stories', normalized));
+      }
       // Do not pre-download every story just because the tray refreshed.
       // Circle previews remain lightweight; the full viewer caches only the
       // current item and at most the next one when the user actually opens it.
     } catch (_) {
       if (mounted) setState(() => _loading = false);
+    } finally {
+      _refreshing = false;
     }
   }
 
@@ -613,7 +642,7 @@ class _StoryGroupCard extends StatelessWidget {
                   padding: const EdgeInsets.all(2),
                   child: ClipOval(
                     child: stories.isNotEmpty
-                        ? _StoryCirclePreview(story: first)
+                        ? _StoryCirclePreview(key: ValueKey(first['id']), story: first)
                         : ColoredBox(
                             color: AppTheme.primaryLight,
                             child: Center(
@@ -668,7 +697,7 @@ class _StoryGroupCard extends StatelessWidget {
 
 class _StoryCirclePreview extends StatefulWidget {
   final Map<String, dynamic> story;
-  const _StoryCirclePreview({required this.story});
+  const _StoryCirclePreview({super.key, required this.story});
 
   @override
   State<_StoryCirclePreview> createState() => _StoryCirclePreviewState();
@@ -677,53 +706,27 @@ class _StoryCirclePreview extends StatefulWidget {
 class _StoryCirclePreviewState extends State<_StoryCirclePreview> {
   VideoPlayerController? _controller;
   Timer? _timer;
-  Future<String?>? _cachedImage;
 
   @override
   void initState() {
     super.initState();
-    _prepareImage();
     final video = widget.story['videoPath']?.toString() ?? '';
-    if (video.isNotEmpty) _prepareVideo(video);
-  }
-
-  void _prepareImage() {
-    final image = widget.story['imagePath']?.toString() ?? '';
-    _cachedImage = image.isEmpty || kIsWeb
-        ? null
-        : MediaCacheService.localPathForUrl(image, downloadIfMissing: false);
-  }
-
-  @override
-  void didUpdateWidget(covariant _StoryCirclePreview oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.story['imagePath'] != widget.story['imagePath']) {
-      _prepareImage();
-    }
+    if (video.isNotEmpty) _prepareVideo(video).catchError((Object _) {});
   }
 
   Future<void> _prepareVideo(String url) async {
-    // A 1.5-second circle preview must not trigger a full background download.
-    // Reuse a local copy when it already exists; otherwise stream only the
-    // short preview. The full story viewer performs the single cached download.
-    final cachedPath = kIsWeb
-        ? null
-        : await MediaCacheService.localPathForUrl(
-            url,
-            downloadIfMissing: false,
-          );
-    final controller = !kIsWeb && cachedPath != null
-        ? videoControllerFromLocalPath(cachedPath)
-        : VideoPlayerController.networkUrl(Uri.parse(url));
+    final controller = await VideoSourceService.controller(url);
+    if (!mounted) { await controller.dispose(); return; }
     _controller = controller;
     try {
       await controller.initialize();
+      if (!mounted || _controller != controller) return;
       await controller.setVolume(0);
       await controller.seekTo(Duration.zero);
       await controller.play();
+      if (!mounted || _controller != controller) return;
       _timer = Timer(const Duration(milliseconds: 1500), () {
-        controller.pause();
-        controller.seekTo(Duration.zero);
+        if (mounted && _controller == controller) controller.pause();
       });
       if (mounted) setState(() {});
     } catch (_) {}
@@ -749,16 +752,10 @@ class _StoryCirclePreviewState extends State<_StoryCirclePreview> {
       );
     }
     if (image.isNotEmpty) {
-      return FutureBuilder<String?>(
-        future: _cachedImage,
-        builder: (_, snapshot) {
-          final local = snapshot.data;
-          if (!kIsWeb && local != null) {
-            return localImageFromPath(local, fit: BoxFit.cover, width: 58, height: 58);
-          }
-          return Image.network(image, fit: BoxFit.cover, width: 58, height: 58);
-        },
-      );
+      return SizedBox(width: 58, height: 58, child: CachedMediaImage(
+        url: image, fit: BoxFit.cover, cacheWidth: 180,
+        fallback: const Icon(Icons.image_outlined),
+      ));
     }
     final text = widget.story['text']?.toString() ?? '';
     return ColoredBox(
@@ -848,18 +845,11 @@ class _StoryVideoPlayerState extends State<_StoryVideoPlayer> {
   Future<void> _initialize() async {
     try {
       final path = widget.path;
-      final isNetworkSource = path.startsWith('http://') || path.startsWith('https://');
-      if (!kIsWeb && isNetworkSource) {
-        // Full playback uses one cache-aware download. This avoids the old
-        // stream + simultaneous prefetch pair that could request the same
-        // Supabase object twice on its first view.
-        final cachedPath = await MediaCacheService.localPathForUrl(
-          path,
-          downloadIfMissing: true,
-        );
-        _controller = cachedPath != null
-            ? videoControllerFromLocalPath(cachedPath)
-            : VideoPlayerController.networkUrl(Uri.parse(path));
+      final isNetworkSource = path.startsWith('http://') || path.startsWith('https://') ||
+          path.startsWith('zameel-private://');
+      if (isNetworkSource) {
+        _controller = await VideoSourceService.controller(path);
+        if (!mounted) { await _controller?.dispose(); return; }
       } else if (kIsWeb || path.startsWith('blob:') || path.startsWith('data:')) {
         // Flutter Web cannot use VideoPlayerController.file. ImagePicker Web
         // normally returns a blob URL; use it directly. If a blob URL is not
@@ -991,42 +981,15 @@ class _StoryImagePreview extends StatelessWidget {
 
     final value = path ?? '';
     final hasNetworkScheme = value.startsWith('http://') ||
-        value.startsWith('https://') ||
-        value.startsWith('blob:') ||
-        value.startsWith('data:');
-
+        value.startsWith('https://') || value.startsWith('zameel-private://');
     if (hasNetworkScheme) {
-      if (kIsWeb || value.startsWith('blob:') || value.startsWith('data:')) {
-        return Image.network(
-          value,
-          width: width,
-          height: height,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _fallback(),
-        );
-      }
-      return FutureBuilder<String?>(
-        future: MediaCacheService.localPathForUrl(value),
-        builder: (_, snapshot) {
-          final local = snapshot.data;
-          if (local != null) {
-            return localImageFromPath(
-              local,
-              width: width,
-              height: height,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => _fallback(),
-            );
-          }
-          return Image.network(
-            value,
-            width: width,
-            height: height,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => _fallback(),
-          );
-        },
-      );
+      return SizedBox(width: width, height: height, child: CachedMediaImage(
+        url: value, fit: BoxFit.cover, fallback: _fallback(),
+      ));
+    }
+    if (value.startsWith('blob:') || value.startsWith('data:')) {
+      return Image.network(value, width: width, height: height, fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _fallback());
     }
 
     if (!kIsWeb && value.isNotEmpty) {
@@ -1110,9 +1073,9 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
     final next = index + 1;
     if (next < 0 || next >= widget.stories.length) return;
     final story = widget.stories[next];
-    for (final key in const ['videoPath', 'imagePath']) {
+    for (final key in const ['imagePath']) {
       final url = story[key]?.toString() ?? '';
-      if (url.startsWith('http')) {
+      if (url.startsWith('http') || url.startsWith('zameel-private://')) {
         unawaited(MediaCacheService.prefetch(<String>[url], limit: 1));
         return;
       }

@@ -166,7 +166,10 @@ void main() {
       final stories = _read('lib/screens/stories/stories_screen.dart');
       final clips = _read('lib/screens/social/public_clips_strip.dart');
 
-      expect(vertical, contains('downloadIfMissing: true'));
+      final source = _read('lib/services/video_source_service.dart');
+      expect(vertical, contains('VideoSourceService.controller(rawUrl)'));
+      expect(source, contains('downloadIfMissing: false'));
+      expect(source, isNot(contains('downloadIfMissing: true')));
       expect(vertical, isNot(contains('MediaCacheService.prefetch(<String>[rawUrl]')));
       expect(stories, isNot(contains('MediaCacheService.prefetch(<String>[path]')));
       expect(clips, isNot(contains('MediaCacheService.prefetch(<String>[widget.url]')));
@@ -179,7 +182,8 @@ void main() {
       expect(stories, isNot(contains('limit: 8')));
       expect(clips, isNot(contains('limit: 6')));
       expect(stories, contains('MediaCacheService.prefetch(<String>[url], limit: 1)'));
-      expect(clips, contains('MediaCacheService.prefetch(<String>[url], limit: 1)'));
+      expect(clips, isNot(contains('MediaCacheService.prefetch(<String>[url]')));
+      expect(clips, contains('SecureMediaService.resolve(url)'));
     });
   });
 

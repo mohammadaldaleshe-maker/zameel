@@ -1,5 +1,4 @@
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../services/feature_control.dart';
 import 'package:share_plus/share_plus.dart';
@@ -16,7 +15,9 @@ import '../profile/profile_screen.dart';
 import '../comments/clip_comments_screen.dart';
 import 'clip_create_screen.dart';
 import '../../theme/app_theme.dart';
-import '../../platform/video_controller_factory.dart';
+import '../../services/video_source_service.dart';
+import '../../services/secure_media_service.dart';
+import '../../services/home_snapshot_service.dart';
 
 class PublicClipsStrip extends StatefulWidget {
   const PublicClipsStrip({super.key});
@@ -28,11 +29,14 @@ class _PublicClipsStripState extends State<PublicClipsStrip> with WidgetsBinding
   List<Map<String, dynamic>> _clips = const [];
   bool _loading = true;
   Timer? _refreshTimer;
+  bool _refreshing = false;
+  bool _remoteShown = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _restoreClips();
     _load();
     _refreshTimer = Timer.periodic(const Duration(minutes: 2), (_) => _load(silent: true));
   }
@@ -56,9 +60,23 @@ class _PublicClipsStripState extends State<PublicClipsStrip> with WidgetsBinding
     }
   }
 
+  Future<void> _restoreClips() async {
+    final userId = ZameelSocialService.uid;
+    if (userId == null) return;
+    final cached = await HomeSnapshotService.read(userId, 'clips');
+    if (!mounted || _remoteShown || ZameelSocialService.uid != userId || cached.isEmpty) return;
+    setState(() { _clips = cached; _loading = false; });
+  }
+
   Future<void> _load({bool silent = false}) async {
+    if (_refreshing) return;
+    _refreshing = true;
+    final userId = ZameelSocialService.uid;
     try {
-      final rows = await ZameelSocialService.loadClips();
+      final rows = await ZameelSocialService.loadClips(resolveMedia: false)
+          .timeout(const Duration(seconds: 15));
+      if (!mounted || ZameelSocialService.uid != userId) return;
+      _remoteShown = true;
       final visible = rows
           .where((c) => c['audience'] == 'public' && c['is_hidden'] != true)
           .take(12)
@@ -66,13 +84,15 @@ class _PublicClipsStripState extends State<PublicClipsStrip> with WidgetsBinding
       if (mounted) {
         setState(() => _clips = visible);
       }
+      if (userId != null) unawaited(HomeSnapshotService.save(userId, 'clips', visible));
       // Do not pre-download six full clips merely because the strip loaded.
       // The 1.5-second preview streams lightly; opening the viewer performs a
       // single cache-aware download of the chosen clip.
     } catch (_) {
       // Keep the already visible strip during a failed background refresh.
-      if (mounted && !silent) setState(() => _clips = const []);
+      // Retain the last successfully loaded list on a network failure.
     } finally {
+      _refreshing = false;
       if (mounted && (!silent || _loading)) setState(() => _loading = false);
     }
   }
@@ -169,6 +189,7 @@ class _PublicClipsStripState extends State<PublicClipsStrip> with WidgetsBinding
                 : const <String, dynamic>{};
             final publisher = (owner['name']?.toString() ?? '').trim();
             return InkWell(
+              key: ValueKey(clip['id']),
               onTap: () => _open(clip),
               borderRadius: BorderRadius.circular(16),
               child: Container(
@@ -375,7 +396,9 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
     if (next < 0 || next >= _clips.length) return;
     final url = _clips[next]['video_url']?.toString() ?? '';
     if (url.isNotEmpty) {
-      unawaited(MediaCacheService.prefetch(<String>[url], limit: 1));
+      // Signing is lightweight; prefetching an entire video competes with
+      // the one the user is watching on a weak connection.
+      unawaited(SecureMediaService.resolve(url).then<void>((_) {}, onError: (Object _) {}));
     }
   }
 
@@ -630,33 +653,49 @@ class _ClipAutoPreview extends StatefulWidget {
 class _ClipAutoPreviewState extends State<_ClipAutoPreview> {
   VideoPlayerController? _controller;
   Timer? _timer;
-  @override void initState(){super.initState();_prepare();}
+  int _generation = 0;
+  @override
+  void initState() { super.initState(); _prepare(); }
+  @override
+  void didUpdateWidget(covariant _ClipAutoPreview oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (MediaCacheService.identity(oldWidget.url) != MediaCacheService.identity(widget.url) ||
+        oldWidget.autoplay != widget.autoplay) {
+      _generation++;
+      _timer?.cancel();
+      _controller?.dispose();
+      _controller = null;
+      _prepare();
+    }
+  }
   Future<void> _prepare() async {
     if (widget.url.isEmpty || !widget.autoplay) return;
-    // Preview only 1.5 seconds. Never combine a network stream with a full
-    // background prefetch of the same clip; reuse cache only when it exists.
-    final cachedPath = kIsWeb
-        ? null
-        : await MediaCacheService.localPathForUrl(
-            widget.url,
-            downloadIfMissing: false,
-          );
-    final c = !kIsWeb && cachedPath != null
-        ? videoControllerFromLocalPath(cachedPath)
-        : VideoPlayerController.networkUrl(Uri.parse(widget.url));
-    _controller = c;
+    final generation = ++_generation;
     try {
+      final c = await VideoSourceService.controller(widget.url);
+      if (!mounted || generation != _generation) { await c.dispose(); return; }
+      _controller = c;
       await c.initialize();
+      if (!mounted || generation != _generation) return;
       await c.setVolume(0);
-      await c.seekTo(Duration.zero);
       await c.play();
+      if (!mounted || generation != _generation) return;
       _timer = Timer(const Duration(milliseconds: 1500), () {
-        c.pause();
-        c.seekTo(Duration.zero);
+        if (mounted && generation == _generation) c.pause();
       });
-      if (mounted) setState(() {});
+      setState(() {});
     } catch (_) {}
   }
-  @override void dispose(){_timer?.cancel();_controller?.dispose();super.dispose();}
-  @override Widget build(BuildContext context){final c=_controller;if(c==null||!c.value.isInitialized)return const ColoredBox(color:Colors.black87,child:Icon(Icons.video_library_outlined,color:Colors.white54));return FittedBox(fit:BoxFit.cover,child:SizedBox(width:c.value.size.width,height:c.value.size.height,child:VideoPlayer(c)));}
+  @override
+  void dispose() { _generation++; _timer?.cancel(); _controller?.dispose(); super.dispose(); }
+  @override
+  Widget build(BuildContext context) {
+    final c = _controller;
+    if (c == null || !c.value.isInitialized) {
+      return const ColoredBox(color: Colors.black87,
+        child: Icon(Icons.video_library_outlined, color: Colors.white54));
+    }
+    return FittedBox(fit: BoxFit.cover, child: SizedBox(width: c.value.size.width,
+      height: c.value.size.height, child: VideoPlayer(c)));
+  }
 }

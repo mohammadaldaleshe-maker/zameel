@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../config.dart';
+import 'media_identity.dart';
 
 /// Keeps non-public media out of public Storage buckets while preserving the
 /// existing String URL fields used throughout the UI.
@@ -15,6 +17,13 @@ class SecureMediaService {
   static const Duration signedUrlLifetime = Duration(minutes: 55);
   static SupabaseClient get _db => Supabase.instance.client;
   static final Map<String, _SignedUrlCacheEntry> _signedCache = {};
+  static final Map<String, Future<String>> _pending = {};
+  static int _sessionEpoch = 0;
+  static void clearSession() {
+    _sessionEpoch++;
+    _signedCache.clear();
+    _pending.clear();
+  }
 
   static bool isPublicAudience(String? audience) =>
       (audience ?? 'public').trim().toLowerCase() == 'public';
@@ -55,20 +64,32 @@ class SecureMediaService {
     }
     if (ref == null) return raw;
 
+    final epoch = _sessionEpoch;
     final now = DateTime.now();
-    final cached = _signedCache[raw];
+    final userId = _db.auth.currentUser?.id;
+    final key = '$userId:${mediaIdentity(raw, storageOrigin: ZameelConfig.supabaseUrl)}';
+    final cached = _signedCache[key];
     if (cached != null && cached.expiresAt.isAfter(now.add(const Duration(minutes: 3)))) {
       return cached.url;
     }
 
-    final url = await _db.storage
-        .from(ref.bucket)
-        .createSignedUrl(ref.path, signedUrlLifetime.inSeconds);
-    _signedCache[raw] = _SignedUrlCacheEntry(
-      url: url,
-      expiresAt: now.add(signedUrlLifetime),
-    );
-    return url;
+    final pending = _pending[key];
+    if (pending != null) return pending;
+    final bucket = ref.bucket;
+    final path = ref.path;
+    final task = _db.storage.from(bucket).createSignedUrl(path, signedUrlLifetime.inSeconds)
+        .timeout(const Duration(seconds: 12));
+    _pending[key] = task;
+    try {
+      final url = await task;
+      if (epoch == _sessionEpoch && _db.auth.currentUser?.id == userId) {
+        _signedCache[key] = _SignedUrlCacheEntry(url: url,
+            expiresAt: now.add(signedUrlLifetime));
+      }
+      return url;
+    } finally {
+      if (identical(_pending[key], task)) _pending.remove(key);
+    }
   }
 
   static Future<void> resolvePost(Map<String, dynamic> post) async {
@@ -118,7 +139,7 @@ class SecureMediaService {
     final privateRef = _parsePrivateReference(raw);
     if (privateRef != null) {
       await _safeRemove(privateRef.bucket, privateRef.path);
-      _signedCache.remove(raw);
+      clearSession();
       return;
     }
 

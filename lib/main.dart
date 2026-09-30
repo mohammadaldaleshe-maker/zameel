@@ -62,6 +62,7 @@ import 'services/secure_media_service.dart';
 import 'services/screen_awake_service.dart';
 import 'services/media_cache_service.dart';
 import 'services/feed_snapshot_service.dart';
+import 'services/home_snapshot_service.dart';
 import 'services/post_publish_service.dart';
 import 'services/feature_control.dart';
 import 'services/call_invitation_guard.dart';
@@ -69,6 +70,7 @@ import 'services/message_notification_grouping.dart';
 import 'services/account_access_monitor.dart';
 import 'services/advertising_service.dart';
 import 'widgets/post_media_gallery.dart';
+import 'widgets/cached_media_image.dart';
 import 'platform/local_image_provider.dart';
 
 // ============================================================
@@ -282,8 +284,6 @@ Future<void> _handlePushNavigationData(Map<String, dynamic> data) async {
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await ScreenAwakeService.initialize();
-  unawaited(MediaCacheService.cleanup());
 
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: AppTheme.primary,
@@ -298,6 +298,23 @@ Future<void> main() async {
     publishableKey: ZameelConfig.supabasePublishableKey,
   );
 
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => LanguageProvider()),
+        ChangeNotifierProvider(create: (_) => UserProvider()),
+     ],
+     child: const ZameelApp(),
+   ),
+  );
+  unawaited(_initAppLinks());
+  unawaited(_initializeOptionalServices());
+ }
+
+Future<void> _initializeOptionalServices() async {
+  await WidgetsBinding.instance.endOfFrame;
+  unawaited(MediaCacheService.cleanup());
+  unawaited(ScreenAwakeService.initialize());
   // The repository currently contains a verified Firebase app configuration
   // only for Android. Keep the core Flutter/Supabase app usable on web/desktop
   // instead of attempting an unconfigured Firebase startup there. Adding iOS
@@ -325,20 +342,10 @@ Future<void> main() async {
     }
   }
 
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => LanguageProvider()),
-        ChangeNotifierProvider(create: (_) => UserProvider()),
-     ],
-     child: const ZameelApp(),
-   ),
-  );
   if (firebaseReady) {
     await PushNotificationService.instance.setTapHandler(_handlePushNavigationData);
   }
-  await _initAppLinks();
- }
+}
 
 // ============================================================
 // AUTH GATE

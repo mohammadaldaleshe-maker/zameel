@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class FeedSnapshotService {
   FeedSnapshotService._();
 
+  static final Map<String, int> _epochs = {};
   static const _lifetime = Duration(hours: 6);
   static String _key(String userId) => 'zameel_public_feed_v1_$userId';
 
@@ -36,6 +37,7 @@ class FeedSnapshotService {
 
   static Future<void> save(String userId, List<Map<String, dynamic>> posts) async {
     if (userId.isEmpty) return;
+    final epoch = _epochs[userId] ?? 0;
     try {
       final publicPosts = posts.where((row) =>
           row['audience']?.toString() == 'public').toList();
@@ -44,12 +46,14 @@ class FeedSnapshotService {
         'posts': publicPosts,
       });
       final prefs = await SharedPreferences.getInstance();
+      if (epoch != (_epochs[userId] ?? 0)) return;
       await prefs.setString(_key(userId), encoded);
     } catch (_) {}
   }
 
   static Future<void> clear(String userId) async {
     if (userId.isEmpty) return;
+    _epochs[userId] = (_epochs[userId] ?? 0) + 1;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_key(userId));
   }
