@@ -360,6 +360,14 @@ void main() {
       expect(drawer, isNot(contains('FileImage(')));
       expect(main, contains("platform/local_image_provider.dart"));
 
+      // Shorts compression is native-only; web must retain its IO-free stub.
+      final shortsFacade = _read('lib/services/shorts_video_preparer.dart');
+      expect(shortsFacade, contains("export 'shorts_video_preparer_stub.dart'"));
+      expect(shortsFacade, contains("if (dart.library.io) 'shorts_video_preparer_io.dart'"));
+      expect(shortsFacade, isNot(contains("import 'dart:io'")));
+      expect(_read('lib/services/shorts_video_preparer_stub.dart'),
+          isNot(contains("import 'dart:io'")));
+
       const allowedIoFiles = <String>{
         'lib/platform/local_image_provider_io.dart',
         'lib/platform/local_image_widget_io.dart',
@@ -368,6 +376,7 @@ void main() {
         'lib/services/post_media_storage_uploader_io.dart',
         'lib/widgets/cached_media_image_io.dart',
         'lib/services/social_daily_file_service_io.dart',
+        'lib/services/shorts_video_preparer_io.dart',
       };
       final directIoImports = Directory('lib')
           .listSync(recursive: true)

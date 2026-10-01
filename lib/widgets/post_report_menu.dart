@@ -5,7 +5,7 @@ import '../services/post_reporting_service.dart';
 
 String reportContentLabel(String type, bool ar) => switch (type) {
   'story' => ar ? 'الحالة' : 'story',
-  'clip' => ar ? 'الكليبس' : 'clip',
+  'clip' => ar ? 'الشورتس' : 'Short',
   _ => ar ? 'المنشور' : 'post',
 };
 

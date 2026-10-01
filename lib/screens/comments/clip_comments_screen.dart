@@ -269,7 +269,7 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
       textDirection: ar ? ui.TextDirection.rtl : ui.TextDirection.ltr,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(ar ? 'تعليقات الكليبس' : 'Clip comments'),
+          title: Text(ar ? 'تعليقات الشورتس' : 'Clip comments'),
           centerTitle: true,
         ),
         body: Column(

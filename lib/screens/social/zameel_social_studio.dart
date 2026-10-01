@@ -155,7 +155,7 @@ class _ZameelSocialStudioState extends State<ZameelSocialStudio> {
     return Directionality(
       textDirection: ar ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
-        appBar: AppBar(title: Text(ar ? 'مقاطع الفيديو' : 'Videos')),
+        appBar: AppBar(title: Text(ar ? 'زميل شورتس' : 'Zameel Shorts')),
         body: RefreshIndicator(
           onRefresh: _load,
           child: _loading
@@ -167,7 +167,7 @@ class _ZameelSocialStudioState extends State<ZameelSocialStudio> {
         floatingActionButton: FloatingActionButton.extended(
           onPressed: _publish,
           icon: const Icon(Icons.add_rounded),
-          label: Text(ar ? 'نشر فيديو' : 'Publish video'),
+          label: Text(ar ? 'نشر شورتس' : 'Publish a Short'),
         ),
       ),
     );

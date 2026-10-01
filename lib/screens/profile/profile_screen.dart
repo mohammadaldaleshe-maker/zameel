@@ -1,3 +1,4 @@
+import '../social/shorts_profile_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -62,6 +63,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _bookExists = false;
   bool _bookVisible = true;
   bool _targetOnline = false;
+
+  bool _showShorts = false;
+  bool _showSavedShorts = false;
 
   bool get isMe => widget.userId == null ||
       widget.userId == Supabase.instance.client.auth.currentUser?.id;
@@ -612,6 +616,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
               SliverToBoxAdapter(child: _buildHero(ar, name, image, cover, username, headline, bio, role)),
               SliverToBoxAdapter(child: _buildQuickDashboard(ar)),
               if (isMe && FeatureControl.instance.visible('graduation_book')) SliverToBoxAdapter(child: _bookButton(ar)),
+              if (FeatureControl.instance.visible('clips')) SliverToBoxAdapter(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                TextButton(onPressed: () => setState(() => _showShorts = false), child: Text(ar ? 'المنشورات' : 'Posts')),
+                TextButton(onPressed: () => setState(() { _showShorts = true; _showSavedShorts = false; }), child: Text(ar ? 'زميل شورتس' : 'Zameel Shorts')),
+                if (isMe) TextButton(onPressed: () => setState(() { _showShorts = true; _showSavedShorts = true; }), child: Text(ar ? 'الشورتس المحفوظة' : 'Saved Shorts')),
+              ])),
+              if (_showShorts && FeatureControl.instance.visible('clips'))
+                SliverToBoxAdapter(child: ShortsProfilePanel(key: ValueKey('shorts_$_showSavedShorts'), userId: widget.userId ?? Supabase.instance.client.auth.currentUser!.id, ar: ar, savedOnly: isMe && _showSavedShorts))
+              else ...[
               SliverToBoxAdapter(child: _buildSectionHeader(ar)),
               if (_posts.isEmpty && _sharedPosts.isEmpty)
                 SliverToBoxAdapter(child: _emptyPosts(ar))
@@ -626,6 +638,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         : _sharedPostCard(_sharedPosts[i - _posts.length], ar),
                   ),
                 ),
+              ],
             ],
           ),
         )),

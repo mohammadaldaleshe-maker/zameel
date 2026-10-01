@@ -177,17 +177,19 @@ class ZameelSocialService {
 
   static Future<String?> createClipFile({
     required XFile file,
+    XFile? cover,
     String caption = '',
     int durationSeconds = 1,
     required String audience,
   }) async {
     final id = uid;
     if (id == null) return null;
+    if (durationSeconds < 1 || durationSeconds > 120) throw StateError('invalid_short_duration');
     final row = await db.from('clips').insert({
       'user_id': id,
       'video_url': 'uploading://pending',
       'caption': caption,
-      'duration_seconds': durationSeconds.clamp(1, 45),
+      'duration_seconds': durationSeconds,
       'audience': audience,
     }).select('id').single();
     final clipId = row['id']?.toString() ?? '';
@@ -198,6 +200,8 @@ class ZameelSocialService {
     final path = isPublic
         ? '$id/social/clip_${DateTime.now().microsecondsSinceEpoch}.$ext'
         : 'clips/$clipId/$id/${DateTime.now().microsecondsSinceEpoch}.$ext';
+    String? coverPath;
+    String? coverRef;
     try {
       await uploadPickedPostMedia(
         client: db,
@@ -211,12 +215,18 @@ class ZameelSocialService {
       final storedRef = isPublic
           ? db.storage.from(bucket).getPublicUrl(path)
           : SecureMediaService.privateReference(path);
-      await db.from('clips').update({'video_url': storedRef}).eq('id', clipId).eq('user_id', id);
+      if (cover != null) {
+        final coverExt = _safeExtension(cover.name);
+        coverPath = isPublic ? '$id/social/short_cover_$clipId.$coverExt' : 'clips/$clipId/$id/cover.$coverExt';
+        await uploadPickedPostMedia(client: db, bucket: bucket, storagePath: coverPath, source: cover, maxBytes: _maxImageBytes, tooLargeError: 'cover_too_large', contentType: _contentType(coverExt, false));
+        coverRef = isPublic ? db.storage.from(bucket).getPublicUrl(coverPath) : SecureMediaService.privateReference(coverPath);
+      }
       final ready = await MediaCacheService.waitUntilRemoteReady(await SecureMediaService.resolve(storedRef));
       if (!ready) throw StateError('clip_media_not_ready');
+      await db.from('clips').update({'video_url': storedRef, 'cover_url': coverRef}).eq('id', clipId).eq('user_id', id);
       return clipId;
     } catch (_) {
-      try { await db.storage.from(bucket).remove(<String>[path]); } catch (_) {}
+      try { await db.storage.from(bucket).remove(<String>[path, if (coverPath != null) coverPath]); } catch (_) {}
       try { await db.from('clips').delete().eq('id', clipId).eq('user_id', id); } catch (_) {}
       rethrow;
     }
@@ -389,7 +399,7 @@ class ZameelSocialService {
     if (uid != null) await HomeSnapshotService.clear(uid!, section: 'clips');
     final id = uid;
     if (id == null) return;
-    final row = await db.from('clips').select('video_url').eq('id', clipId).maybeSingle();
+    final row = await db.from('clips').select('video_url,cover_url').eq('id', clipId).maybeSingle();
     try {
       await db.rpc('delete_clip_authorized', params: {'target_clip_id': clipId});
     } on PostgrestException catch (error) {
@@ -397,6 +407,7 @@ class ZameelSocialService {
       await db.from('clips').delete().eq('id', clipId).eq('user_id', id);
     }
     await SecureMediaService.removeReference(row?['video_url']?.toString());
+    await SecureMediaService.removeReference(row?['cover_url']?.toString());
   }
 
   static Future<void> toggleClipLike(String clipId, bool liked) async {

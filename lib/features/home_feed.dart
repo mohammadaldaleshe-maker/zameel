@@ -200,7 +200,7 @@ List<_ArcItemData> _arcShortcutCatalog(bool ar) => <_ArcItemData>[
   _ArcItemData('ai', Icons.auto_awesome_rounded, 'Zameel AI', () => _openMenuDestination('ai')),
   _ArcItemData('partners', Icons.business_center_rounded, ar ? 'شركاء Zameel' : 'Partners', () => _openMenuDestination('partners')),
   _ArcItemData('profile', Icons.person_rounded, ar ? 'حسابي' : 'Profile', () => _openMenuDestination('profile')),
-  _ArcItemData('clips', Icons.movie_creation_rounded, ar ? 'كليبسات' : 'Clips', () => _openMenuDestination('clips')),
+  _ArcItemData('clips', Icons.movie_creation_rounded, ar ? 'زميل شورتس' : 'Zameel Shorts', () => _openMenuDestination('clips')),
 ];
 
 String _featureForShortcut(String id) => const <String, String>{
@@ -1626,7 +1626,7 @@ Future<void> _createUserIfNotExists() async {
             ),
             if (FeatureControl.instance.visible('clips')) _DrawerItem(
               icon: Icons.movie_creation_rounded,
-              title: isArabic ? 'كليبسات' : 'Clips',
+              title: isArabic ? 'زميل شورتس' : 'Zameel Shorts',
               onTap: () {
                 FeatureControl.instance.open(context, 'clips', () => ZameelSocialStudio(isArabic: isArabic));
               },
@@ -1827,7 +1827,7 @@ Future<void> _createUserIfNotExists() async {
                 child: const Icon(Icons.add_rounded),
               )
             : null,
-        bottomNavigationBar: null,
+        bottomNavigationBar: currentIndex == 0 && FeatureControl.instance.visible('clips') ? const ShortsGateway() : null,
       ),
     );
   }
@@ -1911,8 +1911,6 @@ Future<void> _createUserIfNotExists() async {
       if (FeatureControl.instance.visible('stories'))
         FeatureControl.instance.page('stories', const StoriesWidget(key: ValueKey('home_stories')), embedded: true),
       _buildCreateBox(),
-      if (FeatureControl.instance.visible('clips'))
-        FeatureControl.instance.page('clips', const PublicClipsStrip(key: ValueKey('home_clips')), embedded: true),
       Padding(
         padding: const EdgeInsets.fromLTRB(14, 8, 14, 2),
         child: Row(children: [
@@ -2166,7 +2164,7 @@ Future<void> _createUserIfNotExists() async {
                     Expanded(
                       child: _ComposerMenuAction(
                         icon: Icons.smart_display_rounded,
-                        label: isArabic ? 'كليبس' : 'Clip',
+                        label: isArabic ? 'شورتس' : 'Clip',
                         onTap: () => Navigator.pop(sheetContext, 'clip'),
                       ),
                     ),
@@ -2256,10 +2254,10 @@ Future<void> _createUserIfNotExists() async {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                if (FeatureControl.instance.visible('books_market')) _CreateAction(
-                  icon: Icons.menu_book_outlined,
-                  text: Translations.translate('feed_book', languageProvider.currentLanguage),
-                  onTap: () => FeatureControl.instance.open(context, 'books_market', () => const BooksScreen()),
+                if (FeatureControl.instance.visible('quiz')) _CreateAction(
+                  icon: Icons.quiz_outlined,
+                  text: languageProvider.isArabic ? 'كويز' : 'Quiz',
+                  onTap: () => FeatureControl.instance.open(context, 'quiz', () => QuizScreen(isArabic: languageProvider.isArabic)),
                 ),
                 const SizedBox(width: 14),
                 if (FeatureControl.instance.visible('lamma')) _CreateAction(

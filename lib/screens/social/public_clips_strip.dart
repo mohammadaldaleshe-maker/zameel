@@ -1,3 +1,4 @@
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter/material.dart';
 import '../../services/feature_control.dart';
@@ -343,7 +344,7 @@ class _PublicClipsStripState extends State<PublicClipsStrip> with WidgetsBinding
             ),
             const SizedBox(height: 10),
             Text(
-              ar ? 'إضافة كليبس' : 'Add clip',
+              ar ? 'إضافة شورتس' : 'Add clip',
               textAlign: TextAlign.center,
               style: const TextStyle(fontWeight: FontWeight.w800),
             ),
@@ -365,10 +366,14 @@ class _PublicClipsStripState extends State<PublicClipsStrip> with WidgetsBinding
 class _VerticalClipsViewer extends StatefulWidget {
   final List<Map<String, dynamic>> clips;
   final int initialIndex;
+  final String? authorId;
+  final bool savedOnly;
 
   const _VerticalClipsViewer({
     required this.clips,
     required this.initialIndex,
+    this.authorId,
+    this.savedOnly = false,
   });
 
   @override
@@ -380,6 +385,53 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
   late List<Map<String, dynamic>> _clips;
   late int _currentIndex;
   bool _controlsVisible = true;
+  bool _shortMuted = false;
+  bool _moreLoading = false;
+  bool _reachedEnd = false;
+  Future<void> _loadMore() async {
+    if (_moreLoading || _reachedEnd) return;
+    _moreLoading = true;
+    try {
+      final data = await Supabase.instance.client.rpc('zameel_shorts_feed', params: {
+        'p_author': widget.authorId,
+        'p_saved': widget.savedOnly,
+        'p_exclude': widget.authorId != null || widget.savedOnly ? <String>[] : _clips.map((row) => row['id'].toString()).toList().reversed.take(500).toList(),
+        'p_offset': widget.authorId != null || widget.savedOnly ? _clips.length : 0,
+      });
+      if (!mounted) return;
+      final known = _clips.map((row) => row['id'].toString()).toSet();
+      final fresh = (data as List).whereType<Map>().map((row) => Map<String, dynamic>.from(row)).where((row) => !known.contains(row['id'].toString())).toList();
+      setState(() { _clips.addAll(fresh); _reachedEnd = fresh.isEmpty; });
+    } catch (_) {} finally { _moreLoading = false; }
+  }
+
+  final Map<String, String> _viewSessions = {};
+  final Set<String> _viewPending = {};
+
+  Future<void> _startView(int index) async {
+    if (index < 0 || index >= _clips.length) return;
+    final id = _clips[index]['id'].toString();
+    try {
+      final session = await Supabase.instance.client.rpc('zameel_shorts_start', params: {'p_clip': id});
+      if (mounted) _viewSessions[id] = session.toString();
+    } catch (_) {}
+  }
+  Future<void> _watched(Map<String, dynamic> clip, int seconds) async {
+    if (seconds < 3 || (seconds != 3 && seconds != 5 && seconds % 10 != 0)) return;
+    final id = clip['id'].toString(), session = _viewSessions[clip['id'].toString()];
+    if (session == null || _viewPending.contains(id)) return;
+    _viewPending.add(id);
+    try {
+      final result = await Supabase.instance.client.rpc('zameel_shorts_view', params: {'p_session': session, 'p_seconds': seconds});
+      if (mounted && result is Map && result['counted'] == true) setState(() => clip['views_count'] = ((clip['views_count'] as num?)?.toInt() ?? 0) + 1);
+    } catch (_) {} finally { _viewPending.remove(id); }
+  }
+  Future<void> _rememberMute(bool muted) async {
+    _shortMuted = muted;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('zameel_shorts_muted', muted);
+  }
+
 
   @override
   void initState() {
@@ -388,6 +440,9 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
     _currentIndex = widget.initialIndex;
     _pageController = PageController(initialPage: widget.initialIndex);
     _prefetchAround(_currentIndex);
+    _startView(_currentIndex);
+    if (_clips.length < 6) _loadMore();
+    SharedPreferences.getInstance().then((prefs) { if (mounted) setState(() => _shortMuted = prefs.getBool('zameel_shorts_muted') ?? false); });
   }
 
   void _prefetchAround(int index) {
@@ -409,13 +464,42 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
     super.dispose();
   }
 
+  Future<void> _shortAction(String action, Map<String, dynamic> clip, bool ar) async {
+    final db = Supabase.instance.client;
+    try {
+      if (action == 'report') {
+        await showContentReportDialog(context, clip['id'].toString(), 'clip', ar);
+        return;
+      }
+      if (action == 'delete') {
+        await _delete(clip);
+        return;
+      }
+      if (action == 'block') {
+        final confirm = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(title: Text(ar ? 'حظر الحساب؟' : 'Block account?'), actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(ar ? 'إلغاء' : 'Cancel')), TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(ar ? 'حظر' : 'Block'))]));
+        if (confirm != true) return;
+        await db.from('user_blocks').upsert({'blocker_id': db.auth.currentUser!.id, 'blocked_id': clip['user_id']});
+      } else {
+        await db.rpc('zameel_shorts_preference', params: {'p_clip': clip['id'], 'p_action': action});
+        if (mounted && (action == 'save' || action == 'unsave')) setState(() => clip['saved'] = action == 'save');
+      }
+      if (action == 'hide' || action == 'block') {
+        final actor = db.auth.currentUser?.id;
+        if (actor != null) await HomeSnapshotService.clear(actor, section: 'clips');
+        if (mounted) Navigator.pop(context);
+      }
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ar ? 'تعذر تنفيذ الإجراء' : 'Could not complete action')));
+    }
+  }
+
   Future<void> _delete(Map<String, dynamic> clip) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('حذف الكليبس؟'),
+        title: const Text('حذف الشورتس؟'),
         content: const Text(
-          'سيتم حذف هذا الكليبس نهائيًا من جميع أماكن ظهوره.',
+          'سيتم حذف هذا الشورتس نهائيًا من جميع أماكن ظهوره.',
         ),
         actions: [
           TextButton(
@@ -433,13 +517,21 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
     try {
       await ZameelSocialService.deleteClip(clip['id'].toString());
       if (!mounted) return;
-      setState(() => _clips.removeWhere(
-          (item) => item['id']?.toString() == clip['id']?.toString()));
-      if (_clips.isEmpty) Navigator.pop(context);
+      setState(() {
+        _clips.removeWhere((item) => item['id']?.toString() == clip['id']?.toString());
+        if (_clips.isNotEmpty) _currentIndex = _currentIndex.clamp(0, _clips.length - 1).toInt();
+      });
+      if (_clips.isEmpty) {
+        Navigator.pop(context);
+      } else {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _pageController.hasClients) { _pageController.jumpToPage(_currentIndex); _startView(_currentIndex); }
+        });
+      }
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(FeatureControl.errorMessage(error, 'تعذر حذف الكليبس'))),
+          SnackBar(content: Text(FeatureControl.errorMessage(error, 'تعذر حذف الشورتس'))),
         );
       }
     }
@@ -507,6 +599,8 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
             _controlsVisible = true;
           });
           _prefetchAround(index);
+          _startView(index);
+          if (index >= _clips.length - 5) _loadMore();
         },
         itemBuilder: (_, index) {
           final clip = _clips[index];
@@ -524,7 +618,12 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
                 Center(
                   child: index == _currentIndex
                       ? VerticalAutoplayVideoPlayer(
+                          key: ValueKey(clip['id']),
                           videoUrl: clip['video_url']?.toString() ?? '',
+                          initialMuted: _shortMuted,
+                          tapToPause: true,
+                          onMuteChanged: _rememberMute,
+                          onWatchedSeconds: (seconds) => _watched(clip, seconds),
                           onControlsVisibilityChanged: (visible) {
                             if (mounted && _controlsVisible != visible) setState(() => _controlsVisible = visible);
                           },
@@ -585,19 +684,19 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(color: Colors.white70),
                                 ),
-                          trailing: mine
-                              ? IconButton(
-                                  tooltip: 'حذف الكليبس',
-                                  onPressed: () => _delete(clip),
-                                  icon: const Icon(
-                                    Icons.delete_outline_rounded,
-                                    color: Colors.redAccent,
-                                  ),
-                                )
-                              : MediaReportButton(
-                                  contentId: clip['id']?.toString() ?? '',
-                                  authorId: ownerId, contentType: 'clip', ar: ar,
-                                ),
+                          trailing: PopupMenuButton<String>(
+                            icon: const Icon(Icons.more_horiz, color: Colors.white),
+                            onSelected: (action) => _shortAction(action, clip, ar),
+                            itemBuilder: (_) => [
+                              PopupMenuItem(value: clip['saved'] == true ? 'unsave' : 'save', child: Text(clip['saved'] == true ? (ar ? 'إلغاء الحفظ' : 'Unsave') : (ar ? 'حفظ' : 'Save'))),
+                              if (!mine) ...[
+                                PopupMenuItem(value: 'report', child: Text(ar ? 'إبلاغ' : 'Report')),
+                                PopupMenuItem(value: 'hide', child: Text(ar ? 'لا تعرض هذا المقطع مجددًا' : 'Do not show this Short again')),
+                                PopupMenuItem(value: 'block', child: Text(ar ? 'حظر الحساب' : 'Block account')),
+                              ],
+                              if (mine) PopupMenuItem(value: 'delete', child: Text(ar ? 'حذف' : 'Delete')),
+                            ],
+                          ),
                           onTap: ownerId == null
                               ? null
                               : () => Navigator.push(
@@ -608,6 +707,7 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
                                     ),
                                   ),
                         ),
+                        Text(ar ? '${clip['views_count'] ?? 0} مشاهدة' : '${clip['views_count'] ?? 0} views', style: const TextStyle(color: Colors.white70)),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
@@ -631,7 +731,7 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
                             TextButton.icon(
                               onPressed: () => _share(clip),
                               icon: const Icon(Icons.share_outlined),
-                              label: const Text('مشاركة'),
+                              label: Text(ar ? 'مشاركة' : 'Share'),
                             ),
                           ],
                         ),
@@ -703,4 +803,9 @@ class _ClipAutoPreviewState extends State<_ClipAutoPreview> {
     return FittedBox(fit: BoxFit.cover, child: SizedBox(width: c.value.size.width,
       height: c.value.size.height, child: VideoPlayer(c)));
   }
+}
+
+Future<void> openShortsViewer(BuildContext context, List<Map<String, dynamic>> clips, int index, {String? authorId, bool savedOnly = false}) async {
+ if (clips.isEmpty || index < 0 || index >= clips.length) return;
+ await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => FeatureControl.instance.page('clips', _VerticalClipsViewer(clips: clips, initialIndex: index, authorId: authorId, savedOnly: savedOnly))));
 }

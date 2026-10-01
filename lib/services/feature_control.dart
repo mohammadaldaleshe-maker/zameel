@@ -14,7 +14,7 @@ class FeatureControl {
   Future<void>? _pending;
 
   String mode(String key) {
-    final primary = _modes[key] ?? 'enabled';
+    final primary = _modes[key] ?? (key == 'quiz' ? 'hidden' : 'enabled');
     if (key != 'books_market') return primary;
 
     final exchange = _modes['book_exchange'] ?? 'enabled';

@@ -14,11 +14,19 @@ import '../services/video_source_service.dart';
 /// soon as the current vertical page is replaced.
 class VerticalAutoplayVideoPlayer extends StatefulWidget {
   final String videoUrl;
+  final ValueChanged<int>? onWatchedSeconds;
+  final bool initialMuted;
+  final bool tapToPause;
+  final ValueChanged<bool>? onMuteChanged;
   final ValueChanged<bool>? onControlsVisibilityChanged;
 
   const VerticalAutoplayVideoPlayer({
     super.key,
     required this.videoUrl,
+    this.onWatchedSeconds,
+    this.initialMuted = false,
+    this.tapToPause = false,
+    this.onMuteChanged,
     this.onControlsVisibilityChanged,
   });
 
@@ -40,6 +48,10 @@ class _VerticalAutoplayVideoPlayerState
   bool _controlsVisible = true;
   Timer? _controlsTimer;
   int _generation = 0;
+  DateTime? _lastPlaybackTick;
+  Duration _lastPosition = Duration.zero;
+  int _watchedMilliseconds = 0;
+  int _reportedSeconds = 0;
 
   bool get _shouldPlay =>
       _initialized && _appActive && _routeCurrent && !_pausedByUser;
@@ -48,12 +60,17 @@ class _VerticalAutoplayVideoPlayerState
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _muted = widget.initialMuted;
     _initialize();
   }
 
   @override
   void didUpdateWidget(covariant VerticalAutoplayVideoPlayer oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialMuted != widget.initialMuted) {
+      _muted = widget.initialMuted;
+      _controller?.setVolume(_muted ? 0 : 1);
+    }
     if (MediaCacheService.identity(oldWidget.videoUrl) != MediaCacheService.identity(widget.videoUrl)) {
       _replaceController();
     }
@@ -88,6 +105,10 @@ class _VerticalAutoplayVideoPlayerState
     _initialized = false;
     _error = null;
     _pausedByUser = false;
+    _lastPlaybackTick = null;
+    _lastPosition = Duration.zero;
+    _watchedMilliseconds = 0;
+    _reportedSeconds = 0;
     try {
       await previous?.pause();
     } catch (_) {}
@@ -177,6 +198,22 @@ class _VerticalAutoplayVideoPlayerState
   }
 
   void _refreshProgress() {
+    final value = _controller?.value;
+    final now = DateTime.now();
+    if (widget.onWatchedSeconds != null && value != null) {
+      final wall = _lastPlaybackTick == null ? 0 : now.difference(_lastPlaybackTick!).inMilliseconds;
+      final moved = (value.position - _lastPosition).inMilliseconds;
+      if (_shouldPlay && value.isPlaying && !value.isBuffering && moved > 0 && moved < 1500 && wall > 0) {
+        _watchedMilliseconds += moved.clamp(0, wall.clamp(0, 1000)).toInt();
+        final seconds = _watchedMilliseconds ~/ 1000;
+        if (seconds > _reportedSeconds) {
+          _reportedSeconds = seconds;
+          widget.onWatchedSeconds!(seconds);
+        }
+      }
+      _lastPlaybackTick = now;
+      _lastPosition = value.position;
+    }
     if (mounted) setState(() {});
   }
 
@@ -216,6 +253,7 @@ class _VerticalAutoplayVideoPlayerState
     final controller = _controller;
     if (controller == null || !_initialized) return;
     _muted = !_muted;
+    widget.onMuteChanged?.call(_muted);
     await controller.setVolume(_muted ? 0 : 1);
     if (mounted) setState(() {});
   }
@@ -262,7 +300,7 @@ class _VerticalAutoplayVideoPlayerState
       aspectRatio: ratio,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: _toggleControls,
+        onTap: widget.tapToPause ? _togglePlayback : _toggleControls,
         child: Stack(
           fit: StackFit.expand,
           children: [

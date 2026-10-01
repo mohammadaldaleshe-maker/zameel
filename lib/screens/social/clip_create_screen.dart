@@ -1,3 +1,4 @@
+import '../../services/shorts_video_preparer.dart';
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -38,7 +39,7 @@ class _ClipCreateScreenState extends State<ClipCreateScreen> {
     try {
       final file = await _picker.pickVideo(
         source: source,
-        maxDuration: const Duration(seconds: 45),
+        maxDuration: const Duration(seconds: 120),
       );
       if (file == null) return;
 
@@ -49,11 +50,11 @@ class _ClipCreateScreenState extends State<ClipCreateScreen> {
       }
 
       final duration = await _readDuration(file, bytes);
-      if (duration != null && duration > const Duration(seconds: 45)) {
+      if (duration != null && duration > const Duration(seconds: 120)) {
         _message(
           ar
-              ? 'مدة الكليبس تتجاوز 45 ثانية. اختر أو سجل فيديو أقصر.'
-              : 'The clip is longer than 45 seconds. Choose or record a shorter video.',
+              ? 'مدة الشورتس تتجاوز 120 ثانية. اختر أو سجل فيديو أقصر.'
+              : 'The Short is longer than 120 seconds. Choose or record a shorter video.',
         );
         return;
       }
@@ -178,7 +179,7 @@ class _ClipCreateScreenState extends State<ClipCreateScreen> {
       textDirection: ar ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(ar ? 'إضافة كليبس' : 'Add clip'),
+          title: Text(ar ? 'إضافة شورتس' : 'Add Short'),
           centerTitle: true,
         ),
         body: SafeArea(
@@ -189,15 +190,15 @@ class _ClipCreateScreenState extends State<ClipCreateScreen> {
                 children: [
                   Text(
                     ar
-                        ? 'أنشئ كليبس جديدًا مباشرة دون فتح الكليبسات الموجودة.'
+                        ? 'أنشئ شورتس جديدًا مباشرة دون فتح الشورتسات الموجودة.'
                         : 'Create a new clip directly without opening existing clips.',
                     style: TextStyle(color: AppTheme.muted.shade700),
                   ),
                   const SizedBox(height: 18),
                   _actionCard(
                     icon: Icons.videocam_rounded,
-                    title: ar ? 'تسجيل كليبس الآن' : 'Record a clip now',
-                    subtitle: ar ? 'بحد أقصى 45 ثانية' : 'Up to 45 seconds',
+                    title: ar ? 'تسجيل شورتس الآن' : 'Record a clip now',
+                    subtitle: ar ? 'بحد أقصى 120 ثانية' : 'Up to 120 seconds',
                     onTap: () => _pick(ImageSource.camera),
                   ),
                   const SizedBox(height: 12),
@@ -205,8 +206,8 @@ class _ClipCreateScreenState extends State<ClipCreateScreen> {
                     icon: Icons.video_library_rounded,
                     title: ar ? 'اختيار من الهاتف' : 'Choose from phone',
                     subtitle: ar
-                        ? 'اختر فيديو لا تتجاوز مدته 45 ثانية'
-                        : 'Choose a video up to 45 seconds long',
+                        ? 'اختر فيديو لا تتجاوز مدته 120 ثانية'
+                        : 'Choose a video up to 120 seconds long',
                     onTap: () => _pick(ImageSource.gallery),
                   ),
                 ],
@@ -246,8 +247,8 @@ class _ClipPreviewPublishScreen extends StatefulWidget {
 
 class _ClipPreviewPublishScreenState extends State<_ClipPreviewPublishScreen> {
   final TextEditingController _caption = TextEditingController();
+  XFile? _cover;
   VideoPlayerController? _video;
-  String _audience = 'public';
   bool _initializing = true;
   bool _publishing = false;
   String? _previewError;
@@ -309,32 +310,39 @@ class _ClipPreviewPublishScreenState extends State<_ClipPreviewPublishScreen> {
 
   int get _durationSeconds {
     final duration = widget.duration ?? _video?.value.duration;
-    if (duration == null || duration.inMilliseconds <= 0) return 1;
+    if (duration == null || duration.inMilliseconds <= 0) return 0;
     return math.max(1, (duration.inMilliseconds / 1000).ceil());
   }
 
   Future<void> _publish() async {
     if (_publishing) return;
-    if (_durationSeconds > 45) {
+    if (_durationSeconds <= 0 || _durationSeconds > 120) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             ar
-                ? 'لا يمكن نشر كليبس أطول من 45 ثانية.'
-                : 'A clip longer than 45 seconds cannot be published.',
+                ? 'لا يمكن نشر شورتس أطول من 120 ثانية.'
+                : 'A Short longer than 120 seconds cannot be published.',
           ),
         ),
       );
       return;
     }
 
+    if (kIsWeb && _cover == null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ar ? 'اختر صورة غلاف للفيديو قبل النشر.' : 'Choose a cover image before publishing.')));
+      return;
+    }
     setState(() => _publishing = true);
+    PreparedShort? prepared;
     try {
+      prepared = await prepareShortVideo(widget.file, cover: _cover);
       final id = await ZameelSocialService.createClipFile(
-        file: widget.file,
+        file: prepared.video,
+        cover: prepared.cover,
         caption: _caption.text.trim(),
         durationSeconds: _durationSeconds,
-        audience: _audience,
+        audience: 'public',
       );
       if (id == null) throw StateError('clip_not_created');
       if (!mounted) return;
@@ -344,12 +352,13 @@ class _ClipPreviewPublishScreenState extends State<_ClipPreviewPublishScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(FeatureControl.errorMessage(error,
-                ar ? 'تعذر نشر الكليبس. تحقق من الاتصال وحاول مجددًا.'
+                ar ? 'تعذر نشر الشورتس. تحقق من الاتصال وحاول مجددًا.'
                    : 'Could not publish the clip. Check your connection and try again.')),
           ),
         );
       }
     } finally {
+      await prepared?.cleanup();
       if (mounted) setState(() => _publishing = false);
     }
   }
@@ -360,7 +369,7 @@ class _ClipPreviewPublishScreenState extends State<_ClipPreviewPublishScreen> {
       textDirection: ar ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(ar ? 'معاينة الكليبس' : 'Clip preview'),
+          title: Text(ar ? 'معاينة الشورتس' : 'Short preview'),
           centerTitle: true,
         ),
         body: SafeArea(
@@ -417,8 +426,8 @@ class _ClipPreviewPublishScreenState extends State<_ClipPreviewPublishScreen> {
               const SizedBox(height: 10),
               Text(
                 ar
-                    ? 'المدة: $_durationSeconds ثانية من 45'
-                    : 'Duration: $_durationSeconds of 45 seconds',
+                    ? 'المدة: $_durationSeconds ثانية من 120'
+                    : 'Duration: $_durationSeconds of 120 seconds',
                 style: TextStyle(color: AppTheme.muted.shade600),
               ),
               const SizedBox(height: 16),
@@ -431,29 +440,11 @@ class _ClipPreviewPublishScreenState extends State<_ClipPreviewPublishScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                value: _audience,
-                decoration: InputDecoration(
-                  labelText: ar ? 'من يمكنه المشاهدة؟' : 'Who can watch?',
-                ),
-                items: [
-                  DropdownMenuItem(
-                    value: 'public',
-                    child: Text(ar ? 'العامة' : 'Public'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'friends',
-                    child: Text(ar ? 'الأصدقاء' : 'Friends'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'private',
-                    child: Text(ar ? 'خاص — أنا فقط' : 'Private — only me'),
-                  ),
-                ],
-                onChanged: _publishing
-                    ? null
-                    : (value) => setState(() => _audience = value ?? 'public'),
-              ),
+              TextButton.icon(onPressed: _publishing ? null : () async {
+                final cover = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 720, maxHeight: 1280, imageQuality: 85);
+                if (mounted && cover != null) setState(() => _cover = cover);
+              }, icon: const Icon(Icons.image_outlined), label: Text(ar ? (_cover == null ? (kIsWeb ? 'اختيار غلاف للفيديو' : 'اختيار غلاف اختياري') : 'تم اختيار الغلاف — تغييره') : (_cover == null ? (kIsWeb ? 'Choose a video cover' : 'Choose optional cover') : 'Cover selected — change'))),
+              Text(ar ? 'الشورتس الجديدة متاحة للعامة' : 'New Shorts are public'),
               const SizedBox(height: 20),
               FilledButton.icon(
                 onPressed: _publishing ? null : _publish,
@@ -463,7 +454,7 @@ class _ClipPreviewPublishScreenState extends State<_ClipPreviewPublishScreen> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.publish_rounded),
-                label: Text(ar ? 'نشر الكليبس' : 'Publish clip'),
+                label: Text(ar ? 'نشر الشورتس' : 'Publish Short'),
               ),
               const SizedBox(height: 8),
               OutlinedButton.icon(
