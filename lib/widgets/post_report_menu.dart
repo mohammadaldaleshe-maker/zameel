@@ -3,19 +3,71 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/post_reporting_service.dart';
 
+String reportContentLabel(String type, bool ar) => switch (type) {
+  'story' => ar ? 'الحالة' : 'story',
+  'clip' => ar ? 'الكليبس' : 'clip',
+  _ => ar ? 'المنشور' : 'post',
+};
+
 Future<void> showPostReportDialog(
-    BuildContext context, String postId, bool ar) async {
+    BuildContext context, String postId, bool ar) =>
+    showContentReportDialog(context, postId, 'post', ar);
+
+Future<void> showContentReportDialog(
+    BuildContext context, String contentId, String contentType, bool ar) async {
   if (Supabase.instance.client.auth.currentUser == null) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(ar ? 'سجّل الدخول لإرسال البلاغ.' : 'Sign in to report a post.'),
+      content: Text(ar ? 'سجّل الدخول لإرسال البلاغ.' : 'Sign in to submit a report.'),
     ));
     return;
   }
   await showDialog<void>(
     context: context,
     barrierDismissible: false,
-    builder: (_) => _PostReportDialog(postId: postId, ar: ar),
+    builder: (_) => _PostReportDialog(
+      postId: contentId, contentType: contentType, ar: ar,
+    ),
   );
+}
+
+class MediaReportButton extends StatelessWidget {
+  final String contentId;
+  final String? authorId;
+  final String contentType;
+  final bool ar;
+  final VoidCallback? onReportOpened;
+  final VoidCallback? onReportClosed;
+  const MediaReportButton({
+    super.key, required this.contentId, required this.authorId,
+    required this.contentType, required this.ar,
+    this.onReportOpened, this.onReportClosed,
+  });
+  @override
+  Widget build(BuildContext context) {
+    final uid = Supabase.instance.client.auth.currentUser?.id;
+    if (uid == null || uid == authorId || contentId.isEmpty ||
+        contentId.startsWith('local_')) return const SizedBox.shrink();
+    final label = reportContentLabel(contentType, ar);
+    return PopupMenuButton<String>(
+      tooltip: ar ? 'خيارات $label' : '$label options',
+      icon: const Icon(Icons.more_horiz, color: Colors.white),
+      onSelected: (_) async {
+        onReportOpened?.call();
+        try {
+          await showContentReportDialog(context, contentId, contentType, ar);
+        } finally {
+          onReportClosed?.call();
+        }
+      },
+      itemBuilder: (_) => [PopupMenuItem(
+        value: 'report',
+        child: Row(children: [
+          const Icon(Icons.flag_outlined), const SizedBox(width: 8),
+          Text(ar ? 'الإبلاغ عن $label' : 'Report $label'),
+        ]),
+      )],
+    );
+  }
 }
 
 class PostReportMenu extends StatelessWidget {
@@ -71,8 +123,9 @@ class PostReportMenu extends StatelessWidget {
 
 class _PostReportDialog extends StatefulWidget {
   final String postId;
+  final String contentType;
   final bool ar;
-  const _PostReportDialog({required this.postId, required this.ar});
+  const _PostReportDialog({required this.postId, required this.contentType, required this.ar});
   @override
   State<_PostReportDialog> createState() => _PostReportDialogState();
 }
@@ -102,12 +155,13 @@ class _PostReportDialogState extends State<_PostReportDialog> {
     try {
       final duplicate = await PostReportingService.submit(
         postId: widget.postId, category: _category, reason: _reason.text,
+        contentType: widget.contentType,
       );
       if (!mounted) return;
       final messenger = ScaffoldMessenger.of(context);
       Navigator.pop(context);
       messenger.showSnackBar(SnackBar(content: Text(duplicate
-          ? (ar ? 'سبق أن أرسلت بلاغًا عن هذا المنشور.' : 'You already reported this post.')
+          ? (ar ? 'سبق أن أرسلت بلاغًا عن ${reportContentLabel(widget.contentType, ar)}.' : 'You already reported this ${reportContentLabel(widget.contentType, ar)}.')
           : (ar ? 'تم إرسال البلاغ إلى الإدارة للمراجعة.' : 'Report sent to the administration for review.'))));
     } catch (e) {
       if (!mounted) return;
@@ -116,8 +170,8 @@ class _PostReportDialogState extends State<_PostReportDialog> {
         _sending = false;
         _error = message.contains('report_rate_limited')
             ? (ar ? 'وصلت إلى حد البلاغات المؤقت. حاول لاحقًا.' : 'Temporary report limit reached. Try later.')
-            : message.contains('post_not_available')
-                ? (ar ? 'لم يعد المنشور متاحًا لك. حدّث الصفحة.' : 'This post is no longer available. Refresh the page.')
+            : (message.contains('post_not_available') || message.contains('content_not_available'))
+                ? (ar ? 'لم يعد المحتوى متاحًا لك. حدّث الصفحة.' : 'This content is no longer available. Refresh the page.')
                 : message.contains('account_cannot_report')
                     ? (ar ? 'لا يسمح وضع الحساب الحالي بإرسال البلاغ.' : 'Your account cannot submit reports right now.')
                     : (ar ? 'تعذر إرسال البلاغ. حاول مجددًا.' : 'Could not send the report. Please retry.');
@@ -140,11 +194,11 @@ class _PostReportDialogState extends State<_PostReportDialog> {
     return PopScope(
       canPop: !_sending,
       child: AlertDialog(
-        title: Text(ar ? 'الإبلاغ عن المنشور' : 'Report post'),
+        title: Text(ar ? 'الإبلاغ عن ${reportContentLabel(widget.contentType, ar)}' : 'Report ${reportContentLabel(widget.contentType, ar)}'),
         content: SingleChildScrollView(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             Text(ar
-                ? 'اختر السبب. لا يُخفى المنشور تلقائيًا؛ تراجعه الإدارة.'
+                ? 'اختر السبب. لا يُخفى المحتوى تلقائيًا؛ تراجعه الإدارة.'
                 : 'Choose a reason. The administration reviews reports before hiding content.'),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(

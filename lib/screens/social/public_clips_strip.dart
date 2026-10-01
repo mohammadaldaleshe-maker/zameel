@@ -11,6 +11,7 @@ import '../../services_social.dart';
 import '../../services/media_cache_service.dart';
 import '../../providers/language_provider.dart';
 import '../../widgets/vertical_autoplay_video_player.dart';
+import '../../widgets/post_report_menu.dart';
 import '../profile/profile_screen.dart';
 import '../comments/clip_comments_screen.dart';
 import 'clip_create_screen.dart';
@@ -493,6 +494,7 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
   @override
   Widget build(BuildContext context) {
     final me = Supabase.instance.client.auth.currentUser?.id;
+    final ar = Provider.of<LanguageProvider>(context).isArabic;
     return Scaffold(
       backgroundColor: Colors.black,
       body: PageView.builder(
@@ -592,7 +594,10 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
                                     color: Colors.redAccent,
                                   ),
                                 )
-                              : null,
+                              : MediaReportButton(
+                                  contentId: clip['id']?.toString() ?? '',
+                                  authorId: ownerId, contentType: 'clip', ar: ar,
+                                ),
                           onTap: ownerId == null
                               ? null
                               : () => Navigator.push(

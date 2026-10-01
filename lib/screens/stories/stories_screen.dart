@@ -12,6 +12,7 @@ import '../../services/media_cache_service.dart';
 import '../../services/home_snapshot_service.dart';
 import '../../services/video_source_service.dart';
 import '../../widgets/cached_media_image.dart';
+import '../../widgets/post_report_menu.dart';
 import '../profile/profile_screen.dart';
 import '../../platform/video_controller_factory.dart';
 import '../../platform/local_image_widget.dart';
@@ -821,10 +822,12 @@ class _StoryTypeButton extends StatelessWidget {
 
 class _StoryVideoPlayer extends StatefulWidget {
   final String path;
+  final bool pausedForReport;
   final Uint8List? bytes;
 
   const _StoryVideoPlayer({
     required this.path,
+    this.pausedForReport = false,
     this.bytes,
   });
 
@@ -833,6 +836,7 @@ class _StoryVideoPlayer extends StatefulWidget {
 }
 
 class _StoryVideoPlayerState extends State<_StoryVideoPlayer> {
+  bool _resumeAfterReport = false;
   VideoPlayerController? _controller;
   String? _error;
 
@@ -840,6 +844,21 @@ class _StoryVideoPlayerState extends State<_StoryVideoPlayer> {
   void initState() {
     super.initState();
     _initialize();
+  }
+
+  @override
+  void didUpdateWidget(covariant _StoryVideoPlayer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final controller = _controller;
+    if (oldWidget.pausedForReport == widget.pausedForReport ||
+        controller == null || !controller.value.isInitialized) return;
+    if (widget.pausedForReport) {
+      _resumeAfterReport = controller.value.isPlaying;
+      unawaited(controller.pause());
+    } else if (_resumeAfterReport) {
+      _resumeAfterReport = false;
+      unawaited(controller.play());
+    }
   }
 
   Future<void> _initialize() async {
@@ -874,7 +893,11 @@ class _StoryVideoPlayerState extends State<_StoryVideoPlayer> {
 
       await _controller!.initialize();
       await _controller!.setLooping(true);
-      await _controller!.play();
+      if (widget.pausedForReport) {
+        _resumeAfterReport = true;
+      } else {
+        await _controller!.play();
+      }
       if (mounted) setState(() {});
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());
@@ -1296,6 +1319,8 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
     return isArabic ? 'العامة' : 'Public';
   }
 
+  bool _reporting = false;
+
   Future<void> _deleteCurrent(bool isArabic) async {
     if (_deleting || widget.stories.isEmpty) return;
     final story = widget.stories[_currentIndex];
@@ -1438,6 +1463,7 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
                           else if (hasVideo)
                             _StoryVideoPlayer(
                               path: videoPath,
+                              pausedForReport: _reporting,
                               bytes: story['videoBytes'] is Uint8List
                                   ? story['videoBytes'] as Uint8List
                                   : null,
@@ -1586,6 +1612,18 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
               icon: const Icon(Icons.close_rounded),
             ),
           ),
+          if (!currentIsMine)
+            Positioned(
+              top: MediaQuery.paddingOf(context).top + 70,
+              right: 14,
+              child: MediaReportButton(
+                contentId: current['id']?.toString() ?? '',
+                authorId: current['user_id']?.toString(),
+                contentType: 'story', ar: isArabic,
+                onReportOpened: () { if (mounted) setState(() => _reporting = true); },
+                onReportClosed: () { if (mounted) setState(() => _reporting = false); },
+              ),
+            ),
           if (currentIsMine)
             Positioned(
               top: MediaQuery.paddingOf(context).top + 70,

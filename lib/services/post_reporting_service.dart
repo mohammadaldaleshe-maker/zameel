@@ -5,11 +5,19 @@ class PostReportingService {
     required String postId,
     required String category,
     required String reason,
+    String contentType = 'post',
   }) async {
+    const allowedTypes = <String>{'post', 'clip', 'story'};
+    if (!allowedTypes.contains(contentType)) {
+      throw ArgumentError.value(contentType, 'contentType');
+    }
     final response = await Supabase.instance.client.rpc(
-      'zameel_report_post',
+      contentType == 'post' ? 'zameel_report_post' : 'zameel_report_media',
       params: {
-        'p_post_id': postId,
+        if (contentType == 'post') 'p_post_id': postId,
+        if (contentType != 'post') ...{
+          'p_content_type': contentType, 'p_content_id': postId,
+        },
         'p_category': category,
         'p_reason': reason.trim(),
       },
