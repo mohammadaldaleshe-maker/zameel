@@ -241,10 +241,14 @@ class _ZameelRadioScreenState extends State<ZameelRadioScreen> {
         'reporter_id': Supabase.instance.client.auth.currentUser!.id,
         'reason': reason,
       });
-      _notice('تم استلام البلاغ. يُخفى المقطع تلقائيًا بعد بلاغين مستقلين.', success: true);
+      _notice('تم استلام البلاغ وسيُراجع من الإدارة.', success: true);
       await _load();
+    } on PostgrestException catch (error) {
+      _notice(error.code == '23505'
+          ? 'سبق أن أبلغت عن هذا المقطع.'
+          : FeatureControl.errorMessage(error, 'تعذر إرسال البلاغ'));
     } catch (_) {
-      _notice('سبق أن أبلغت عن هذا المقطع أو تعذر إرسال البلاغ.');
+      _notice('تعذر إرسال البلاغ؛ حاول مرة أخرى.');
     }
   }
 
@@ -328,7 +332,7 @@ class _ZameelRadioScreenState extends State<ZameelRadioScreen> {
                             const ListTile(
                               dense: true,
                               leading: Icon(Icons.shield_outlined, color: Colors.orange),
-                              title: Text('مخفي مؤقتًا بعد بلاغين وينتظر مراجعة الإدارة'),
+                              title: Text('التسجيل مخفي وينتظر مراجعة الإدارة'),
                             ),
                           ListTile(
                             leading: CircleAvatar(backgroundImage: image != null && image.isNotEmpty ? NetworkImage(image) : null, child: image == null || image.isEmpty ? const Icon(Icons.graphic_eq_rounded) : null),
