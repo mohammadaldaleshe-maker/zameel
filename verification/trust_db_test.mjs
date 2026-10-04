@@ -1,0 +1,121 @@
+import {PGlite} from '@electric-sql/pglite';
+import fs from 'node:fs';import assert from 'node:assert/strict';
+const db=new PGlite();
+const ids=['10000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000002','10000000-0000-4000-8000-000000000003'];
+await db.exec(`create role anon;create role authenticated;create role service_role;
+create schema auth;create function auth.uid() returns uuid language sql as $$select nullif(current_setting('test.uid',true),'')::uuid$$;
+create table auth.users(id uuid primary key,email text,phone text,email_confirmed_at timestamptz,phone_confirmed_at timestamptz,raw_user_meta_data jsonb default '{}'::jsonb);
+create table public.users(id uuid primary key references auth.users(id),name text,email text,phone text,role text default 'student',university text default '',college text default '',department text default '',academic_year text,gender text,display_name_format text,onboarding_complete boolean default true,profile_image text);
+create table public.zameel_registration_profiles(user_id uuid primary key,first_name text,father_name text,family_name text,display_name_format text,phone text,email text,verification_method text,email_verified boolean,phone_verified boolean,university text not null,college text not null,major text not null,academic_year text not null,gender text,onboarding_complete boolean,updated_at timestamptz);
+create table feature_flags(feature_key text primary key,name_ar text,description text,is_enabled boolean,display_mode text,rollout_percent integer,scope_type text,scope_value text);
+create table zameel_quiz_questions(id uuid primary key default gen_random_uuid(),question_ar text,question_en text,options_ar jsonb,options_en jsonb,correct_index smallint,status text);
+create table admin_user_states(user_id uuid,status text,suspended_until timestamptz);
+create table admin_permissions(permission_key text primary key,name_ar text,category text);
+create table admin_roles(id uuid primary key,role_key text);
+create table admin_role_permissions(role_id uuid,permission_key text,unique(role_id,permission_key));
+create table admin_audit_logs(actor_id uuid,action text,resource_type text,resource_id text,details jsonb);
+create function zameel_account_can_write() returns boolean language sql as $$select auth.uid() is not null$$;
+create function is_blocked(uuid,uuid) returns boolean language sql as $$select false$$;
+create function admin_has_permission(text,uuid) returns boolean language sql as $$select $2='${ids[2]}'::uuid$$;
+create function admin_can_access_screen(text,uuid) returns boolean language sql as $$select $2='${ids[2]}'::uuid$$;
+insert into auth.users(id,email,phone,email_confirmed_at,phone_confirmed_at) values('${ids[0]}','one@example.com',null,now(),null),('${ids[1]}','two@example.com',null,now(),null),('${ids[2]}','admin@example.com',null,now(),null);
+insert into public.users(id,name,email) select id,email,email from auth.users;
+insert into zameel_quiz_questions(question_ar,question_en,options_ar,options_en,correct_index,status)
+select 'سؤال '||i,'Question '||i,'["a","b","c","d"]','["a","b","c","d"]',0,'published' from generate_series(1,20) i;`);
+for (const name of ['20261003180001_133_open_registration.sql','20261003180002_133_trust_game.sql','20261003180003_133_trust_administration.sql']){
+ await db.exec(fs.readFileSync(new URL('../supabase/migrations/'+name,import.meta.url),'utf8'));console.log('installed',name);
+}
+const as=async(i)=>db.query("select set_config('test.uid',$1,false)",[ids[i]]);
+const call=async(name,args=[])=>{let r=await db.query(`select public.${name}(${args.map((_,i)=>'$'+(i+1)).join(',')}) as result`,args);return r.rows[0].result;};
+const bal=async(i)=>Number((await db.query('select balance from zameel_coin_wallets where user_id=$1',[ids[i]])).rows[0].balance);
+let passed=0;const check=(x,msg)=>{assert.ok(x,msg);passed++;console.log('PASS',msg);};
+async function reset(){await db.exec('delete from zameel_trust_active;delete from zameel_trust_queue;delete from zameel_trust_matches;delete from zameel_coin_ledger;delete from zameel_coin_wallets;update zameel_trust_settings set last_sweep_at=now(),initial_coins=1000,stake=50,reward_unit=10;');}
+async function start(){await as(0);let a=await call('zameel_trust_join');check(a.phase==='waiting','first participant queued');await as(1);let b=await call('zameel_trust_join');check(b.phase==='questions'&&await bal(0)===950&&await bal(1)===950,'match reserves exactly 50 each');return b.match_id;}
+async function full(mid){for(let n=1;n<=10;n++){await as(0);await call('zameel_trust_answer',[mid,n,0]);await as(1);let r=await call('zameel_trust_answer',[mid,n,0]);assert.equal(r.prize,n*(n+1)*5);}await as(0);return call('zameel_trust_state',[mid]);}
+await as(0);await db.query('update users set onboarding_complete=false where id=$1',[ids[0]]);
+const data={account_type:'general',first_name:'محمد',father_name:'أحمد',family_name:'بكير',display_name_format:'first_family',gender:'male',email:'one@example.com',phone:'+962790000001',verification_method:'email'};
+check((await call('zameel_complete_registration',[data])).completed,'general registration without university');
+check((await db.query('select university,account_type from users where id=$1',[ids[0]])).rows[0].university==='','general receives no invented academic affiliation');
+check((await call('zameel_complete_registration',[{...data,first_name:'changed'}])).already_complete,'registration retry preserves completed account');
+await as(1);await db.query('update users set onboarding_complete=false where id=$1',[ids[1]]);
+await assert.rejects(call('zameel_complete_registration',[{...data,email:'two@example.com',phone:'+962790000002',account_type:'student'}]),/student_details_required/);passed++;
+check((await call('zameel_complete_registration',[{...data,email:'two@example.com',phone:'+962790000002',account_type:'student',academic_degree:'bachelor',student_number:'1234',university:'الجامعة الأردنية',college:'كلية الهندسة',major:'هندسة'}])).completed,'student academic details accepted');
+await as(0);let st=await call('zameel_trust_state');await call('zameel_trust_state');check(await bal(0)===1000,'initial grant exactly once');
+let mid=await start();let view=await call('zameel_trust_state',[mid]);check(!JSON.stringify(view).includes('correct_index')&&!JSON.stringify(view).includes(ids[0]),'current answer and opponent identity hidden');
+await as(2);await assert.rejects(call('zameel_trust_state',[mid]),/match_access_denied/);passed++;
+await as(0);await call('zameel_trust_chat',[mid,'مرحبا','20000000-0000-4000-8000-000000000001']);await call('zameel_trust_chat',[mid,'مرحبا','20000000-0000-4000-8000-000000000001']);
+check((await call('zameel_trust_state',[mid])).messages.length===1,'chat retry idempotent');
+await full(mid);await as(0);let first=await call('zameel_trust_decide',[mid,'trust']);check(first.phase==='decision'&&!('opponent_choice' in first),'decision private until both commit');await as(1);let end=await call('zameel_trust_decide',[mid,'trust']);check(end.phase==='finished'&&await bal(0)===1275&&await bal(1)===1275,'trust/trust split 550 and return stakes');
+await call('zameel_trust_decide',[mid,'betray']);check(await bal(1)===1275,'settlement retry cannot mint twice');await assert.rejects(call('zameel_trust_chat',[mid,'late','20000000-0000-4000-8000-000000000002']),/match_chat_closed/);passed++;
+for (const [c1,c2,b1,b2] of [['betray','trust',1600,950],['trust','betray',950,1600],['betray','betray',950,950]]){await reset();mid=await start();await full(mid);await as(0);await call('zameel_trust_decide',[mid,c1]);await as(1);await call('zameel_trust_decide',[mid,c2]);check(await bal(0)===b1&&await bal(1)===b2,c1+'/'+c2+' balances');}
+await reset();mid=await start();await as(0);await call('zameel_trust_leave',[mid]);check(await bal(0)===950&&await bal(1)===1000,'withdrawal forfeits one stake and returns other');
+await reset();mid=await start();await db.query("update zameel_trust_matches set seen1=now()-interval '91 seconds' where id=$1",[mid]);await as(1);let lost=await call('zameel_trust_state',[mid]);check(lost.phase==='abandoned'&&await bal(0)===950&&await bal(1)===1000,'90-second unilateral disconnect loses only own stake');
+await reset();mid=await start();await db.query("update zameel_trust_matches set seen1=now()-interval '91 seconds',seen2=now()-interval '91 seconds' where id=$1",[mid]);await as(0);check((await call('zameel_trust_state',[mid])).phase==='cancelled'&&await bal(0)===1000&&await bal(1)===1000,'both offline refunded conservatively');
+await reset();mid=await start();await db.exec("update zameel_trust_settings set last_sweep_at=now()-interval '151 seconds';update zameel_trust_matches set created_at=now()-interval '180 seconds';");await as(0);check((await call('zameel_trust_state',[mid])).reason==='server_outage'&&await bal(0)===1000&&await bal(1)===1000,'missed server schedule refunds both');
+await reset();mid=await start();await db.query("update zameel_trust_matches set deadline=now()-interval '1 second' where id=$1",[mid]);await as(0);let timed=await call('zameel_trust_answer',[mid,1,0]);check(timed.round_no===2&&timed.prize===0,'server deadline expires unanswered round');await as(1);await call('zameel_trust_answer',[mid,1,0]);check((await db.query('select selected2 from zameel_trust_rounds where match_id=$1 and round_no=2',[mid])).rows[0].selected2===null,'stale answer does not answer next round');
+await as(0);await assert.rejects(call('zameel_trust_admin_refund',[ids[0],mid,'server issue']),/trust_admin_not_authorized/);passed++;
+await call('zameel_trust_admin_refund',[ids[2],mid,'server issue']);await call('zameel_trust_admin_refund',[ids[2],mid,'server issue']);check(await bal(0)===1000&&await bal(1)===1000,'admin refund idempotent');
+await as(2);let req='30000000-0000-4000-8000-000000000001';await call('zameel_trust_admin_coins',[ids[2],ids[0],100,'manual reward',req]);await call('zameel_trust_admin_coins',[ids[2],ids[0],100,'manual reward',req]);check(await bal(0)===1100,'admin adjustment request id prevents replay');
+const grants=await db.query("select has_function_privilege('authenticated','public.zameel_coin_change(uuid,numeric,text,text,uuid)','execute') as helper,has_table_privilege('authenticated','public.zameel_trust_rounds','select') as answers,has_function_privilege('authenticated','public.zameel_trust_decide(uuid,text)','execute') as decision");check(!grants.rows[0].helper&&!grants.rows[0].answers&&grants.rows[0].decision,'authenticated cannot access ledger helpers or answer tables');
+
+// Failed agreement gives no award; neither answer nor coin events can be replayed.
+await reset();mid=await start();await as(0);await call('zameel_trust_answer',[mid,1,1]);await as(1);let wrong=await call('zameel_trust_answer',[mid,1,1]);check(wrong.round_no===2&&wrong.prize===0,'shared wrong answer proceeds without reward');
+await as(0);await call('zameel_trust_answer',[mid,2,0]);await as(1);let correct=await call('zameel_trust_answer',[mid,2,0]);await call('zameel_trust_answer',[mid,2,0]);check(correct.prize===20&&(await call('zameel_trust_state',[mid])).prize===20,'correct answer awarded once after replay');
+await as(2);await call('zameel_trust_admin_config',[ids[2],2000,75,12]);await as(0);let unchanged=await call('zameel_trust_state',[mid]);check(unchanged.stake===50&&unchanged.reward_unit===10,'new settings never change active match stake or awards');
+await db.exec("update feature_flags set is_enabled=false,display_mode='suspended' where feature_key='trust_game';");await as(0);check((await call('zameel_trust_state',[mid])).phase==='cancelled'&&await bal(0)===1000&&await bal(1)===1000,'feature suspension refunds active participants');await assert.rejects(call('zameel_trust_join'),/trust_temporarily_unavailable/);passed++;
+await db.exec("update feature_flags set is_enabled=true,display_mode='enabled' where feature_key='trust_game';");
+await reset();await as(0);await call('zameel_trust_state');await call('zameel_trust_join');await call('zameel_trust_leave');check(await bal(0)===1000,'queue cancellation never debits coins');
+await reset();mid=await start();await full(mid);await as(0);await call('zameel_trust_decide',[mid,'trust']);await call('zameel_trust_decide',[mid,'betray']);await as(1);let irrevocable=await call('zameel_trust_decide',[mid,'trust']);check(irrevocable.phase==='finished'&&await bal(0)===1275,'first secret decision cannot be changed');
+await reset();mid=await start();await full(mid);await as(0);await call('zameel_trust_decide',[mid,'trust']);await db.query("update zameel_trust_matches set deadline=now()-interval '1 second' where id=$1",[mid]);let late=await call('zameel_trust_state',[mid]);check(late.phase==='abandoned'&&await bal(0)===1000&&await bal(1)===950,'missing final decision loses stake and grants no question reward');
+await reset();mid=await start();await db.query('update zameel_trust_matches set player2=null where id=$1',[mid]);await as(0);check((await call('zameel_trust_state',[mid])).phase==='cancelled'&&await bal(0)===1000,'deleted opponent cancels and refunds remaining player');
+// Authentication verification comes from auth.users, not client-provided flags.
+await as(2);await db.query('update users set onboarding_complete=false where id=$1',[ids[2]]);
+await assert.rejects(call('zameel_complete_registration',[{...data,email:'unverified@example.com',phone:'+962790000003',email_verified:true}]),/verified_contact_required/);passed++;
+await db.query("update auth.users set phone='962790000003',phone_confirmed_at=now() where id=$1",[ids[2]]);
+check((await call('zameel_complete_registration',[{...data,email:'other@example.com',phone:'+962790000003',verification_method:'phone'}])).completed,'verified phone normalized with or without Auth plus sign');
+for (const name of ['20261003180001_133_open_registration.sql','20261003180002_133_trust_game.sql','20261003180003_133_trust_administration.sql'])await db.exec(fs.readFileSync(new URL('../supabase/migrations/'+name,import.meta.url),'utf8'));
+check((await db.query('select count(*) as n from zameel_quiz_questions')).rows[0].n===20,'repeat migrations preserve question bank and account data');
+
+// Public promotions preserve post privacy and apply administrative review once.
+await db.exec(`grant usage on schema auth to authenticated;
+create table posts(id uuid primary key default gen_random_uuid(),user_id uuid references users(id),audience text default 'public',is_hidden boolean default false,text_ar text);
+alter table posts enable row level security;
+grant select on posts to authenticated;
+create policy post_visible on posts for select to authenticated using(audience='public' and not is_hidden and user_id::text<>coalesce(current_setting('test.blocked_owner',true),''));
+alter table feature_flags enable row level security;grant select on feature_flags to authenticated;
+create policy no_client_flags on feature_flags for select to authenticated using(false);`);
+const promotionSQL=fs.readFileSync(new URL('../supabase/migrations/20261003180005_133_post_promotions.sql',import.meta.url),'utf8');
+await db.exec(promotionSQL);
+const post='40000000-0000-4000-8000-000000000001',privatePost='40000000-0000-4000-8000-000000000002';
+await db.query("insert into posts(id,user_id,audience) values($1,$3,'public'),($2,$3,'private')",[post,privatePost,ids[0]]);
+await as(0);
+let promotion=await call('zameel_request_promotion',[post,7,'طلب تجريبي']);
+check(promotion.status==='pending','promotion begins pending review');
+check((await call('zameel_request_promotion',[post,7,'retry'])).id===promotion.id,'promotion request retry creates no duplicate');
+await assert.rejects(call('zameel_request_promotion',[privatePost,7,'']),/own_public_post_required/);passed++;
+await assert.rejects(call('zameel_request_promotion',[post,31,'']),/invalid_promotion_request/);passed++;
+await as(1);await assert.rejects(call('zameel_request_promotion',[post,7,'']),/own_public_post_required/);passed++;
+await assert.rejects(call('zameel_review_promotion',[ids[1],promotion.id,'approve','valid reason']),/promotion_review_not_authorized/);passed++;
+await as(2);await call('zameel_review_promotion',[ids[2],promotion.id,'approve','approved request']);
+let firstEnd=(await db.query('select ends_at from zameel_post_promotions where id=$1',[promotion.id])).rows[0].ends_at;
+await call('zameel_review_promotion',[ids[2],promotion.id,'approve','approved request']);
+check(String((await db.query('select ends_at from zameel_post_promotions where id=$1',[promotion.id])).rows[0].ends_at)===String(firstEnd),'approval retry never extends promotion');
+await as(1);await db.exec('set role authenticated');
+check((await db.query('select * from zameel_promoted_post_ids()')).rows.length===1,'approved public promotion visible through existing post RLS');
+await db.query("select set_config('test.blocked_owner',$1,false)",[ids[0]]);
+check((await db.query('select * from zameel_promoted_post_ids()')).rows.length===0,'blocked post owner never bypasses post RLS for promotion');
+await db.exec('reset role');await db.query("select set_config('test.blocked_owner','',false)");
+await db.query("update posts set audience='private' where id=$1",[post]);
+check((await db.query('select status from zameel_post_promotions where id=$1',[promotion.id])).rows[0].status==='cancelled','privacy change cancels promotion immediately');
+await db.query("update posts set audience='public' where id=$1",[post]);
+await as(1);await db.exec('set role authenticated');check((await db.query('select * from zameel_promoted_post_ids()')).rows.length===0,'making a post public again never revives cancelled promotion');await db.exec('reset role');
+await as(0);promotion=await call('zameel_request_promotion',[post,1,'']);await as(2);await call('zameel_review_promotion',[ids[2],promotion.id,'approve','approved again']);
+await db.query("update zameel_post_promotions set ends_at=now()-interval '1 second' where id=$1",[promotion.id]);
+await as(1);await db.exec('set role authenticated');check((await db.query('select * from zameel_promoted_post_ids()')).rows.length===0,'expired promotions absent from feed');await db.exec('reset role');
+await as(0);const nextPromotion=await call('zameel_request_promotion',[post,2,'']);check(nextPromotion.id!==promotion.id,'expired promotion permits a new request');
+await as(2);await call('zameel_review_promotion',[ids[2],nextPromotion.id,'reject','request declined']);
+await assert.rejects(call('zameel_review_promotion',[ids[2],nextPromotion.id,'approve','cannot revive']),/promotion_already_decided/);passed++;
+const permissions=await db.query("select has_table_privilege('authenticated','zameel_post_promotions','insert') as write,has_function_privilege('authenticated','zameel_review_promotion(uuid,uuid,text,text)','execute') as review");
+check(!permissions.rows[0].write&&!permissions.rows[0].review,'clients cannot publish promotions or forge administration');
+await db.exec(promotionSQL);check((await db.query('select count(*) as n from zameel_quiz_questions')).rows[0].n===20,'promotion migration retry preserves question bank');
+console.log('DATABASE TESTS PASSED:',passed);await db.close();

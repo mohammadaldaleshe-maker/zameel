@@ -35,11 +35,15 @@ class _AuthGateState extends State<AuthGate> {
 
   Widget _profileScreen(Map<String, dynamic>? profile) {
     if (profile == null || profile['onboarding_complete'] != true) {
-      return const RegistrationRequiredScreen();
+      return const OpenRegistrationScreen();
     }
     final universityName = (profile['university'] ?? '').toString().trim();
     final collegeName = (profile['college'] ?? '').toString().trim();
     final departmentName = (profile['department'] ?? '').toString().trim();
+    if (profile['account_type'] == 'general' &&
+        (universityName.isEmpty || collegeName.isEmpty || departmentName.isEmpty)) {
+      return const HomeFeedScreen(university: generalCommunity, college: generalCollege, department: '');
+    }
     if (universityName.isEmpty || collegeName.isEmpty || departmentName.isEmpty) {
       return const UniversityScreen();
     }
@@ -60,7 +64,7 @@ class _AuthGateState extends State<AuthGate> {
     final userId = Supabase.instance.client.auth.currentUser?.id;
     if (userId == null) return const WelcomeScreen();
     final cached = await HomeSnapshotService.read(userId, 'profile');
-    if (cached.isNotEmpty) {
+    if (cached.isNotEmpty && cached.first['onboarding_complete'] == true) {
       // Cached routing data contains no roles/permissions. AccountAccessMonitor
       // and server RLS remain authoritative for blocked/suspended accounts.
       unawaited(_refreshProfile(userId, generation, cached.first));
@@ -87,7 +91,7 @@ class _AuthGateState extends State<AuthGate> {
 
   Future<Map<String, dynamic>?> _fetchProfile(String userId) =>
       Supabase.instance.client.from('users')
-          .select('university, college, department, onboarding_complete')
+          .select('university, college, department, onboarding_complete, account_type')
           .eq('id', userId).maybeSingle().timeout(const Duration(seconds: 12));
 
   Future<void> _refreshProfile(String userId, int generation,
@@ -99,7 +103,7 @@ class _AuthGateState extends State<AuthGate> {
       await HomeSnapshotService.save(userId, 'profile', profile == null ? [] : [profile]);
       if (!mounted || generation != _generation) return;
       final changed = profile == null || const [
-        'university', 'college', 'department', 'onboarding_complete',
+        'university', 'college', 'department', 'onboarding_complete', 'account_type',
       ].any((key) => cached[key] != profile[key]);
       if (changed) setState(() => _initialScreen = Future.value(_profileScreen(profile)));
     } catch (_) {
@@ -147,7 +151,7 @@ class RegistrationRequiredScreen extends StatelessWidget {
                       const SizedBox(height: 16),
                       const Text('التسجيل غير مكتمل', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
                       const SizedBox(height: 8),
-                      const Text('لا يمكن دخول التطبيق قبل إكمال الاسم وبيانات الجامعة والهاتف والبريد والتحقق من إحداهما.', textAlign: TextAlign.center),
+                      const Text('أكمل بيانات حسابك ووسيلة التحقق للمتابعة.', textAlign: TextAlign.center),
                       const SizedBox(height: 20),
                       FilledButton(
                         onPressed: () async {

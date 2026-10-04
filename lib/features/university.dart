@@ -28,6 +28,9 @@ class College {
 // ✅ جميع الجامعات الأردنية (حكومية + خاصة)
 // ============================================================
 
+const generalCollege = College(name: '', departments: <String>[]);
+const generalCommunity = University(name: '', type: 'general', city: '', colleges: <College>[generalCollege]);
+
 const List<University> universities = [
   // ============================================================
   // الجامعات الحكومية

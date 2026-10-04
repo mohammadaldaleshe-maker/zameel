@@ -16,7 +16,8 @@ class HomeFeedScreen extends StatefulWidget {
   State<HomeFeedScreen> createState() => _HomeFeedScreenState();
 }
 
-class _HomeFeedScreenState extends State<HomeFeedScreen> with WidgetsBindingObserver {
+class _HomeFeedScreenState extends State<HomeFeedScreen>
+    with WidgetsBindingObserver {
   int currentIndex = 0;
   String? profileImage;
   Uint8List? profileImageBytes;
@@ -26,6 +27,8 @@ class _HomeFeedScreenState extends State<HomeFeedScreen> with WidgetsBindingObse
   bool isAdmin = false;
   List<Map<String, dynamic>> savedPosts = [];
   List<Map<String, dynamic>> posts = [];
+  List<Map<String, dynamic>> _promotedPosts = [];
+  Timer? _promotionExpiry;
   int _postsRequestVersion = 0;
   bool _networkFeedShown = false;
   List<Map<String, dynamic>> _advertisements = [];
@@ -46,312 +49,500 @@ class _HomeFeedScreenState extends State<HomeFeedScreen> with WidgetsBindingObse
   String _feedScope = 'global';
   final ScrollController _feedScrollController = ScrollController();
   Offset? _arcMenuPosition;
-  List<String> _arcShortcutIds = <String>['chat', 'calendar', 'groups', 'books', 'clips'];
+  List<String> _arcShortcutIds = <String>[
+    'chat',
+    'calendar',
+    'groups',
+    'books',
+    'clips'
+  ];
 
   @override
-void initState() {
-  super.initState();
-  WidgetsBinding.instance.addObserver(this);
-  _createUserIfNotExists();
-  _loadCurrentProfileImage();
-  // Restore the on-device feed before the network request can replace it.
-  // Starting both at once caused fast responses to discard the snapshot and
-  // left users staring at the loading indicator on every app launch.
-  _openFeed();
-  _loadAdvertisements();
-  _loadUnreadNotifications();
-  _subscribeToNotifications();
-  _subscribeToFeedUpdates();
-  _startFeedRefreshTimer();
-  _loadArcMenuPosition();
-  _loadArcShortcuts();
-  _loadFeedScope();
-  FeatureControl.instance.changes.addListener(_onFeatureChange);
-  FeatureControl.instance.refresh(force: true);
-}
-
-void _onFeatureChange() {
-  if (mounted) setState(() {});
-  _loadAdvertisements();
-}
-
-
-void _startFeedRefreshTimer() {
-  _feedRefreshTimer?.cancel();
-  _feedRefreshTimer = Timer.periodic(
-    // Realtime already refreshes the feed. This is only a recovery poll for a
-    // dropped socket and intentionally stays infrequent to control API egress.
-    const Duration(minutes: 10),
-    (_) {
-      _loadPosts(silent: true);
-      _loadAdvertisements();
-    },
-  );
-}
-
-Future<void> _loadFeedScope() async {
-  final prefs = await SharedPreferences.getInstance();
-  final saved = prefs.getString('zameel_feed_scope');
-  if (mounted && <String>{'global', 'college', 'department'}.contains(saved)) {
-    setState(() => _feedScope = saved!);
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _createUserIfNotExists();
+    _loadCurrentProfileImage();
+    // Restore the on-device feed before the network request can replace it.
+    // Starting both at once caused fast responses to discard the snapshot and
+    // left users staring at the loading indicator on every app launch.
+    _openFeed();
+    _loadAdvertisements();
+    _loadPromotions();
+    _loadUnreadNotifications();
+    _subscribeToNotifications();
+    _subscribeToFeedUpdates();
+    _startFeedRefreshTimer();
+    _loadArcMenuPosition();
+    _loadArcShortcuts();
+    _loadFeedScope();
+    FeatureControl.instance.changes.addListener(_onFeatureChange);
+    FeatureControl.instance.refresh(force: true);
   }
-}
 
-Future<void> _loadAdvertisements() {
-  return _adsPending ??= _refreshAdvertisements().whenComplete(() => _adsPending = null);
-}
-
-Future<void> _refreshAdvertisements() async {
-  final userId = Supabase.instance.client.auth.currentUser?.id;
-  if (userId == null) return;
-  if (!FeatureControl.instance.enabled('partner_advertising')) {
-    if (mounted && _advertisements.isNotEmpty) setState(() => _advertisements = []);
-    return;
+  void _onFeatureChange() {
+    if (mounted) setState(() {});
+    _loadAdvertisements();
+    _loadPromotions();
   }
-  if (!_adsRestored) {
-    _adsRestored = true;
-    final cached = await HomeSnapshotService.read(userId, 'ads');
-    if (mounted && Supabase.instance.client.auth.currentUser?.id == userId &&
-        FeatureControl.instance.enabled('partner_advertising') && cached.isNotEmpty) {
-      setState(() => _advertisements = cached);
+
+  void _startFeedRefreshTimer() {
+    _feedRefreshTimer?.cancel();
+    _feedRefreshTimer = Timer.periodic(
+      // Realtime already refreshes the feed. This is only a recovery poll for a
+      // dropped socket and intentionally stays infrequent to control API egress.
+      const Duration(minutes: 10),
+      (_) {
+        _loadPosts(silent: true);
+        _loadAdvertisements();
+        _loadPromotions();
+      },
+    );
+  }
+
+  Future<void> _loadFeedScope() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = widget.university.name.isEmpty
+        ? 'global'
+        : prefs.getString('zameel_feed_scope');
+    if (mounted &&
+        <String>{'global', 'college', 'department'}.contains(saved)) {
+      setState(() => _feedScope = saved!);
     }
   }
-  try {
-    final loaded = await AdvertisingService.liveAds(limit: 12)
-        .timeout(const Duration(seconds: 15));
-    if (mounted && Supabase.instance.client.auth.currentUser?.id == userId) {
-      setState(() => _advertisements = FeatureControl.instance.enabled('partner_advertising')
-          ? loaded : []);
-      unawaited(_saveHomeAds(userId, loaded));
-    }
-  } catch (error) {
-    debugPrint('Ad refresh unavailable; retaining local preview: $error');
-  }
-}
 
-Future<void> _saveHomeAds(String userId, List<Map<String, dynamic>> ads) async {
-  try {
-    final db = Supabase.instance.client;
-    if (ads.isEmpty) {
-      await HomeSnapshotService.save(userId, 'ads', []);
+  Future<void> _loadAdvertisements() {
+    return _adsPending ??=
+        _refreshAdvertisements().whenComplete(() => _adsPending = null);
+  }
+
+  Future<void> _refreshAdvertisements() async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) return;
+    if (!FeatureControl.instance.enabled('partner_advertising')) {
+      if (mounted && _advertisements.isNotEmpty)
+        setState(() => _advertisements = []);
       return;
     }
-    final rows = await db.from('advertisements').select('id,status,expires_at,deleted_at')
-        .inFilter('id', ads.map((ad) => ad['id'].toString()).toList())
-        .timeout(const Duration(seconds: 12));
-    if (!mounted || db.auth.currentUser?.id != userId) return;
-    final metadata = {for (final row in rows) row['id']: row};
-    await HomeSnapshotService.save(userId, 'ads', [
-      for (final ad in ads)
-        if (metadata[ad['id']] != null) {...ad, ...metadata[ad['id']]!},
-    ]);
-  } catch (_) {}
-}
-
-Future<void> _setFeedScope(String scope) async {
-  if (!<String>{'global', 'college', 'department'}.contains(scope)) return;
-  setState(() => _feedScope = scope);
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.setString('zameel_feed_scope', scope);
-}
-
-String get _arcShortcutPrefsKey {
-  final userId = Supabase.instance.client.auth.currentUser?.id ?? 'guest';
-  return 'zameel_arc_shortcuts_$userId';
-}
-
-Future<void> _loadArcShortcuts() async {
-  final prefs = await SharedPreferences.getInstance();
-  final saved = prefs.getStringList(_arcShortcutPrefsKey);
-  if (!mounted || saved == null || saved.isEmpty) return;
-  final allowed = _arcShortcutIdsAllowed.toSet();
-  final clean = saved.where(allowed.contains).toSet().take(5).toList();
-  if (clean.isNotEmpty) setState(() => _arcShortcutIds = clean);
-}
-
-List<String> get _arcShortcutIdsAllowed => const <String>[
-  'home', 'books', 'chat', 'colleagues', 'campus', 'meet', 'jobs',
-  'calendar', 'polls', 'groups', 'ai', 'partners', 'profile', 'clips', 'lamma',
-  'radio', 'beautiful_college',
-];
-
-Future<void> _saveArcShortcuts(List<String> ids) async {
-  final clean = ids.where(_arcShortcutIdsAllowed.contains).toSet().take(5).toList();
-  if (clean.isEmpty) return;
-  setState(() => _arcShortcutIds = clean);
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.setStringList(_arcShortcutPrefsKey, clean);
-}
-
-List<_ArcItemData> _arcShortcutCatalog(bool ar) => <_ArcItemData>[
-  _ArcItemData('home', Icons.home_rounded, ar ? 'الرئيسية' : 'Home', () => _openMenuDestination('home')),
-  _ArcItemData('books', Icons.menu_book_rounded, ar ? 'الكتب' : 'Books', () => _openMenuDestination('books')),
-  _ArcItemData('chat', Icons.chat_bubble_rounded, ar ? 'الدردشة' : 'Chat', () => _openMenuDestination('chat')),
-  _ArcItemData('colleagues', Icons.people_rounded, ar ? 'زملاء' : 'Colleagues', () => _openMenuDestination('colleagues')),
-  _ArcItemData('lamma', Icons.diversity_2_rounded, ar ? 'لَمّة' : 'Lamma', () => _openMenuDestination('lamma')),
-  _ArcItemData('radio', Icons.podcasts_rounded, ar ? 'راديو Zameel' : 'Zameel Radio', () => _openMenuDestination('radio')),
-  _ArcItemData('beautiful_college', Icons.photo_camera_back_rounded, ar ? 'أجمل كلية' : 'Beautiful College', () => _openMenuDestination('beautiful_college')),
-  _ArcItemData('campus', Icons.map_rounded, ar ? 'الحرم الجامعي' : 'Campus', () => _openMenuDestination('campus')),
-  _ArcItemData('meet', Icons.video_call_rounded, ar ? 'اجتمع بالزملاء' : 'Meet', () => _openMenuDestination('meet')),
-  _ArcItemData('jobs', Icons.work_rounded, ar ? 'وظائف' : 'Jobs', () => _openMenuDestination('jobs')),
-  _ArcItemData('calendar', Icons.calendar_month_rounded, ar ? 'تقويم' : 'Calendar', () => _openMenuDestination('calendar')),
-  _ArcItemData('polls', Icons.poll_rounded, ar ? 'استطلاعات' : 'Polls', () => _openMenuDestination('polls')),
-  _ArcItemData('groups', Icons.group_rounded, ar ? 'مجموعات' : 'Groups', () => _openMenuDestination('groups')),
-  _ArcItemData('ai', Icons.auto_awesome_rounded, 'Zameel AI', () => _openMenuDestination('ai')),
-  _ArcItemData('partners', Icons.business_center_rounded, ar ? 'شركاء Zameel' : 'Partners', () => _openMenuDestination('partners')),
-  _ArcItemData('profile', Icons.person_rounded, ar ? 'حسابي' : 'Profile', () => _openMenuDestination('profile')),
-  _ArcItemData('clips', Icons.movie_creation_rounded, ar ? 'زميل شورتس' : 'Zameel Shorts', () => _openMenuDestination('clips')),
-];
-
-String _featureForShortcut(String id) => const <String, String>{
-  'books':'books_market', 'chat':'direct_chat', 'colleagues':'suggested_colleagues',
-  'lamma':'lamma', 'radio':'zameel_radio', 'beautiful_college':'beautiful_college',
-  'campus':'campus_world', 'meet':'zameel_meet', 'jobs':'jobs_training',
-  'calendar':'university_calendar', 'polls':'polls', 'groups':'groups',
-  'ai':'zameel_ai', 'partners':'business_partners', 'clips':'clips',
-}[id] ?? id;
-
-void _openMenuDestination(String id) {
-  final feature = _featureForShortcut(id);
-  if (!FeatureControl.instance.enabled(feature)) {
-    FeatureControl.instance.open(context, feature, () => const SizedBox.shrink());
-    return;
-  }
-  switch (id) {
-    case 'home':
-      setState(() => currentIndex = 0);
-      break;
-    case 'books':
-      FeatureControl.instance.open(context, 'books_market', () => const BooksScreen());
-      break;
-    case 'chat':
-      FeatureControl.instance.open(context, 'direct_chat', () => const ChatScreen());
-      break;
-    case 'colleagues':
-      FeatureControl.instance.open(context, 'suggested_colleagues', () => const FriendsScreen());
-      break;
-    case 'lamma':
-      FeatureControl.instance.open(context, 'lamma', () => const LammaScreen());
-      break;
-    case 'radio':
-      FeatureControl.instance.open(context, 'zameel_radio', () => const ZameelRadioScreen());
-      break;
-    case 'beautiful_college':
-      FeatureControl.instance.open(context, 'beautiful_college', () => const BeautifulCollegeScreen());
-      break;
-    case 'campus':
-      FeatureControl.instance.open(context, 'campus_world', () => const CampusScreen());
-      break;
-    case 'meet':
-      FeatureControl.instance.open(context, 'zameel_meet', () => const MeetScreen());
-      break;
-    case 'jobs':
-      FeatureControl.instance.open(context, 'jobs_training', () => const JobsScreen());
-      break;
-    case 'calendar':
-      FeatureControl.instance.open(context, 'university_calendar', () => const CalendarScreen());
-      break;
-    case 'polls':
-      FeatureControl.instance.open(context, 'polls', () => const PollsScreen());
-      break;
-    case 'groups':
-      FeatureControl.instance.open(context, 'groups', () => const GroupsScreen());
-      break;
-    case 'ai':
-      FeatureControl.instance.open(context, 'zameel_ai', () => const AIScreen());
-      break;
-    case 'partners':
-      FeatureControl.instance.open(context, 'business_partners', () => const BusinessScreen());
-      break;
-    case 'profile':
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user != null) {
-        Navigator.push(context, MaterialPageRoute(builder: (_) => ProfileScreen(userId: user.id)));
+    if (!_adsRestored) {
+      _adsRestored = true;
+      final cached = await HomeSnapshotService.read(userId, 'ads');
+      if (mounted &&
+          Supabase.instance.client.auth.currentUser?.id == userId &&
+          FeatureControl.instance.enabled('partner_advertising') &&
+          cached.isNotEmpty) {
+        setState(() => _advertisements = cached);
       }
-      break;
-    case 'clips':
-      final ar = Provider.of<LanguageProvider>(context, listen: false).isArabic;
-      FeatureControl.instance.open(context, 'clips', () => ZameelSocialStudio(isArabic: ar));
-      break;
+    }
+    try {
+      final loaded = await AdvertisingService.liveAds(limit: 12)
+          .timeout(const Duration(seconds: 15));
+      if (mounted && Supabase.instance.client.auth.currentUser?.id == userId) {
+        setState(() => _advertisements =
+            FeatureControl.instance.enabled('partner_advertising')
+                ? loaded
+                : []);
+        unawaited(_saveHomeAds(userId, loaded));
+      }
+    } catch (error) {
+      debugPrint('Ad refresh unavailable; retaining local preview: $error');
+    }
   }
-}
 
-Future<void> _showArcShortcutCustomizer() async {
-  final ar = Provider.of<LanguageProvider>(context, listen: false).isArabic;
-  var selected = List<String>.from(_arcShortcutIds);
-  final catalog = _arcShortcutCatalog(ar).where((e) => FeatureControl.instance.visible(_featureForShortcut(e.id))).toList();
-  final result = await showDialog<List<String>>(
-    context: context,
-    builder: (dialogContext) => StatefulBuilder(
-      builder: (context, setDialogState) => AlertDialog(
-        title: Text(ar ? 'تخصيص الزر العائم' : 'Customize floating menu'),
-        content: SizedBox(
-          width: 420,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  ar ? 'اختر من 1 إلى 5 اختصارات من القائمة.' : 'Choose 1 to 5 shortcuts from the menu.',
-                  style: const TextStyle(color: AppTheme.muted),
-                ),
-                const SizedBox(height: 8),
-                ...catalog.map((item) {
-                  final checked = selected.contains(item.id);
-                  return CheckboxListTile(
-                    value: checked,
-                    secondary: Icon(item.icon, color: AppTheme.primary),
-                    title: Text(item.label),
-                    onChanged: (value) {
-                      setDialogState(() {
-                        if (value == true) {
-                          if (selected.length < 5 && !selected.contains(item.id)) selected.add(item.id);
-                        } else {
-                          selected.remove(item.id);
-                        }
-                      });
-                    },
-                  );
-                }),
-                Text(
-                  ar ? 'المحدد: ${selected.length}/5' : 'Selected: ${selected.length}/5',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ],
+  Future<void> _saveHomeAds(
+      String userId, List<Map<String, dynamic>> ads) async {
+    try {
+      final db = Supabase.instance.client;
+      if (ads.isEmpty) {
+        await HomeSnapshotService.save(userId, 'ads', []);
+        return;
+      }
+      final rows = await db
+          .from('advertisements')
+          .select('id,status,expires_at,deleted_at')
+          .inFilter('id', ads.map((ad) => ad['id'].toString()).toList())
+          .timeout(const Duration(seconds: 12));
+      if (!mounted || db.auth.currentUser?.id != userId) return;
+      final metadata = {for (final row in rows) row['id']: row};
+      await HomeSnapshotService.save(userId, 'ads', [
+        for (final ad in ads)
+          if (metadata[ad['id']] != null) {...ad, ...metadata[ad['id']]!},
+      ]);
+    } catch (_) {}
+  }
+
+  Future<void> _setFeedScope(String scope) async {
+    if (!<String>{'global', 'college', 'department'}.contains(scope)) return;
+    setState(() => _feedScope = scope);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('zameel_feed_scope', scope);
+  }
+
+  String get _arcShortcutPrefsKey {
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? 'guest';
+    return 'zameel_arc_shortcuts_$userId';
+  }
+
+  Future<void> _loadArcShortcuts() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getStringList(_arcShortcutPrefsKey);
+    if (!mounted || saved == null || saved.isEmpty) return;
+    final allowed = _arcShortcutIdsAllowed.toSet();
+    final clean = saved.where(allowed.contains).toSet().take(5).toList();
+    if (clean.isNotEmpty) setState(() => _arcShortcutIds = clean);
+  }
+
+  List<String> get _arcShortcutIdsAllowed => const <String>[
+        'home',
+        'books',
+        'chat',
+        'colleagues',
+        'campus',
+        'meet',
+        'jobs',
+        'calendar',
+        'polls',
+        'groups',
+        'ai',
+        'partners',
+        'profile',
+        'clips',
+        'lamma',
+        'radio',
+        'beautiful_college',
+      ];
+
+  Future<void> _saveArcShortcuts(List<String> ids) async {
+    final clean =
+        ids.where(_arcShortcutIdsAllowed.contains).toSet().take(5).toList();
+    if (clean.isEmpty) return;
+    setState(() => _arcShortcutIds = clean);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_arcShortcutPrefsKey, clean);
+  }
+
+  List<_ArcItemData> _arcShortcutCatalog(bool ar) => <_ArcItemData>[
+        _ArcItemData('home', Icons.home_rounded, ar ? 'الرئيسية' : 'Home',
+            () => _openMenuDestination('home')),
+        _ArcItemData('books', Icons.menu_book_rounded, ar ? 'الكتب' : 'Books',
+            () => _openMenuDestination('books')),
+        _ArcItemData('chat', Icons.chat_bubble_rounded, ar ? 'الدردشة' : 'Chat',
+            () => _openMenuDestination('chat')),
+        _ArcItemData(
+            'colleagues',
+            Icons.people_rounded,
+            ar ? 'زملاء' : 'Colleagues',
+            () => _openMenuDestination('colleagues')),
+        _ArcItemData('lamma', Icons.diversity_2_rounded, ar ? 'لَمّة' : 'Lamma',
+            () => _openMenuDestination('lamma')),
+        _ArcItemData(
+            'radio',
+            Icons.podcasts_rounded,
+            ar ? 'راديو Zameel' : 'Zameel Radio',
+            () => _openMenuDestination('radio')),
+        _ArcItemData(
+            'beautiful_college',
+            Icons.photo_camera_back_rounded,
+            ar ? 'أجمل كلية' : 'Beautiful College',
+            () => _openMenuDestination('beautiful_college')),
+        _ArcItemData(
+            'campus',
+            Icons.map_rounded,
+            ar ? 'الحرم الجامعي' : 'Campus',
+            () => _openMenuDestination('campus')),
+        _ArcItemData('meet', Icons.video_call_rounded,
+            ar ? 'اجتمع بالزملاء' : 'Meet', () => _openMenuDestination('meet')),
+        _ArcItemData('jobs', Icons.work_rounded, ar ? 'وظائف' : 'Jobs',
+            () => _openMenuDestination('jobs')),
+        _ArcItemData('calendar', Icons.calendar_month_rounded,
+            ar ? 'تقويم' : 'Calendar', () => _openMenuDestination('calendar')),
+        _ArcItemData('polls', Icons.poll_rounded, ar ? 'استطلاعات' : 'Polls',
+            () => _openMenuDestination('polls')),
+        _ArcItemData('groups', Icons.group_rounded, ar ? 'مجموعات' : 'Groups',
+            () => _openMenuDestination('groups')),
+        _ArcItemData('ai', Icons.auto_awesome_rounded, 'Zameel AI',
+            () => _openMenuDestination('ai')),
+        _ArcItemData(
+            'partners',
+            Icons.business_center_rounded,
+            ar ? 'شركاء Zameel' : 'Partners',
+            () => _openMenuDestination('partners')),
+        _ArcItemData('profile', Icons.person_rounded, ar ? 'حسابي' : 'Profile',
+            () => _openMenuDestination('profile')),
+        _ArcItemData(
+            'clips',
+            Icons.movie_creation_rounded,
+            ar ? 'زميل شورتس' : 'Zameel Shorts',
+            () => _openMenuDestination('clips')),
+      ];
+
+  String _featureForShortcut(String id) =>
+      const <String, String>{
+        'books': 'books_market',
+        'chat': 'direct_chat',
+        'colleagues': 'suggested_colleagues',
+        'lamma': 'lamma',
+        'radio': 'zameel_radio',
+        'beautiful_college': 'beautiful_college',
+        'campus': 'campus_world',
+        'meet': 'zameel_meet',
+        'jobs': 'jobs_training',
+        'calendar': 'university_calendar',
+        'polls': 'polls',
+        'groups': 'groups',
+        'ai': 'zameel_ai',
+        'partners': 'business_partners',
+        'clips': 'clips',
+      }[id] ??
+      id;
+
+  void _openMenuDestination(String id) {
+    final feature = _featureForShortcut(id);
+    if (!FeatureControl.instance.enabled(feature)) {
+      FeatureControl.instance
+          .open(context, feature, () => const SizedBox.shrink());
+      return;
+    }
+    switch (id) {
+      case 'home':
+        setState(() => currentIndex = 0);
+        break;
+      case 'books':
+        FeatureControl.instance
+            .open(context, 'books_market', () => const BooksScreen());
+        break;
+      case 'chat':
+        FeatureControl.instance
+            .open(context, 'direct_chat', () => const ChatScreen());
+        break;
+      case 'colleagues':
+        FeatureControl.instance
+            .open(context, 'suggested_colleagues', () => const FriendsScreen());
+        break;
+      case 'lamma':
+        FeatureControl.instance
+            .open(context, 'lamma', () => const LammaScreen());
+        break;
+      case 'radio':
+        FeatureControl.instance
+            .open(context, 'zameel_radio', () => const ZameelRadioScreen());
+        break;
+      case 'beautiful_college':
+        FeatureControl.instance.open(
+            context, 'beautiful_college', () => const BeautifulCollegeScreen());
+        break;
+      case 'campus':
+        FeatureControl.instance
+            .open(context, 'campus_world', () => const CampusScreen());
+        break;
+      case 'meet':
+        FeatureControl.instance
+            .open(context, 'zameel_meet', () => const MeetScreen());
+        break;
+      case 'jobs':
+        FeatureControl.instance
+            .open(context, 'jobs_training', () => const JobsScreen());
+        break;
+      case 'calendar':
+        FeatureControl.instance
+            .open(context, 'university_calendar', () => const CalendarScreen());
+        break;
+      case 'polls':
+        FeatureControl.instance
+            .open(context, 'polls', () => const PollsScreen());
+        break;
+      case 'groups':
+        FeatureControl.instance
+            .open(context, 'groups', () => const GroupsScreen());
+        break;
+      case 'ai':
+        FeatureControl.instance
+            .open(context, 'zameel_ai', () => const AIScreen());
+        break;
+      case 'partners':
+        FeatureControl.instance
+            .open(context, 'business_partners', () => const BusinessScreen());
+        break;
+      case 'profile':
+        final user = Supabase.instance.client.auth.currentUser;
+        if (user != null) {
+          Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (_) => ProfileScreen(userId: user.id)));
+        }
+        break;
+      case 'clips':
+        final ar =
+            Provider.of<LanguageProvider>(context, listen: false).isArabic;
+        FeatureControl.instance
+            .open(context, 'clips', () => ZameelSocialStudio(isArabic: ar));
+        break;
+    }
+  }
+
+  Future<void> _showArcShortcutCustomizer() async {
+    final ar = Provider.of<LanguageProvider>(context, listen: false).isArabic;
+    var selected = List<String>.from(_arcShortcutIds);
+    final catalog = _arcShortcutCatalog(ar)
+        .where(
+            (e) => FeatureControl.instance.visible(_featureForShortcut(e.id)))
+        .toList();
+    final result = await showDialog<List<String>>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(ar ? 'تخصيص الزر العائم' : 'Customize floating menu'),
+          content: SizedBox(
+            width: 420,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    ar
+                        ? 'اختر من 1 إلى 5 اختصارات من القائمة.'
+                        : 'Choose 1 to 5 shortcuts from the menu.',
+                    style: const TextStyle(color: AppTheme.muted),
+                  ),
+                  const SizedBox(height: 8),
+                  ...catalog.map((item) {
+                    final checked = selected.contains(item.id);
+                    return CheckboxListTile(
+                      value: checked,
+                      secondary: Icon(item.icon, color: AppTheme.primary),
+                      title: Text(item.label),
+                      onChanged: (value) {
+                        setDialogState(() {
+                          if (value == true) {
+                            if (selected.length < 5 &&
+                                !selected.contains(item.id))
+                              selected.add(item.id);
+                          } else {
+                            selected.remove(item.id);
+                          }
+                        });
+                      },
+                    );
+                  }),
+                  Text(
+                    ar
+                        ? 'المحدد: ${selected.length}/5'
+                        : 'Selected: ${selected.length}/5',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
             ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(ar ? 'إلغاء' : 'Cancel'),
+            ),
+            FilledButton(
+              onPressed: selected.isEmpty
+                  ? null
+                  : () => Navigator.pop(dialogContext, selected),
+              child: Text(ar ? 'حفظ' : 'Save'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text(ar ? 'إلغاء' : 'Cancel'),
-          ),
-          FilledButton(
-            onPressed: selected.isEmpty ? null : () => Navigator.pop(dialogContext, selected),
-            child: Text(ar ? 'حفظ' : 'Save'),
-          ),
-        ],
       ),
-    ),
-  );
-  if (result != null && result.isNotEmpty) await _saveArcShortcuts(result);
-}
+    );
+    if (result != null && result.isNotEmpty) await _saveArcShortcuts(result);
+  }
 
-List<Map<String, dynamic>> get _visiblePosts {
-  if (_feedScope == 'global') return posts;
-  final university = widget.university.name.trim().toLowerCase();
-  final college = widget.college.name.trim().toLowerCase();
-  final department = widget.department.trim().toLowerCase();
-  return posts.where((post) {
-    final user = post['users'] is Map ? post['users'] as Map : const <String, dynamic>{};
-    final postUniversity = user['university']?.toString().trim().toLowerCase() ?? '';
-    final postCollege = user['college']?.toString().trim().toLowerCase() ?? '';
-    final postDepartment = user['department']?.toString().trim().toLowerCase() ?? '';
-    final sameCollege = university.isNotEmpty && college.isNotEmpty && postUniversity == university && postCollege == college;
-    if (_feedScope == 'college') return sameCollege;
-    return sameCollege && department.isNotEmpty && postDepartment == department;
-  }).toList();
-}
+  Future<void> _loadPromotions() async {
+    final db = Supabase.instance.client;
+    final user = db.auth.currentUser?.id;
+    if (user == null || !FeatureControl.instance.enabled('post_promotions')) {
+      if (mounted) setState(() => _promotedPosts = []);
+      return;
+    }
+    try {
+      final result = await db
+          .rpc('zameel_promoted_post_ids')
+          .timeout(const Duration(seconds: 8));
+      final active = List<Map<String, dynamic>>.from(result as List);
+      final ids = active.map((r) => r['post_id'].toString()).toList();
+      final rows = ids.isEmpty
+          ? <Map<String, dynamic>>[]
+          : List<Map<String, dynamic>>.from(await db
+              .from('posts')
+              .select(
+                  '*, users(name, profile_image, gender, role, university, college, department)')
+              .inFilter('id', ids)
+              .eq('audience', 'public')
+              .or('is_hidden.eq.false,is_hidden.is.null')
+              .timeout(const Duration(seconds: 8)));
+      if (!mounted || db.auth.currentUser?.id != user) return;
+      final expiry = {
+        for (final r in active) r['post_id'].toString(): r['ends_at']
+      };
+      setState(() => _promotedPosts = [
+            for (final row in rows)
+              {...row, 'promotion_ends_at': expiry[row['id'].toString()]}
+          ]);
+      _promotionExpiry?.cancel();
+      final deadlines = active
+          .map((r) => DateTime.tryParse('${r['ends_at']}'))
+          .whereType<DateTime>()
+          .toList()
+        ..sort();
+      if (deadlines.isNotEmpty) {
+        final delay = deadlines.first.difference(DateTime.now());
+        _promotionExpiry = Timer(delay.isNegative ? Duration.zero : delay, () {
+          if (mounted) {
+            setState(() {});
+            _loadPromotions();
+          }
+        });
+      }
+    } catch (_) {
+      if (mounted && db.auth.currentUser?.id == user)
+        setState(() => _promotedPosts = []);
+    }
+  }
+
+  List<Map<String, dynamic>> get _visiblePosts {
+    final promoted = FeatureControl.instance.enabled('post_promotions')
+        ? _promotedPosts
+            .where((r) =>
+                DateTime.tryParse('${r['promotion_ends_at']}')
+                    ?.isAfter(DateTime.now()) ==
+                true)
+            .toList()
+        : <Map<String, dynamic>>[];
+    final promotedIds = promoted.map((r) => r['id']).toSet();
+    final combined = [
+      ...promoted,
+      ...posts.where((r) => !promotedIds.contains(r['id']))
+    ];
+    if (_feedScope == 'global') return combined;
+    final university = widget.university.name.trim().toLowerCase();
+    final college = widget.college.name.trim().toLowerCase();
+    final department = widget.department.trim().toLowerCase();
+    return combined.where((post) {
+      final user = post['users'] is Map
+          ? post['users'] as Map
+          : const <String, dynamic>{};
+      final postUniversity =
+          user['university']?.toString().trim().toLowerCase() ?? '';
+      final postCollege =
+          user['college']?.toString().trim().toLowerCase() ?? '';
+      final postDepartment =
+          user['department']?.toString().trim().toLowerCase() ?? '';
+      final sameCollege = university.isNotEmpty &&
+          college.isNotEmpty &&
+          postUniversity == university &&
+          postCollege == college;
+      if (_feedScope == 'college') return sameCollege;
+      return sameCollege &&
+          department.isNotEmpty &&
+          postDepartment == department;
+    }).toList();
+  }
 
   @override
   void dispose() {
@@ -361,373 +552,423 @@ List<Map<String, dynamic>> get _visiblePosts {
     _notificationsChannel?.unsubscribe();
     _feedReloadDebounce?.cancel();
     _feedRefreshTimer?.cancel();
+    _promotionExpiry?.cancel();
     _postsChannel?.unsubscribe();
     _feedScrollController.dispose();
     super.dispose();
   }
 
-@override
-void didChangeAppLifecycleState(AppLifecycleState state) {
-  if (state == AppLifecycleState.resumed) {
-    _startFeedRefreshTimer();
-    FeatureControl.instance.refresh(force: true);
-    _loadPosts(silent: true);
-    _loadUnreadNotifications();
-  } else if (state == AppLifecycleState.inactive ||
-      state == AppLifecycleState.paused ||
-      state == AppLifecycleState.detached) {
-    _feedRefreshTimer?.cancel();
-  }
-}
-
-Future<void> _loadArcMenuPosition() async {
-  final prefs = await SharedPreferences.getInstance();
-  final x = prefs.getDouble('zameel_arc_menu_x');
-  final y = prefs.getDouble('zameel_arc_menu_y');
-  if (!mounted || x == null || y == null) return;
-  final size = MediaQuery.sizeOf(context);
-  final padding = MediaQuery.paddingOf(context);
-  final maxX = (size.width - 250).clamp(0.0, double.infinity);
-  final maxY = (size.height - padding.bottom - 70).clamp(padding.top + 4, double.infinity);
-  setState(() => _arcMenuPosition = Offset(x.clamp(0.0, maxX), y.clamp(padding.top + 4, maxY)));
-}
-
-void _subscribeToFeedUpdates() {
-  final client = Supabase.instance.client;
-  _postsChannel = client.channel('zameel-home-feed-live');
-  _postsChannel!
-      .onPostgresChanges(
-        event: PostgresChangeEvent.all,
-        schema: 'public',
-        table: 'posts',
-        callback: (_) {
-          _feedReloadDebounce?.cancel();
-          _feedReloadDebounce = Timer(
-            const Duration(milliseconds: 350),
-            () => _loadPosts(silent: true),
-          );
-        },
-      )
-      .subscribe();
-}
-
-void _moveArcMenu(Offset delta) {
-  final size = MediaQuery.sizeOf(context);
-  final padding = MediaQuery.paddingOf(context);
-  final isArabic = Provider.of<LanguageProvider>(context, listen: false).isArabic;
-  final current = _arcMenuPosition ?? Offset(isArabic ? 12 : size.width - 262, padding.top + 10);
-  final maxX = (size.width - 250).clamp(0.0, double.infinity);
-  final maxY = (size.height - padding.bottom - 70).clamp(padding.top + 4, double.infinity);
-  final next = Offset((current.dx + delta.dx).clamp(0.0, maxX), (current.dy + delta.dy).clamp(padding.top + 4, maxY));
-  setState(() => _arcMenuPosition = next);
-  SharedPreferences.getInstance().then((prefs) {
-    prefs.setDouble('zameel_arc_menu_x', next.dx);
-    prefs.setDouble('zameel_arc_menu_y', next.dy);
-  });
-}
-
-String _calendarKey() {
-  final n = widget.university.name.toLowerCase();
-  if (n.contains('يرموك') || n.contains('yarmouk')) return 'yu';
-  if (n.contains('علوم') || n.contains('science and technology') || n.contains('just')) return 'just';
-  if (n.contains('هاشمية') || n.contains('hashemite')) return 'hu';
-  return 'ju';
-}
-
-Future<void> _loadUnreadNotifications() async {
-  final user = Supabase.instance.client.auth.currentUser;
-  if (user == null) return;
-  try {
-    final rows = await Supabase.instance.client.from('notifications')
-        .select('id,type,data,actor_id').eq('user_id', user.id).eq('is_read', false);
-    final count = MessageNotificationGrouping.collapse(
-        List<Map<String, dynamic>>.from(rows)).length;
-    if (mounted) setState(() => _unreadNotifications = count);
-  } catch (_) {}
-}
-
-void _subscribeToNotifications() {
-  final client = Supabase.instance.client;
-  final user = client.auth.currentUser;
-  if (user == null) return;
-  _notificationsChannel = client.channel('zameel-home-notifications:${user.id}');
-  _notificationsChannel!
-      .onPostgresChanges(
-        event: PostgresChangeEvent.all,
-        schema: 'public',
-        table: 'notifications',
-        filter: PostgresChangeFilter(
-          type: PostgresChangeFilterType.eq,
-          column: 'user_id',
-          value: user.id,
-        ),
-        callback: (payload) {
-          _notificationReloadDebounce?.cancel();
-          _notificationReloadDebounce = Timer(
-            const Duration(milliseconds: 180),
-            _loadUnreadNotifications,
-          );
-          final row = Map<String, dynamic>.from(payload.newRecord);
-          final type = row['type']?.toString() ?? '';
-          if (type == 'incoming_video_call' ||
-              type == 'incoming_voice_call') {
-            Future.microtask(() => _handleIncomingCallNotification(row));
-          }
-        },
-      )
-      .subscribe();
-}
-
-Map<String, dynamic> _notificationData(Map<String, dynamic> n) {
-  final raw = n['data'];
-  if (raw is Map<String, dynamic>) return raw;
-  if (raw is Map) return Map<String, dynamic>.from(raw);
-  return <String, dynamic>{};
-}
-
-Future<void> _handleIncomingCallNotification(Map<String, dynamic> n) async {
-  if (!mounted || _incomingCallDialogOpen) return;
-  if (!await FeatureControl.instance.check(context, 'direct_calls')) return;
-  final notificationId = n['id']?.toString() ?? '';
-  if (notificationId.isEmpty || _handledIncomingCalls.contains(notificationId)) {
-    return;
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _startFeedRefreshTimer();
+      FeatureControl.instance.refresh(force: true);
+      _loadPosts(silent: true);
+      _loadUnreadNotifications();
+    } else if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      _feedRefreshTimer?.cancel();
+      _promotionExpiry?.cancel();
+    }
   }
 
-  final data = _notificationData(n);
-  final roomId = data['room_id']?.toString() ?? '';
-  if (!await CallInvitationGuard.isRinging(roomId)) return;
+  Future<void> _loadArcMenuPosition() async {
+    final prefs = await SharedPreferences.getInstance();
+    final x = prefs.getDouble('zameel_arc_menu_x');
+    final y = prefs.getDouble('zameel_arc_menu_y');
+    if (!mounted || x == null || y == null) return;
+    final size = MediaQuery.sizeOf(context);
+    final padding = MediaQuery.paddingOf(context);
+    final maxX = (size.width - 250).clamp(0.0, double.infinity);
+    final maxY = (size.height - padding.bottom - 70)
+        .clamp(padding.top + 4, double.infinity);
+    setState(() => _arcMenuPosition =
+        Offset(x.clamp(0.0, maxX), y.clamp(padding.top + 4, maxY)));
+  }
 
-  _handledIncomingCalls.add(notificationId);
-  _incomingCallDialogOpen = true;
+  void _subscribeToFeedUpdates() {
+    final client = Supabase.instance.client;
+    _postsChannel = client.channel('zameel-home-feed-live');
+    _postsChannel!
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'posts',
+          callback: (_) {
+            _feedReloadDebounce?.cancel();
+            _feedReloadDebounce = Timer(
+              const Duration(milliseconds: 350),
+              () => _loadPosts(silent: true),
+            );
+          },
+        )
+        .subscribe();
+  }
 
-  final type = n['type']?.toString() ?? '';
-  final video = data['video'] == true ||
-      data['video']?.toString().toLowerCase() == 'true' ||
-      type == 'incoming_video_call';
-  final actorId = n['actor_id']?.toString();
-  String callerName = 'Colleague';
-  String? callerImage;
-  if (actorId != null && actorId.isNotEmpty) {
+  void _moveArcMenu(Offset delta) {
+    final size = MediaQuery.sizeOf(context);
+    final padding = MediaQuery.paddingOf(context);
+    final isArabic =
+        Provider.of<LanguageProvider>(context, listen: false).isArabic;
+    final current = _arcMenuPosition ??
+        Offset(isArabic ? 12 : size.width - 262, padding.top + 10);
+    final maxX = (size.width - 250).clamp(0.0, double.infinity);
+    final maxY = (size.height - padding.bottom - 70)
+        .clamp(padding.top + 4, double.infinity);
+    final next = Offset((current.dx + delta.dx).clamp(0.0, maxX),
+        (current.dy + delta.dy).clamp(padding.top + 4, maxY));
+    setState(() => _arcMenuPosition = next);
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setDouble('zameel_arc_menu_x', next.dx);
+      prefs.setDouble('zameel_arc_menu_y', next.dy);
+    });
+  }
+
+  String _calendarKey() {
+    final n = widget.university.name.toLowerCase();
+    if (n.contains('يرموك') || n.contains('yarmouk')) return 'yu';
+    if (n.contains('علوم') ||
+        n.contains('science and technology') ||
+        n.contains('just')) return 'just';
+    if (n.contains('هاشمية') || n.contains('hashemite')) return 'hu';
+    return 'ju';
+  }
+
+  Future<void> _loadUnreadNotifications() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
     try {
-      final actor = await Supabase.instance.client
-          .from('users')
-          .select('name,profile_image')
-          .eq('id', actorId)
-          .maybeSingle();
-      final name = actor?['name']?.toString().trim();
-      if (name != null && name.isNotEmpty) callerName = name;
-      callerImage = actor?['profile_image']?.toString();
+      final rows = await Supabase.instance.client
+          .from('notifications')
+          .select('id,type,data,actor_id')
+          .eq('user_id', user.id)
+          .eq('is_read', false);
+      final count = MessageNotificationGrouping.collapse(
+              List<Map<String, dynamic>>.from(rows))
+          .length;
+      if (mounted) setState(() => _unreadNotifications = count);
     } catch (_) {}
   }
 
-  if (!mounted) {
-    _incomingCallDialogOpen = false;
-    return;
+  void _subscribeToNotifications() {
+    final client = Supabase.instance.client;
+    final user = client.auth.currentUser;
+    if (user == null) return;
+    _notificationsChannel =
+        client.channel('zameel-home-notifications:${user.id}');
+    _notificationsChannel!
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'notifications',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'user_id',
+            value: user.id,
+          ),
+          callback: (payload) {
+            _notificationReloadDebounce?.cancel();
+            _notificationReloadDebounce = Timer(
+              const Duration(milliseconds: 180),
+              _loadUnreadNotifications,
+            );
+            final row = Map<String, dynamic>.from(payload.newRecord);
+            final type = row['type']?.toString() ?? '';
+            if (type == 'incoming_video_call' ||
+                type == 'incoming_voice_call') {
+              Future.microtask(() => _handleIncomingCallNotification(row));
+            }
+          },
+        )
+        .subscribe();
   }
 
-  final accepted = await Navigator.of(context, rootNavigator: true).push<bool>(
-    MaterialPageRoute(
-      fullscreenDialog: true,
-      builder: (_) => IncomingCallScreen(roomId: roomId, callerName: callerName, callerImage: callerImage, video: video),
-    ),
-  );
-  _incomingCallDialogOpen = false;
-
-  try {
-    await Supabase.instance.client
-        .from('notifications')
-        .update({'is_read': true})
-        .eq('id', notificationId);
-  } catch (_) {}
-
-  if (accepted != true) {
-    try { await Supabase.instance.client.from('direct_call_sessions').update({'status':'declined','ended_at':DateTime.now().toUtc().toIso8601String()}).eq('room_id',roomId).eq('status','ringing'); } catch (_) {}
-    return;
+  Map<String, dynamic> _notificationData(Map<String, dynamic> n) {
+    final raw = n['data'];
+    if (raw is Map<String, dynamic>) return raw;
+    if (raw is Map) return Map<String, dynamic>.from(raw);
+    return <String, dynamic>{};
   }
-  if (!await CallInvitationGuard.isRinging(roomId)) return;
-  if (!mounted) return;
-  Navigator.of(context, rootNavigator: true).push(
-    MaterialPageRoute(
-      builder: (_) => MeetScreen(
-        participantName: callerName,
-        roomId: roomId,
-        startImmediately: true,
-        startWithVideo: video,
-        isInitiator: false,
+
+  Future<void> _handleIncomingCallNotification(Map<String, dynamic> n) async {
+    if (!mounted || _incomingCallDialogOpen) return;
+    if (!await FeatureControl.instance.check(context, 'direct_calls')) return;
+    final notificationId = n['id']?.toString() ?? '';
+    if (notificationId.isEmpty ||
+        _handledIncomingCalls.contains(notificationId)) {
+      return;
+    }
+
+    final data = _notificationData(n);
+    final roomId = data['room_id']?.toString() ?? '';
+    if (!await CallInvitationGuard.isRinging(roomId)) return;
+
+    _handledIncomingCalls.add(notificationId);
+    _incomingCallDialogOpen = true;
+
+    final type = n['type']?.toString() ?? '';
+    final video = data['video'] == true ||
+        data['video']?.toString().toLowerCase() == 'true' ||
+        type == 'incoming_video_call';
+    final actorId = n['actor_id']?.toString();
+    String callerName = 'Colleague';
+    String? callerImage;
+    if (actorId != null && actorId.isNotEmpty) {
+      try {
+        final actor = await Supabase.instance.client
+            .from('users')
+            .select('name,profile_image')
+            .eq('id', actorId)
+            .maybeSingle();
+        final name = actor?['name']?.toString().trim();
+        if (name != null && name.isNotEmpty) callerName = name;
+        callerImage = actor?['profile_image']?.toString();
+      } catch (_) {}
+    }
+
+    if (!mounted) {
+      _incomingCallDialogOpen = false;
+      return;
+    }
+
+    final accepted =
+        await Navigator.of(context, rootNavigator: true).push<bool>(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => IncomingCallScreen(
+            roomId: roomId,
+            callerName: callerName,
+            callerImage: callerImage,
+            video: video),
       ),
-    ),
-  );
-}
+    );
+    _incomingCallDialogOpen = false;
 
-Future<void> _loadCurrentProfileImage() async {
-  final user = Supabase.instance.client.auth.currentUser;
-  if (user == null) return;
-  try {
-    final row = await Supabase.instance.client
-        .from('users')
-        .select('name,profile_image')
-        .eq('id', user.id)
-        .maybeSingle();
-    final url = row?['profile_image']?.toString();
-    final metadataName = user.userMetadata?['name']?.toString();
-    final dbName = row?['name']?.toString();
+    try {
+      await Supabase.instance.client
+          .from('notifications')
+          .update({'is_read': true}).eq('id', notificationId);
+    } catch (_) {}
+
+    if (accepted != true) {
+      try {
+        await Supabase.instance.client
+            .from('direct_call_sessions')
+            .update({
+              'status': 'declined',
+              'ended_at': DateTime.now().toUtc().toIso8601String()
+            })
+            .eq('room_id', roomId)
+            .eq('status', 'ringing');
+      } catch (_) {}
+      return;
+    }
+    if (!await CallInvitationGuard.isRinging(roomId)) return;
     if (!mounted) return;
-    setState(() {
-      profileImageUrl = (url == null || url.isEmpty) ? null : url;
-      profileName = (dbName != null && dbName.trim().isNotEmpty)
-          ? dbName.trim()
-          : ((metadataName != null && metadataName.trim().isNotEmpty)
-              ? metadataName.trim()
-              : 'مستخدم');
-    });
-  } catch (_) {}
-}
+    Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        builder: (_) => MeetScreen(
+          participantName: callerName,
+          roomId: roomId,
+          startImmediately: true,
+          startWithVideo: video,
+          isInitiator: false,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _loadCurrentProfileImage() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+    try {
+      final row = await Supabase.instance.client
+          .from('users')
+          .select('name,profile_image')
+          .eq('id', user.id)
+          .maybeSingle();
+      final url = row?['profile_image']?.toString();
+      final metadataName = user.userMetadata?['name']?.toString();
+      final dbName = row?['name']?.toString();
+      if (!mounted) return;
+      setState(() {
+        profileImageUrl = (url == null || url.isEmpty) ? null : url;
+        profileName = (dbName != null && dbName.trim().isNotEmpty)
+            ? dbName.trim()
+            : ((metadataName != null && metadataName.trim().isNotEmpty)
+                ? metadataName.trim()
+                : 'مستخدم');
+      });
+    } catch (_) {}
+  }
 
   // ============================================================
   // جلب المنشورات من Supabase
   // ============================================================
 
- Future<void> _restoreRecentFeed() async {
-  final watch = Stopwatch()..start();
-  final userId = Supabase.instance.client.auth.currentUser?.id;
-  if (userId == null) return;
-  final cached = await FeedSnapshotService.read(userId);
-  if (cached.isEmpty || !mounted || _networkFeedShown || posts.isNotEmpty ||
-      Supabase.instance.client.auth.currentUser?.id != userId) return;
-  setState(() {
-    posts = cached;
-    _isLoading = false;
-  });
-  debugPrint('Zameel home: local posts visible ${watch.elapsedMilliseconds}ms');
-  // Media widgets resolve only the objects they need. Restoring a local list
-  // must never wait for Storage signing or for any network request.
- }
-
- Future<void> _openFeed() async {
-  await _restoreRecentFeed();
-  if (!mounted) return;
-  await _loadPosts(silent: posts.isNotEmpty);
- }
-
- Future<void> _loadPosts({bool silent = false}) {
-  return _postsPending ??= _fetchPosts(silent: silent).whenComplete(() => _postsPending = null);
- }
-
- Future<void> _fetchPosts({required bool silent}) async {
-  final requestVersion = ++_postsRequestVersion;
-  final db = Supabase.instance.client;
-  final userId = db.auth.currentUser?.id;
-  final watch = Stopwatch()..start();
-  try {
-    final response = await db.from('posts')
-        .select('*, users(name, profile_image, gender, role, university, college, department)')
-        .order('created_at', ascending: false).limit(30)
-        .timeout(const Duration(seconds: 15));
-    if (!mounted || requestVersion != _postsRequestVersion ||
-        db.auth.currentUser?.id != userId) return;
-    final loaded = List<Map<String, dynamic>>.from(response);
-    final previous = {for (final row in posts) row['id']: row};
-    for (final row in loaded) {
-      final old = previous[row['id']];
-      if (old != null) {
-        row['liked'] = old['liked'] == true;
-        row['isSaved'] = old['isSaved'] == true;
-      }
-    }
-    // Text, author and media placeholders are usable as soon as the query
-    // arrives. A slow signed object can no longer hold every post hostage.
+  Future<void> _restoreRecentFeed() async {
+    final watch = Stopwatch()..start();
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) return;
+    final cached = await FeedSnapshotService.read(userId);
+    if (cached.isEmpty ||
+        !mounted ||
+        _networkFeedShown ||
+        posts.isNotEmpty ||
+        Supabase.instance.client.auth.currentUser?.id != userId) return;
     setState(() {
-      _networkFeedShown = true;
-      posts = _diversifyFeed(loaded);
+      posts = cached;
       _isLoading = false;
     });
-    debugPrint('Zameel home: ${silent ? 'refresh' : 'initial'} posts query + render ${watch.elapsedMilliseconds}ms');
-    final snapshot = userId == null ? Future<void>.value()
-        : FeedSnapshotService.save(userId, loaded);
-    if (userId != null && loaded.isNotEmpty) {
-      try {
-        final ids = loaded.map((row) => row['id'].toString()).toList();
-        final results = await Future.wait([
-          db.from('likes').select('post_id').eq('user_id', userId).inFilter('post_id', ids),
-          db.from('saved_posts').select('post_id').eq('user_id', userId).inFilter('post_id', ids),
-        ]).timeout(const Duration(seconds: 12));
-        if (!mounted || requestVersion != _postsRequestVersion ||
-            db.auth.currentUser?.id != userId) return;
-        final liked = results[0].map((row) => row['post_id']).toSet();
-        final saved = results[1].map((row) => row['post_id']).toSet();
-        setState(() {
-          for (final row in loaded) {
-            row['liked'] = liked.contains(row['id']);
-            row['isSaved'] = saved.contains(row['id']);
-          }
-        });
-        await snapshot;
-        if (db.auth.currentUser?.id == userId) {
-          unawaited(FeedSnapshotService.save(userId, loaded));
+    debugPrint(
+        'Zameel home: local posts visible ${watch.elapsedMilliseconds}ms');
+    // Media widgets resolve only the objects they need. Restoring a local list
+    // must never wait for Storage signing or for any network request.
+  }
+
+  Future<void> _openFeed() async {
+    await _restoreRecentFeed();
+    if (!mounted) return;
+    await _loadPosts(silent: posts.isNotEmpty);
+  }
+
+  Future<void> _loadPosts({bool silent = false}) {
+    unawaited(_loadPromotions());
+    return _postsPending ??=
+        _fetchPosts(silent: silent).whenComplete(() => _postsPending = null);
+  }
+
+  Future<void> _fetchPosts({required bool silent}) async {
+    final requestVersion = ++_postsRequestVersion;
+    final db = Supabase.instance.client;
+    final userId = db.auth.currentUser?.id;
+    final watch = Stopwatch()..start();
+    try {
+      final response = await db
+          .from('posts')
+          .select(
+              '*, users(name, profile_image, gender, role, university, college, department)')
+          .order('created_at', ascending: false)
+          .limit(30)
+          .timeout(const Duration(seconds: 15));
+      if (!mounted ||
+          requestVersion != _postsRequestVersion ||
+          db.auth.currentUser?.id != userId) return;
+      final loaded = List<Map<String, dynamic>>.from(response);
+      final previous = {for (final row in posts) row['id']: row};
+      for (final row in loaded) {
+        final old = previous[row['id']];
+        if (old != null) {
+          row['liked'] = old['liked'] == true;
+          row['isSaved'] = old['isSaved'] == true;
         }
-      } catch (_) {}
-    }
-  } catch (error) {
-    debugPrint('Post refresh unavailable; retaining local preview: $error');
-  } finally {
-    if (mounted && requestVersion == _postsRequestVersion) {
-      setState(() => _isLoading = false);
-    }
-  }
- }
-
-List<Map<String, dynamic>> _diversifyFeed(
-    List<Map<String, dynamic>> source) {
-  // Preserve the relevance/recency order returned by the backend. Gender is
-  // deliberately not used as a ranking signal anywhere in the home feed.
-  return List<Map<String, dynamic>>.from(source);
-}
-
-Future<void> _createUserIfNotExists() async {
-  try {
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) return;
-
-    final response = await Supabase.instance.client
-        .from('users')
-        .select('id,name,university,college,department,profile_image,account_privacy,default_post_audience,allow_messages,allow_calls,notifications_enabled,gender,role,created_at,updated_at')
-        .eq('id', user.id)
-        .maybeSingle();
-
-    if (response == null) {
-      final newUser = {
-        'id': user.id,
-        'name': user.userMetadata?['name'] ?? 'مستخدم',
-        'email': user.email,
-        'university': '',
-        'college': '',
-        'department': '',
-        'profile_image': null,
-        'account_privacy': 'public',
-        'default_post_audience': 'public',
-        'allow_messages': true,
-        'allow_calls': true,
-        'notifications_enabled': true,
-        'gender': null,
-        'created_at': DateTime.now().toIso8601String(),
-      };
-
-      await Supabase.instance.client
-          .from('users')
-          .insert(newUser);
-
-      print('✅ تم إنشاء المستخدم في قاعدة البيانات');
-    } else {
-      final audience = response['default_post_audience']?.toString();
-      if (audience == 'public' || audience == 'friends' || audience == 'private') {
-        _postAudience = audience!;
       }
-      print('✅ المستخدم موجود بالفعل');
+      // Text, author and media placeholders are usable as soon as the query
+      // arrives. A slow signed object can no longer hold every post hostage.
+      setState(() {
+        _networkFeedShown = true;
+        posts = _diversifyFeed(loaded);
+        _isLoading = false;
+      });
+      debugPrint(
+          'Zameel home: ${silent ? 'refresh' : 'initial'} posts query + render ${watch.elapsedMilliseconds}ms');
+      final snapshot = userId == null
+          ? Future<void>.value()
+          : FeedSnapshotService.save(userId, loaded);
+      if (userId != null && loaded.isNotEmpty) {
+        try {
+          final ids = loaded.map((row) => row['id'].toString()).toList();
+          final results = await Future.wait([
+            db
+                .from('likes')
+                .select('post_id')
+                .eq('user_id', userId)
+                .inFilter('post_id', ids),
+            db
+                .from('saved_posts')
+                .select('post_id')
+                .eq('user_id', userId)
+                .inFilter('post_id', ids),
+          ]).timeout(const Duration(seconds: 12));
+          if (!mounted ||
+              requestVersion != _postsRequestVersion ||
+              db.auth.currentUser?.id != userId) return;
+          final liked = results[0].map((row) => row['post_id']).toSet();
+          final saved = results[1].map((row) => row['post_id']).toSet();
+          setState(() {
+            for (final row in loaded) {
+              row['liked'] = liked.contains(row['id']);
+              row['isSaved'] = saved.contains(row['id']);
+            }
+          });
+          await snapshot;
+          if (db.auth.currentUser?.id == userId) {
+            unawaited(FeedSnapshotService.save(userId, loaded));
+          }
+        } catch (_) {}
+      }
+    } catch (error) {
+      debugPrint('Post refresh unavailable; retaining local preview: $error');
+    } finally {
+      if (mounted && requestVersion == _postsRequestVersion) {
+        setState(() => _isLoading = false);
+      }
     }
-  } catch (e) {
-    print('❌ خطأ في إنشاء المستخدم: $e');
   }
-}
+
+  List<Map<String, dynamic>> _diversifyFeed(List<Map<String, dynamic>> source) {
+    // Preserve the relevance/recency order returned by the backend. Gender is
+    // deliberately not used as a ranking signal anywhere in the home feed.
+    return List<Map<String, dynamic>>.from(source);
+  }
+
+  Future<void> _createUserIfNotExists() async {
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) return;
+
+      final response = await Supabase.instance.client
+          .from('users')
+          .select(
+              'id,name,university,college,department,profile_image,account_privacy,default_post_audience,allow_messages,allow_calls,notifications_enabled,gender,role,created_at,updated_at')
+          .eq('id', user.id)
+          .maybeSingle();
+
+      if (response == null) {
+        final newUser = {
+          'id': user.id,
+          'name': user.userMetadata?['name'] ?? 'مستخدم',
+          'email': user.email,
+          'university': '',
+          'college': '',
+          'department': '',
+          'profile_image': null,
+          'account_privacy': 'public',
+          'default_post_audience': 'public',
+          'allow_messages': true,
+          'allow_calls': true,
+          'notifications_enabled': true,
+          'gender': null,
+          'created_at': DateTime.now().toIso8601String(),
+        };
+
+        await Supabase.instance.client.from('users').insert(newUser);
+
+        print('✅ تم إنشاء المستخدم في قاعدة البيانات');
+      } else {
+        final audience = response['default_post_audience']?.toString();
+        if (audience == 'public' ||
+            audience == 'friends' ||
+            audience == 'private') {
+          _postAudience = audience!;
+        }
+        print('✅ المستخدم موجود بالفعل');
+      }
+    } catch (e) {
+      print('❌ خطأ في إنشاء المستخدم: $e');
+    }
+  }
 
   // ============================================================
   // إنشاء منشور جديد في Supabase
@@ -802,7 +1043,8 @@ Future<void> _createUserIfNotExists() async {
 
     try {
       if (mounted) {
-        final ar = Provider.of<LanguageProvider>(context, listen: false).isArabic;
+        final ar =
+            Provider.of<LanguageProvider>(context, listen: false).isArabic;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -897,6 +1139,7 @@ Future<void> _createUserIfNotExists() async {
       // حذف المنشور من القائمة المحلية
       setState(() {
         posts.removeWhere((p) => p['id'] == post['id']);
+        _promotedPosts.removeWhere((p) => p['id'] == post['id']);
         final userId = Supabase.instance.client.auth.currentUser?.id;
         if (userId != null) unawaited(FeedSnapshotService.save(userId, posts));
         savedPosts.removeWhere((p) => p['id'] == post['id']);
@@ -926,7 +1169,8 @@ Future<void> _createUserIfNotExists() async {
     BuildContext context,
     Map<String, dynamic> post,
   ) {
-    final isArabic = Provider.of<LanguageProvider>(context, listen: false).isArabic;
+    final isArabic =
+        Provider.of<LanguageProvider>(context, listen: false).isArabic;
     final user = Supabase.instance.client.auth.currentUser;
     final isOwner = post['user_id'] == user?.id;
     final isAdminUser = isAdmin;
@@ -953,9 +1197,9 @@ Future<void> _createUserIfNotExists() async {
             content: Text(
               isArabic
                   ? 'هل أنت متأكد من رغبتك في حذف هذا المنشور؟\n\n'
-                    '👤 صاحب المنشور: $ownerName'
+                      '👤 صاحب المنشور: $ownerName'
                   : 'Are you sure you want to delete this post?\n\n'
-                    '👤 Post owner: $ownerName',
+                      '👤 Post owner: $ownerName',
             ),
             actions: [
               TextButton(
@@ -988,9 +1232,10 @@ Future<void> _createUserIfNotExists() async {
   // الإعجاب بمنشور
   // ============================================================
 
-  Future<void> _toggleLike(int index) async {
-    if (index < 0 || index >= posts.length) return;
-    final post = posts[index];
+  Future<void> _toggleLike(int index,
+      {Map<String, dynamic>? postOverride}) async {
+    if (postOverride == null && (index < 0 || index >= posts.length)) return;
+    final post = postOverride ?? posts[index];
     final user = Supabase.instance.client.auth.currentUser;
     final postId = post['id'];
     if (user == null || postId == null) return;
@@ -1001,7 +1246,8 @@ Future<void> _createUserIfNotExists() async {
     // Optimistic UI: the button responds immediately.
     setState(() {
       post['liked'] = !wasLiked;
-      post['likes_count'] = wasLiked ? (oldCount > 0 ? oldCount - 1 : 0) : oldCount + 1;
+      post['likes_count'] =
+          wasLiked ? (oldCount > 0 ? oldCount - 1 : 0) : oldCount + 1;
     });
 
     if (post['is_demo'] == true) return;
@@ -1009,7 +1255,11 @@ Future<void> _createUserIfNotExists() async {
     try {
       final db = Supabase.instance.client;
       if (wasLiked) {
-        await db.from('likes').delete().eq('user_id', user.id).eq('post_id', postId);
+        await db
+            .from('likes')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('post_id', postId);
       } else {
         await db.from('likes').upsert({'user_id': user.id, 'post_id': postId});
       }
@@ -1020,7 +1270,9 @@ Future<void> _createUserIfNotExists() async {
         post['likes_count'] = oldCount;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(FeatureControl.errorMessage(e, 'تعذر تحديث الإعجاب'))),
+        SnackBar(
+            content:
+                Text(FeatureControl.errorMessage(e, 'تعذر تحديث الإعجاب'))),
       );
     }
   }
@@ -1060,12 +1312,10 @@ Future<void> _createUserIfNotExists() async {
           ),
         );
       } else {
-        await Supabase.instance.client
-            .from('saved_posts')
-            .insert({
-              'user_id': user.id,
-              'post_id': post['id'],
-            });
+        await Supabase.instance.client.from('saved_posts').insert({
+          'user_id': user.id,
+          'post_id': post['id'],
+        });
 
         setState(() {
           posts[index]['isSaved'] = true;
@@ -1132,9 +1382,11 @@ Future<void> _createUserIfNotExists() async {
           maxWidth: 1920,
         );
         if (image == null) return;
-        media.add(PickedPostMedia(source: image, byteSize: await image.length()));
+        media.add(
+            PickedPostMedia(source: image, byteSize: await image.length()));
       } else {
-        media.addAll(await PostPublishService.pickMultipleImages(limit: PostPublishService.maxSelectableMedia));
+        media.addAll(await PostPublishService.pickMultipleImages(
+            limit: PostPublishService.maxSelectableMedia));
       }
       if (media.isEmpty) return;
 
@@ -1178,9 +1430,11 @@ Future<void> _createUserIfNotExists() async {
           maxDuration: const Duration(seconds: 45),
         );
         if (video == null) return;
-        media.add(PickedPostMedia(source: video, byteSize: await video.length()));
+        media.add(
+            PickedPostMedia(source: video, byteSize: await video.length()));
       } else {
-        media.addAll(await PostPublishService.pickMultipleVideos(limit: PostPublishService.maxSelectableMedia));
+        media.addAll(await PostPublishService.pickMultipleVideos(
+            limit: PostPublishService.maxSelectableMedia));
       }
       if (media.isEmpty) return;
 
@@ -1191,14 +1445,16 @@ Future<void> _createUserIfNotExists() async {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(FeatureControl.errorMessage(e, 'فشل اختيار/نشر الفيديوهات')),
+          content:
+              Text(FeatureControl.errorMessage(e, 'فشل اختيار/نشر الفيديوهات')),
           backgroundColor: Colors.red,
         ),
       );
     }
   }
 
-  Future<ImageSource?> _chooseMediaSource() => showModalBottomSheet<ImageSource>(
+  Future<ImageSource?> _chooseMediaSource() =>
+      showModalBottomSheet<ImageSource>(
         context: context,
         showDragHandle: true,
         builder: (sheetContext) => SafeArea(
@@ -1223,17 +1479,34 @@ Future<void> _createUserIfNotExists() async {
     return showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
-      builder: (ctx) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
-        ListTile(leading: const Icon(Icons.public_rounded), title: Text(ar ? 'عامة' : 'Public'), subtitle: Text(ar ? 'يراها جميع مستخدمي Zameel' : 'Visible to all Zameel users'), onTap: () => Navigator.pop(ctx, 'public')),
-        ListTile(leading: const Icon(Icons.groups_rounded), title: Text(ar ? 'للزملاء' : 'Colleagues'), subtitle: Text(ar ? 'للأشخاص الذين تتابعهم' : 'Visible to people you follow'), onTap: () => Navigator.pop(ctx, 'friends')),
-        ListTile(leading: const Icon(Icons.lock_rounded), title: Text(ar ? 'لي فقط' : 'Only me'), subtitle: Text(ar ? 'خاص بك فقط' : 'Private to you'), onTap: () => Navigator.pop(ctx, 'private')),
+      builder: (ctx) => SafeArea(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+        ListTile(
+            leading: const Icon(Icons.public_rounded),
+            title: Text(ar ? 'عامة' : 'Public'),
+            subtitle: Text(ar
+                ? 'يراها جميع مستخدمي Zameel'
+                : 'Visible to all Zameel users'),
+            onTap: () => Navigator.pop(ctx, 'public')),
+        ListTile(
+            leading: const Icon(Icons.groups_rounded),
+            title: Text(ar ? 'للزملاء' : 'Colleagues'),
+            subtitle: Text(
+                ar ? 'للأشخاص الذين تتابعهم' : 'Visible to people you follow'),
+            onTap: () => Navigator.pop(ctx, 'friends')),
+        ListTile(
+            leading: const Icon(Icons.lock_rounded),
+            title: Text(ar ? 'لي فقط' : 'Only me'),
+            subtitle: Text(ar ? 'خاص بك فقط' : 'Private to you'),
+            onTap: () => Navigator.pop(ctx, 'private')),
       ])),
     );
   }
 
   void createPost() {
     final controller = TextEditingController();
-    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+    final languageProvider =
+        Provider.of<LanguageProvider>(context, listen: false);
     final selectedMedia = <PickedPostMedia>[];
 
     showDialog(
@@ -1275,15 +1548,21 @@ Future<void> _createUserIfNotExists() async {
                         items: [
                           DropdownMenuItem(
                             value: 'public',
-                            child: Text(languageProvider.isArabic ? '🌍 عامة' : '🌍 Public'),
+                            child: Text(languageProvider.isArabic
+                                ? '🌍 عامة'
+                                : '🌍 Public'),
                           ),
                           DropdownMenuItem(
                             value: 'friends',
-                            child: Text(languageProvider.isArabic ? '👥 الزملاء' : '👥 Colleagues'),
+                            child: Text(languageProvider.isArabic
+                                ? '👥 الزملاء'
+                                : '👥 Colleagues'),
                           ),
                           DropdownMenuItem(
                             value: 'private',
-                            child: Text(languageProvider.isArabic ? '🔒 لي فقط' : '🔒 Only me'),
+                            child: Text(languageProvider.isArabic
+                                ? '🔒 لي فقط'
+                                : '🔒 Only me'),
                           ),
                         ],
                         onChanged: (value) {
@@ -1317,22 +1596,30 @@ Future<void> _createUserIfNotExists() async {
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton.icon(
-                          onPressed: selectedMedia.length >= PostPublishService.maxSelectableMedia
+                          onPressed: selectedMedia.length >=
+                                  PostPublishService.maxSelectableMedia
                               ? null
                               : () async {
-                                  final result = await PostPublishService.pickMultipleMedia(
-                                    limit: PostPublishService.maxSelectableMedia - selectedMedia.length,
+                                  final result = await PostPublishService
+                                      .pickMultipleMedia(
+                                    limit:
+                                        PostPublishService.maxSelectableMedia -
+                                            selectedMedia.length,
                                   );
                                   if (result.isEmpty) return;
 
                                   final existing = selectedMedia
-                                      .map((file) => '${file.name}:${file.path}')
+                                      .map(
+                                          (file) => '${file.name}:${file.path}')
                                       .toSet();
                                   for (final file in result) {
-                                    if (!PostPublishService.isSupportedFile(file)) continue;
+                                    if (!PostPublishService.isSupportedFile(
+                                        file)) continue;
                                     final key = '${file.name}:${file.path}';
                                     if (!existing.add(key)) continue;
-                                    if (selectedMedia.length >= PostPublishService.maxSelectableMedia) break;
+                                    if (selectedMedia.length >=
+                                        PostPublishService.maxSelectableMedia)
+                                      break;
                                     selectedMedia.add(file);
                                   }
                                   setDialogState(() {});
@@ -1359,8 +1646,12 @@ Future<void> _createUserIfNotExists() async {
                             child: ListTile(
                               dense: true,
                               leading: Icon(
-                                video ? Icons.videocam_rounded : Icons.image_rounded,
-                                color: video ? AppTheme.primaryDark : AppTheme.primary,
+                                video
+                                    ? Icons.videocam_rounded
+                                    : Icons.image_rounded,
+                                color: video
+                                    ? AppTheme.primaryDark
+                                    : AppTheme.primary,
                               ),
                               title: Text(
                                 file.name,
@@ -1373,12 +1664,15 @@ Future<void> _createUserIfNotExists() async {
                                   final size = file.lengthSync;
                                   return Text(
                                     '${(size / (1024 * 1024)).toStringAsFixed(1)} MB',
-                                    style: const TextStyle(color: Colors.black54),
+                                    style:
+                                        const TextStyle(color: Colors.black54),
                                   );
                                 },
                               ),
                               trailing: IconButton(
-                                tooltip: languageProvider.isArabic ? 'إزالة' : 'Remove',
+                                tooltip: languageProvider.isArabic
+                                    ? 'إزالة'
+                                    : 'Remove',
                                 icon: const Icon(Icons.close_rounded),
                                 onPressed: () {
                                   selectedMedia.removeAt(index);
@@ -1503,24 +1797,35 @@ Future<void> _createUserIfNotExists() async {
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         child: Row(
                           children: [
-                            _ProfileAvatar(image: profileImage, imageBytes: profileImageBytes, imageUrl: profileImageUrl, radius: 30),
+                            _ProfileAvatar(
+                                image: profileImage,
+                                imageBytes: profileImageBytes,
+                                imageUrl: profileImageUrl,
+                                radius: 30),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    profileName ?? (isArabic ? 'مستخدم' : 'User'),
+                                    profileName ??
+                                        (isArabic ? 'مستخدم' : 'User'),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(color: Colors.white, fontSize: 21, fontWeight: FontWeight.w900),
+                                    style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 21,
+                                        fontWeight: FontWeight.w900),
                                   ),
                                   const SizedBox(height: 4),
-                                  Text(isArabic ? 'الصفحة الشخصية' : 'Profile', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                                  Text(isArabic ? 'الصفحة الشخصية' : 'Profile',
+                                      style: const TextStyle(
+                                          color: Colors.white70, fontSize: 12)),
                                 ],
                               ),
                             ),
-                            const Icon(Icons.chevron_right_rounded, color: Colors.white70),
+                            const Icon(Icons.chevron_right_rounded,
+                                color: Colors.white70),
                           ],
                         ),
                       ),
@@ -1540,111 +1845,149 @@ Future<void> _createUserIfNotExists() async {
               },
               isSelected: currentIndex == 0,
             ),
-            if (FeatureControl.instance.visible('books_market')) _DrawerItem(
-              icon: Icons.menu_book_rounded,
-              title: isArabic ? 'الكتب' : 'Books',
-              onTap: () {
-                FeatureControl.instance.open(context, 'books_market', () => const BooksScreen());
-              },
-            ),
-            if (FeatureControl.instance.visible('direct_chat')) _DrawerItem(
-              icon: Icons.chat_bubble_rounded,
-              title: isArabic ? 'الدردشة' : 'Chat',
-              onTap: () {
-                FeatureControl.instance.open(context, 'direct_chat', () => const ChatScreen());
-              },
-            ),
-            if (FeatureControl.instance.visible('suggested_colleagues')) _DrawerItem(
-              icon: Icons.people_rounded,
-              title: isArabic ? 'زملاء' : 'Colleagues',
-              onTap: () {
-                FeatureControl.instance.open(context, 'suggested_colleagues', () => const FriendsScreen());
-              },
-            ),
-            if (FeatureControl.instance.visible('lamma')) _DrawerItem(
-              icon: Icons.diversity_2_rounded,
-              title: isArabic ? 'لَمّة' : 'Lamma',
-              onTap: () {
-                FeatureControl.instance.open(context, 'lamma', () => const LammaScreen());
-              },
-            ),
-            if (FeatureControl.instance.visible('zameel_radio')) _DrawerItem(
-              icon: Icons.podcasts_rounded,
-              title: isArabic ? 'راديو Zameel' : 'Zameel Radio',
-              onTap: () {
-                FeatureControl.instance.open(context, 'zameel_radio', () => const ZameelRadioScreen());
-              },
-            ),
-            if (FeatureControl.instance.visible('beautiful_college')) _DrawerItem(
-              icon: Icons.photo_camera_back_rounded,
-              title: isArabic ? 'تحدي أجمل كلية' : 'Beautiful College Challenge',
-              onTap: () {
-                FeatureControl.instance.open(context, 'beautiful_college', () => const BeautifulCollegeScreen());
-              },
-            ),
-            if (FeatureControl.instance.visible('campus_world')) _DrawerItem(
-              icon: Icons.map_rounded,
-              title: isArabic ? 'الحرم الجامعي' : 'Campus',
-              onTap: () {
-                FeatureControl.instance.open(context, 'campus_world', () => const CampusScreen());
-              },
-            ),
-            if (FeatureControl.instance.visible('zameel_meet')) _DrawerItem(
-              icon: Icons.video_call_rounded,
-              title: isArabic ? 'اجتمع بالزملاء' : 'Meet',
-              onTap: () {
-                FeatureControl.instance.open(context, 'zameel_meet', () => const MeetScreen());
-              },
-            ),
-            if (FeatureControl.instance.visible('jobs_training')) _DrawerItem(
-              icon: Icons.work_rounded,
-              title: isArabic ? 'وظائف' : 'Jobs',
-              onTap: () {
-                FeatureControl.instance.open(context, 'jobs_training', () => const JobsScreen());
-              },
-            ),
-            if (FeatureControl.instance.visible('university_calendar')) _DrawerItem(
-              icon: Icons.calendar_month_rounded,
-              title: isArabic ? 'تقويم' : 'Calendar',
-              onTap: () {
-                FeatureControl.instance.open(context, 'university_calendar', () => CalendarScreen());
-              },
-            ),
-            if (FeatureControl.instance.visible('polls')) _DrawerItem(
-              icon: Icons.poll_rounded,
-              title: isArabic ? 'استطلاعات' : 'Polls',
-              onTap: () {
-                FeatureControl.instance.open(context, 'polls', () => const PollsScreen());
-              },
-            ),
-            if (FeatureControl.instance.visible('groups')) _DrawerItem(
-              icon: Icons.group_rounded,
-              title: isArabic ? 'مجموعات' : 'Groups',
-              onTap: () {
-                FeatureControl.instance.open(context, 'groups', () => const GroupsScreen());
-              },
-            ),
-            if (FeatureControl.instance.visible('clips')) _DrawerItem(
-              icon: Icons.movie_creation_rounded,
-              title: isArabic ? 'زميل شورتس' : 'Zameel Shorts',
-              onTap: () {
-                FeatureControl.instance.open(context, 'clips', () => ZameelSocialStudio(isArabic: isArabic));
-              },
-            ),
-            if (FeatureControl.instance.visible('zameel_ai')) _DrawerItem(
-              icon: Icons.auto_awesome_rounded,
-              title: isArabic ? 'Zameel AI' : 'Zameel AI',
-              onTap: () {
-                FeatureControl.instance.open(context, 'zameel_ai', () => const AIScreen());
-              },
-            ),
-            if (FeatureControl.instance.visible('business_partners')) _DrawerItem(
-              icon: Icons.business_center_rounded,
-              title: isArabic ? 'شركاء Zameel' : 'Zameel Partners',
-              onTap: () {
-                FeatureControl.instance.open(context, 'business_partners', () => const BusinessScreen());
-              },
-            ),
+            if (FeatureControl.instance.visible('books_market'))
+              _DrawerItem(
+                icon: Icons.menu_book_rounded,
+                title: isArabic ? 'الكتب' : 'Books',
+                onTap: () {
+                  FeatureControl.instance
+                      .open(context, 'books_market', () => const BooksScreen());
+                },
+              ),
+            if (FeatureControl.instance.visible('direct_chat'))
+              _DrawerItem(
+                icon: Icons.chat_bubble_rounded,
+                title: isArabic ? 'الدردشة' : 'Chat',
+                onTap: () {
+                  FeatureControl.instance
+                      .open(context, 'direct_chat', () => const ChatScreen());
+                },
+              ),
+            if (FeatureControl.instance.visible('suggested_colleagues'))
+              _DrawerItem(
+                icon: Icons.people_rounded,
+                title: isArabic ? 'زملاء' : 'Colleagues',
+                onTap: () {
+                  FeatureControl.instance.open(context, 'suggested_colleagues',
+                      () => const FriendsScreen());
+                },
+              ),
+            if (FeatureControl.instance.visible('trust_game'))
+              _DrawerItem(
+                icon: Icons.handshake_outlined,
+                title: isArabic ? 'ثقة أم غدر؟' : 'Trust or Betray?',
+                onTap: () => FeatureControl.instance.open(context, 'trust_game',
+                    () => TrustGameScreen(isArabic: isArabic)),
+              ),
+            if (FeatureControl.instance.visible('lamma'))
+              _DrawerItem(
+                icon: Icons.diversity_2_rounded,
+                title: isArabic ? 'لَمّة' : 'Lamma',
+                onTap: () {
+                  FeatureControl.instance
+                      .open(context, 'lamma', () => const LammaScreen());
+                },
+              ),
+            if (FeatureControl.instance.visible('zameel_radio'))
+              _DrawerItem(
+                icon: Icons.podcasts_rounded,
+                title: isArabic ? 'راديو Zameel' : 'Zameel Radio',
+                onTap: () {
+                  FeatureControl.instance.open(
+                      context, 'zameel_radio', () => const ZameelRadioScreen());
+                },
+              ),
+            if (FeatureControl.instance.visible('beautiful_college'))
+              _DrawerItem(
+                icon: Icons.photo_camera_back_rounded,
+                title:
+                    isArabic ? 'تحدي أجمل كلية' : 'Beautiful College Challenge',
+                onTap: () {
+                  FeatureControl.instance.open(context, 'beautiful_college',
+                      () => const BeautifulCollegeScreen());
+                },
+              ),
+            if (FeatureControl.instance.visible('campus_world'))
+              _DrawerItem(
+                icon: Icons.map_rounded,
+                title: isArabic ? 'الحرم الجامعي' : 'Campus',
+                onTap: () {
+                  FeatureControl.instance.open(
+                      context, 'campus_world', () => const CampusScreen());
+                },
+              ),
+            if (FeatureControl.instance.visible('zameel_meet'))
+              _DrawerItem(
+                icon: Icons.video_call_rounded,
+                title: isArabic ? 'اجتمع بالزملاء' : 'Meet',
+                onTap: () {
+                  FeatureControl.instance
+                      .open(context, 'zameel_meet', () => const MeetScreen());
+                },
+              ),
+            if (FeatureControl.instance.visible('jobs_training'))
+              _DrawerItem(
+                icon: Icons.work_rounded,
+                title: isArabic ? 'وظائف' : 'Jobs',
+                onTap: () {
+                  FeatureControl.instance
+                      .open(context, 'jobs_training', () => const JobsScreen());
+                },
+              ),
+            if (FeatureControl.instance.visible('university_calendar'))
+              _DrawerItem(
+                icon: Icons.calendar_month_rounded,
+                title: isArabic ? 'تقويم' : 'Calendar',
+                onTap: () {
+                  FeatureControl.instance.open(
+                      context, 'university_calendar', () => CalendarScreen());
+                },
+              ),
+            if (FeatureControl.instance.visible('polls'))
+              _DrawerItem(
+                icon: Icons.poll_rounded,
+                title: isArabic ? 'استطلاعات' : 'Polls',
+                onTap: () {
+                  FeatureControl.instance
+                      .open(context, 'polls', () => const PollsScreen());
+                },
+              ),
+            if (FeatureControl.instance.visible('groups'))
+              _DrawerItem(
+                icon: Icons.group_rounded,
+                title: isArabic ? 'مجموعات' : 'Groups',
+                onTap: () {
+                  FeatureControl.instance
+                      .open(context, 'groups', () => const GroupsScreen());
+                },
+              ),
+            if (FeatureControl.instance.visible('clips'))
+              _DrawerItem(
+                icon: Icons.movie_creation_rounded,
+                title: isArabic ? 'زميل شورتس' : 'Zameel Shorts',
+                onTap: () {
+                  FeatureControl.instance.open(context, 'clips',
+                      () => ZameelSocialStudio(isArabic: isArabic));
+                },
+              ),
+            if (FeatureControl.instance.visible('zameel_ai'))
+              _DrawerItem(
+                icon: Icons.auto_awesome_rounded,
+                title: isArabic ? 'Zameel AI' : 'Zameel AI',
+                onTap: () {
+                  FeatureControl.instance
+                      .open(context, 'zameel_ai', () => const AIScreen());
+                },
+              ),
+            if (FeatureControl.instance.visible('business_partners'))
+              _DrawerItem(
+                icon: Icons.business_center_rounded,
+                title: isArabic ? 'شركاء Zameel' : 'Zameel Partners',
+                onTap: () {
+                  FeatureControl.instance.open(context, 'business_partners',
+                      () => const BusinessScreen());
+                },
+              ),
             _DrawerItem(
               icon: Icons.person_rounded,
               title: isArabic ? 'حسابي' : 'Profile',
@@ -1661,7 +2004,8 @@ Future<void> _createUserIfNotExists() async {
               title: isArabic ? 'تخصيص الزر العائم' : 'Customize floating menu',
               onTap: () {
                 Navigator.pop(context);
-                Future<void>.delayed(const Duration(milliseconds: 180), _showArcShortcutCustomizer);
+                Future<void>.delayed(const Duration(milliseconds: 180),
+                    _showArcShortcutCustomizer);
               },
             ),
             const Divider(
@@ -1677,7 +2021,8 @@ Future<void> _createUserIfNotExists() async {
                   context: context,
                   builder: (dialogContext) {
                     return Directionality(
-                      textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+                      textDirection:
+                          isArabic ? TextDirection.rtl : TextDirection.ltr,
                       child: AlertDialog(
                         backgroundColor: Colors.white.withAlpha(230),
                         shape: RoundedRectangleBorder(
@@ -1756,8 +2101,14 @@ Future<void> _createUserIfNotExists() async {
         drawerEdgeDragWidth: 28,
         drawerEnableOpenDragGesture: true,
         appBar: AppBar(
-          backgroundColor: Colors.white, foregroundColor: primaryColor, elevation: 1,
-          leading: Builder(builder: (scaffoldContext) => IconButton(tooltip: isArabic ? 'القائمة' : 'Menu', icon: const Icon(Icons.menu_rounded), onPressed: () => Scaffold.of(scaffoldContext).openDrawer())),
+          backgroundColor: Colors.white,
+          foregroundColor: primaryColor,
+          elevation: 1,
+          leading: Builder(
+              builder: (scaffoldContext) => IconButton(
+                  tooltip: isArabic ? 'القائمة' : 'Menu',
+                  icon: const Icon(Icons.menu_rounded),
+                  onPressed: () => Scaffold.of(scaffoldContext).openDrawer())),
           title: const Text(
             'Zameel',
             maxLines: 1,
@@ -1768,27 +2119,77 @@ Future<void> _createUserIfNotExists() async {
             ),
           ),
           actions: [
-            if (FeatureControl.instance.visible('direct_calls')) IconButton(
-              tooltip: isArabic ? 'اتصال' : 'Call',
-              icon: const Icon(Icons.add_call),
-              onPressed: () => FeatureControl.instance.open(context, 'direct_calls', () => const ContactCallsScreen()),
-            ),
+            if (FeatureControl.instance.visible('direct_calls'))
+              IconButton(
+                tooltip: isArabic ? 'اتصال' : 'Call',
+                icon: const Icon(Icons.add_call),
+                onPressed: () => FeatureControl.instance.open(
+                    context, 'direct_calls', () => const ContactCallsScreen()),
+              ),
             PopupMenuButton<String>(
               tooltip: isArabic ? 'فلترة المنشورات' : 'Filter posts',
-              icon: Badge(isLabelVisible: _feedScope != 'global', smallSize: 8, child: const Icon(Icons.filter_alt_outlined)),
+              icon: Badge(
+                  isLabelVisible: _feedScope != 'global',
+                  smallSize: 8,
+                  child: const Icon(Icons.filter_alt_outlined)),
               initialValue: _feedScope,
               onSelected: _setFeedScope,
               itemBuilder: (_) => [
-                CheckedPopupMenuItem(value: 'global', checked: _feedScope == 'global', child: Text(isArabic ? 'العامة — جميع الطلبة' : 'Global — all students')),
-                CheckedPopupMenuItem(value: 'college', checked: _feedScope == 'college', child: Text(isArabic ? 'الكلية' : 'College')),
-                CheckedPopupMenuItem(value: 'department', checked: _feedScope == 'department', child: Text(isArabic ? 'التخصص' : 'Major')),
+                CheckedPopupMenuItem(
+                    value: 'global',
+                    checked: _feedScope == 'global',
+                    child: Text(
+                        isArabic ? 'العامة — الجميع' : 'Global — everyone')),
+                if (widget.university.name.isNotEmpty)
+                  CheckedPopupMenuItem(
+                      value: 'college',
+                      checked: _feedScope == 'college',
+                      child: Text(isArabic ? 'الكلية' : 'College')),
+                if (widget.university.name.isNotEmpty)
+                  CheckedPopupMenuItem(
+                      value: 'department',
+                      checked: _feedScope == 'department',
+                      child: Text(isArabic ? 'التخصص' : 'Major')),
               ],
             ),
-            if (FeatureControl.instance.visible('global_search')) IconButton(tooltip: isArabic ? 'البحث' : 'Search', icon: const Icon(Icons.search_rounded), onPressed: () => FeatureControl.instance.open(context, 'global_search', () => const SearchScreen())),
-            if (FeatureControl.instance.visible('notifications_center')) Stack(alignment: Alignment.center, children: [
-              IconButton(tooltip: isArabic ? 'الإشعارات' : 'Notifications', icon: const Icon(Icons.notifications_none_rounded), onPressed: () async { await FeatureControl.instance.open(context, 'notifications_center', () => const NotificationsScreen()); _loadUnreadNotifications(); }),
-              if (_unreadNotifications > 0) Positioned(top: 7, right: 5, child: Container(constraints: const BoxConstraints(minWidth: 16, minHeight: 16), alignment: Alignment.center, padding: const EdgeInsets.symmetric(horizontal: 3), decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle), child: Text(_unreadNotifications > 99 ? '99+' : '$_unreadNotifications', style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)))),
-            ]),
+            if (FeatureControl.instance.visible('global_search'))
+              IconButton(
+                  tooltip: isArabic ? 'البحث' : 'Search',
+                  icon: const Icon(Icons.search_rounded),
+                  onPressed: () => FeatureControl.instance.open(
+                      context, 'global_search', () => const SearchScreen())),
+            if (FeatureControl.instance.visible('notifications_center'))
+              Stack(alignment: Alignment.center, children: [
+                IconButton(
+                    tooltip: isArabic ? 'الإشعارات' : 'Notifications',
+                    icon: const Icon(Icons.notifications_none_rounded),
+                    onPressed: () async {
+                      await FeatureControl.instance.open(
+                          context,
+                          'notifications_center',
+                          () => const NotificationsScreen());
+                      _loadUnreadNotifications();
+                    }),
+                if (_unreadNotifications > 0)
+                  Positioned(
+                      top: 7,
+                      right: 5,
+                      child: Container(
+                          constraints:
+                              const BoxConstraints(minWidth: 16, minHeight: 16),
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.symmetric(horizontal: 3),
+                          decoration: const BoxDecoration(
+                              color: Colors.red, shape: BoxShape.circle),
+                          child: Text(
+                              _unreadNotifications > 99
+                                  ? '99+'
+                                  : '$_unreadNotifications',
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.bold)))),
+              ]),
             const SizedBox(width: 4),
           ],
         ),
@@ -1805,29 +2206,44 @@ Future<void> _createUserIfNotExists() async {
               child: _buildCurrentPage(),
             ),
             Positioned(
-              left: _arcMenuPosition?.dx ?? (isArabic ? 12 : MediaQuery.of(context).size.width - 262),
-              top: _arcMenuPosition?.dy ?? (MediaQuery.of(context).padding.top + 10),
+              left: _arcMenuPosition?.dx ??
+                  (isArabic ? 12 : MediaQuery.of(context).size.width - 262),
+              top: _arcMenuPosition?.dy ??
+                  (MediaQuery.of(context).padding.top + 10),
               child: _ZameelArcMenu(
-                  isArabic: isArabic,
-                  items: _arcShortcutCatalog(isArabic)
-                      .where((item) => _arcShortcutIds.contains(item.id) && FeatureControl.instance.visible(_featureForShortcut(item.id)))
-                      .toList()
-                    ..sort((a, b) => _arcShortcutIds.indexOf(a.id).compareTo(_arcShortcutIds.indexOf(b.id))),
-                  onDrag: _moveArcMenu,
-                  onCustomize: _showArcShortcutCustomizer,
-                ),
+                isArabic: isArabic,
+                items: _arcShortcutCatalog(isArabic)
+                    .where((item) =>
+                        _arcShortcutIds.contains(item.id) &&
+                        FeatureControl.instance
+                            .visible(_featureForShortcut(item.id)))
+                    .toList()
+                  ..sort((a, b) => _arcShortcutIds
+                      .indexOf(a.id)
+                      .compareTo(_arcShortcutIds.indexOf(b.id))),
+                onDrag: _moveArcMenu,
+                onCustomize: _showArcShortcutCustomizer,
+              ),
             )
           ],
         ),
-        floatingActionButton: currentIndex == 0 && FeatureControl.instance.visible('feed_posts')
-            ? FloatingActionButton(
-                backgroundColor: primaryColor,
-                foregroundColor: Colors.white,
-                onPressed: () async { if (await FeatureControl.instance.check(context, 'feed_posts') && mounted) createPost(); },
-                child: const Icon(Icons.add_rounded),
-              )
-            : null,
-        bottomNavigationBar: currentIndex == 0 && FeatureControl.instance.visible('clips') ? const ShortsGateway() : null,
+        floatingActionButton:
+            currentIndex == 0 && FeatureControl.instance.visible('feed_posts')
+                ? FloatingActionButton(
+                    backgroundColor: primaryColor,
+                    foregroundColor: Colors.white,
+                    onPressed: () async {
+                      if (await FeatureControl.instance
+                              .check(context, 'feed_posts') &&
+                          mounted) createPost();
+                    },
+                    child: const Icon(Icons.add_rounded),
+                  )
+                : null,
+        bottomNavigationBar:
+            currentIndex == 0 && FeatureControl.instance.visible('clips')
+                ? const ShortsGateway()
+                : null,
       ),
     );
   }
@@ -1835,25 +2251,33 @@ Future<void> _createUserIfNotExists() async {
   Widget _buildCurrentPage() {
     switch (currentIndex) {
       case 0:
-        return FeatureControl.instance.enabled('feed_posts') ? _buildFeed() : const Center(child: Text(FeatureControl.suspendedMessage));
+        return FeatureControl.instance.enabled('feed_posts')
+            ? _buildFeed()
+            : const Center(child: Text(FeatureControl.suspendedMessage));
       case 1:
-        return FeatureControl.instance.page('books_market', const BooksScreen());
+        return FeatureControl.instance
+            .page('books_market', const BooksScreen());
       case 2:
         return FeatureControl.instance.page('direct_chat', const ChatScreen());
       case 3:
-        return FeatureControl.instance.page('suggested_colleagues', const FriendsScreen());
+        return FeatureControl.instance
+            .page('suggested_colleagues', const FriendsScreen());
       case 4:
-        return FeatureControl.instance.page('campus_world', const CampusScreen());
+        return FeatureControl.instance
+            .page('campus_world', const CampusScreen());
       case 5:
         return FeatureControl.instance.page('zameel_meet', const MeetScreen());
       case 6:
-        return FeatureControl.instance.page('jobs_training', const JobsScreen());
+        return FeatureControl.instance
+            .page('jobs_training', const JobsScreen());
       case 7:
-        return FeatureControl.instance.page('university_calendar', CalendarScreen());
+        return FeatureControl.instance
+            .page('university_calendar', CalendarScreen());
       case 8:
         return FeatureControl.instance.page('polls', const PollsScreen());
       case 9:
-        return FeatureControl.instance.page('groups', const PrivateGroupsScreen());
+        return FeatureControl.instance
+            .page('groups', const PrivateGroupsScreen());
       case 10:
         return FeatureControl.instance.page('zameel_ai', const AIScreen());
       case 11:
@@ -1870,15 +2294,24 @@ Future<void> _createUserIfNotExists() async {
     if (post['is_demo'] == true) {
       final text = (post['text_ar'] ?? post['text_en'] ?? '').toString();
       await Clipboard.setData(ClipboardData(text: text));
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم نسخ محتوى المنشور التجريبي ✓')));
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('تم نسخ محتوى المنشور التجريبي ✓')));
       return;
     }
     try {
-      await Supabase.instance.client.from('shared_posts').upsert({'post_id': postId, 'shared_by': user.id});
+      await Supabase.instance.client
+          .from('shared_posts')
+          .upsert({'post_id': postId, 'shared_by': user.id});
       await _loadPosts();
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ تمت مشاركة المنشور على ملفك الشخصي')));
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('✅ تمت مشاركة المنشور على ملفك الشخصي')));
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(FeatureControl.errorMessage(e, 'تعذر مشاركة المنشور'))));
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content:
+                Text(FeatureControl.errorMessage(e, 'تعذر مشاركة المنشور'))));
     }
   }
 
@@ -1887,19 +2320,69 @@ Future<void> _createUserIfNotExists() async {
     if (postId == null) return;
     final ar = Provider.of<LanguageProvider>(context, listen: false).isArabic;
     try {
-      final rows = await Supabase.instance.client.from('likes').select('user_id, created_at, users(name, profile_image)').eq('post_id', postId).order('created_at', ascending: false);
+      final rows = await Supabase.instance.client
+          .from('likes')
+          .select('user_id, created_at, users(name, profile_image)')
+          .eq('post_id', postId)
+          .order('created_at', ascending: false);
       if (!mounted) return;
-      showModalBottomSheet(context: context, showDragHandle: true, builder: (_) => Directionality(textDirection: ar ? TextDirection.rtl : TextDirection.ltr, child: SizedBox(height: 480, child: Column(children: [Padding(padding: const EdgeInsets.all(16), child: Text(ar ? 'الأشخاص الذين أعجبوا بالمنشور' : 'People who liked this post', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800))), Expanded(child: rows.isEmpty ? Center(child: Text(ar ? 'لا توجد إعجابات بعد' : 'No likes yet')) : ListView.builder(itemCount: rows.length, itemBuilder: (_, i) { final u = rows[i]['users']; final name = u is Map ? (u['name']?.toString() ?? 'User') : 'User'; final image = u is Map ? u['profile_image']?.toString() : null; return ListTile(leading: CircleAvatar(backgroundImage: image != null && image.isNotEmpty ? NetworkImage(image) : null, child: image == null || image.isEmpty ? const Icon(Icons.person) : null), title: Text(name, style: const TextStyle(fontWeight: FontWeight.w700))); }))]))));
+      showModalBottomSheet(
+          context: context,
+          showDragHandle: true,
+          builder: (_) => Directionality(
+              textDirection: ar ? TextDirection.rtl : TextDirection.ltr,
+              child: SizedBox(
+                  height: 480,
+                  child: Column(children: [
+                    Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text(
+                            ar
+                                ? 'الأشخاص الذين أعجبوا بالمنشور'
+                                : 'People who liked this post',
+                            style: const TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.w800))),
+                    Expanded(
+                        child: rows.isEmpty
+                            ? Center(
+                                child: Text(ar
+                                    ? 'لا توجد إعجابات بعد'
+                                    : 'No likes yet'))
+                            : ListView.builder(
+                                itemCount: rows.length,
+                                itemBuilder: (_, i) {
+                                  final u = rows[i]['users'];
+                                  final name = u is Map
+                                      ? (u['name']?.toString() ?? 'User')
+                                      : 'User';
+                                  final image = u is Map
+                                      ? u['profile_image']?.toString()
+                                      : null;
+                                  return ListTile(
+                                      leading: CircleAvatar(
+                                          backgroundImage:
+                                              image != null && image.isNotEmpty
+                                                  ? NetworkImage(image)
+                                                  : null,
+                                          child: image == null || image.isEmpty
+                                              ? const Icon(Icons.person)
+                                              : null),
+                                      title: Text(name,
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.w700)));
+                                }))
+                  ]))));
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(FeatureControl.errorMessage(e, 'تعذر تحميل الإعجابات'))));
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content:
+                Text(FeatureControl.errorMessage(e, 'تعذر تحميل الإعجابات'))));
     }
   }
 
   Widget _buildFeed() {
     final languageProvider = Provider.of<LanguageProvider>(context);
     final isArabic = languageProvider.isArabic;
-
-
 
     final visiblePosts = _visiblePosts;
     final scopeLabel = _feedScope == 'college'
@@ -1909,14 +2392,18 @@ Future<void> _createUserIfNotExists() async {
             : (isArabic ? 'المنشورات العامة' : 'Global posts');
     final children = <Widget>[
       if (FeatureControl.instance.visible('stories'))
-        FeatureControl.instance.page('stories', const StoriesWidget(key: ValueKey('home_stories')), embedded: true),
+        FeatureControl.instance.page(
+            'stories', const StoriesWidget(key: ValueKey('home_stories')),
+            embedded: true),
       _buildCreateBox(),
       Padding(
         padding: const EdgeInsets.fromLTRB(14, 8, 14, 2),
         child: Row(children: [
           const Icon(Icons.dynamic_feed_rounded, color: primaryColor),
           const SizedBox(width: 8),
-          Text(scopeLabel, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
+          Text(scopeLabel,
+              style:
+                  const TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
         ]),
       ),
     ];
@@ -1954,8 +2441,18 @@ Future<void> _createUserIfNotExists() async {
     } else {
       for (var postIndex = 0; postIndex < visiblePosts.length; postIndex++) {
         final post = visiblePosts[postIndex];
-        final userData =
-            post['users'] is Map ? Map<String, dynamic>.from(post['users']) : {};
+        if (post['promotion_ends_at'] != null)
+          children.add(Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(children: [
+              const Icon(Icons.campaign_outlined, size: 18),
+              const SizedBox(width: 6),
+              Text(isArabic ? 'منشور مروّج' : 'Promoted post')
+            ]),
+          ));
+        final userData = post['users'] is Map
+            ? Map<String, dynamic>.from(post['users'])
+            : {};
         final isLiked = post['liked'] == true;
         children.add(
           Padding(
@@ -1977,7 +2474,8 @@ Future<void> _createUserIfNotExists() async {
                   'profile_image': userData['profile_image'],
                   'liked': isLiked,
                 },
-                onLike: () => _toggleLike(posts.indexOf(post)),
+                onLike: () =>
+                    _toggleLike(posts.indexOf(post), postOverride: post),
                 savedPosts: savedPosts,
                 isAdmin: isAdmin,
                 postOwnerId: post['user_id']?.toString(),
@@ -1994,21 +2492,26 @@ Future<void> _createUserIfNotExists() async {
             final ad = _advertisements[adIndex];
             children.add(AdvertisementCard(
               key: ValueKey('ad_${ad['id']}'),
-              ad: ad, isArabic: isArabic,
+              ad: ad,
+              isArabic: isArabic,
               onHide: () async {
                 await AdvertisingService.hide(ad['id'].toString());
                 final userId = Supabase.instance.client.auth.currentUser?.id;
-                if (userId != null) await HomeSnapshotService.clear(userId, section: 'ads');
-                if (mounted) setState(() => _advertisements.removeWhere(
-                  (item) => item['id'] == ad['id'],
-                ));
+                if (userId != null)
+                  await HomeSnapshotService.clear(userId, section: 'ads');
+                if (mounted)
+                  setState(() => _advertisements.removeWhere(
+                        (item) => item['id'] == ad['id'],
+                      ));
               },
             ));
           }
         }
         if (postIndex == 4 && visiblePosts.length >= 5) {
           if (FeatureControl.instance.visible('suggested_colleagues')) {
-            children.add(FeatureControl.instance.page('suggested_colleagues', const SuggestedColleaguesSection(), embedded: true));
+            children.add(FeatureControl.instance.page(
+                'suggested_colleagues', const SuggestedColleaguesSection(),
+                embedded: true));
           }
         }
       }
@@ -2041,14 +2544,15 @@ Future<void> _createUserIfNotExists() async {
           bottom: 16,
           child: FloatingActionButton.small(
             heroTag: 'feed_top',
-            onPressed: () => _feedScrollController.animateTo(0, duration: const Duration(milliseconds: 350), curve: Curves.easeOut),
+            onPressed: () => _feedScrollController.animateTo(0,
+                duration: const Duration(milliseconds: 350),
+                curve: Curves.easeOut),
             child: const Icon(Icons.keyboard_arrow_up_rounded),
           ),
         ),
       ],
     );
   }
-
 
   String _formatTime(String? timestamp) {
     if (timestamp == null) return 'الآن';
@@ -2073,7 +2577,6 @@ Future<void> _createUserIfNotExists() async {
       return 'الآن';
     }
   }
-
 
   Future<void> _openCreateMenu() async {
     final languageProvider = Provider.of<LanguageProvider>(
@@ -2116,9 +2619,8 @@ Future<void> _createUserIfNotExists() async {
                   ),
                 ),
                 Align(
-                  alignment: isArabic
-                      ? Alignment.centerRight
-                      : Alignment.centerLeft,
+                  alignment:
+                      isArabic ? Alignment.centerRight : Alignment.centerLeft,
                   child: Text(
                     isArabic
                         ? 'ماذا تريد أن تشارك؟'
@@ -2254,29 +2756,55 @@ Future<void> _createUserIfNotExists() async {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                if (FeatureControl.instance.visible('quiz')) _CreateAction(
-                  icon: Icons.quiz_outlined,
-                  text: languageProvider.isArabic ? 'كويز' : 'Quiz',
-                  onTap: () => FeatureControl.instance.open(context, 'quiz', () => QuizScreen(isArabic: languageProvider.isArabic)),
-                ),
+                if (FeatureControl.instance.visible('trust_game'))
+                  _CreateAction(
+                    icon: Icons.handshake_outlined,
+                    text: languageProvider.isArabic
+                        ? 'ثقة أم غدر؟'
+                        : 'Trust or Betray?',
+                    onTap: () => FeatureControl.instance.open(
+                        context,
+                        'trust_game',
+                        () => TrustGameScreen(
+                            isArabic: languageProvider.isArabic)),
+                  ),
+                if (FeatureControl.instance.visible('quiz'))
+                  _CreateAction(
+                    icon: Icons.quiz_outlined,
+                    text: languageProvider.isArabic ? 'كويز' : 'Quiz',
+                    onTap: () => FeatureControl.instance.open(context, 'quiz',
+                        () => QuizScreen(isArabic: languageProvider.isArabic)),
+                  ),
                 const SizedBox(width: 14),
-                if (FeatureControl.instance.visible('lamma')) _CreateAction(
-                  icon: Icons.groups_rounded,
-                  text: languageProvider.isArabic ? 'لَمّة' : 'Lamma',
-                  onTap: () => FeatureControl.instance.open(context, 'lamma', () => const LammaScreen()),
-                ),
+                if (FeatureControl.instance.visible('lamma'))
+                  _CreateAction(
+                    icon: Icons.groups_rounded,
+                    text: languageProvider.isArabic ? 'لَمّة' : 'Lamma',
+                    onTap: () => FeatureControl.instance
+                        .open(context, 'lamma', () => const LammaScreen()),
+                  ),
                 const SizedBox(width: 14),
-                if (FeatureControl.instance.visible('zameel_radio')) _CreateAction(
-                  icon: Icons.podcasts_rounded,
-                  text: languageProvider.isArabic ? 'راديو زميل' : 'Zameel Radio',
-                  onTap: () => FeatureControl.instance.open(context, 'zameel_radio', () => const ZameelRadioScreen()),
-                ),
+                if (FeatureControl.instance.visible('zameel_radio'))
+                  _CreateAction(
+                    icon: Icons.podcasts_rounded,
+                    text: languageProvider.isArabic
+                        ? 'راديو زميل'
+                        : 'Zameel Radio',
+                    onTap: () => FeatureControl.instance.open(context,
+                        'zameel_radio', () => const ZameelRadioScreen()),
+                  ),
                 const SizedBox(width: 14),
-                if (FeatureControl.instance.visible('beautiful_college')) _CreateAction(
-                  icon: Icons.photo_camera_back_rounded,
-                  text: languageProvider.isArabic ? 'أجمل كلية' : 'Beautiful College',
-                  onTap: () => FeatureControl.instance.open(context, 'beautiful_college', () => const BeautifulCollegeScreen()),
-                ),
+                if (FeatureControl.instance.visible('beautiful_college'))
+                  _CreateAction(
+                    icon: Icons.photo_camera_back_rounded,
+                    text: languageProvider.isArabic
+                        ? 'أجمل كلية'
+                        : 'Beautiful College',
+                    onTap: () => FeatureControl.instance.open(
+                        context,
+                        'beautiful_college',
+                        () => const BeautifulCollegeScreen()),
+                  ),
               ],
             ),
           ),
@@ -2476,7 +3004,6 @@ Future<void> _createUserIfNotExists() async {
             );
           },
         ),
-
         _ProfileOption(
           icon: Icons.bookmark_border_rounded,
           title: Translations.translate(
@@ -2507,7 +3034,8 @@ Future<void> _createUserIfNotExists() async {
               context: context,
               builder: (dialogContext) {
                 return Directionality(
-                  textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+                  textDirection:
+                      isArabic ? TextDirection.rtl : TextDirection.ltr,
                   child: AlertDialog(
                     backgroundColor: Colors.white.withAlpha(230),
                     shape: RoundedRectangleBorder(

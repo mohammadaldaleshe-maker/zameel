@@ -10,6 +10,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 
 import '../../providers/language_provider.dart';
 import '../../main.dart';
+
 import 'package:zameel/theme/app_theme.dart';
 
 // ============================================================
@@ -53,16 +54,10 @@ class GlassContainer extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            AppTheme.glassFill,
-            AppTheme.glassSoft,
-          ],
+          colors: [AppTheme.glassFill, AppTheme.glassSoft],
         ),
         borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(
-          color: AppTheme.glassBorder,
-          width: 1.5,
-        ),
+        border: Border.all(color: AppTheme.glassBorder, width: 1.5),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withAlpha(25),
@@ -83,18 +78,13 @@ class GlassContainer extends StatelessWidget {
 class ProfilePictureScreen extends StatefulWidget {
   final Map<String, dynamic> userData;
 
-  const ProfilePictureScreen({
-    super.key,
-    required this.userData,
-  });
+  const ProfilePictureScreen({super.key, required this.userData});
 
   @override
-  State<ProfilePictureScreen> createState() =>
-      _ProfilePictureScreenState();
+  State<ProfilePictureScreen> createState() => _ProfilePictureScreenState();
 }
 
-class _ProfilePictureScreenState
-    extends State<ProfilePictureScreen> {
+class _ProfilePictureScreenState extends State<ProfilePictureScreen> {
   XFile? _selectedImage;
   Uint8List? _selectedImageBytes;
 
@@ -144,9 +134,7 @@ class _ProfilePictureScreenState
         textColor: Colors.white,
       );
 
-      debugPrint(
-        'Image picker error: $e',
-      );
+      debugPrint('Image picker error: $e');
     }
   }
 
@@ -173,84 +161,15 @@ class _ProfilePictureScreenState
       final user = supabase.auth.currentUser;
 
       if (user == null) {
-        throw const AuthException(
-          'لم يتم العثور على المستخدم الحالي.',
-        );
+        throw const AuthException('لم يتم العثور على المستخدم الحالي.');
       }
 
       // ========================================================
       // PREPARE FULL NAME
       // ========================================================
 
-      final rawFullName =
-          widget.userData['fullName'];
-
-      final Map<String, dynamic> fullName =
-          rawFullName is Map
-              ? Map<String, dynamic>.from(rawFullName)
-              : <String, dynamic>{};
-
-      final firstName =
-          (fullName['firstName'] ?? '')
-              .toString()
-              .trim();
-
-      final fatherName =
-          (fullName['fatherName'] ?? '')
-              .toString()
-              .trim();
-
-      final familyName =
-          (fullName['familyName'] ?? '')
-              .toString()
-              .trim();
-
-      final displayFormat =
-          (widget.userData['displayNameFormat'] ?? 'first_family').toString();
-      final fullNameText = switch (displayFormat) {
-        'first_father' => '$firstName $fatherName'.trim(),
-        'full_three' => '$firstName $fatherName $familyName'.trim(),
-        _ => '$firstName $familyName'.trim(),
-      };
-
-      // ========================================================
-      // SAVE USER PROFILE
-      // ========================================================
-
-      await supabase.from('users').upsert(
-        {
-          'id': user.id,
-          'email': user.email ??
-              (widget.userData['email'] ?? '')
-                  .toString(),
-          'name': fullNameText,
-          'display_name_format': displayFormat,
-          'onboarding_complete': true,
-          'university':
-              (widget.userData['university'] ?? '')
-                  .toString(),
-          'college':
-              (widget.userData['college'] ?? '')
-                  .toString(),
-          'department':
-              (widget.userData['department'] ?? '')
-                  .toString(),
-          'role':
-              (widget.userData['role'] ?? '').toString() == 'business'
-                  ? 'company'
-                  : (widget.userData['role'] ?? 'student').toString(),
-          'gender':
-              (widget.userData['role'] ?? '').toString() == 'business' ||
-                      (widget.userData['role'] ?? '').toString() == 'company'
-                  ? 'male'
-                  : (widget.userData['gender'] ?? '').toString().trim().isEmpty
-                      ? null
-                      : (widget.userData['gender'] ?? '').toString(),
-        },
-        onConflict: 'id',
-      );
-
-      // ========================================================
+      // Core profile data was saved by zameel_complete_registration.
+      // This optional photo step updates only the image.
       // PROFILE IMAGE
       // ========================================================
       // Store the image under the authenticated user's folder. The Storage
@@ -270,20 +189,19 @@ class _ProfilePictureScreenState
           'webp' => 'image/webp',
           _ => 'image/jpeg',
         };
-        final path = '${user.id}/profile_${DateTime.now().millisecondsSinceEpoch}.$ext';
+        final path =
+            '${user.id}/profile_${DateTime.now().millisecondsSinceEpoch}.$ext';
 
         await supabase.storage.from('profiles').uploadBinary(
-          path,
-          _selectedImageBytes!,
-          fileOptions: FileOptions(
-            contentType: contentType,
-            upsert: false,
-          ),
-        );
+              path,
+              _selectedImageBytes!,
+              fileOptions: FileOptions(contentType: contentType, upsert: false),
+            );
 
         final imageUrl = supabase.storage.from('profiles').getPublicUrl(path);
         await supabase.from('users').update({
-          'profile_image': '$imageUrl?v=${DateTime.now().millisecondsSinceEpoch}',
+          'profile_image':
+              '$imageUrl?v=${DateTime.now().millisecondsSinceEpoch}',
         }).eq('id', user.id);
       }
 
@@ -318,9 +236,7 @@ class _ProfilePictureScreenState
 
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(
-          builder: (_) => const AuthGate(),
-        ),
+        MaterialPageRoute(builder: (_) => const AuthGate()),
         (route) => false,
       );
     } on AuthException catch (e) {
@@ -336,9 +252,7 @@ class _ProfilePictureScreenState
         textColor: Colors.white,
       );
 
-      debugPrint(
-        'Auth error in profile screen: ${e.message}',
-      );
+      debugPrint('Auth error in profile screen: ${e.message}');
     } catch (e) {
       if (!mounted) {
         return;
@@ -352,9 +266,7 @@ class _ProfilePictureScreenState
         textColor: Colors.white,
       );
 
-      debugPrint(
-        'Profile completion error: $e',
-      );
+      debugPrint('Profile completion error: $e');
     } finally {
       if (mounted) {
         setState(() {
@@ -370,142 +282,85 @@ class _ProfilePictureScreenState
 
   @override
   Widget build(BuildContext context) {
-    final languageProvider =
-        Provider.of<LanguageProvider>(
-      context,
-    );
+    final languageProvider = Provider.of<LanguageProvider>(context);
 
-    final isArabic =
-        languageProvider.isArabic;
+    final isArabic = languageProvider.isArabic;
 
     return Directionality(
-      textDirection: isArabic
-          ? ui.TextDirection.rtl
-          : ui.TextDirection.ltr,
+      textDirection: isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
       child: Scaffold(
         body: Container(
-          decoration:
-              const BoxDecoration(
-            gradient:
-                LinearGradient(
-              begin:
-                  Alignment.topLeft,
-              end:
-                  Alignment.bottomRight,
-              colors: [
-                gradientStart,
-                gradientEnd,
-              ],
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [gradientStart, gradientEnd],
             ),
           ),
           child: SafeArea(
             child: Padding(
-              padding:
-                  const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(20),
               child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const SizedBox(
-                    height: 20,
-                  ),
+                  const SizedBox(height: 20),
 
                   // ==================================================
                   // HEADER
                   // ==================================================
-
                   Text(
                     isArabic
                         ? '📸 أضف صورتك الشخصية'
                         : '📸 Add Your Profile Picture',
-                    style:
-                        GoogleFonts.ibmPlexSansArabic(
-                      color:
-                          Colors.white,
-                      fontSize:
-                          24,
-                      fontWeight:
-                          FontWeight.bold,
+                    style: GoogleFonts.ibmPlexSansArabic(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
                     ),
-                    textAlign:
-                        TextAlign.center,
+                    textAlign: TextAlign.center,
                   ),
 
-                  const SizedBox(
-                    height: 8,
-                  ),
+                  const SizedBox(height: 8),
 
                   Text(
                     isArabic
                         ? 'اختر صورة شخصية لتظهر في ملفك الشخصي'
                         : 'Choose a profile picture to appear on your profile',
-                    style:
-                        const TextStyle(
-                      color:
-                          Colors.white70,
-                      fontSize:
-                          14,
-                    ),
-                    textAlign:
-                        TextAlign.center,
+                    style: const TextStyle(color: Colors.white70, fontSize: 14),
+                    textAlign: TextAlign.center,
                   ),
 
-                  const SizedBox(
-                    height: 40,
-                  ),
+                  const SizedBox(height: 40),
 
                   // ==================================================
                   // PROFILE IMAGE PREVIEW
                   // ==================================================
-
                   GestureDetector(
                     onTap: () {
-                      _showImagePicker(
-                        context,
-                      );
+                      _showImagePicker(context);
                     },
                     child: Stack(
                       children: [
                         Container(
                           width: 150,
                           height: 150,
-                          decoration:
-                              BoxDecoration(
-                            shape:
-                                BoxShape.circle,
-                            border:
-                                Border.all(
-                              color:
-                                  Colors.white,
-                              width: 3,
-                            ),
-                            image:
-                                _selectedImageBytes !=
-                                        null
-                                    ? DecorationImage(
-                                        image:
-                                            MemoryImage(
-                                          _selectedImageBytes!,
-                                        ),
-                                        fit:
-                                            BoxFit.cover,
-                                      )
-                                    : null,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 3),
+                            image: _selectedImageBytes != null
+                                ? DecorationImage(
+                                    image: MemoryImage(_selectedImageBytes!),
+                                    fit: BoxFit.cover,
+                                  )
+                                : null,
                           ),
-                          child:
-                              _selectedImageBytes ==
-                                      null
-                                  ? Icon(
-                                      Icons
-                                          .person_rounded,
-                                      size: 70,
-                                      color: Colors
-                                          .white
-                                          .withAlpha(
-                                        128,
-                                      ),
-                                    )
-                                  : null,
+                          child: _selectedImageBytes == null
+                              ? Icon(
+                                  Icons.person_rounded,
+                                  size: 70,
+                                  color: Colors.white.withAlpha(128),
+                                )
+                              : null,
                         ),
                         Positioned(
                           bottom: 0,
@@ -513,19 +368,13 @@ class _ProfilePictureScreenState
                           child: Container(
                             width: 40,
                             height: 40,
-                            decoration:
-                                const BoxDecoration(
-                              color:
-                                  Colors.white,
-                              shape:
-                                  BoxShape.circle,
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
                             ),
-                            child:
-                                const Icon(
-                              Icons
-                                  .camera_alt_rounded,
-                              color:
-                                  primaryColor,
+                            child: const Icon(
+                              Icons.camera_alt_rounded,
+                              color: primaryColor,
                               size: 20,
                             ),
                           ),
@@ -534,18 +383,14 @@ class _ProfilePictureScreenState
                     ),
                   ),
 
-                  const SizedBox(
-                    height: 16,
-                  ),
+                  const SizedBox(height: 16),
 
                   Text(
                     isArabic
                         ? '👆 اضغط لتغيير الصورة'
                         : '👆 Tap to change picture',
-                    style:
-                        TextStyle(
-                      color: Colors.white
-                          .withAlpha(179),
+                    style: TextStyle(
+                      color: Colors.white.withAlpha(179),
                       fontSize: 13,
                     ),
                   ),
@@ -555,103 +400,64 @@ class _ProfilePictureScreenState
                   // ==================================================
                   // START JOURNEY
                   // ==================================================
-
                   SizedBox(
-                    width:
-                        double.infinity,
-                    child:
-                        ElevatedButton(
-                      onPressed:
-                          _isLoading
-                              ? null
-                              : _completeRegistration,
-                      style:
-                          ElevatedButton
-                              .styleFrom(
-                        backgroundColor:
-                            Colors.white,
-                        foregroundColor:
-                            primaryColor,
-                        padding:
-                            const EdgeInsets
-                                .symmetric(
-                          vertical: 16,
-                        ),
-                        shape:
-                            RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius
-                                  .circular(
-                            30,
-                          ),
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _completeRegistration,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: primaryColor,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
                         ),
                       ),
                       child: _isLoading
                           ? const SizedBox(
                               height: 20,
                               width: 20,
-                              child:
-                                  CircularProgressIndicator(
-                                color:
-                                    primaryColor,
-                                strokeWidth:
-                                    2,
+                              child: CircularProgressIndicator(
+                                color: primaryColor,
+                                strokeWidth: 2,
                               ),
                             )
                           : Text(
                               isArabic
                                   ? '🚀 ابدأ رحلتك'
                                   : '🚀 Start Your Journey',
-                              style:
-                                  const TextStyle(
-                                fontSize:
-                                    18,
-                                fontWeight:
-                                    FontWeight.bold,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                     ),
                   ),
 
-                  const SizedBox(
-                    height: 12,
-                  ),
+                  const SizedBox(height: 12),
 
                   // ==================================================
                   // SKIP
                   // ==================================================
-
                   TextButton(
-                    onPressed:
-                        _isLoading
-                            ? null
-                            : () async {
-                                setState(
-                                  () {
-                                    _isSkipped =
-                                        true;
-                                  },
-                                );
+                    onPressed: _isLoading
+                        ? null
+                        : () async {
+                            setState(() {
+                              _isSkipped = true;
+                            });
 
-                                await _completeRegistration();
-                              },
+                            await _completeRegistration();
+                          },
                     child: Text(
-                      isArabic
-                          ? '⏭ تخطي هذه الخطوة'
-                          : '⏭ Skip this step',
-                      style:
-                          const TextStyle(
-                        color:
-                            Colors.white70,
-                        fontSize:
-                            14,
+                      isArabic ? '⏭ تخطي هذه الخطوة' : '⏭ Skip this step',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
                       ),
                     ),
                   ),
 
-                  const SizedBox(
-                    height: 10,
-                  ),
+                  const SizedBox(height: 10),
                 ],
               ),
             ),
@@ -665,98 +471,57 @@ class _ProfilePictureScreenState
   // IMAGE PICKER
   // ============================================================
 
-  void _showImagePicker(
-    BuildContext context,
-  ) {
-    final isArabic =
-        Provider.of<LanguageProvider>(
+  void _showImagePicker(BuildContext context) {
+    final isArabic = Provider.of<LanguageProvider>(
       context,
       listen: false,
     ).isArabic;
 
     showModalBottomSheet(
       context: context,
-      shape:
-          const RoundedRectangleBorder(
-        borderRadius:
-            BorderRadius.vertical(
-          top:
-              Radius.circular(20),
-        ),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
         return Directionality(
-          textDirection: isArabic
-              ? ui.TextDirection.rtl
-              : ui.TextDirection.ltr,
+          textDirection: isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
           child: Container(
-            padding:
-                const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(20),
             child: Column(
-              mainAxisSize:
-                  MainAxisSize.min,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  isArabic
-                      ? 'اختر مصدر الصورة'
-                      : 'Choose image source',
-                  style:
-                      const TextStyle(
+                  isArabic ? 'اختر مصدر الصورة' : 'Choose image source',
+                  style: const TextStyle(
                     fontSize: 18,
-                    fontWeight:
-                        FontWeight.bold,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-
-                const SizedBox(
-                  height: 20,
-                ),
-
+                const SizedBox(height: 20),
                 Row(
-                  mainAxisAlignment:
-                      MainAxisAlignment
-                          .spaceAround,
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     _ImageSourceButton(
-                      icon:
-                          Icons.photo_library_rounded,
-                      label: isArabic
-                          ? 'المعرض'
-                          : 'Gallery',
+                      icon: Icons.photo_library_rounded,
+                      label: isArabic ? 'المعرض' : 'Gallery',
                       onTap: () {
-                        Navigator.pop(
-                          context,
-                        );
+                        Navigator.pop(context);
 
-                        _pickImage(
-                          ImageSource
-                              .gallery,
-                        );
+                        _pickImage(ImageSource.gallery);
                       },
                     ),
                     _ImageSourceButton(
-                      icon:
-                          Icons.camera_alt_rounded,
-                      label: isArabic
-                          ? 'الكاميرا'
-                          : 'Camera',
+                      icon: Icons.camera_alt_rounded,
+                      label: isArabic ? 'الكاميرا' : 'Camera',
                       onTap: () {
-                        Navigator.pop(
-                          context,
-                        );
+                        Navigator.pop(context);
 
-                        _pickImage(
-                          ImageSource
-                              .camera,
-                        );
+                        _pickImage(ImageSource.camera);
                       },
                     ),
                   ],
                 ),
-
-                const SizedBox(
-                  height: 10,
-                ),
+                const SizedBox(height: 10),
               ],
             ),
           ),
@@ -770,8 +535,7 @@ class _ProfilePictureScreenState
 // IMAGE SOURCE BUTTON
 // ============================================================
 
-class _ImageSourceButton
-    extends StatelessWidget {
+class _ImageSourceButton extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
@@ -783,45 +547,24 @@ class _ImageSourceButton
   });
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
+  Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 100,
         height: 80,
-        decoration:
-            BoxDecoration(
-          color:
-              AppTheme.muted.shade100,
-          borderRadius:
-              BorderRadius.circular(
-            12,
-          ),
+        decoration: BoxDecoration(
+          color: AppTheme.muted.shade100,
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
-          mainAxisAlignment:
-              MainAxisAlignment
-                  .center,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 32,
-              color:
-                  primaryColor,
-            ),
-            const SizedBox(
-              height: 4,
-            ),
+            Icon(icon, size: 32, color: primaryColor),
+            const SizedBox(height: 4),
             Text(
               label,
-              style:
-                  const TextStyle(
-                fontSize: 14,
-                fontWeight:
-                    FontWeight.w500,
-              ),
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
             ),
           ],
         ),

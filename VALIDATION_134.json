@@ -1,0 +1,11 @@
+{
+  "dart_analysis": "No issues found",
+  "admin_tests_passed": 52,
+  "postgres_checks_passed": 80,
+  "admin_browser": "passed with mocked API including promotion approval",
+  "admin_typescript_syntax": "passed",
+  "live_deployment": false,
+  "native_flutter_tests": "not run",
+  "native_builds": "not run",
+  "cron": "not locally executed"
+}

@@ -37,6 +37,8 @@ import 'screens/notifications/notifications_screen.dart';
 import 'screens/search/search_screen.dart';
 
 import 'screens/auth/welcome_screen.dart';
+import 'screens/auth/open_registration_screen.dart';
+import 'screens/trust_game/trust_game_screen.dart';
 
 import 'screens/saved_posts_screen.dart';
 import 'screens/stats_screen.dart';

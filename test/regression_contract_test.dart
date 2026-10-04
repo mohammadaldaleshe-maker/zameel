@@ -38,11 +38,11 @@ void main() {
 
       expect(
         home,
-        contains('media.addAll(await PostPublishService.pickMultipleImages(limit: PostPublishService.maxSelectableMedia))'),
+        matches(RegExp(r'media\.addAll\(\s*await\s+PostPublishService\.pickMultipleImages\(\s*limit:\s*PostPublishService\.maxSelectableMedia\s*,?\s*\)\s*\)')),
       );
       expect(
         home,
-        contains('media.addAll(await PostPublishService.pickMultipleVideos(limit: PostPublishService.maxSelectableMedia))'),
+        matches(RegExp(r'media\.addAll\(\s*await\s+PostPublishService\.pickMultipleVideos\(\s*limit:\s*PostPublishService\.maxSelectableMedia\s*,?\s*\)\s*\)')),
       );
       expect(
         home,

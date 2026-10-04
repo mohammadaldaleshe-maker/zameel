@@ -12,7 +12,8 @@ class ContactVerificationScreen extends StatefulWidget {
   const ContactVerificationScreen({super.key, required this.userData});
 
   @override
-  State<ContactVerificationScreen> createState() => _ContactVerificationScreenState();
+  State<ContactVerificationScreen> createState() =>
+      _ContactVerificationScreenState();
 }
 
 class _ContactVerificationScreenState extends State<ContactVerificationScreen> {
@@ -22,9 +23,12 @@ class _ContactVerificationScreenState extends State<ContactVerificationScreen> {
   int _resendSeconds = 0;
   Timer? _timer;
 
-  String get _method => (widget.userData['verificationMethod'] ?? 'email').toString();
-  String get _email => (widget.userData['email'] ?? '').toString().trim().toLowerCase();
-  String get _phone => _normalizePhone((widget.userData['phone'] ?? '').toString());
+  String get _method =>
+      (widget.userData['verificationMethod'] ?? 'email').toString();
+  String get _email =>
+      (widget.userData['email'] ?? '').toString().trim().toLowerCase();
+  String get _phone =>
+      _normalizePhone((widget.userData['phone'] ?? '').toString());
 
   @override
   void initState() {
@@ -50,20 +54,28 @@ class _ContactVerificationScreenState extends State<ContactVerificationScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(
-        content: Text(text),
-        backgroundColor: success ? Colors.green.shade700 : Colors.red.shade700,
-        behavior: SnackBarBehavior.floating,
-      ));
+      ..showSnackBar(
+        SnackBar(
+          content: Text(text),
+          backgroundColor:
+              success ? Colors.green.shade700 : Colors.red.shade700,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
   }
 
   Future<void> _start({bool resend = false}) async {
     if (_busy || (_sent && !resend)) return;
     setState(() => _busy = true);
     try {
+      final current = Supabase.instance.client.auth.currentUser;
+      if (current != null) {
+        await _finish(current);
+        return;
+      }
       if (resend) {
         await Supabase.instance.client.auth.resend(
-          type: OtpType.signup,
+          type: _method == 'phone' ? OtpType.sms : OtpType.signup,
           email: _method == 'email' ? _email : null,
           phone: _method == 'phone' ? _phone : null,
         );
@@ -81,6 +93,7 @@ class _ContactVerificationScreenState extends State<ContactVerificationScreen> {
         'phone': _phone,
         'role': widget.userData['role'],
         'gender': widget.userData['gender'],
+        'registration': {...widget.userData}..remove('password'),
       };
       AuthResponse response;
       if (_method == 'phone') {
@@ -143,7 +156,7 @@ class _ContactVerificationScreenState extends State<ContactVerificationScreen> {
     setState(() => _busy = true);
     try {
       final response = await Supabase.instance.client.auth.verifyOTP(
-        type: OtpType.signup,
+        type: _method == 'phone' ? OtpType.sms : OtpType.signup,
         token: _code.text.trim(),
         email: _method == 'email' ? _email : null,
         phone: _method == 'phone' ? _phone : null,
@@ -153,99 +166,59 @@ class _ContactVerificationScreenState extends State<ContactVerificationScreen> {
     } on AuthException catch (error) {
       _message(_friendlyError(error.message));
     } catch (_) {
-      _message('تعذر إكمال التسجيل. حاول مرة أخرى.');
+      _message(
+        'تعذر حفظ بيانات التسجيل. يمكنك إعادة المحاولة دون إنشاء حساب جديد.',
+      );
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
-  String _publicName(Map<String, dynamic> names, String format) {
-    final first = (names['firstName'] ?? '').toString().trim();
-    final father = (names['fatherName'] ?? '').toString().trim();
-    final family = (names['familyName'] ?? '').toString().trim();
-    return switch (format) {
-      'first_father' => '$first $father',
-      'full_three' => '$first $father $family',
-      _ => '$first $family',
-    };
-  }
-
-  String _yearCode(String raw) {
-    final value = raw.toLowerCase();
-    if (value.contains('ساد') || value.contains('6')) return 'sixth';
-    if (value.contains('خام') || value.contains('5')) return 'fifth';
-    if (value.contains('رابع') || value.contains('4')) return 'fourth';
-    if (value.contains('ثالث') || value.contains('3')) return 'third';
-    if (value.contains('ثان') || value.contains('2')) return 'second';
-    if (value.contains('دراس') || value.contains('graduate')) return 'graduate';
-    return 'first';
-  }
-
   Future<void> _finish(User user) async {
-    final rawNames = widget.userData['fullName'];
-    final names = rawNames is Map ? Map<String, dynamic>.from(rawNames) : <String, dynamic>{};
-    final format = (widget.userData['displayNameFormat'] ?? 'first_family').toString();
-    final publicName = _publicName(names, format);
-    final role = (widget.userData['role'] ?? 'student').toString() == 'business'
-        ? 'company'
-        : (widget.userData['role'] ?? 'student').toString();
-    final gender = role == 'company' ? 'male' : (widget.userData['gender'] ?? '').toString();
-    final year = _yearCode((widget.userData['academicYear'] ?? '').toString());
-    final supabase = Supabase.instance.client;
-
-    await supabase.from('zameel_registration_profiles').insert({
-      'user_id': user.id,
-      'first_name': (names['firstName'] ?? '').toString().trim(),
-      'father_name': (names['fatherName'] ?? '').toString().trim(),
-      'family_name': (names['familyName'] ?? '').toString().trim(),
-      'display_name_format': format,
-      'phone': _phone,
-      'email': _email,
-      'verification_method': _method,
-      'email_verified': _method == 'email',
-      'phone_verified': _method == 'phone',
-      'university': (widget.userData['university'] ?? '').toString(),
-      'college': (widget.userData['college'] ?? '').toString(),
-      'major': (widget.userData['department'] ?? '').toString(),
-      'academic_year': year,
-      'gender': gender,
-      'onboarding_complete': true,
-    });
-
-    await supabase.from('users').update({
-      'email': _email,
-      'phone': _phone,
-      'name': publicName,
-      'university': (widget.userData['university'] ?? '').toString(),
-      'college': (widget.userData['college'] ?? '').toString(),
-      'department': (widget.userData['department'] ?? '').toString(),
-      'academic_year': year,
-      'display_name_format': format,
-      'onboarding_complete': true,
-      'role': role,
-      'gender': gender,
-    }).eq('id', user.id);
-
+    final raw = widget.userData['fullName'];
+    final names = raw is Map ? raw : <String, dynamic>{};
+    await Supabase.instance.client.rpc(
+      'zameel_complete_registration',
+      params: {
+        'p_data': {
+          'first_name': names['firstName'],
+          'father_name': names['fatherName'],
+          'family_name': names['familyName'],
+          'account_type': widget.userData['accountType'] ?? 'general',
+          'display_name_format':
+              widget.userData['displayNameFormat'] ?? 'first_family',
+          'gender': widget.userData['gender'],
+          'phone': _phone,
+          'email': _email,
+          'verification_method': _method,
+          'university': widget.userData['university'],
+          'college': widget.userData['college'],
+          'major': widget.userData['department'],
+          'academic_degree': widget.userData['academicDegree'],
+          'student_number': widget.userData['studentNumber'],
+        },
+      },
+    );
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(
-        builder: (_) => ProfilePictureScreen(userData: {
-          ...widget.userData,
-          'supabase_user_id': user.id,
-          'email_verified': _method == 'email',
-          'phone_verified': _method == 'phone',
-        }),
+      MaterialPageRoute<void>(
+        builder: (_) => ProfilePictureScreen(
+          userData: {...widget.userData, 'supabase_user_id': user.id},
+        ),
       ),
-      (route) => false,
+      (_) => false,
     );
   }
 
   String _friendlyError(String message) {
     final value = message.toLowerCase();
-    if (value.contains('already')) return 'رقم الهاتف أو البريد مستخدم في حساب آخر.';
-    if (value.contains('rate')) return 'محاولات كثيرة. انتظر قليلًا ثم أعد المحاولة.';
-    if (value.contains('otp') || value.contains('token')) return 'الرمز غير صحيح أو انتهت صلاحيته.';
+    if (value.contains('already'))
+      return 'رقم الهاتف أو البريد مستخدم في حساب آخر.';
+    if (value.contains('rate'))
+      return 'محاولات كثيرة. انتظر قليلًا ثم أعد المحاولة.';
+    if (value.contains('otp') || value.contains('token'))
+      return 'الرمز غير صحيح أو انتهت صلاحيته.';
     return message;
   }
 
@@ -268,10 +241,21 @@ class _ContactVerificationScreenState extends State<ContactVerificationScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(_method == 'phone' ? Icons.sms_rounded : Icons.mark_email_read_rounded,
-                            size: 64, color: AppTheme.primary),
+                        Icon(
+                          _method == 'phone'
+                              ? Icons.sms_rounded
+                              : Icons.mark_email_read_rounded,
+                          size: 64,
+                          color: AppTheme.primary,
+                        ),
                         const SizedBox(height: 16),
-                        const Text('أدخل رمز التحقق', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+                        const Text(
+                          'أدخل رمز التحقق',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
                         const SizedBox(height: 8),
                         Text(target, textDirection: TextDirection.ltr),
                         const SizedBox(height: 20),
@@ -280,19 +264,38 @@ class _ContactVerificationScreenState extends State<ContactVerificationScreen> {
                           keyboardType: TextInputType.number,
                           maxLength: 6,
                           textAlign: TextAlign.center,
-                          decoration: const InputDecoration(labelText: 'رمز من 6 أرقام', border: OutlineInputBorder()),
+                          decoration: const InputDecoration(
+                            labelText: 'رمز من 6 أرقام',
+                            border: OutlineInputBorder(),
+                          ),
                         ),
                         const SizedBox(height: 12),
                         SizedBox(
                           width: double.infinity,
                           child: FilledButton(
                             onPressed: _busy ? null : _verify,
-                            child: _busy ? const SizedBox.square(dimension: 22, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('تأكيد وإكمال التسجيل'),
+                            child: _busy
+                                ? const SizedBox.square(
+                                    dimension: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Text('تأكيد وإكمال التسجيل'),
                           ),
                         ),
                         TextButton(
-                          onPressed: _resendSeconds == 0 && !_busy ? () => _start(resend: true) : null,
-                          child: Text(_resendSeconds == 0 ? 'إعادة إرسال الرمز' : 'إعادة الإرسال بعد $_resendSeconds ثانية'),
+                          onPressed: _resendSeconds == 0 && !_busy
+                              ? () => _start(resend: true)
+                              : null,
+                          child: Text(
+                            _resendSeconds == 0
+                                ? (Supabase.instance.client.auth.currentUser !=
+                                        null
+                                    ? 'إعادة محاولة إكمال التسجيل'
+                                    : 'إعادة إرسال الرمز')
+                                : 'إعادة الإرسال بعد $_resendSeconds ثانية',
+                          ),
                         ),
                       ],
                     ),
