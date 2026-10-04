@@ -1,3 +1,4 @@
+import 'package:zameel/theme/appearance_controller.dart';
 import 'package:flutter/material.dart';
 import '../../services/feature_control.dart';
 import 'package:provider/provider.dart';
@@ -37,7 +38,8 @@ class _GroupsScreenState extends State<GroupsScreen> {
       if (!mounted) return;
       setState(() {
         myGroups = normalized.where((g) => g['isJoined'] == true).toList();
-        discoverGroups = normalized.where((g) => g['isJoined'] != true).toList();
+        discoverGroups =
+            normalized.where((g) => g['isJoined'] != true).toList();
         _loading = false;
       });
     } catch (_) {
@@ -96,7 +98,8 @@ class _GroupsScreenState extends State<GroupsScreen> {
   // ============================================================
 
   void _createGroup() {
-    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+    final languageProvider =
+        Provider.of<LanguageProvider>(context, listen: false);
     final isArabic = languageProvider.isArabic;
 
     final nameController = TextEditingController();
@@ -120,7 +123,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
                 children: [
                   TextField(
                     controller: nameController,
-                    style: const TextStyle(color: Colors.black87),
+                    style: TextStyle(color: AppTheme.adaptiveText),
                     decoration: InputDecoration(
                       labelText: isArabic ? 'اسم المجموعة' : 'Group Name',
                       border: const OutlineInputBorder(),
@@ -135,16 +138,26 @@ class _GroupsScreenState extends State<GroupsScreen> {
                     ),
                     items: isArabic
                         ? const [
-                            DropdownMenuItem(value: 'دفعة', child: Text('📚 دفعة')),
-                            DropdownMenuItem(value: 'نادي', child: Text('🏀 نادي')),
-                            DropdownMenuItem(value: 'تخصص', child: Text('📖 تخصص')),
-                            DropdownMenuItem(value: 'اهتمامات', child: Text('❤️ اهتمامات')),
+                            DropdownMenuItem(
+                                value: 'دفعة', child: Text('📚 دفعة')),
+                            DropdownMenuItem(
+                                value: 'نادي', child: Text('🏀 نادي')),
+                            DropdownMenuItem(
+                                value: 'تخصص', child: Text('📖 تخصص')),
+                            DropdownMenuItem(
+                                value: 'اهتمامات', child: Text('❤️ اهتمامات')),
                           ]
                         : const [
-                            DropdownMenuItem(value: 'Graduation Year', child: Text('📚 Graduation Year')),
-                            DropdownMenuItem(value: 'Club', child: Text('🏀 Club')),
-                            DropdownMenuItem(value: 'Major', child: Text('📖 Major')),
-                            DropdownMenuItem(value: 'Interests', child: Text('❤️ Interests')),
+                            DropdownMenuItem(
+                                value: 'Graduation Year',
+                                child: Text('📚 Graduation Year')),
+                            DropdownMenuItem(
+                                value: 'Club', child: Text('🏀 Club')),
+                            DropdownMenuItem(
+                                value: 'Major', child: Text('📖 Major')),
+                            DropdownMenuItem(
+                                value: 'Interests',
+                                child: Text('❤️ Interests')),
                           ],
                     onChanged: (value) {
                       if (value != null) {
@@ -155,10 +168,12 @@ class _GroupsScreenState extends State<GroupsScreen> {
                   const SizedBox(height: 12),
                   TextField(
                     controller: descriptionController,
-                    style: const TextStyle(color: Colors.black87),
+                    style: TextStyle(color: AppTheme.adaptiveText),
                     maxLines: 3,
                     decoration: InputDecoration(
-                      labelText: isArabic ? 'وصف المجموعة (اختياري)' : 'Group Description (Optional)',
+                      labelText: isArabic
+                          ? 'وصف المجموعة (اختياري)'
+                          : 'Group Description (Optional)',
                       border: const OutlineInputBorder(),
                     ),
                   ),
@@ -193,7 +208,9 @@ class _GroupsScreenState extends State<GroupsScreen> {
                   if (nameController.text.trim().isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text(isArabic ? 'يرجى إدخال اسم المجموعة' : 'Please enter a group name'),
+                        content: Text(isArabic
+                            ? 'يرجى إدخال اسم المجموعة'
+                            : 'Please enter a group name'),
                       ),
                     );
                     return;
@@ -214,14 +231,21 @@ class _GroupsScreenState extends State<GroupsScreen> {
                     if (dialogContext.mounted) Navigator.pop(dialogContext);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text(isArabic ? '✅ تم إنشاء المجموعة بنجاح!' : '✅ Group created successfully!'),
+                        content: Text(isArabic
+                            ? '✅ تم إنشاء المجموعة بنجاح!'
+                            : '✅ Group created successfully!'),
                         backgroundColor: Colors.green,
                       ),
                     );
                   } catch (error) {
                     if (!mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(FeatureControl.errorMessage(error, isArabic ? 'تعذر إنشاء المجموعة' : 'Could not create group'))),
+                      SnackBar(
+                          content: Text(FeatureControl.errorMessage(
+                              error,
+                              isArabic
+                                  ? 'تعذر إنشاء المجموعة'
+                                  : 'Could not create group'))),
                     );
                   }
                 },
@@ -243,10 +267,12 @@ class _GroupsScreenState extends State<GroupsScreen> {
   // ============================================================
 
   Future<void> _joinGroup(Map<String, dynamic> group) async {
-    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+    final languageProvider =
+        Provider.of<LanguageProvider>(context, listen: false);
     final isArabic = languageProvider.isArabic;
     try {
-      final result = await RemainingServices.joinGroup(group['id']?.toString() ?? '');
+      final result =
+          await RemainingServices.joinGroup(group['id']?.toString() ?? '');
       if (!mounted) return;
       await _loadGroups();
       if (!mounted) return;
@@ -269,13 +295,16 @@ class _GroupsScreenState extends State<GroupsScreen> {
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(FeatureControl.errorMessage(error, isArabic ? 'تعذر الانضمام للمجموعة' : 'Could not join group'))),
+        SnackBar(
+            content: Text(FeatureControl.errorMessage(error,
+                isArabic ? 'تعذر الانضمام للمجموعة' : 'Could not join group'))),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
     final isArabic = languageProvider.isArabic;
 
@@ -298,41 +327,45 @@ class _GroupsScreenState extends State<GroupsScreen> {
         body: _loading
             ? const Center(child: CircularProgressIndicator())
             : Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
                 children: [
-                  _GroupTabButton(
-                    text: isArabic ? 'مجموعاتي (${myGroups.length})' : 'My Groups (${myGroups.length})',
-                    isSelected: selectedTab == 0,
-                    onTap: () {
-                      setState(() {
-                        selectedTab = 0;
-                      });
-                    },
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: [
+                        _GroupTabButton(
+                          text: isArabic
+                              ? 'مجموعاتي (${myGroups.length})'
+                              : 'My Groups (${myGroups.length})',
+                          isSelected: selectedTab == 0,
+                          onTap: () {
+                            setState(() {
+                              selectedTab = 0;
+                            });
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        _GroupTabButton(
+                          text: isArabic
+                              ? 'اكتشاف (${discoverGroups.length})'
+                              : 'Discover (${discoverGroups.length})',
+                          isSelected: selectedTab == 1,
+                          onTap: () {
+                            setState(() {
+                              selectedTab = 1;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(width: 8),
-                  _GroupTabButton(
-                    text: isArabic ? 'اكتشاف (${discoverGroups.length})' : 'Discover (${discoverGroups.length})',
-                    isSelected: selectedTab == 1,
-                    onTap: () {
-                      setState(() {
-                        selectedTab = 1;
-                      });
-                    },
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: selectedTab == 0
+                        ? _buildMyGroups()
+                        : _buildDiscoverGroups(),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: selectedTab == 0
-                  ? _buildMyGroups()
-                  : _buildDiscoverGroups(),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -366,7 +399,9 @@ class _GroupsScreenState extends State<GroupsScreen> {
             ),
             const SizedBox(height: 6),
             Text(
-              isArabic ? 'انضم إلى مجموعات أو أنشئ مجموعتك الخاصة' : 'Join groups or create your own',
+              isArabic
+                  ? 'انضم إلى مجموعات أو أنشئ مجموعتك الخاصة'
+                  : 'Join groups or create your own',
               style: const TextStyle(
                 color: AppTheme.muted,
                 fontSize: 14,
@@ -392,13 +427,16 @@ class _GroupsScreenState extends State<GroupsScreen> {
                   group: group,
                   onLeave: () async {
                     try {
-                      await RemainingServices.leaveGroup(group['id']?.toString() ?? '');
+                      await RemainingServices.leaveGroup(
+                          group['id']?.toString() ?? '');
                       if (!mounted) return;
                       await _loadGroups();
                       if (!mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text(isArabic ? '✅ تم مغادرة المجموعة بنجاح' : '✅ Left group successfully'),
+                          content: Text(isArabic
+                              ? '✅ تم مغادرة المجموعة بنجاح'
+                              : '✅ Left group successfully'),
                           backgroundColor: Colors.orange,
                         ),
                       );
@@ -408,8 +446,12 @@ class _GroupsScreenState extends State<GroupsScreen> {
                         SnackBar(
                           content: Text(
                             group['isOwner'] == true
-                                ? (isArabic ? 'مالك المجموعة لا يمكنه المغادرة قبل نقل الملكية' : 'The group owner cannot leave before transferring ownership')
-                                : (isArabic ? 'تعذر مغادرة المجموعة' : 'Could not leave group'),
+                                ? (isArabic
+                                    ? 'مالك المجموعة لا يمكنه المغادرة قبل نقل الملكية'
+                                    : 'The group owner cannot leave before transferring ownership')
+                                : (isArabic
+                                    ? 'تعذر مغادرة المجموعة'
+                                    : 'Could not leave group'),
                           ),
                         ),
                       );
@@ -417,20 +459,26 @@ class _GroupsScreenState extends State<GroupsScreen> {
                   },
                   onDelete: () async {
                     try {
-                      await RemainingServices.deleteGroup(group['id']?.toString() ?? '');
+                      await RemainingServices.deleteGroup(
+                          group['id']?.toString() ?? '');
                       if (!mounted) return;
                       await _loadGroups();
                       if (!mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text(isArabic ? '🗑️ تم حذف المجموعة' : '🗑️ Group deleted'),
+                          content: Text(isArabic
+                              ? '🗑️ تم حذف المجموعة'
+                              : '🗑️ Group deleted'),
                           backgroundColor: Colors.red,
                         ),
                       );
                     } catch (_) {
                       if (!mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(isArabic ? 'تعذر حذف المجموعة' : 'Could not delete group')),
+                        SnackBar(
+                            content: Text(isArabic
+                                ? 'تعذر حذف المجموعة'
+                                : 'Could not delete group')),
                       );
                     }
                   },
@@ -518,6 +566,7 @@ class _GroupTabButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
@@ -526,9 +575,7 @@ class _GroupTabButton extends StatelessWidget {
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
-                color: isSelected
-                    ? AppTheme.primary
-                    : Colors.transparent,
+                color: isSelected ? AppTheme.primary : Colors.transparent,
                 width: 3,
               ),
             ),
@@ -537,11 +584,8 @@ class _GroupTabButton extends StatelessWidget {
             text,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: isSelected
-                  ? AppTheme.primary
-                  : AppTheme.muted.shade600,
-              fontWeight:
-                  isSelected ? FontWeight.bold : FontWeight.normal,
+              color: isSelected ? AppTheme.primary : AppTheme.muted.shade600,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               fontSize: 15,
             ),
           ),
@@ -570,6 +614,7 @@ class _GroupCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
     final isArabic = languageProvider.isArabic;
     final isPrivate = group['isPrivate'] == true;
@@ -584,7 +629,7 @@ class _GroupCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       elevation: 0,
-      color: Colors.white,
+      color: AppTheme.adaptiveSurface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
@@ -619,10 +664,10 @@ class _GroupCard extends StatelessWidget {
                   children: [
                     Text(
                       isArabic ? group['name_ar'] : group['name_en'],
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
-                        color: Colors.black87,
+                        color: AppTheme.adaptiveText,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -693,6 +738,7 @@ class GroupDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
     final isArabic = languageProvider.isArabic;
     final isJoined = group['isJoined'] == true;
@@ -781,7 +827,9 @@ class GroupDetailsScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      isArabic ? group['description_ar'] : group['description_en'],
+                      isArabic
+                          ? group['description_ar']
+                          : group['description_en'],
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 14,
@@ -841,36 +889,38 @@ class GroupDetailsScreen extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => GroupChatScreen(
-                          groupId: group['id']?.toString() ?? '',
-                          groupName: isArabic
-                              ? group['name_ar']?.toString() ?? ''
-                              : group['name_en']?.toString() ?? '',
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => GroupChatScreen(
+                            groupId: group['id']?.toString() ?? '',
+                            groupName: isArabic
+                                ? group['name_ar']?.toString() ?? ''
+                                : group['name_en']?.toString() ?? '',
+                          ),
                         ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
                       ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
                     ),
-                  ),
-                  child: Text(
-                    isArabic ? '💬 الدردشة مع المجموعة' : '💬 Chat with the Group',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                    child: Text(
+                      isArabic
+                          ? '💬 الدردشة مع المجموعة'
+                          : '💬 Chat with the Group',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
                   ),
                 ),
-              ),
 
               const SizedBox(height: 12),
 
@@ -885,7 +935,9 @@ class GroupDetailsScreen extends StatelessWidget {
                   child: Text(
                     isArabic ? '👑 أنت مالك المجموعة' : '👑 You own this group',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryDark),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primaryDark),
                   ),
                 ),
 
@@ -896,18 +948,21 @@ class GroupDetailsScreen extends StatelessWidget {
                   width: double.infinity,
                   child: OutlinedButton.icon(
                     icon: const Icon(Icons.delete_forever_rounded),
-                    label: Text(isArabic ? 'حذف المجموعة نهائيًا' : 'Delete Group'),
+                    label: Text(
+                        isArabic ? 'حذف المجموعة نهائيًا' : 'Delete Group'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.red,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       side: const BorderSide(color: Colors.red),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
                     ),
                     onPressed: () {
                       showDialog(
                         context: context,
                         builder: (dialogContext) => AlertDialog(
-                          title: Text(isArabic ? 'حذف المجموعة' : 'Delete Group'),
+                          title:
+                              Text(isArabic ? 'حذف المجموعة' : 'Delete Group'),
                           content: Text(
                             isArabic
                                 ? 'سيتم حذف المجموعة ورسائلها وعضوياتها نهائيًا. هل تريد المتابعة؟'
@@ -919,7 +974,8 @@ class GroupDetailsScreen extends StatelessWidget {
                               child: Text(isArabic ? 'إلغاء' : 'Cancel'),
                             ),
                             FilledButton(
-                              style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                              style: FilledButton.styleFrom(
+                                  backgroundColor: Colors.red),
                               onPressed: () {
                                 Navigator.pop(dialogContext);
                                 Navigator.pop(context);
@@ -941,65 +997,71 @@ class GroupDetailsScreen extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton(
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (dialogContext) {
-                        return Directionality(
-                          textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
-                          child: AlertDialog(
-                            title: Text(
-                              isArabic ? 'تأكيد المغادرة' : 'Confirm Leave',
-                              style: const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            content: Text(
-                              isArabic
-                                  ? 'هل أنت متأكد من رغبتك في مغادرة مجموعة "${group['name_ar']}"؟'
-                                  : 'Are you sure you want to leave "${group['name_en']}"?',
-                              style: const TextStyle(fontSize: 15, height: 1.5),
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.pop(dialogContext);
-                                },
-                                child: Text(isArabic ? 'إلغاء' : 'Cancel'),
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (dialogContext) {
+                          return Directionality(
+                            textDirection: isArabic
+                                ? TextDirection.rtl
+                                : TextDirection.ltr,
+                            child: AlertDialog(
+                              title: Text(
+                                isArabic ? 'تأكيد المغادرة' : 'Confirm Leave',
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold),
                               ),
-                              ElevatedButton(
-                                onPressed: () {
-                                  Navigator.pop(dialogContext);
-                                  Navigator.pop(context);
-                                  onLeave();
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.red,
-                                  foregroundColor: Colors.white,
+                              content: Text(
+                                isArabic
+                                    ? 'هل أنت متأكد من رغبتك في مغادرة مجموعة "${group['name_ar']}"؟'
+                                    : 'Are you sure you want to leave "${group['name_en']}"?',
+                                style:
+                                    const TextStyle(fontSize: 15, height: 1.5),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(dialogContext);
+                                  },
+                                  child: Text(isArabic ? 'إلغاء' : 'Cancel'),
                                 ),
-                                child: Text(isArabic ? 'تأكيد المغادرة' : 'Confirm Leave'),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    );
-                  },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    Navigator.pop(dialogContext);
+                                    Navigator.pop(context);
+                                    onLeave();
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.red,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  child: Text(isArabic
+                                      ? 'تأكيد المغادرة'
+                                      : 'Confirm Leave'),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      side: const BorderSide(color: Colors.red),
                     ),
-                    side: const BorderSide(color: Colors.red),
-                  ),
-                  child: Text(
-                    isArabic ? 'مغادرة المجموعة' : 'Leave Group',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                    child: Text(
+                      isArabic ? 'مغادرة المجموعة' : 'Leave Group',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
                   ),
                 ),
-              ),
             ],
           ),
         ),
@@ -1025,6 +1087,7 @@ class _InfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(14),
@@ -1045,10 +1108,10 @@ class _InfoCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
-                color: Colors.black87,
+                color: AppTheme.adaptiveText,
               ),
             ),
             Text(

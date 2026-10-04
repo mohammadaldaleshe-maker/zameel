@@ -3,57 +3,58 @@ class Translations {
     'ar': {
       // ===== App =====
       'app_title': 'Zameel',
-      
+
       // ===== Welcome Screen =====
       'welcome_title': 'حياتك الجامعية أصبحت أسهل',
-      'welcome_subtitle': 'مكان واحد تتابع فيه ما يهمك،\nوتتواصل مع مجتمعك الجامعي.',
+      'welcome_subtitle':
+          'مكان واحد تتابع فيه ما يهمك،\nوتتواصل مع مجتمعك الجامعي.',
       'welcome_button': 'ابدأ رحلتك',
-      
+
       // ===== University Screen =====
       'university_title': 'اختر جامعتك',
       'university_search': 'ابحث عن الجامعة...',
       'university_government': 'الجامعات الحكومية',
       'university_private': 'الجامعات الخاصة',
-      
+
       // ===== College Screen =====
       'college_title': 'اختر الكلية',
-      
+
       // ===== Department Screen =====
       'department_title': 'اختر تخصصك',
-      
+
       // ===== Bottom Navigation =====
       'nav_home': 'الرئيسية',
       'nav_books': 'الكتب',
       'nav_chat': 'الدردشة',
       'nav_friends': 'الزملاء',
       'nav_profile': 'حسابي',
-      
+
       // ===== Feed =====
       'feed_welcome': 'مرحباً يا زميل 👋',
       'feed_share': 'شارك شيئاً مع زملائك...',
       'feed_video': 'فيديو',
       'feed_image': 'صورة',
       'feed_book': 'كتاب',
-      
+
       // ===== Create Post =====
       'create_post_title': 'اكتب شيئاً لزملائك',
       'create_post_hint': 'شارك فكرة، سؤال، معلومة أو مساعدة...',
       'create_post_cancel': 'إلغاء',
       'create_post_publish': 'نشر',
-      
+
       // ===== Profile =====
       'profile_student': 'طالب Zameel',
       'profile_change_image': 'تغيير الصورة الشخصية',
       'profile_edit_info': 'تعديل معلومات الحساب',
       'profile_my_books': 'كتبي وملخصاتي',
       'profile_saved': 'المحفوظات',
-      
+
       // ===== Comments =====
       'comments_title': 'التعليقات',
       'comments_close': 'إغلاق',
       'comments_hint': 'اكتب تعليقك...',
       'comments_empty': 'لا توجد تعليقات بعد\nكن أول من يعلق!',
-      
+
       // ===== Friends =====
       'friends_title': 'الزملاء',
       'friends_tab_friends': 'الزملاء',
@@ -64,7 +65,7 @@ class Translations {
       'friends_accept': 'قبول',
       'friends_reject': 'رفض',
       'friends_mutual': 'زميل مشترك',
-      
+
       // ===== Books =====
       'books_title': 'مبادلة الكتب',
       'books_search': 'ابحث عن كتاب، مؤلف، مادة...',
@@ -92,7 +93,7 @@ class Translations {
       'books_confirm': 'تأكيد',
       'books_confirm_message': 'هل أنت متأكد من رغبتك في ',
       'books_confirm_success': '✅ تم إرسال الطلب بنجاح!',
-      
+
       // ===== Stories =====
       'stories_title': 'الحالات',
       'stories_my_story': 'حالتي',
@@ -104,7 +105,7 @@ class Translations {
       'stories_publish': 'نشر',
       'stories_placeholder': 'لا يوجد محتوى',
       'stories_mine': '👋 هذه حالتك',
-      
+
       // ===== Groups =====
       'groups_title': 'المجموعات',
       'groups_my_groups': 'مجموعاتي',
@@ -134,7 +135,7 @@ class Translations {
       'groups_details': 'تفاصيل المجموعة',
       'groups_joined': '✅ تم الانضمام إلى المجموعة!',
       'groups_created': '✅ تم إنشاء المجموعة بنجاح!',
-      
+
       // ===== Graduation Book =====
       'graduation_book': '📖 دفتر الخريج',
       'graduation_public': 'دفتر عام',
@@ -156,57 +157,58 @@ class Translations {
     'en': {
       // ===== App =====
       'app_title': 'Zameel',
-      
+
       // ===== Welcome Screen =====
       'welcome_title': 'Your university life made easier',
-      'welcome_subtitle': 'One place to follow what matters to you,\nand connect with your university community.',
+      'welcome_subtitle':
+          'One place to follow what matters to you,\nand connect with your university community.',
       'welcome_button': 'Start Your Journey',
-      
+
       // ===== University Screen =====
       'university_title': 'Choose Your University',
       'university_search': 'Search for university...',
       'university_government': 'Government Universities',
       'university_private': 'Private Universities',
-      
+
       // ===== College Screen =====
       'college_title': 'Choose Your College',
-      
+
       // ===== Department Screen =====
       'department_title': 'Choose Your Major',
-      
+
       // ===== Bottom Navigation =====
       'nav_home': 'Home',
       'nav_books': 'Books',
       'nav_chat': 'Chat',
       'nav_friends': 'Friends',
       'nav_profile': 'Profile',
-      
+
       // ===== Feed =====
       'feed_welcome': 'Welcome Zameel 👋',
       'feed_share': 'Share something with your friends...',
       'feed_video': 'Video',
       'feed_image': 'Image',
       'feed_book': 'Book',
-      
+
       // ===== Create Post =====
       'create_post_title': 'Write something for your friends',
       'create_post_hint': 'Share an idea, question, information or help...',
       'create_post_cancel': 'Cancel',
       'create_post_publish': 'Publish',
-      
+
       // ===== Profile =====
       'profile_student': 'Student',
       'profile_change_image': 'Change Profile Picture',
       'profile_edit_info': 'Edit Account Information',
       'profile_my_books': 'My Books & Summaries',
       'profile_saved': 'Saved',
-      
+
       // ===== Comments =====
       'comments_title': 'Comments',
       'comments_close': 'Close',
       'comments_hint': 'Write your comment...',
       'comments_empty': 'No comments yet\nBe the first to comment!',
-      
+
       // ===== Friends =====
       'friends_title': 'Friends',
       'friends_tab_friends': 'Friends',
@@ -217,7 +219,7 @@ class Translations {
       'friends_accept': 'Accept',
       'friends_reject': 'Reject',
       'friends_mutual': 'mutual friend',
-      
+
       // ===== Books =====
       'books_title': 'Book Exchange',
       'books_search': 'Search for book, author, subject...',
@@ -245,7 +247,7 @@ class Translations {
       'books_confirm': 'Confirm',
       'books_confirm_message': 'Are you sure you want to ',
       'books_confirm_success': '✅ Request sent successfully!',
-      
+
       // ===== Stories =====
       'stories_title': 'Stories',
       'stories_my_story': 'My Story',
@@ -257,7 +259,7 @@ class Translations {
       'stories_publish': 'Publish',
       'stories_placeholder': 'No content',
       'stories_mine': '👋 This is your story',
-      
+
       // ===== Groups =====
       'groups_title': 'Groups',
       'groups_my_groups': 'My Groups',
@@ -287,7 +289,7 @@ class Translations {
       'groups_details': 'Group Details',
       'groups_joined': '✅ You have joined the group!',
       'groups_created': '✅ Group created successfully!',
-      
+
       // ===== Graduation Book =====
       'graduation_book': '📖 Graduation Book',
       'graduation_public': 'Public Book',
@@ -295,13 +297,15 @@ class Translations {
       'graduation_messages': 'Message',
       'graduation_messages_plural': 'Messages',
       'graduation_no_messages': 'No messages yet',
-      'graduation_no_messages_sub': 'Be the first to write a congratulatory message 🎉',
+      'graduation_no_messages_sub':
+          'Be the first to write a congratulatory message 🎉',
       'graduation_write_hint': 'Write a congratulatory message...',
       'graduation_send': 'Send',
       'graduation_anonymous': 'Anonymous',
       'graduation_with_name': 'With Name',
       'graduation_delete_confirm': 'Delete Message',
-      'graduation_delete_message': 'Are you sure you want to delete this message?',
+      'graduation_delete_message':
+          'Are you sure you want to delete this message?',
       'graduation_delete': 'Delete',
       'graduation_cancel': 'Cancel',
       'graduation_share': '🔗 Graduation Book link copied!',

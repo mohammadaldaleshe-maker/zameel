@@ -1,3 +1,5 @@
+import 'package:zameel/widgets/verified_name.dart';
+import 'package:zameel/theme/appearance_controller.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import '../services/feature_control.dart';
@@ -43,19 +45,27 @@ class _PollsScreenState extends State<PollsScreen> {
   Map<String, dynamic> _pollFromRow(Map<String, dynamic> row) {
     final rawOptions = row['options'];
     final options = rawOptions is List
-        ? rawOptions.whereType<Map>().map((item) => Map<String, dynamic>.from(item)).toList()
+        ? rawOptions
+            .whereType<Map>()
+            .map((item) => Map<String, dynamic>.from(item))
+            .toList()
         : <Map<String, dynamic>>[];
     final choiceId = row['user_choice']?.toString();
-    final choiceIndex = options.indexWhere((option) => option['id']?.toString() == choiceId);
-    final created = DateTime.tryParse(row['created_at']?.toString() ?? '')?.toLocal();
-    final total = options.fold<int>(0, (sum, item) => sum + ((item['votes'] as num?)?.toInt() ?? 0));
+    final choiceIndex =
+        options.indexWhere((option) => option['id']?.toString() == choiceId);
+    final created =
+        DateTime.tryParse(row['created_at']?.toString() ?? '')?.toLocal();
+    final total = options.fold<int>(
+        0, (sum, item) => sum + ((item['votes'] as num?)?.toInt() ?? 0));
     return {
       'id': row['id']?.toString() ?? '',
+      'creator_id': row['creator_id'],
       'question_ar': row['question']?.toString() ?? '',
       'question_en': row['question']?.toString() ?? '',
       'options': options.map((item) => item['text']?.toString() ?? '').toList(),
       'optionIds': options.map((item) => item['id']?.toString() ?? '').toList(),
-      'votes': options.map((item) => (item['votes'] as num?)?.toInt() ?? 0).toList(),
+      'votes':
+          options.map((item) => (item['votes'] as num?)?.toInt() ?? 0).toList(),
       'totalVotes': total,
       'isClosed': row['is_closed'] == true,
       'userVoted': choiceIndex >= 0,
@@ -72,8 +82,10 @@ class _PollsScreenState extends State<PollsScreen> {
     if (date == null) return '';
     final diff = DateTime.now().difference(date);
     if (diff.inMinutes < 1) return ar ? 'الآن' : 'Now';
-    if (diff.inHours < 1) return ar ? 'منذ ${diff.inMinutes} دقيقة' : '${diff.inMinutes}m ago';
-    if (diff.inDays < 1) return ar ? 'منذ ${diff.inHours} ساعة' : '${diff.inHours}h ago';
+    if (diff.inHours < 1)
+      return ar ? 'منذ ${diff.inMinutes} دقيقة' : '${diff.inMinutes}m ago';
+    if (diff.inDays < 1)
+      return ar ? 'منذ ${diff.inHours} ساعة' : '${diff.inHours}h ago';
     return ar ? 'منذ ${diff.inDays} يوم' : '${diff.inDays}d ago';
   }
 
@@ -102,7 +114,9 @@ class _PollsScreenState extends State<PollsScreen> {
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(FeatureControl.errorMessage(error, isArabic ? 'تعذر تسجيل التصويت' : 'Could not record vote'))),
+        SnackBar(
+            content: Text(FeatureControl.errorMessage(error,
+                isArabic ? 'تعذر تسجيل التصويت' : 'Could not record vote'))),
       );
     }
   }
@@ -136,12 +150,16 @@ class _PollsScreenState extends State<PollsScreen> {
       await _loadPolls();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(isArabic ? '🗑️ تم حذف الاستطلاع' : '🗑️ Poll deleted')),
+        SnackBar(
+            content:
+                Text(isArabic ? '🗑️ تم حذف الاستطلاع' : '🗑️ Poll deleted')),
       );
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(isArabic ? 'تعذر حذف الاستطلاع' : 'Could not delete poll')),
+        SnackBar(
+            content: Text(
+                isArabic ? 'تعذر حذف الاستطلاع' : 'Could not delete poll')),
       );
     }
   }
@@ -166,16 +184,20 @@ class _PollsScreenState extends State<PollsScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              ...List.generate(optionControllers.length, (index) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: TextField(
-                      controller: optionControllers[index],
-                      decoration: InputDecoration(
-                        labelText: isArabic ? 'الخيار ${index + 1}' : 'Option ${index + 1}',
-                        border: const OutlineInputBorder(),
-                      ),
-                    ),
-                  )),
+              ...List.generate(
+                  optionControllers.length,
+                  (index) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: TextField(
+                          controller: optionControllers[index],
+                          decoration: InputDecoration(
+                            labelText: isArabic
+                                ? 'الخيار ${index + 1}'
+                                : 'Option ${index + 1}',
+                            border: const OutlineInputBorder(),
+                          ),
+                        ),
+                      )),
             ],
           ),
         ),
@@ -192,7 +214,10 @@ class _PollsScreenState extends State<PollsScreen> {
                   .toList();
               if (question.text.trim().isEmpty || options.length < 2) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(isArabic ? 'أدخل سؤالاً وخيارين على الأقل' : 'Enter a question and at least two options')),
+                  SnackBar(
+                      content: Text(isArabic
+                          ? 'أدخل سؤالاً وخيارين على الأقل'
+                          : 'Enter a question and at least two options')),
                 );
                 return;
               }
@@ -204,7 +229,12 @@ class _PollsScreenState extends State<PollsScreen> {
               } catch (error) {
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(FeatureControl.errorMessage(error, isArabic ? 'تعذر إنشاء الاستطلاع' : 'Could not create poll'))),
+                  SnackBar(
+                      content: Text(FeatureControl.errorMessage(
+                          error,
+                          isArabic
+                              ? 'تعذر إنشاء الاستطلاع'
+                              : 'Could not create poll'))),
                 );
               }
             },
@@ -219,6 +249,7 @@ class _PollsScreenState extends State<PollsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return Directionality(
       textDirection: isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
       child: Scaffold(
@@ -229,7 +260,7 @@ class _PollsScreenState extends State<PollsScreen> {
           ),
           centerTitle: true,
           elevation: 0,
-          backgroundColor: Colors.white,
+          backgroundColor: AppTheme.adaptiveSurface,
           foregroundColor: Colors.black,
           actions: [
             IconButton(
@@ -248,7 +279,10 @@ class _PollsScreenState extends State<PollsScreen> {
                         physics: const AlwaysScrollableScrollPhysics(),
                         children: [
                           const SizedBox(height: 180),
-                          Center(child: Text(isArabic ? 'لا توجد استطلاعات بعد' : 'No polls yet')),
+                          Center(
+                              child: Text(isArabic
+                                  ? 'لا توجد استطلاعات بعد'
+                                  : 'No polls yet')),
                         ],
                       )
                     : ListView.builder(
@@ -291,6 +325,7 @@ class _PollCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final totalVotes = poll['totalVotes'] ?? 0;
     final isClosed = poll['isClosed'] ?? false;
     final userVoted = poll['userVoted'] ?? false;
@@ -300,7 +335,7 @@ class _PollCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.adaptiveSurface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -332,13 +367,17 @@ class _PollCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      isArabic ? poll['createdBy_ar'] : poll['createdBy_en'],
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                    ),
+                    VerifiedName(
+                        userId: poll['creator_id']?.toString(),
+                        child: Text(
+                          isArabic
+                              ? poll['createdBy_ar']
+                              : poll['createdBy_en'],
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        )),
                     Text(
                       isArabic ? poll['time_ar'] : poll['time_en'],
                       style: TextStyle(
@@ -351,7 +390,8 @@ class _PollCard extends StatelessWidget {
               ),
               if (isClosed)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: AppTheme.muted.shade200,
                     borderRadius: BorderRadius.circular(12),
@@ -367,7 +407,8 @@ class _PollCard extends StatelessWidget {
                 ),
               if (userVoted && !isClosed)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.green.withAlpha(25),
                     borderRadius: BorderRadius.circular(12),
@@ -385,7 +426,8 @@ class _PollCard extends StatelessWidget {
                 IconButton(
                   tooltip: isArabic ? 'حذف الاستطلاع' : 'Delete poll',
                   onPressed: onDelete,
-                  icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+                  icon: const Icon(Icons.delete_outline_rounded,
+                      color: Colors.red),
                 ),
             ],
           ),
@@ -423,13 +465,14 @@ class _PollCard extends StatelessWidget {
                         onVote(pollIndex, optionIndex);
                       },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   decoration: BoxDecoration(
                     color: isUserChoice
                         ? AppTheme.primary.withAlpha(25)
                         : (isClosed
                             ? AppTheme.muted.shade100
-                            : AppTheme.background),
+                            : AppTheme.adaptiveBackground),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: isUserChoice
@@ -447,8 +490,12 @@ class _PollCard extends StatelessWidget {
                             child: Text(
                               option,
                               style: TextStyle(
-                                color: isClosed ? AppTheme.muted.shade600 : Colors.black,
-                                fontWeight: isUserChoice ? FontWeight.bold : FontWeight.normal,
+                                color: isClosed
+                                    ? AppTheme.muted.shade600
+                                    : AppTheme.adaptiveText,
+                                fontWeight: isUserChoice
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
                               ),
                             ),
                           ),
@@ -519,7 +566,9 @@ class _PollCard extends StatelessWidget {
                 ),
               if (!isClosed && userVoted)
                 Text(
-                  isArabic ? 'اضغط على خيار آخر لتغيير تصويتك' : 'Tap another option to change your vote',
+                  isArabic
+                      ? 'اضغط على خيار آخر لتغيير تصويتك'
+                      : 'Tap another option to change your vote',
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.green.shade700,

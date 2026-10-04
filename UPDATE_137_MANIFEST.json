@@ -1,0 +1,378 @@
+{
+    "release":  137,
+    "repository":  "APP",
+    "files":  [
+                  {
+                      "path":  "APPLY_UPDATE_137.ps1",
+                      "sha256":  "77abcba72e4c2db40c839ac8cf25bd7bf805a7a33eebe72f72ae2a0415f8c592"
+                  },
+                  {
+                      "path":  "BUILD_AND_DEPLOY_137_AR.md",
+                      "sha256":  "7b7a1f0472c44b8f687f21a21f726ebe9fd9fe8ae1b8f58534c888eb303f0ed0"
+                  },
+                  {
+                      "path":  "VALIDATION_137.json",
+                      "sha256":  "178a5ee48db99f773b00d66abd3ead23cee734ac8b6b28fad532358271623768"
+                  },
+                  {
+                      "path":  "lib/features/arc_menu.dart",
+                      "sha256":  "f9d9335d4361fe3c9610a21f60c00377a9775ad92c6a7d2640a010c4388f747e"
+                  },
+                  {
+                      "path":  "lib/features/auth_app.dart",
+                      "sha256":  "f535ac45a347cade8281f19efa49a48d29d72aa8d5086fbd8761754fa5955d9e"
+                  },
+                  {
+                      "path":  "lib/features/drawer_profile.dart",
+                      "sha256":  "386d8a72d294c942077a5a263ef1a9d7ad9adb1a2261bd9f5cb3414782bc576a"
+                  },
+                  {
+                      "path":  "lib/features/home_feed.dart",
+                      "sha256":  "85502f2fa7c47e31779756d792d8dab92217b77bc4310b94ad4a05c739e5f1a7"
+                  },
+                  {
+                      "path":  "lib/features/posts_media.dart",
+                      "sha256":  "c45ec6564d47c8c07a54d2abd2be5d0c5b16f4b00502b770bff64ef9f0e911fc"
+                  },
+                  {
+                      "path":  "lib/features/university.dart",
+                      "sha256":  "a1c6d7676c833ac636ebe9ac8db8e0497bac92357de82c0fc4d2c7a745a9b480"
+                  },
+                  {
+                      "path":  "lib/firebase_options.dart",
+                      "sha256":  "3986567767ea09427ade56c98bd6fa025fea0866ed5abb289303a028984c45cb"
+                  },
+                  {
+                      "path":  "lib/l10n/translations.dart",
+                      "sha256":  "6c9719ecda7c4f3ad1023e9a7e3b405098edc0065a2742727eb5d731e62d93af"
+                  },
+                  {
+                      "path":  "lib/main.dart",
+                      "sha256":  "fba4f9e1dea8f9039d450a1468555d7102597ea920d879590d926ed0d1f6de47"
+                  },
+                  {
+                      "path":  "lib/providers/language_provider.dart",
+                      "sha256":  "3cdc1624420ffbf23c3fc508f61d4fcd0e1c53874a9fc41d753c0a68985367ac"
+                  },
+                  {
+                      "path":  "lib/providers/user_provider.dart",
+                      "sha256":  "64a7a2d9081ed8df7057670c117ef707ca47484e37900bfe14d4330771c61e37"
+                  },
+                  {
+                      "path":  "lib/screens/ai/ai_screen.dart",
+                      "sha256":  "c0587ab3b764f974bfeac0419410066149bb6afd70129e7d9be4eff67fdc2f69"
+                  },
+                  {
+                      "path":  "lib/screens/anonymous/anonymous_screen.dart",
+                      "sha256":  "bc73f21f5ca52c64e6a8847dea41c74a43493f5d97db2916632ac9fd97e9331d"
+                  },
+                  {
+                      "path":  "lib/screens/anonymous/chat_screen.dart",
+                      "sha256":  "8b6f1327bb56721dfcd176a5ce0d0947213a92d59b3af9685dd4360b2a9530f6"
+                  },
+                  {
+                      "path":  "lib/screens/auth/academic_year_screen.dart",
+                      "sha256":  "64005926d759ae603f3dd17b1cead0048e48f5d828e9c1bd1ad4e8fa69d5191c"
+                  },
+                  {
+                      "path":  "lib/screens/auth/business_type_screen.dart",
+                      "sha256":  "c6cbec36a4a750eaa72c26b3b5f1b6f7a9484761eea902dbd2cd37c0e880a4a6"
+                  },
+                  {
+                      "path":  "lib/screens/auth/email_verification_screen.dart",
+                      "sha256":  "3156b6d5d8405c39d1e59b468bf04436857a2112bd64be33348f631bad5e52df"
+                  },
+                  {
+                      "path":  "lib/screens/auth/faculty_position_screen.dart",
+                      "sha256":  "08d5238dad32cc13c68eb7b9965650ade961c32d32a1808782be5a5f75e2feb8"
+                  },
+                  {
+                      "path":  "lib/screens/auth/login_screen.dart",
+                      "sha256":  "213942946eaba0023c19355ba77b254ad56e3d085bfdfb2bea28acfce5db0dae"
+                  },
+                  {
+                      "path":  "lib/screens/auth/name_entry_screen.dart",
+                      "sha256":  "b2221194220b0f20d23bc73b9ab12928b6ce6827b63084645f2a74edc34346b5"
+                  },
+                  {
+                      "path":  "lib/screens/auth/password_screen.dart",
+                      "sha256":  "4f7eebe1943d3d8a2daef9a603bae2c5155b0f4b5f5494d27917da244a823c5c"
+                  },
+                  {
+                      "path":  "lib/screens/auth/personal_info_screen.dart",
+                      "sha256":  "d4aa6cff324a035b33aa57ac3506a79d80153c5de2121d87b1d51f151c795055"
+                  },
+                  {
+                      "path":  "lib/screens/auth/profile_picture_screen.dart",
+                      "sha256":  "df29fdf050b42a9c6da9feb470cc818dd22efad8f00600060c409aa69a8312a0"
+                  },
+                  {
+                      "path":  "lib/screens/auth/register_screen.dart",
+                      "sha256":  "cc56b031f61fadb823a37822c36818e20767c897b6d383649b3f4601b0ca32a1"
+                  },
+                  {
+                      "path":  "lib/screens/auth/university_selection_screen.dart",
+                      "sha256":  "81cddfb42d752f4aa63e7570416921b5899a8b6cebca32d975866d2a8929893d"
+                  },
+                  {
+                      "path":  "lib/screens/auth/verification_screen.dart",
+                      "sha256":  "a142683244fde0a123f8dc97681bd250779dfec35d1145f995422a33aa84ef9f"
+                  },
+                  {
+                      "path":  "lib/screens/auth/welcome_screen.dart",
+                      "sha256":  "22f16eef7bb10813a6283470ca08eb619b219d71639e23ea1acc1e9c912f507c"
+                  },
+                  {
+                      "path":  "lib/screens/books/books_screen.dart",
+                      "sha256":  "53bb86c2b3fd80ceeabddb439c91c9552ebc04ea4ee5dc16ecfaf411eb8a935a"
+                  },
+                  {
+                      "path":  "lib/screens/books/zameel_library_screen.dart",
+                      "sha256":  "11677016a69924e46e6a96cbf67cd4ea1c94c9a41c8e824f9328665c8beed14e"
+                  },
+                  {
+                      "path":  "lib/screens/business/advertisement_card.dart",
+                      "sha256":  "6c86f73da2e044d8fc3c193aeece10a27056931be1d21bae9c6d4f2561a75f9a"
+                  },
+                  {
+                      "path":  "lib/screens/business/business_screen.dart",
+                      "sha256":  "b434f5d984cba070a2925a38b3e88af13a1ced42bcbdc4d47f88ffdfefb6e55d"
+                  },
+                  {
+                      "path":  "lib/screens/business/partner_ads_screen.dart",
+                      "sha256":  "49b5ebc65e421ff05eef2191c803e1ccd6f2fe15e5efe43a45168bc422dee169"
+                  },
+                  {
+                      "path":  "lib/screens/calendar/calendar_screen.dart",
+                      "sha256":  "91f12b44d416e7f2d817408b2e86a3a25fbf3e77c2f0eff766480c9f32309de7"
+                  },
+                  {
+                      "path":  "lib/screens/calls/incoming_call_screen.dart",
+                      "sha256":  "8c793fbaab5eb320fe49929d1ca7bfd4a8b3f7db789477065dcf6572fbfd5380"
+                  },
+                  {
+                      "path":  "lib/screens/campus/campus_place_admin_screen.dart",
+                      "sha256":  "6ef8d0808b9acac68152aae3129df8ca48bec940a4e9e4049dc7fac1b52c2b17"
+                  },
+                  {
+                      "path":  "lib/screens/chat/chat_screen.dart",
+                      "sha256":  "ee51b69fb33f0acd198ca65754d3f96e523d9767fba4596473a2197c6d64177d"
+                  },
+                  {
+                      "path":  "lib/screens/chat/contact_calls_screen.dart",
+                      "sha256":  "86b6c0d1989d22a2c49c411552386e38ab65eb46f15db1c941ca44816c03f11d"
+                  },
+                  {
+                      "path":  "lib/screens/comments/clip_comments_screen.dart",
+                      "sha256":  "8ba67288e691e6f0e0adfd4172261f97ff55b39544fb44e9afbddb3c4baee386"
+                  },
+                  {
+                      "path":  "lib/screens/comments/comments_screen.dart",
+                      "sha256":  "e4cdf20e652a0e616e12a19546bbe38b7287854c7d92b796dd436298bd49e3c2"
+                  },
+                  {
+                      "path":  "lib/screens/friends/friends_screen.dart",
+                      "sha256":  "adfb6c012c745d26508a49258eee60ba7e572035fac9cadfd9b5ee5fd867907e"
+                  },
+                  {
+                      "path":  "lib/screens/friends/suggested_colleagues_section.dart",
+                      "sha256":  "ff8fba06e0da13b5559a8a0612bb819dd5073b46782074fd7111f8dc1b25e27a"
+                  },
+                  {
+                      "path":  "lib/screens/graduation/graduation_screen.dart",
+                      "sha256":  "4301ae59695944631b5c3ff75ab3e73690bd2adac4af3040c9136b37b7aeeb7a"
+                  },
+                  {
+                      "path":  "lib/screens/groups/group_chat_screen.dart",
+                      "sha256":  "b8783a29ce939375bc307d3b1c5208abee986a02d3e87f8102fe7744ff6a4f86"
+                  },
+                  {
+                      "path":  "lib/screens/groups/groups_screen.dart",
+                      "sha256":  "82bc188cf939bb6939fe68785807c6148c12df61d18b4f7914a139c32d72cd57"
+                  },
+                  {
+                      "path":  "lib/screens/home/zameel_daily_hub.dart",
+                      "sha256":  "5a0a51572f1567dd2443f7408a14b1c969faf58cc8cb5e50f384297e938a861b"
+                  },
+                  {
+                      "path":  "lib/screens/jobs/jobs_screen.dart",
+                      "sha256":  "18b477d7b0a4f70326caa93f74258034d51c6189b3c96473892ea7c004cc36fe"
+                  },
+                  {
+                      "path":  "lib/screens/meet/livekit_meeting_room_screen.dart",
+                      "sha256":  "6d2790ab16796a1c98c3d480ca10700715a3f0645478e7f71348717f74e0f18c"
+                  },
+                  {
+                      "path":  "lib/screens/meet/meet_screen.dart",
+                      "sha256":  "7f68956e39b09a8023c199f3a759ca139f71ca9554967236d05e7fd836f0c2c3"
+                  },
+                  {
+                      "path":  "lib/screens/notifications/notifications_screen.dart",
+                      "sha256":  "87818bb20d17efde0fe5a216978712a058175301bb8f6d6a5bf82b8fbaf691c2"
+                  },
+                  {
+                      "path":  "lib/screens/polls_screen.dart",
+                      "sha256":  "2d767c870b8fe262fe4e6a07a4f2dd2e10d00f7703ce368ab3796a4a4626eedf"
+                  },
+                  {
+                      "path":  "lib/screens/private_groups_screen.dart",
+                      "sha256":  "2536ffa0f854acbdf10b887cca12684247363466e9b321ebdfc873e47b4fa64c"
+                  },
+                  {
+                      "path":  "lib/screens/profile/account_verification_screen.dart",
+                      "sha256":  "46a7bd9fae3ea15a2ff372c437f7e574160d257b469f1425ae97596f3913c61b"
+                  },
+                  {
+                      "path":  "lib/screens/profile/appearance_screen.dart",
+                      "sha256":  "da337072e134cd99292b9a523d4e4d27f5d86d7f2501023f3aa38c3f9de0b394"
+                  },
+                  {
+                      "path":  "lib/screens/profile/profile_photo_screen.dart",
+                      "sha256":  "6e59539f7025e737f1196a1a5738e27093b1cc62abfed3427efa2af1e5b7f331"
+                  },
+                  {
+                      "path":  "lib/screens/profile/profile_screen.dart",
+                      "sha256":  "92293b0027e998748223c5fd5bb8fed882b5187d55dc66b2a1c3085572733570"
+                  },
+                  {
+                      "path":  "lib/screens/profile/profile_settings_screen.dart",
+                      "sha256":  "736fb66db6d2c8ed680d3a90ae4abc71afa79bfd76aff1bdcf18262f0b937e87"
+                  },
+                  {
+                      "path":  "lib/screens/quiz/quiz_screen.dart",
+                      "sha256":  "1e8c86b58845e4a5935be04a2ad72a1450a45baf45820b5491d79756c3e426f9"
+                  },
+                  {
+                      "path":  "lib/screens/saved_posts_screen.dart",
+                      "sha256":  "9c0150ca96b3aad053fdff8dea8b6b7936aaeb32368bf5f74b6f1f061c9ea9b2"
+                  },
+                  {
+                      "path":  "lib/screens/search/search_screen.dart",
+                      "sha256":  "deff0417f3fdff9eb63137a1127c0f42693867985642d2e1a8d3c98f4053b7b4"
+                  },
+                  {
+                      "path":  "lib/screens/social/beautiful_college_screen.dart",
+                      "sha256":  "b1121dfd8d0baa3298cebfbc6cbc1f1b119fd3585209240f7690a7f209eb3a7f"
+                  },
+                  {
+                      "path":  "lib/screens/social/clip_create_screen.dart",
+                      "sha256":  "af2fbe96402946ec92ecf7e22f988f7048f3675eae63eb5483710a9876c3a127"
+                  },
+                  {
+                      "path":  "lib/screens/social/lamma_screen.dart",
+                      "sha256":  "5b20e536dec9bfd785a3c3eb44ee456ea08f4c784c3ab44118fde2ae2c918792"
+                  },
+                  {
+                      "path":  "lib/screens/social/public_clips_strip.dart",
+                      "sha256":  "3579f5c5989e0a757d0b4291e05242674f949cc24c6b75df1556e8e4a2748723"
+                  },
+                  {
+                      "path":  "lib/screens/social/shorts_gateway.dart",
+                      "sha256":  "c65f814bf2dd0638fde9c50229ad23435670e8e4d497eca7da1589cfef4c6e86"
+                  },
+                  {
+                      "path":  "lib/screens/social/zameel_radio_screen.dart",
+                      "sha256":  "bd608805b7d421eb059a7ac7de79d3889463185d3d0d71b8d4de5aeca59e1ee4"
+                  },
+                  {
+                      "path":  "lib/screens/social/zameel_social_studio.dart",
+                      "sha256":  "5d6ec441e6ecc39f312ba4be7ac5e98c4a4a020c75600a87877759e23eae0d3d"
+                  },
+                  {
+                      "path":  "lib/screens/stats_screen.dart",
+                      "sha256":  "0ad46c9c3a9d9e084c941750436cb8a417e632390533060ee0806fa8a23a7aa7"
+                  },
+                  {
+                      "path":  "lib/screens/stories/stories_screen.dart",
+                      "sha256":  "cf80998872448a19f885b0a0a6ddf114702edc72f742fbddf3c4ab628d551459"
+                  },
+                  {
+                      "path":  "lib/screens/trust_game/trust_game_screen.dart",
+                      "sha256":  "99aa9e11def69fdd58b2042e8f0407896351218300ec93e4739f5b01d3b7c5cd"
+                  },
+                  {
+                      "path":  "lib/screens/v2/zameel_v2_hub_screen.dart",
+                      "sha256":  "087dc92e006556596d91a8a49b53d3856392d18ae77682789827d5cb13b94ff9"
+                  },
+                  {
+                      "path":  "lib/services/account_access_monitor.dart",
+                      "sha256":  "c1786618878033be35c192bfac27d614c82f6fa526990f950f2916fb3a6f90cb"
+                  },
+                  {
+                      "path":  "lib/services/advertising_service.dart",
+                      "sha256":  "fbafe60e0d568105a884ae1b8eae032e41893ba149124e2d4093a416bd8e3ee6"
+                  },
+                  {
+                      "path":  "lib/services/zameel_library_service.dart",
+                      "sha256":  "622b3ba36afa2dd29f859699d65529affc80c202a9d4158bd0b35258f7240e23"
+                  },
+                  {
+                      "path":  "lib/services_community_chat.dart",
+                      "sha256":  "ca122967c5da63837629cdbd80b91edd5e099ef1d150fe02e9291fa2e6ab8ca5"
+                  },
+                  {
+                      "path":  "lib/theme/app_theme.dart",
+                      "sha256":  "5b025f0dcb8f25eacd302691f5427faf68e940da814adb19959401cb7ee10b03"
+                  },
+                  {
+                      "path":  "lib/theme/appearance_controller.dart",
+                      "sha256":  "6d3c94535493aff9aaed57317da58d1588dc08192bcf3a6c722c977d90017484"
+                  },
+                  {
+                      "path":  "lib/translations.dart",
+                      "sha256":  "cdf7260a0c87b1eb3b861950b5d8462ed74abe0cbcab4c6e84b7c6042a3a6e7e"
+                  },
+                  {
+                      "path":  "lib/widgets/compact_post.dart",
+                      "sha256":  "06ec11ed2109b97c926dba2f43a86c3d9ca161d4f254ee465be19e79e4460f06"
+                  },
+                  {
+                      "path":  "lib/widgets/post_media_gallery.dart",
+                      "sha256":  "8e7b35d993cba6f442c1a7e0903980cbae0f6b0f519b93739b92159f50264bcf"
+                  },
+                  {
+                      "path":  "lib/widgets/verified_name.dart",
+                      "sha256":  "25cecc82b15cab51c9bc7144665b433d46805d70497ad7ce82b0dd810c0e7fb0"
+                  },
+                  {
+                      "path":  "lib/widgets/vertical_autoplay_video_player.dart",
+                      "sha256":  "f31dceef103c3d417a97bb11518b41b7640fa7fa332567e393c9b3cdf08663ea"
+                  },
+                  {
+                      "path":  "lib/widgets/video_player_widget.dart",
+                      "sha256":  "9fae1d6763c9b715b293162d1e71509c28c5db5db0fc9ba3ee4dbb386adde9a4"
+                  },
+                  {
+                      "path":  "pubspec.yaml",
+                      "sha256":  "ca5d64509f1ccd1ad74f40b61cad8e1ab071bed0609732aa3da0dc9ce37e15ea"
+                  },
+                  {
+                      "path":  "supabase/migrations/20261004190001_137_appearance_badges_promotions.sql",
+                      "sha256":  "6d1caea5a19569ab529f70243e1288cca9c97d1844ba2c288f83f78065a45b59"
+                  },
+                  {
+                      "path":  "test/maintenance_136_test.dart",
+                      "sha256":  "9721a97dc31c51a724c872a3f108ea0d00ae1fff325d13163b64a993dd98ff18"
+                  },
+                  {
+                      "path":  "test/maintenance_137_test.dart",
+                      "sha256":  "6ec4c30a0834ba8191c551e44e6a4f295f5d53e8ba69acfdecca12c1c438934c"
+                  },
+                  {
+                      "path":  "test/regression_contract_test.dart",
+                      "sha256":  "d55a9ba08ee5a1ec4fdea7d3813ffd4e2c667ad0d538a2e9a4c7ebe4d431db45"
+                  },
+                  {
+                      "path":  "verification/dart_analysis_137.txt",
+                      "sha256":  "95a28819c918db92d8f3f7dfadfc18f1248f79ab8313759391ad318fe94cf093"
+                  },
+                  {
+                      "path":  "verification/database_results_137.txt",
+                      "sha256":  "ab65aac49506696859550576cdcd614d2fc2ea615ff336449ac261eb59c30235"
+                  },
+                  {
+                      "path":  "verification/trust_db_test.mjs",
+                      "sha256":  "eb81c650fc467b430c98e860e52d49116e4c7b9a93b2c3171042aa03ef9cc47c"
+                  }
+              ]
+}

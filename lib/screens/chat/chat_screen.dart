@@ -1,3 +1,5 @@
+import 'package:zameel/theme/appearance_controller.dart';
+import 'package:zameel/widgets/verified_name.dart';
 import 'dart:ui' as ui;
 import 'dart:async';
 import 'dart:math' as math;
@@ -140,6 +142,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final ar = Provider.of<LanguageProvider>(context).isArabic;
     final university = _profileValue('university');
     final college = _profileValue('college');
@@ -248,19 +251,22 @@ class _ChatScreenState extends State<ChatScreen> {
                                   Stack(clipBehavior: Clip.none, children: [
                                 _avatar(f),
                                 if (online)
-                                  const Positioned(
+                                  Positioned(
                                       right: -1,
                                       bottom: -1,
                                       child: CircleAvatar(
                                           radius: 7,
-                                          backgroundColor: Colors.white,
+                                          backgroundColor:
+                                              AppTheme.adaptiveSurface,
                                           child: CircleAvatar(
                                               radius: 5,
                                               backgroundColor: Colors.green)))
                               ]),
-                              title: Text(name,
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.w800)),
+                              title: VerifiedName(
+                                  userId: f['id']?.toString(),
+                                  child: Text(name,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.w800))),
                               subtitle: Text(
                                   online
                                       ? (ar ? 'متصل الآن' : 'Online now')
@@ -426,6 +432,7 @@ class _CommunityChatDetailScreenState extends State<CommunityChatDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final ar = Provider.of<LanguageProvider>(context).isArabic;
     final uid = Supabase.instance.client.auth.currentUser?.id;
     return Directionality(
@@ -490,11 +497,14 @@ class _CommunityChatDetailScreenState extends State<CommunityChatDetailScreen> {
                                               : CrossAxisAlignment.start,
                                           children: [
                                             if (!mine)
-                                              Text(name,
-                                                  style: const TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.w800,
-                                                      fontSize: 12)),
+                                              VerifiedName(
+                                                  userId:
+                                                      m['user_id']?.toString(),
+                                                  child: Text(name,
+                                                      style: const TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.w800,
+                                                          fontSize: 12))),
                                             Text(
                                                 m['content']?.toString() ?? ''),
                                             const SizedBox(height: 3),
@@ -941,7 +951,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     if (path.isEmpty) {
       return Text(message['content']?.toString() ?? '',
           style: TextStyle(
-              color: mine ? Colors.white : Colors.black87, fontSize: 15));
+              color: mine ? Colors.white : AppTheme.adaptiveText,
+              fontSize: 15));
     }
     return FutureBuilder<String?>(
       future: _attachmentUrl(path),
@@ -974,7 +985,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             Flexible(
                 child: Text(message['content']?.toString() ?? 'ملف',
                     style: TextStyle(
-                        color: mine ? Colors.white : Colors.black87))),
+                        color: mine ? Colors.white : AppTheme.adaptiveText))),
           ]),
         );
       },
@@ -1186,6 +1197,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => MeetScreen(
+          participantId: widget.partnerId,
           participantName: widget.partnerName,
           roomId: roomId,
           startImmediately: true,
@@ -1373,6 +1385,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final ar = Provider.of<LanguageProvider>(context).isArabic;
     return Directionality(
       textDirection: ar ? ui.TextDirection.rtl : ui.TextDirection.ltr,
@@ -1380,8 +1393,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         appBar: AppBar(
           title:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(widget.partnerName,
-                style: const TextStyle(fontWeight: FontWeight.bold)),
+            VerifiedName(
+                userId: widget.partnerId,
+                child: Text(widget.partnerName,
+                    style: const TextStyle(fontWeight: FontWeight.bold))),
             if (widget.contextLabel != null)
               Text(widget.contextLabel!,
                   style: const TextStyle(
@@ -1520,14 +1535,14 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                   Expanded(
                     child: TextField(
                       controller: _controller,
-                      style: const TextStyle(color: Colors.black),
+                      style: TextStyle(color: AppTheme.adaptiveText),
                       cursorColor: Colors.black,
                       onSubmitted: (_) => _send(),
                       decoration: InputDecoration(
                         hintText: ar ? 'اكتب رسالة...' : 'Type a message...',
-                        hintStyle: const TextStyle(color: Colors.black54),
+                        hintStyle: TextStyle(color: AppTheme.adaptiveSecondary),
                         filled: true,
-                        fillColor: Colors.white,
+                        fillColor: AppTheme.adaptiveSurface,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(25),
                           borderSide: BorderSide.none,
@@ -1681,6 +1696,7 @@ class _MeetColleaguePanelState extends State<MeetColleaguePanel> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final ar = Provider.of<LanguageProvider>(context).isArabic;
     final a = LatLng((_meet['requester_lat'] as num).toDouble(),
         (_meet['requester_lng'] as num).toDouble());
@@ -1771,6 +1787,7 @@ class MeetColleagueMapScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final ar = Provider.of<LanguageProvider>(context).isArabic;
     final a = LatLng((meet['requester_lat'] as num).toDouble(),
         (meet['requester_lng'] as num).toDouble());

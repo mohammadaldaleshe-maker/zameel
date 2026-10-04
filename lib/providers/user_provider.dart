@@ -1,3 +1,4 @@
+import '../widgets/verified_name.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/secure_media_service.dart';
@@ -34,6 +35,8 @@ class UserProvider extends ChangeNotifier {
 
       if (response != null) {
         _currentUser = Map<String, dynamic>.from(response);
+        VerificationDirectory.instance.updateOwn(response['id'].toString(),
+            response['verification_expires_at']?.toString());
       } else {
         // إذا لم يكن هناك بيانات، أنشئ بيانات افتراضية
         _currentUser = {
@@ -92,6 +95,8 @@ class UserProvider extends ChangeNotifier {
 
       if (response != null) {
         _currentUser = Map<String, dynamic>.from(response);
+        VerificationDirectory.instance.updateOwn(response['id'].toString(),
+            response['verification_expires_at']?.toString());
         notifyListeners();
         return true;
       }
@@ -118,6 +123,8 @@ class UserProvider extends ChangeNotifier {
 
       if (response != null) {
         _currentUser = Map<String, dynamic>.from(response);
+        VerificationDirectory.instance.updateOwn(response['id'].toString(),
+            response['verification_expires_at']?.toString());
         notifyListeners();
         return true;
       }
@@ -143,6 +150,7 @@ class UserProvider extends ChangeNotifier {
   // تسجيل الخروج
   void clearUser() {
     _currentUser = null;
+    VerificationDirectory.instance.clear();
     _userPosts = [];
     notifyListeners();
   }

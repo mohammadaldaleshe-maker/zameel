@@ -1,3 +1,4 @@
+import 'package:zameel/theme/appearance_controller.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -27,7 +28,8 @@ class VerificationScreen extends StatefulWidget {
 }
 
 class _VerificationScreenState extends State<VerificationScreen> {
-  final List<TextEditingController> _codeControllers = List.generate(6, (_) => TextEditingController());
+  final List<TextEditingController> _codeControllers =
+      List.generate(6, (_) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
   int _timer = 60;
   bool _isResendEnabled = false;
@@ -148,13 +150,14 @@ class _VerificationScreenState extends State<VerificationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
     final isArabic = languageProvider.isArabic;
 
     return Directionality(
       textDirection: isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
       child: Scaffold(
-        backgroundColor: AppTheme.background,
+        backgroundColor: AppTheme.adaptiveBackground,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -162,7 +165,8 @@ class _VerificationScreenState extends State<VerificationScreen> {
             onPressed: () {
               Navigator.pop(context);
             },
-            icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.primaryDark),
+            icon: const Icon(Icons.arrow_back_rounded,
+                color: AppTheme.primaryDark),
           ),
           title: Text(
             isArabic ? '🔐 رمز التحقق' : '🔐 Verification Code',
@@ -181,7 +185,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
                 constraints: const BoxConstraints(maxWidth: 450),
                 padding: const EdgeInsets.all(28),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppTheme.adaptiveSurface,
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
@@ -217,7 +221,9 @@ class _VerificationScreenState extends State<VerificationScreen> {
                     // TITLE
                     // ==============================================
                     Text(
-                      isArabic ? 'تحقق من بريدك الإلكتروني' : 'Check Your Email',
+                      isArabic
+                          ? 'تحقق من بريدك الإلكتروني'
+                          : 'Check Your Email',
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,

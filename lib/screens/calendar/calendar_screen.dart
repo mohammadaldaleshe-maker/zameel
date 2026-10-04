@@ -1,3 +1,4 @@
+import 'package:zameel/theme/appearance_controller.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -52,7 +53,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
       'id': row['id']?.toString() ?? '',
       'title_ar': row['title']?.toString() ?? '',
       'title_en': row['title']?.toString() ?? '',
-      'date': DateTime.tryParse(row['event_date']?.toString() ?? '') ?? DateTime.now(),
+      'date': DateTime.tryParse(row['event_date']?.toString() ?? '') ??
+          DateTime.now(),
       'time': rawTime.length >= 5 ? rawTime.substring(0, 5) : rawTime,
       'type_ar': _typeLabel(type, true),
       'type_en': _typeLabel(type, false),
@@ -120,7 +122,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   List<DateTime> _getDaysInMonth() {
     final firstDay = DateTime(_currentMonth.year, _currentMonth.month, 1);
-    final daysInMonth = DateTime(_currentMonth.year, _currentMonth.month + 1, 0).day;
+    final daysInMonth =
+        DateTime(_currentMonth.year, _currentMonth.month + 1, 0).day;
     final startWeekday = firstDay.weekday;
 
     final List<DateTime> days = [];
@@ -155,6 +158,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
     final isArabic = languageProvider.isArabic;
 
@@ -179,167 +183,178 @@ class _CalendarScreenState extends State<CalendarScreen> {
         body: _loading
             ? const Center(child: CircularProgressIndicator())
             : Column(
-          children: [
-            // ====================================================
-            // HEADER: الشهر والعام
-            // ====================================================
-            Container(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  IconButton(
-                    onPressed: _previousMonth,
-                    icon: const Icon(Icons.chevron_left_rounded),
-                  ),
-                  Text(
-                    isArabic
-                        ? DateFormat('MMMM yyyy', 'ar').format(_currentMonth)
-                        : DateFormat('MMMM yyyy', 'en').format(_currentMonth),
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                  // ====================================================
+                  // HEADER: الشهر والعام
+                  // ====================================================
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        IconButton(
+                          onPressed: _previousMonth,
+                          icon: const Icon(Icons.chevron_left_rounded),
+                        ),
+                        Text(
+                          isArabic
+                              ? DateFormat('MMMM yyyy', 'ar')
+                                  .format(_currentMonth)
+                              : DateFormat('MMMM yyyy', 'en')
+                                  .format(_currentMonth),
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: _nextMonth,
+                          icon: const Icon(Icons.chevron_right_rounded),
+                        ),
+                      ],
                     ),
                   ),
-                  IconButton(
-                    onPressed: _nextMonth,
-                    icon: const Icon(Icons.chevron_right_rounded),
+
+                  // ====================================================
+                  // أيام الأسبوع
+                  // ====================================================
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Row(
+                      children: isArabic
+                          ? [
+                              'سبت',
+                              'أحد',
+                              'إثن',
+                              'ثلاث',
+                              'أربع',
+                              'خميس',
+                              'جمعة'
+                            ]
+                              .map((day) => Expanded(
+                                    child: Center(
+                                      child: Text(
+                                        day,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                          color: AppTheme.muted,
+                                        ),
+                                      ),
+                                    ),
+                                  ))
+                              .toList()
+                          : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+                              .map((day) => Expanded(
+                                    child: Center(
+                                      child: Text(
+                                        day,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                          color: AppTheme.muted,
+                                        ),
+                                      ),
+                                    ),
+                                  ))
+                              .toList(),
+                    ),
+                  ),
+
+                  const Divider(height: 4),
+
+                  // ====================================================
+                  // أيام الشهر
+                  // ====================================================
+                  Expanded(
+                    flex: 2,
+                    child: GridView.builder(
+                      padding: const EdgeInsets.all(8),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 7,
+                        childAspectRatio: 1.2,
+                      ),
+                      itemCount: _getDaysInMonth().length,
+                      itemBuilder: (context, index) {
+                        final date = _getDaysInMonth()[index];
+                        final isCurrentMonth =
+                            date.month == _currentMonth.month;
+                        final isToday = date.year == DateTime.now().year &&
+                            date.month == DateTime.now().month &&
+                            date.day == DateTime.now().day;
+                        final isSelected = date.year == _selectedDate.year &&
+                            date.month == _selectedDate.month &&
+                            date.day == _selectedDate.day;
+                        final hasEvents = _hasEvents(date);
+
+                        return GestureDetector(
+                          onTap: () {
+                            _selectDate(date);
+                          },
+                          child: Container(
+                            margin: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppTheme.primary
+                                  : isToday
+                                      ? AppTheme.muted.shade200
+                                      : Colors.transparent,
+                              borderRadius: BorderRadius.circular(12),
+                              border: isToday && !isSelected
+                                  ? Border.all(
+                                      color: AppTheme.primary,
+                                      width: 2,
+                                    )
+                                  : null,
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  date.day.toString(),
+                                  style: TextStyle(
+                                    color: isCurrentMonth
+                                        ? (isSelected
+                                            ? Colors.white
+                                            : AppTheme.adaptiveText)
+                                        : AppTheme.muted.shade400,
+                                    fontWeight: isToday
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                if (hasEvents)
+                                  Container(
+                                    width: 6,
+                                    height: 6,
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? Colors.white
+                                          : AppTheme.primary,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+                  const Divider(height: 4),
+
+                  // ====================================================
+                  // قائمة الأحداث لليوم المحدد
+                  // ====================================================
+                  Expanded(
+                    flex: 1,
+                    child: _buildEventsList(isArabic),
                   ),
                 ],
               ),
-            ),
-
-            // ====================================================
-            // أيام الأسبوع
-            // ====================================================
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Row(
-                children: isArabic
-                    ? ['سبت', 'أحد', 'إثن', 'ثلاث', 'أربع', 'خميس', 'جمعة']
-                        .map((day) => Expanded(
-                              child: Center(
-                                child: Text(
-                                  day,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
-                                    color: AppTheme.muted,
-                                  ),
-                                ),
-                              ),
-                            ))
-                        .toList()
-                    : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-                        .map((day) => Expanded(
-                              child: Center(
-                                child: Text(
-                                  day,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
-                                    color: AppTheme.muted,
-                                  ),
-                                ),
-                              ),
-                            ))
-                        .toList(),
-              ),
-            ),
-
-            const Divider(height: 4),
-
-            // ====================================================
-            // أيام الشهر
-            // ====================================================
-            Expanded(
-              flex: 2,
-              child: GridView.builder(
-                padding: const EdgeInsets.all(8),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 7,
-                  childAspectRatio: 1.2,
-                ),
-                itemCount: _getDaysInMonth().length,
-                itemBuilder: (context, index) {
-                  final date = _getDaysInMonth()[index];
-                  final isCurrentMonth =
-                      date.month == _currentMonth.month;
-                  final isToday = date.year == DateTime.now().year &&
-                      date.month == DateTime.now().month &&
-                      date.day == DateTime.now().day;
-                  final isSelected = date.year == _selectedDate.year &&
-                      date.month == _selectedDate.month &&
-                      date.day == _selectedDate.day;
-                  final hasEvents = _hasEvents(date);
-
-                  return GestureDetector(
-                    onTap: () {
-                      _selectDate(date);
-                    },
-                    child: Container(
-                      margin: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? AppTheme.primary
-                            : isToday
-                                ? AppTheme.muted.shade200
-                                : Colors.transparent,
-                        borderRadius: BorderRadius.circular(12),
-                        border: isToday && !isSelected
-                            ? Border.all(
-                                color: AppTheme.primary,
-                                width: 2,
-                              )
-                            : null,
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            date.day.toString(),
-                            style: TextStyle(
-                              color: isCurrentMonth
-                                  ? (isSelected
-                                      ? Colors.white
-                                      : Colors.black)
-                                  : AppTheme.muted.shade400,
-                              fontWeight: isToday
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                              fontSize: 16,
-                            ),
-                          ),
-                          if (hasEvents)
-                            Container(
-                              width: 6,
-                              height: 6,
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? Colors.white
-                                    : AppTheme.primary,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-
-            const Divider(height: 4),
-
-            // ====================================================
-            // قائمة الأحداث لليوم المحدد
-            // ====================================================
-            Expanded(
-              flex: 1,
-              child: _buildEventsList(isArabic),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -387,7 +402,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         return Card(
           margin: const EdgeInsets.only(bottom: 8),
           elevation: 0,
-          color: Colors.white,
+          color: AppTheme.adaptiveSurface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
             side: BorderSide(
@@ -454,17 +469,22 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 try {
                   await RemainingServices.deleteCalendarEvent(id);
                   if (!mounted) return;
-                  setState(() => _events.removeWhere((e) => e['id'] == event['id']));
+                  setState(
+                      () => _events.removeWhere((e) => e['id'] == event['id']));
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(isArabic ? '🗑️ تم حذف الحدث' : '🗑️ Event deleted'),
+                      content: Text(
+                          isArabic ? '🗑️ تم حذف الحدث' : '🗑️ Event deleted'),
                       backgroundColor: Colors.red,
                     ),
                   );
                 } catch (_) {
                   if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(isArabic ? 'تعذر حذف الحدث' : 'Could not delete event')),
+                    SnackBar(
+                        content: Text(isArabic
+                            ? 'تعذر حذف الحدث'
+                            : 'Could not delete event')),
                   );
                 }
               },
@@ -539,9 +559,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         initialDate: selectedDate,
                         firstDate: DateTime(2020),
                         lastDate: DateTime(2030),
-                        locale: isArabic
-                            ? const Locale('ar')
-                            : const Locale('en'),
+                        locale:
+                            isArabic ? const Locale('ar') : const Locale('en'),
                       );
                       if (date != null) {
                         selectedDate = date;
@@ -557,7 +576,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   TextField(
                     controller: timeController,
                     decoration: InputDecoration(
-                      labelText: isArabic ? 'الوقت (مثال: 10:00)' : 'Time (e.g., 10:00)',
+                      labelText: isArabic
+                          ? 'الوقت (مثال: 10:00)'
+                          : 'Time (e.g., 10:00)',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -597,8 +618,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         if (value == 'محاضرة' || value == 'Lecture') {
                         } else if (value == 'امتحان' || value == 'Exam') {
                         } else if (value == 'واجب' || value == 'Assignment') {
-                        } else if (value == 'فعالية' || value == 'Event') {
-                        }
+                        } else if (value == 'فعالية' || value == 'Event') {}
                         (dialogContext as Element).markNeedsBuild();
                       }
                     },
@@ -665,7 +685,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   } catch (_) {
                     if (!mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(isArabic ? 'تعذر حفظ الحدث' : 'Could not save event')),
+                      SnackBar(
+                          content: Text(isArabic
+                              ? 'تعذر حفظ الحدث'
+                              : 'Could not save event')),
                     );
                   }
                 },

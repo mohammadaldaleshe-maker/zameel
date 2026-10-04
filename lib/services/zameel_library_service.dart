@@ -1,3 +1,4 @@
+import 'package:zameel/theme/app_theme.dart';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
@@ -17,9 +18,9 @@ import 'feature_control.dart';
 
 class ZameelLibraryService {
   static const _seedAsset = 'assets/zameel_library/zameel_library_index.json';
-  static const _manifestAsset = 'assets/zameel_library/zameel_library_manifest.json';
-  static const _taxonomyAsset =
-      'assets/zameel_library/zameel_specialties.json';
+  static const _manifestAsset =
+      'assets/zameel_library/zameel_library_manifest.json';
+  static const _taxonomyAsset = 'assets/zameel_library/zameel_specialties.json';
   static const _openTextbookTarget = 1000;
   static const _arabicBookTarget = 500;
   static const _englishBookTarget = 500;
@@ -30,7 +31,6 @@ class ZameelLibraryService {
   static List<ZameelLibrarySpecialtyGroup>? _taxonomyCache;
   static List<ZameelLibraryItem>? _openTextbookCache;
   static List<ZameelLibraryItem>? _arabicBookCache;
-
 
   static Future<Map<String, dynamic>> loadManifest() async {
     if (_manifestCache != null) return _manifestCache!;
@@ -117,9 +117,8 @@ class ZameelLibraryService {
   }) async {
     if (limit <= 0) return const [];
     final arQuery = specialty.name;
-    final enQuery = specialty.nameEn.trim().isEmpty
-        ? specialty.name
-        : specialty.nameEn;
+    final enQuery =
+        specialty.nameEn.trim().isEmpty ? specialty.name : specialty.nameEn;
     final half = math.max(1, (limit / 2).ceil());
     final results = await Future.wait([
       _loadArabicCollections(limit: half, query: arQuery),
@@ -130,7 +129,8 @@ class ZameelLibraryService {
     for (final item in [...results[0], ...results[1]]) {
       final category = normalize(item.category);
       if (!accepted.contains(category) &&
-          itemSearchScore(item, normalize('${specialty.name} ${specialty.nameEn}')) <
+          itemSearchScore(
+                  item, normalize('${specialty.name} ${specialty.nameEn}')) <
               140) {
         continue;
       }
@@ -195,8 +195,7 @@ class ZameelLibraryService {
     };
   }
 
-  static Future<List<ZameelLibrarySpecialtyGroup>>
-      loadSpecialtyGroups() async {
+  static Future<List<ZameelLibrarySpecialtyGroup>> loadSpecialtyGroups() async {
     if (_taxonomyCache != null) return _taxonomyCache!;
     final raw = await rootBundle.loadString(_taxonomyAsset);
     final decoded = jsonDecode(raw) as Map<String, dynamic>;
@@ -231,15 +230,14 @@ class ZameelLibraryService {
             specialty,
             specialty.searchableNames
                 .map((name) => _textScore(name, q))
-                .fold<double>(0, (best, score) => math.max(best, score).toDouble()),
+                .fold<double>(
+                    0, (best, score) => math.max(best, score).toDouble()),
           ),
         )
         .toList()
       ..sort((a, b) {
         final byScore = b.value.compareTo(a.value);
-        return byScore != 0
-            ? byScore
-            : a.key.name.compareTo(b.key.name);
+        return byScore != 0 ? byScore : a.key.name.compareTo(b.key.name);
       });
     return ranked.map((entry) => entry.key).toList();
   }
@@ -373,8 +371,7 @@ class ZameelLibraryService {
     final title = json['title']?.toString().trim() ?? '';
     if (identifier.isEmpty || title.isEmpty) return null;
     final category = _mapOpenTextbookCategory(const [], title, title);
-    final source =
-        'https://sites.dlib.nyu.edu/viewer/api/embed/$identifier';
+    final source = 'https://sites.dlib.nyu.edu/viewer/api/embed/$identifier';
     return ZameelLibraryItem(
       id: 'aco-$rawId',
       type: 'book',
@@ -533,7 +530,8 @@ class ZameelLibraryService {
       description: description.isEmpty
           ? 'Open university textbook from Open Textbook Library.'
           : description,
-      descriptionAr: 'كتاب جامعي مفتوح باللغة الإنجليزية من Open Textbook Library. افتح المصدر لعرض النسخة والترخيص المتاح.',
+      descriptionAr:
+          'كتاب جامعي مفتوح باللغة الإنجليزية من Open Textbook Library. افتح المصدر لعرض النسخة والترخيص المتاح.',
       descriptionEn: description.isEmpty
           ? 'Open university textbook from Open Textbook Library.'
           : description,
@@ -543,8 +541,7 @@ class ZameelLibraryService {
         'Open Textbook Library',
         license,
       ],
-      sourceUrl:
-          'https://open.umn.edu/opentextbooks/textbooks/$rawId',
+      sourceUrl: 'https://open.umn.edu/opentextbooks/textbooks/$rawId',
       fileUrl: _findPdfUrl(json),
       content: null,
       rightsStatus: 'Open Textbook Library • $license',
@@ -570,40 +567,55 @@ class ZameelLibraryService {
     // mapper. These Arabic keywords keep those records out of one generic
     // bucket and place obvious academic subjects in the matching specialty.
     if (has('تمريض')) return 'التمريض';
-    if (has('صيدل') || has('دواء') || has('ادوية') || has('أدوية')) return 'الصيدلة';
+    if (has('صيدل') || has('دواء') || has('ادوية') || has('أدوية'))
+      return 'الصيدلة';
     if (has('طب الاسنان') || has('طب الأسنان')) return 'طب الأسنان';
     if (has('علم النفس') || has('نفسي')) return 'علم النفس';
-    if (has('علم الاجتماع') || has('اجتماعي')) return 'علم الاجتماع والدراسات الثقافية';
-    if (has('علوم سياسي') || has('سياسه') || has('سياسة') || has('سياسي')) return 'العلوم السياسية والمدنية';
-    if (has('علاقات دوليه') || has('علاقات دولية') || has('دبلوماس')) return 'العلاقات الدولية';
+    if (has('علم الاجتماع') || has('اجتماعي'))
+      return 'علم الاجتماع والدراسات الثقافية';
+    if (has('علوم سياسي') || has('سياسه') || has('سياسة') || has('سياسي'))
+      return 'العلوم السياسية والمدنية';
+    if (has('علاقات دوليه') || has('علاقات دولية') || has('دبلوماس'))
+      return 'العلاقات الدولية';
     if (has('قانون') || has('تشريع') || has('حقوق')) return 'القانون';
     if (has('اقتصاد')) return 'الاقتصاد';
     if (has('محاسب')) return 'المحاسبة';
-    if (has('ماليه') || has('مالية') || has('مصرف') || has('بنوك')) return 'المالية والمصرفية والتأمين';
+    if (has('ماليه') || has('مالية') || has('مصرف') || has('بنوك'))
+      return 'المالية والمصرفية والتأمين';
     if (has('تسويق')) return 'التسويق والإعلان';
     if (has('اداره') || has('إدارة')) return 'الإدارة والأعمال';
     if (has('ذكاء اصطناعي')) return 'الذكاء الاصطناعي';
     if (has('امن سيبراني') || has('أمن سيبراني')) return 'الأمن السيبراني';
-    if (has('حاسوب') || has('كمبيوتر') || has('برمجه') || has('برمجة')) return 'علم الحاسوب';
+    if (has('حاسوب') || has('كمبيوتر') || has('برمجه') || has('برمجة'))
+      return 'علم الحاسوب';
     if (has('هندسه مدنيه') || has('هندسة مدنية')) return 'الهندسة المدنية';
-    if (has('هندسه كهربائي') || has('هندسة كهربائي')) return 'الهندسة الكهربائية';
-    if (has('هندسه ميكاني') || has('هندسة ميكاني')) return 'الهندسة الميكانيكية';
+    if (has('هندسه كهربائي') || has('هندسة كهربائي'))
+      return 'الهندسة الكهربائية';
+    if (has('هندسه ميكاني') || has('هندسة ميكاني'))
+      return 'الهندسة الميكانيكية';
     if (has('هندسه') || has('هندسة')) return 'هندسة الأنظمة الذكية';
     if (has('احصاء') || has('إحصاء') || has('احتمالات')) return 'الإحصاء';
-    if (has('رياضيات') || has('جبر') || has('تفاضل') || has('هندسه اقليد') || has('هندسة إقليد')) return 'الرياضيات';
+    if (has('رياضيات') ||
+        has('جبر') ||
+        has('تفاضل') ||
+        has('هندسه اقليد') ||
+        has('هندسة إقليد')) return 'الرياضيات';
     if (has('فيزياء')) return 'الفيزياء';
     if (has('كيمياء')) return 'الكيمياء';
     if (has('احياء') || has('أحياء') || has('بيولوج')) return 'الأحياء';
-    if (has('جيولوج') || has('علوم الارض') || has('علوم الأرض')) return 'علوم الأرض';
+    if (has('جيولوج') || has('علوم الارض') || has('علوم الأرض'))
+      return 'علوم الأرض';
     if (has('بيئ')) return 'العلوم البيئية';
     if (has('زراع')) return 'الزراعة';
     if (has('تربيه') || has('تربية') || has('تعليم')) return 'القيادة التربوية';
     if (has('تاريخ') || has('اثار') || has('آثار')) return 'التاريخ والآثار';
     if (has('فلسف')) return 'الفلسفة والأخلاق';
     if (has('جغراف')) return 'الجغرافيا';
-    if (has('دين') || has('اسلام') || has('إسلام') || has('لاهوت')) return 'الدراسات الدينية';
+    if (has('دين') || has('اسلام') || has('إسلام') || has('لاهوت'))
+      return 'الدراسات الدينية';
     if (has('صحاف') || has('اعلام') || has('إعلام')) return 'الصحافة والتقارير';
-    if (has('ادب') || has('أدب') || has('لغه') || has('لغة') || has('لغوي')) return 'الأدب واللغويات';
+    if (has('ادب') || has('أدب') || has('لغه') || has('لغة') || has('لغوي'))
+      return 'الأدب واللغويات';
 
     if (has('nursing')) return 'التمريض';
     if (has('nutrition')) return 'تغذية الإنسان والحميات';
@@ -753,7 +765,8 @@ class ZameelLibraryService {
     final q = normalize(query);
     if (q.isEmpty) return true;
     return items.any((item) {
-      final title = normalize([item.title, item.titleAr ?? '', item.titleEn ?? ''].join(' '));
+      final title = normalize(
+          [item.title, item.titleAr ?? '', item.titleEn ?? ''].join(' '));
       final keywords = normalize(item.keywords.join(' '));
       return title == q || title.contains(q) || keywords.contains(q);
     });
@@ -774,11 +787,16 @@ class ZameelLibraryService {
   ) {
     final q = normalize(normalizedQuery);
     if (q.isEmpty) return 0;
-    final title = normalize([item.title, item.titleAr ?? '', item.titleEn ?? ''].join(' '));
+    final title = normalize(
+        [item.title, item.titleAr ?? '', item.titleEn ?? ''].join(' '));
     final category = normalize(item.category);
     final author = normalize(item.author);
     final keywords = normalize(item.keywords.join(' '));
-    final description = normalize([item.description, item.descriptionAr ?? '', item.descriptionEn ?? ''].join(' '));
+    final description = normalize([
+      item.description,
+      item.descriptionAr ?? '',
+      item.descriptionEn ?? ''
+    ].join(' '));
     final haystack = '$title $category $author $keywords $description';
 
     var score = 0.0;
@@ -793,8 +811,7 @@ class ZameelLibraryService {
     if (description.contains(q)) score += 420;
     if (haystack.contains(q)) score += 250;
 
-    final queryTokens =
-        q.split(' ').where((token) => token.length > 1).toSet();
+    final queryTokens = q.split(' ').where((token) => token.length > 1).toSet();
     final docTokens =
         haystack.split(' ').where((token) => token.length > 1).toSet();
     for (final token in queryTokens) {
@@ -803,8 +820,7 @@ class ZameelLibraryService {
         continue;
       }
       if (docTokens.any(
-        (candidate) =>
-            candidate.contains(token) || token.contains(candidate),
+        (candidate) => candidate.contains(token) || token.contains(candidate),
       )) {
         score += 55;
         continue;
@@ -827,7 +843,6 @@ class ZameelLibraryService {
     if (item.curated) score += 20;
     return score;
   }
-
 
   static Future<String?> loadContentFor(
     ZameelLibraryItem item, {
@@ -890,15 +905,13 @@ class ZameelLibraryService {
   static Future<int?> _recordDownload(ZameelLibraryItem item) async {
     if (Supabase.instance.client.auth.currentUser == null) return null;
     try {
-      final value = await Supabase.instance.client
-          .rpc(
-            'record_zameel_library_download',
-            params: {
-              'target_item_key': item.downloadKey,
-              'target_item_type': item.type,
-            },
-          )
-          .timeout(const Duration(seconds: 6));
+      final value = await Supabase.instance.client.rpc(
+        'record_zameel_library_download',
+        params: {
+          'target_item_key': item.downloadKey,
+          'target_item_type': item.type,
+        },
+      ).timeout(const Duration(seconds: 6));
       return (value as num?)?.toInt();
     } catch (error) {
       debugPrint('Zameel Library download counter update skipped: $error');
@@ -944,9 +957,8 @@ class ZameelLibraryService {
     if (bytes == null) {
       final pdfUrl = await resolveExternalPdfUrl(item);
       if (pdfUrl != null) {
-        final response = await http
-            .get(pdfUrl)
-            .timeout(const Duration(seconds: 35));
+        final response =
+            await http.get(pdfUrl).timeout(const Duration(seconds: 35));
         if (response.statusCode >= 200 && response.statusCode < 300) {
           if (!_looksLikePdf(response.bodyBytes)) {
             throw Exception('source_did_not_return_pdf');
@@ -1022,8 +1034,12 @@ class ZameelLibraryService {
             caseSensitive: false,
           ).allMatches(response.body);
           final candidates = <String>[
-            ...absoluteMatches.map((match) => match.group(0)).whereType<String>(),
-            ...relativeMatches.map((match) => match.group(1)).whereType<String>(),
+            ...absoluteMatches
+                .map((match) => match.group(0))
+                .whereType<String>(),
+            ...relativeMatches
+                .map((match) => match.group(1))
+                .whereType<String>(),
           ];
           if (candidates.isNotEmpty) {
             final preferred = candidates.firstWhere(
@@ -1090,9 +1106,8 @@ class ZameelLibraryService {
 
   static String? _gutenbergId(ZameelLibraryItem item) {
     final source = item.sourceUrl?.trim() ?? '';
-    final match =
-        RegExp(r'gutenberg[.]org/ebooks/(\d+)', caseSensitive: false)
-            .firstMatch(source);
+    final match = RegExp(r'gutenberg[.]org/ebooks/(\d+)', caseSensitive: false)
+        .firstMatch(source);
     return match?.group(1);
   }
 
@@ -1235,13 +1250,13 @@ class ZameelLibraryService {
     const bodyTopLater = 120.0;
     const bottom = 100.0;
     final direction = rtl ? TextDirection.rtl : TextDirection.ltr;
-    final bodyStyle = const TextStyle(
-      color: Colors.black87,
+    final bodyStyle = TextStyle(
+      color: AppTheme.adaptiveText,
       fontSize: 27,
       height: 1.55,
     );
-    final titleStyle = const TextStyle(
-      color: Colors.black,
+    final titleStyle = TextStyle(
+      color: AppTheme.adaptiveText,
       fontSize: 39,
       fontWeight: FontWeight.w800,
       height: 1.35,
@@ -1362,7 +1377,7 @@ class ZameelLibraryService {
       final pagePainter = TextPainter(
         text: TextSpan(
           text: '${index + 1}/${chunks.length}',
-          style: const TextStyle(color: Colors.black45, fontSize: 20),
+          style: TextStyle(color: AppTheme.adaptiveSecondary, fontSize: 20),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
@@ -1470,7 +1485,8 @@ class ZameelLibraryService {
     }
     final distance = _editDistance(q, text);
     final maxLength = math.max(q.length, text.length);
-    if (maxLength > 0) score += math.max(0.0, 1 - distance / maxLength).toDouble() * 300;
+    if (maxLength > 0)
+      score += math.max(0.0, 1 - distance / maxLength).toDouble() * 300;
     return score;
   }
 
@@ -1501,5 +1517,4 @@ class ZameelLibraryService {
         .trim();
     return cleaned.isEmpty ? 'Zameel_Library_Item' : 'Zameel_$cleaned';
   }
-
 }

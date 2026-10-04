@@ -195,7 +195,12 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            VideoPlayer(controller),
+            FittedBox(
+                fit: BoxFit.contain,
+                child: SizedBox(
+                    width: controller.value.size.width,
+                    height: controller.value.size.height,
+                    child: VideoPlayer(controller))),
             AnimatedOpacity(
               opacity: _controlsVisible ? 1 : 0,
               duration: const Duration(milliseconds: 180),

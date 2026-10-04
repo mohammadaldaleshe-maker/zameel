@@ -4,7 +4,7 @@ import 'package:zameel/widgets/compact_post.dart';
 import 'package:zameel/widgets/verified_badge.dart';
 
 void main() {
-  testWidgets('compact posts use 85 percent width and preserve accessible text',
+  testWidgets('post metadata keeps full width and preserves accessible text',
       (tester) async {
     double? scale;
     await tester.pumpWidget(MaterialApp(
@@ -22,7 +22,7 @@ void main() {
                           child: Text('A readable post'));
                     })))))));
     expect(tester.getSize(find.byKey(const ValueKey('postContent'))).width,
-        closeTo(340, .01));
+        closeTo(400, .01));
     expect(scale, 34);
     expect(find.byType(Card), findsNothing);
     expect(tester.takeException(), isNull);

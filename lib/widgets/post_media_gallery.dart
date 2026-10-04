@@ -1,3 +1,4 @@
+import 'package:zameel/theme/appearance_controller.dart';
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
@@ -93,6 +94,7 @@ class _PostMediaGalleryState extends State<PostMediaGallery> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final items = postMediaItems(widget.post);
     if (items.isEmpty) return const SizedBox.shrink();
 
@@ -109,7 +111,7 @@ class _PostMediaGalleryState extends State<PostMediaGallery> {
               itemBuilder: (_, index) {
                 final item = items[index];
                 return Material(
-                  color: Colors.black,
+                  color: Colors.transparent,
                   child: InkWell(
                     onTap: () {
                       if (widget.onOpen != null) {
@@ -123,7 +125,7 @@ class _PostMediaGalleryState extends State<PostMediaGallery> {
                             fit: StackFit.expand,
                             children: [
                               Container(color: Colors.black),
-                              const Center(
+                              Center(
                                 child: Icon(
                                   Icons.play_circle_fill_rounded,
                                   color: Colors.white,
@@ -138,7 +140,7 @@ class _PostMediaGalleryState extends State<PostMediaGallery> {
                                     color: Colors.black54,
                                     borderRadius: BorderRadius.circular(18),
                                   ),
-                                  child: const Padding(
+                                  child: Padding(
                                     padding: EdgeInsets.symmetric(
                                       horizontal: 10,
                                       vertical: 5,
@@ -171,10 +173,10 @@ class _PostMediaGalleryState extends State<PostMediaGallery> {
                             fit: BoxFit.contain,
                             fallback: Container(
                               alignment: Alignment.center,
-                              color: AppTheme.surfaceAlt,
-                              child: const Icon(
+                              color: AppTheme.adaptiveSurfaceAlt,
+                              child: Icon(
                                 Icons.broken_image_outlined,
-                                color: AppTheme.textSecondary,
+                                color: AppTheme.adaptiveSecondary,
                                 size: 50,
                               ),
                             ),
@@ -266,6 +268,7 @@ class _FullScreenPostMediaState extends State<_FullScreenPostMedia> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
@@ -286,14 +289,16 @@ class _FullScreenPostMediaState extends State<_FullScreenPostMedia> {
                     child: VideoPlayerWidget(
                       videoUrl: item.url,
                       onControlsVisibilityChanged: (visible) {
-                        if (mounted && _controlsVisible != visible) setState(() => _controlsVisible = visible);
+                        if (mounted && _controlsVisible != visible)
+                          setState(() => _controlsVisible = visible);
                       },
                     ),
                   );
                 }
                 return GestureDetector(
                   behavior: HitTestBehavior.opaque,
-                  onTap: () => setState(() => _controlsVisible = !_controlsVisible),
+                  onTap: () =>
+                      setState(() => _controlsVisible = !_controlsVisible),
                   child: Center(
                     child: InteractiveViewer(
                       minScale: .8,
@@ -301,7 +306,8 @@ class _FullScreenPostMediaState extends State<_FullScreenPostMedia> {
                       child: CachedMediaImage(
                         url: item.url,
                         fit: BoxFit.contain,
-                        fallback: const Icon(Icons.broken_image_outlined, color: Colors.white54, size: 58),
+                        fallback: const Icon(Icons.broken_image_outlined,
+                            color: Colors.white54, size: 58),
                       ),
                     ),
                   ),
@@ -312,17 +318,23 @@ class _FullScreenPostMediaState extends State<_FullScreenPostMedia> {
               PositionedDirectional(
                 top: 4,
                 start: 4,
-                child: IconButton.filledTonal(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close_rounded)),
+                child: IconButton.filledTonal(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close_rounded)),
               ),
             if (_controlsVisible && widget.items.length > 1)
               PositionedDirectional(
                 top: 12,
                 end: 12,
                 child: DecoratedBox(
-                  decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(18)),
+                  decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(18)),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    child: Text('${_index + 1}/${widget.items.length}', style: const TextStyle(color: Colors.white)),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    child: Text('${_index + 1}/${widget.items.length}',
+                        style: TextStyle(color: Colors.white)),
                   ),
                 ),
               ),

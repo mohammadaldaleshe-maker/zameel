@@ -1,3 +1,5 @@
+import 'package:zameel/theme/appearance_controller.dart';
+import 'package:zameel/widgets/verified_name.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter/material.dart';
@@ -27,7 +29,8 @@ class PublicClipsStrip extends StatefulWidget {
   State<PublicClipsStrip> createState() => _PublicClipsStripState();
 }
 
-class _PublicClipsStripState extends State<PublicClipsStrip> with WidgetsBindingObserver {
+class _PublicClipsStripState extends State<PublicClipsStrip>
+    with WidgetsBindingObserver {
   List<Map<String, dynamic>> _clips = const [];
   bool _loading = true;
   Timer? _refreshTimer;
@@ -40,7 +43,8 @@ class _PublicClipsStripState extends State<PublicClipsStrip> with WidgetsBinding
     WidgetsBinding.instance.addObserver(this);
     _restoreClips();
     _load();
-    _refreshTimer = Timer.periodic(const Duration(minutes: 2), (_) => _load(silent: true));
+    _refreshTimer =
+        Timer.periodic(const Duration(minutes: 2), (_) => _load(silent: true));
   }
 
   @override
@@ -50,12 +54,12 @@ class _PublicClipsStripState extends State<PublicClipsStrip> with WidgetsBinding
     super.dispose();
   }
 
-
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _refreshTimer?.cancel();
-      _refreshTimer = Timer.periodic(const Duration(minutes: 2), (_) => _load(silent: true));
+      _refreshTimer = Timer.periodic(
+          const Duration(minutes: 2), (_) => _load(silent: true));
       _load(silent: true);
     } else {
       _refreshTimer?.cancel();
@@ -66,8 +70,14 @@ class _PublicClipsStripState extends State<PublicClipsStrip> with WidgetsBinding
     final userId = ZameelSocialService.uid;
     if (userId == null) return;
     final cached = await HomeSnapshotService.read(userId, 'clips');
-    if (!mounted || _remoteShown || ZameelSocialService.uid != userId || cached.isEmpty) return;
-    setState(() { _clips = cached; _loading = false; });
+    if (!mounted ||
+        _remoteShown ||
+        ZameelSocialService.uid != userId ||
+        cached.isEmpty) return;
+    setState(() {
+      _clips = cached;
+      _loading = false;
+    });
   }
 
   Future<void> _load({bool silent = false}) async {
@@ -86,7 +96,8 @@ class _PublicClipsStripState extends State<PublicClipsStrip> with WidgetsBinding
       if (mounted) {
         setState(() => _clips = visible);
       }
-      if (userId != null) unawaited(HomeSnapshotService.save(userId, 'clips', visible));
+      if (userId != null)
+        unawaited(HomeSnapshotService.save(userId, 'clips', visible));
       // Do not pre-download six full clips merely because the strip loaded.
       // The 1.5-second preview streams lightly; opening the viewer performs a
       // single cache-aware download of the chosen clip.
@@ -103,7 +114,9 @@ class _PublicClipsStripState extends State<PublicClipsStrip> with WidgetsBinding
     if (!await FeatureControl.instance.check(context, 'comments')) return;
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => FeatureControl.instance.page('comments', ClipCommentsScreen(clip: clip))),
+      MaterialPageRoute(
+          builder: (_) => FeatureControl.instance
+              .page('comments', ClipCommentsScreen(clip: clip))),
     );
     await _load(silent: true);
   }
@@ -134,7 +147,8 @@ class _PublicClipsStripState extends State<PublicClipsStrip> with WidgetsBinding
   Future<void> _share(Map<String, dynamic> clip) async {
     await ZameelSocialService.shareClip(clip['id'].toString());
     await SharePlus.instance.share(
-      ShareParams(text: 'شاهد هذا المقطع على زميل: zameel://clip/${clip['id']}'),
+      ShareParams(
+          text: 'شاهد هذا المقطع على زميل: zameel://clip/${clip['id']}'),
     );
   }
 
@@ -171,6 +185,7 @@ class _PublicClipsStripState extends State<PublicClipsStrip> with WidgetsBinding
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final ar = Provider.of<LanguageProvider>(context).isArabic;
     return Container(
       color: Colors.transparent,
@@ -296,7 +311,7 @@ class _PublicClipsStripState extends State<PublicClipsStrip> with WidgetsBinding
                                     publisher.isEmpty ? 'زميل' : publisher,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       color: Colors.white,
                                       fontSize: 11,
                                       fontWeight: FontWeight.w700,
@@ -326,7 +341,7 @@ class _PublicClipsStripState extends State<PublicClipsStrip> with WidgetsBinding
       child: Container(
         width: 116,
         decoration: BoxDecoration(
-          color: AppTheme.background,
+          color: AppTheme.adaptiveBackground,
           borderRadius: BorderRadius.circular(17),
           border: Border.all(color: AppTheme.primary, width: 1.5),
         ),
@@ -340,7 +355,7 @@ class _PublicClipsStripState extends State<PublicClipsStrip> with WidgetsBinding
                 gradient: AppTheme.signatureGradient,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.add_rounded, color: Colors.white, size: 30),
+              child: Icon(Icons.add_rounded, color: Colors.white, size: 30),
             ),
             const SizedBox(height: 10),
             Text(
@@ -360,7 +375,6 @@ class _PublicClipsStripState extends State<PublicClipsStrip> with WidgetsBinding
       ),
     );
   }
-
 }
 
 class _VerticalClipsViewer extends StatefulWidget {
@@ -392,17 +406,36 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
     if (_moreLoading || _reachedEnd) return;
     _moreLoading = true;
     try {
-      final data = await Supabase.instance.client.rpc('zameel_shorts_feed', params: {
+      final data =
+          await Supabase.instance.client.rpc('zameel_shorts_feed', params: {
         'p_author': widget.authorId,
         'p_saved': widget.savedOnly,
-        'p_exclude': widget.authorId != null || widget.savedOnly ? <String>[] : _clips.map((row) => row['id'].toString()).toList().reversed.take(500).toList(),
-        'p_offset': widget.authorId != null || widget.savedOnly ? _clips.length : 0,
+        'p_exclude': widget.authorId != null || widget.savedOnly
+            ? <String>[]
+            : _clips
+                .map((row) => row['id'].toString())
+                .toList()
+                .reversed
+                .take(500)
+                .toList(),
+        'p_offset':
+            widget.authorId != null || widget.savedOnly ? _clips.length : 0,
       });
       if (!mounted) return;
       final known = _clips.map((row) => row['id'].toString()).toSet();
-      final fresh = (data as List).whereType<Map>().map((row) => Map<String, dynamic>.from(row)).where((row) => !known.contains(row['id'].toString())).toList();
-      setState(() { _clips.addAll(fresh); _reachedEnd = fresh.isEmpty; });
-    } catch (_) {} finally { _moreLoading = false; }
+      final fresh = (data as List)
+          .whereType<Map>()
+          .map((row) => Map<String, dynamic>.from(row))
+          .where((row) => !known.contains(row['id'].toString()))
+          .toList();
+      setState(() {
+        _clips.addAll(fresh);
+        _reachedEnd = fresh.isEmpty;
+      });
+    } catch (_) {
+    } finally {
+      _moreLoading = false;
+    }
   }
 
   final Map<String, String> _viewSessions = {};
@@ -412,26 +445,36 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
     if (index < 0 || index >= _clips.length) return;
     final id = _clips[index]['id'].toString();
     try {
-      final session = await Supabase.instance.client.rpc('zameel_shorts_start', params: {'p_clip': id});
+      final session = await Supabase.instance.client
+          .rpc('zameel_shorts_start', params: {'p_clip': id});
       if (mounted) _viewSessions[id] = session.toString();
     } catch (_) {}
   }
+
   Future<void> _watched(Map<String, dynamic> clip, int seconds) async {
-    if (seconds < 3 || (seconds != 3 && seconds != 5 && seconds % 10 != 0)) return;
-    final id = clip['id'].toString(), session = _viewSessions[clip['id'].toString()];
+    if (seconds < 3 || (seconds != 3 && seconds != 5 && seconds % 10 != 0))
+      return;
+    final id = clip['id'].toString(),
+        session = _viewSessions[clip['id'].toString()];
     if (session == null || _viewPending.contains(id)) return;
     _viewPending.add(id);
     try {
-      final result = await Supabase.instance.client.rpc('zameel_shorts_view', params: {'p_session': session, 'p_seconds': seconds});
-      if (mounted && result is Map && result['counted'] == true) setState(() => clip['views_count'] = ((clip['views_count'] as num?)?.toInt() ?? 0) + 1);
-    } catch (_) {} finally { _viewPending.remove(id); }
+      final result = await Supabase.instance.client.rpc('zameel_shorts_view',
+          params: {'p_session': session, 'p_seconds': seconds});
+      if (mounted && result is Map && result['counted'] == true)
+        setState(() => clip['views_count'] =
+            ((clip['views_count'] as num?)?.toInt() ?? 0) + 1);
+    } catch (_) {
+    } finally {
+      _viewPending.remove(id);
+    }
   }
+
   Future<void> _rememberMute(bool muted) async {
     _shortMuted = muted;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('zameel_shorts_muted', muted);
   }
-
 
   @override
   void initState() {
@@ -442,7 +485,11 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
     _prefetchAround(_currentIndex);
     _startView(_currentIndex);
     if (_clips.length < 6) _loadMore();
-    SharedPreferences.getInstance().then((prefs) { if (mounted) setState(() => _shortMuted = prefs.getBool('zameel_shorts_muted') ?? false); });
+    SharedPreferences.getInstance().then((prefs) {
+      if (mounted)
+        setState(
+            () => _shortMuted = prefs.getBool('zameel_shorts_muted') ?? false);
+    });
   }
 
   void _prefetchAround(int index) {
@@ -454,7 +501,8 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
     if (url.isNotEmpty) {
       // Signing is lightweight; prefetching an entire video competes with
       // the one the user is watching on a weak connection.
-      unawaited(SecureMediaService.resolve(url).then<void>((_) {}, onError: (Object _) {}));
+      unawaited(SecureMediaService.resolve(url)
+          .then<void>((_) {}, onError: (Object _) {}));
     }
   }
 
@@ -464,11 +512,13 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
     super.dispose();
   }
 
-  Future<void> _shortAction(String action, Map<String, dynamic> clip, bool ar) async {
+  Future<void> _shortAction(
+      String action, Map<String, dynamic> clip, bool ar) async {
     final db = Supabase.instance.client;
     try {
       if (action == 'report') {
-        await showContentReportDialog(context, clip['id'].toString(), 'clip', ar);
+        await showContentReportDialog(
+            context, clip['id'].toString(), 'clip', ar);
         return;
       }
       if (action == 'delete') {
@@ -476,20 +526,40 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
         return;
       }
       if (action == 'block') {
-        final confirm = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(title: Text(ar ? 'حظر الحساب؟' : 'Block account?'), actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(ar ? 'إلغاء' : 'Cancel')), TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(ar ? 'حظر' : 'Block'))]));
+        final confirm = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+                    title: Text(ar ? 'حظر الحساب؟' : 'Block account?'),
+                    actions: [
+                      TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: Text(ar ? 'إلغاء' : 'Cancel')),
+                      TextButton(
+                          onPressed: () => Navigator.pop(ctx, true),
+                          child: Text(ar ? 'حظر' : 'Block'))
+                    ]));
         if (confirm != true) return;
-        await db.from('user_blocks').upsert({'blocker_id': db.auth.currentUser!.id, 'blocked_id': clip['user_id']});
+        await db.from('user_blocks').upsert({
+          'blocker_id': db.auth.currentUser!.id,
+          'blocked_id': clip['user_id']
+        });
       } else {
-        await db.rpc('zameel_shorts_preference', params: {'p_clip': clip['id'], 'p_action': action});
-        if (mounted && (action == 'save' || action == 'unsave')) setState(() => clip['saved'] = action == 'save');
+        await db.rpc('zameel_shorts_preference',
+            params: {'p_clip': clip['id'], 'p_action': action});
+        if (mounted && (action == 'save' || action == 'unsave'))
+          setState(() => clip['saved'] = action == 'save');
       }
       if (action == 'hide' || action == 'block') {
         final actor = db.auth.currentUser?.id;
-        if (actor != null) await HomeSnapshotService.clear(actor, section: 'clips');
+        if (actor != null)
+          await HomeSnapshotService.clear(actor, section: 'clips');
         if (mounted) Navigator.pop(context);
       }
     } catch (_) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ar ? 'تعذر تنفيذ الإجراء' : 'Could not complete action')));
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content:
+                Text(ar ? 'تعذر تنفيذ الإجراء' : 'Could not complete action')));
     }
   }
 
@@ -518,20 +588,27 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
       await ZameelSocialService.deleteClip(clip['id'].toString());
       if (!mounted) return;
       setState(() {
-        _clips.removeWhere((item) => item['id']?.toString() == clip['id']?.toString());
-        if (_clips.isNotEmpty) _currentIndex = _currentIndex.clamp(0, _clips.length - 1).toInt();
+        _clips.removeWhere(
+            (item) => item['id']?.toString() == clip['id']?.toString());
+        if (_clips.isNotEmpty)
+          _currentIndex = _currentIndex.clamp(0, _clips.length - 1).toInt();
       });
       if (_clips.isEmpty) {
         Navigator.pop(context);
       } else {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted && _pageController.hasClients) { _pageController.jumpToPage(_currentIndex); _startView(_currentIndex); }
+          if (mounted && _pageController.hasClients) {
+            _pageController.jumpToPage(_currentIndex);
+            _startView(_currentIndex);
+          }
         });
       }
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(FeatureControl.errorMessage(error, 'تعذر حذف الشورتس'))),
+          SnackBar(
+              content:
+                  Text(FeatureControl.errorMessage(error, 'تعذر حذف الشورتس'))),
         );
       }
     }
@@ -561,7 +638,8 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
   Future<void> _share(Map<String, dynamic> clip) async {
     await ZameelSocialService.shareClip(clip['id'].toString());
     await SharePlus.instance.share(
-      ShareParams(text: 'شاهد هذا المقطع على زميل: zameel://clip/${clip['id']}'),
+      ShareParams(
+          text: 'شاهد هذا المقطع على زميل: zameel://clip/${clip['id']}'),
     );
   }
 
@@ -569,7 +647,9 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
     if (!await FeatureControl.instance.check(context, 'comments')) return;
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => FeatureControl.instance.page('comments', ClipCommentsScreen(clip: clip))),
+      MaterialPageRoute(
+          builder: (_) => FeatureControl.instance
+              .page('comments', ClipCommentsScreen(clip: clip))),
     );
     final engagement = await ZameelSocialService.loadClipEngagement(
       clip['id']?.toString() ?? '',
@@ -585,6 +665,7 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final me = Supabase.instance.client.auth.currentUser?.id;
     final ar = Provider.of<LanguageProvider>(context).isArabic;
     return Scaffold(
@@ -594,10 +675,11 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
         scrollDirection: Axis.vertical,
         itemCount: _clips.length,
         onPageChanged: (index) {
-          if (mounted) setState(() {
-            _currentIndex = index;
-            _controlsVisible = true;
-          });
+          if (mounted)
+            setState(() {
+              _currentIndex = index;
+              _controlsVisible = true;
+            });
           _prefetchAround(index);
           _startView(index);
           if (index >= _clips.length - 5) _loadMore();
@@ -623,9 +705,11 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
                           initialMuted: _shortMuted,
                           tapToPause: true,
                           onMuteChanged: _rememberMute,
-                          onWatchedSeconds: (seconds) => _watched(clip, seconds),
+                          onWatchedSeconds: (seconds) =>
+                              _watched(clip, seconds),
                           onControlsVisibilityChanged: (visible) {
-                            if (mounted && _controlsVisible != visible) setState(() => _controlsVisible = visible);
+                            if (mounted && _controlsVisible != visible)
+                              setState(() => _controlsVisible = visible);
                           },
                         )
                       : const ColoredBox(
@@ -639,106 +723,135 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
                           ),
                         ),
                 ),
-                if (_controlsVisible) Positioned(
-                  top: 8,
-                  left: 8,
-                  child: IconButton.filledTonal(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close_rounded),
-                  ),
-                ),
-                if (_controlsVisible) Positioned(
-                  left: 12,
-                  right: 12,
-                  bottom: 16,
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withAlpha(185),
-                      borderRadius: BorderRadius.circular(18),
+                if (_controlsVisible)
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: IconButton.filledTonal(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close_rounded),
                     ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: CircleAvatar(
-                            backgroundImage:
-                                image.isNotEmpty ? NetworkImage(image) : null,
-                            child: image.isEmpty
-                                ? const Icon(Icons.person_rounded)
-                                : null,
-                          ),
-                          title: Text(
-                            name,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w800,
+                  ),
+                if (_controlsVisible)
+                  Positioned(
+                    left: 12,
+                    right: 12,
+                    bottom: 16,
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withAlpha(185),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: CircleAvatar(
+                              backgroundImage:
+                                  image.isNotEmpty ? NetworkImage(image) : null,
+                              child: image.isEmpty
+                                  ? const Icon(Icons.person_rounded)
+                                  : null,
                             ),
-                          ),
-                          subtitle: (clip['caption']?.toString() ?? '').isEmpty
-                              ? null
-                              : Text(
-                                  clip['caption'].toString(),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(color: Colors.white70),
-                                ),
-                          trailing: PopupMenuButton<String>(
-                            icon: const Icon(Icons.more_horiz, color: Colors.white),
-                            onSelected: (action) => _shortAction(action, clip, ar),
-                            itemBuilder: (_) => [
-                              PopupMenuItem(value: clip['saved'] == true ? 'unsave' : 'save', child: Text(clip['saved'] == true ? (ar ? 'إلغاء الحفظ' : 'Unsave') : (ar ? 'حفظ' : 'Save'))),
-                              if (!mine) ...[
-                                PopupMenuItem(value: 'report', child: Text(ar ? 'إبلاغ' : 'Report')),
-                                PopupMenuItem(value: 'hide', child: Text(ar ? 'لا تعرض هذا المقطع مجددًا' : 'Do not show this Short again')),
-                                PopupMenuItem(value: 'block', child: Text(ar ? 'حظر الحساب' : 'Block account')),
+                            title: VerifiedName(
+                                userId: ownerId,
+                                child: Text(
+                                  name,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                )),
+                            subtitle: (clip['caption']?.toString() ?? '')
+                                    .isEmpty
+                                ? null
+                                : Text(
+                                    clip['caption'].toString(),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style:
+                                        const TextStyle(color: Colors.white70),
+                                  ),
+                            trailing: PopupMenuButton<String>(
+                              icon: Icon(Icons.more_horiz, color: Colors.white),
+                              onSelected: (action) =>
+                                  _shortAction(action, clip, ar),
+                              itemBuilder: (_) => [
+                                PopupMenuItem(
+                                    value: clip['saved'] == true
+                                        ? 'unsave'
+                                        : 'save',
+                                    child: Text(clip['saved'] == true
+                                        ? (ar ? 'إلغاء الحفظ' : 'Unsave')
+                                        : (ar ? 'حفظ' : 'Save'))),
+                                if (!mine) ...[
+                                  PopupMenuItem(
+                                      value: 'report',
+                                      child: Text(ar ? 'إبلاغ' : 'Report')),
+                                  PopupMenuItem(
+                                      value: 'hide',
+                                      child: Text(ar
+                                          ? 'لا تعرض هذا المقطع مجددًا'
+                                          : 'Do not show this Short again')),
+                                  PopupMenuItem(
+                                      value: 'block',
+                                      child: Text(
+                                          ar ? 'حظر الحساب' : 'Block account')),
+                                ],
+                                if (mine)
+                                  PopupMenuItem(
+                                      value: 'delete',
+                                      child: Text(ar ? 'حذف' : 'Delete')),
                               ],
-                              if (mine) PopupMenuItem(value: 'delete', child: Text(ar ? 'حذف' : 'Delete')),
+                            ),
+                            onTap: ownerId == null
+                                ? null
+                                : () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            ProfileScreen(userId: ownerId),
+                                      ),
+                                    ),
+                          ),
+                          Text(
+                              ar
+                                  ? '${clip['views_count'] ?? 0} مشاهدة'
+                                  : '${clip['views_count'] ?? 0} views',
+                              style: const TextStyle(color: Colors.white70)),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              TextButton.icon(
+                                onPressed: () => _like(clip),
+                                icon: Icon(
+                                  clip['liked'] == true
+                                      ? Icons.favorite_rounded
+                                      : Icons.favorite_border_rounded,
+                                  color: clip['liked'] == true
+                                      ? Colors.redAccent
+                                      : null,
+                                ),
+                                label: Text('${clip['likes_count'] ?? 0}'),
+                              ),
+                              TextButton.icon(
+                                onPressed: () => _comment(clip),
+                                icon: const Icon(Icons.chat_bubble_outline),
+                                label: Text('${clip['comments_count'] ?? 0}'),
+                              ),
+                              TextButton.icon(
+                                onPressed: () => _share(clip),
+                                icon: const Icon(Icons.share_outlined),
+                                label: Text(ar ? 'مشاركة' : 'Share'),
+                              ),
                             ],
                           ),
-                          onTap: ownerId == null
-                              ? null
-                              : () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) =>
-                                          ProfileScreen(userId: ownerId),
-                                    ),
-                                  ),
-                        ),
-                        Text(ar ? '${clip['views_count'] ?? 0} مشاهدة' : '${clip['views_count'] ?? 0} views', style: const TextStyle(color: Colors.white70)),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            TextButton.icon(
-                              onPressed: () => _like(clip),
-                              icon: Icon(
-                                clip['liked'] == true
-                                    ? Icons.favorite_rounded
-                                    : Icons.favorite_border_rounded,
-                                color: clip['liked'] == true
-                                    ? Colors.redAccent
-                                    : null,
-                              ),
-                              label: Text('${clip['likes_count'] ?? 0}'),
-                            ),
-                            TextButton.icon(
-                              onPressed: () => _comment(clip),
-                              icon: const Icon(Icons.chat_bubble_outline),
-                              label: Text('${clip['comments_count'] ?? 0}'),
-                            ),
-                            TextButton.icon(
-                              onPressed: () => _share(clip),
-                              icon: const Icon(Icons.share_outlined),
-                              label: Text(ar ? 'مشاركة' : 'Share'),
-                            ),
-                          ],
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           );
@@ -752,7 +865,8 @@ class _ClipAutoPreview extends StatefulWidget {
   final String url;
   final bool autoplay;
   const _ClipAutoPreview({required this.url, required this.autoplay});
-  @override State<_ClipAutoPreview> createState() => _ClipAutoPreviewState();
+  @override
+  State<_ClipAutoPreview> createState() => _ClipAutoPreviewState();
 }
 
 class _ClipAutoPreviewState extends State<_ClipAutoPreview> {
@@ -760,11 +874,16 @@ class _ClipAutoPreviewState extends State<_ClipAutoPreview> {
   Timer? _timer;
   int _generation = 0;
   @override
-  void initState() { super.initState(); _prepare(); }
+  void initState() {
+    super.initState();
+    _prepare();
+  }
+
   @override
   void didUpdateWidget(covariant _ClipAutoPreview oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (MediaCacheService.identity(oldWidget.url) != MediaCacheService.identity(widget.url) ||
+    if (MediaCacheService.identity(oldWidget.url) !=
+            MediaCacheService.identity(widget.url) ||
         oldWidget.autoplay != widget.autoplay) {
       _generation++;
       _timer?.cancel();
@@ -773,12 +892,16 @@ class _ClipAutoPreviewState extends State<_ClipAutoPreview> {
       _prepare();
     }
   }
+
   Future<void> _prepare() async {
     if (widget.url.isEmpty || !widget.autoplay) return;
     final generation = ++_generation;
     try {
       final c = await VideoSourceService.controller(widget.url);
-      if (!mounted || generation != _generation) { await c.dispose(); return; }
+      if (!mounted || generation != _generation) {
+        await c.dispose();
+        return;
+      }
       _controller = c;
       await c.initialize();
       if (!mounted || generation != _generation) return;
@@ -791,21 +914,43 @@ class _ClipAutoPreviewState extends State<_ClipAutoPreview> {
       setState(() {});
     } catch (_) {}
   }
+
   @override
-  void dispose() { _generation++; _timer?.cancel(); _controller?.dispose(); super.dispose(); }
+  void dispose() {
+    _generation++;
+    _timer?.cancel();
+    _controller?.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final c = _controller;
     if (c == null || !c.value.isInitialized) {
-      return const ColoredBox(color: Colors.black87,
-        child: Icon(Icons.video_library_outlined, color: Colors.white54));
+      return const ColoredBox(
+          color: Colors.black87,
+          child: Icon(Icons.video_library_outlined, color: Colors.white54));
     }
-    return FittedBox(fit: BoxFit.cover, child: SizedBox(width: c.value.size.width,
-      height: c.value.size.height, child: VideoPlayer(c)));
+    return FittedBox(
+        fit: BoxFit.cover,
+        child: SizedBox(
+            width: c.value.size.width,
+            height: c.value.size.height,
+            child: VideoPlayer(c)));
   }
 }
 
-Future<void> openShortsViewer(BuildContext context, List<Map<String, dynamic>> clips, int index, {String? authorId, bool savedOnly = false}) async {
- if (clips.isEmpty || index < 0 || index >= clips.length) return;
- await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => FeatureControl.instance.page('clips', _VerticalClipsViewer(clips: clips, initialIndex: index, authorId: authorId, savedOnly: savedOnly))));
+Future<void> openShortsViewer(
+    BuildContext context, List<Map<String, dynamic>> clips, int index,
+    {String? authorId, bool savedOnly = false}) async {
+  if (clips.isEmpty || index < 0 || index >= clips.length) return;
+  await Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => FeatureControl.instance.page(
+          'clips',
+          _VerticalClipsViewer(
+              clips: clips,
+              initialIndex: index,
+              authorId: authorId,
+              savedOnly: savedOnly))));
 }

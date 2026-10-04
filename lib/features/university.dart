@@ -29,7 +29,8 @@ class College {
 // ============================================================
 
 const generalCollege = College(name: '', departments: <String>[]);
-const generalCommunity = University(name: '', type: 'general', city: '', colleges: <College>[generalCollege]);
+const generalCommunity = University(
+    name: '', type: 'general', city: '', colleges: <College>[generalCollege]);
 
 const List<University> universities = [
   // ============================================================
@@ -1538,24 +1539,20 @@ class _UniversityScreenState extends State<UniversityScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
 
     final filtered = universities.where((u) {
       return u.name.contains(search) || u.city.contains(search);
     }).toList();
 
-    final government = filtered
-        .where((u) => u.type == 'حكومية')
-        .toList();
+    final government = filtered.where((u) => u.type == 'حكومية').toList();
 
-    final private = filtered
-        .where((u) => u.type == 'خاصة')
-        .toList();
+    final private = filtered.where((u) => u.type == 'خاصة').toList();
 
     return Directionality(
-      textDirection: languageProvider.isArabic
-          ? TextDirection.rtl
-          : TextDirection.ltr,
+      textDirection:
+          languageProvider.isArabic ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
@@ -1564,9 +1561,9 @@ class _UniversityScreenState extends State<UniversityScreen> {
               'university_title',
               languageProvider.currentLanguage,
             ),
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: AppTheme.legacyForeground,
             ),
           ),
           centerTitle: true,
@@ -1581,7 +1578,7 @@ class _UniversityScreenState extends State<UniversityScreen> {
           ),
         ),
         body: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -1606,22 +1603,22 @@ class _UniversityScreenState extends State<UniversityScreen> {
                       'university_search',
                       languageProvider.currentLanguage,
                     ),
-                    hintStyle: const TextStyle(
-                      color: Colors.white70,
+                    hintStyle: TextStyle(
+                      color: AppTheme.legacySecondary,
                     ),
                     prefixIcon: const Icon(
                       Icons.search,
                       color: Colors.white70,
                     ),
                     filled: true,
-                    fillColor: AppTheme.glassFill,
+                    fillColor: AppTheme.adaptiveGlassFill,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide.none,
                     ),
                   ),
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: AppTheme.legacyForeground,
                   ),
                 ),
               ),
@@ -1632,10 +1629,10 @@ class _UniversityScreenState extends State<UniversityScreen> {
                     'university_government',
                     languageProvider.currentLanguage,
                   ),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 21,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: AppTheme.legacyForeground,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -1652,10 +1649,10 @@ class _UniversityScreenState extends State<UniversityScreen> {
                     'university_private',
                     languageProvider.currentLanguage,
                   ),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 21,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: AppTheme.legacyForeground,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -1682,6 +1679,7 @@ class _UniversityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
     final isArabic = languageProvider.isArabic;
 
@@ -1694,7 +1692,7 @@ class _UniversityCard extends StatelessWidget {
         ),
         leading: CircleAvatar(
           backgroundColor: Colors.white.withAlpha(51),
-          child: const Icon(
+          child: Icon(
             Icons.account_balance_rounded,
             color: Colors.white,
           ),
@@ -1704,8 +1702,8 @@ class _UniversityCard extends StatelessWidget {
             university.name,
             languageProvider.currentLanguage,
           ),
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: AppTheme.legacyForeground,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -1713,8 +1711,8 @@ class _UniversityCard extends StatelessWidget {
           isArabic
               ? '📍 ${university.city} - ${university.type}'
               : '📍 ${university.city} - ${university.type}',
-          style: const TextStyle(
-            color: Colors.white70,
+          style: TextStyle(
+            color: AppTheme.legacySecondary,
             fontSize: 12,
           ),
         ),
@@ -1752,12 +1750,12 @@ class CollegeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
 
     return Directionality(
-      textDirection: languageProvider.isArabic
-          ? TextDirection.rtl
-          : TextDirection.ltr,
+      textDirection:
+          languageProvider.isArabic ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
@@ -1766,9 +1764,9 @@ class CollegeScreen extends StatelessWidget {
               'college_title',
               languageProvider.currentLanguage,
             ),
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: AppTheme.legacyForeground,
             ),
           ),
           centerTitle: true,
@@ -1783,7 +1781,7 @@ class CollegeScreen extends StatelessWidget {
           ),
         ),
         body: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -1803,10 +1801,10 @@ class CollegeScreen extends StatelessWidget {
                     languageProvider.currentLanguage,
                   ),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: AppTheme.legacyForeground,
                   ),
                 ),
               ),
@@ -1821,7 +1819,7 @@ class CollegeScreen extends StatelessWidget {
                     ),
                     leading: CircleAvatar(
                       backgroundColor: Colors.white.withAlpha(51),
-                      child: const Icon(
+                      child: Icon(
                         Icons.school_outlined,
                         color: Colors.white,
                       ),
@@ -1831,8 +1829,8 @@ class CollegeScreen extends StatelessWidget {
                         college.name,
                         languageProvider.currentLanguage,
                       ),
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: AppTheme.legacyForeground,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -1879,12 +1877,12 @@ class DepartmentScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
 
     return Directionality(
-      textDirection: languageProvider.isArabic
-          ? TextDirection.rtl
-          : TextDirection.ltr,
+      textDirection:
+          languageProvider.isArabic ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
@@ -1893,9 +1891,9 @@ class DepartmentScreen extends StatelessWidget {
               'department_title',
               languageProvider.currentLanguage,
             ),
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: AppTheme.legacyForeground,
             ),
           ),
           centerTitle: true,
@@ -1910,7 +1908,7 @@ class DepartmentScreen extends StatelessWidget {
           ),
         ),
         body: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -1930,10 +1928,10 @@ class DepartmentScreen extends StatelessWidget {
                     languageProvider.currentLanguage,
                   ),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: AppTheme.legacyForeground,
                   ),
                 ),
               ),
@@ -1948,7 +1946,7 @@ class DepartmentScreen extends StatelessWidget {
                     ),
                     leading: CircleAvatar(
                       backgroundColor: Colors.white.withAlpha(51),
-                      child: const Icon(
+                      child: Icon(
                         Icons.menu_book_outlined,
                         color: Colors.white,
                       ),
@@ -1958,8 +1956,8 @@ class DepartmentScreen extends StatelessWidget {
                         department,
                         languageProvider.currentLanguage,
                       ),
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: AppTheme.legacyForeground,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -1971,17 +1969,14 @@ class DepartmentScreen extends StatelessWidget {
 
                     // حفظ الجامعة والكلية والتخصص ثم الانتقال للرئيسية
                     onTap: () async {
-                      final user =
-                          Supabase.instance.client.auth.currentUser;
+                      final user = Supabase.instance.client.auth.currentUser;
 
                       if (user == null) {
                         return;
                       }
 
                       try {
-                        await Supabase.instance.client
-                            .from('users')
-                            .update({
+                        await Supabase.instance.client.from('users').update({
                           'university': university.name,
                           'college': college.name,
                           'department': department,
@@ -2029,4 +2024,3 @@ class DepartmentScreen extends StatelessWidget {
 // ============================================================
 // HOME FEED SCREEN (معدل بالكامل)
 // ============================================================
-

@@ -1,3 +1,4 @@
+import 'package:zameel/theme/appearance_controller.dart';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -156,7 +157,8 @@ class _BookElement {
       };
 
   factory _BookElement.fromJson(Map<String, dynamic> json) => _BookElement(
-        id: json['id']?.toString() ?? DateTime.now().microsecondsSinceEpoch.toString(),
+        id: json['id']?.toString() ??
+            DateTime.now().microsecondsSinceEpoch.toString(),
         type: json['type']?.toString() ?? 'text',
         value: json['value']?.toString() ?? '',
         x: (json['x'] as num?)?.toDouble() ?? .5,
@@ -198,25 +200,26 @@ class _BookPage {
       'صفحتي الشخصية - الرسالة' ||
       'صفحتي - الصور والذكريات' ||
       'صفحتي - الكلمات والكتابة' ||
-      _ => rawTitle,
+      _ =>
+        rawTitle,
     };
     return _BookPage(
-        number: (json['page_number'] as num?)?.toInt() ?? 1,
-        title: cleanTitle,
-        authorId: json['author_id']?.toString(),
-        strokes: ((json['strokes'] as List?) ?? const [])
-            .whereType<Map>()
-            .map((e) => _Stroke.fromJson(Map<String, dynamic>.from(e)))
-            .toList(),
-        images: ((json['images'] as List?) ?? const [])
-            .whereType<Map>()
-            .map((e) => _BookImage.fromJson(Map<String, dynamic>.from(e)))
-            .toList(),
-        elements: ((json['elements'] as List?) ?? const [])
-            .whereType<Map>()
-            .map((e) => _BookElement.fromJson(Map<String, dynamic>.from(e)))
-            .toList(),
-      );
+      number: (json['page_number'] as num?)?.toInt() ?? 1,
+      title: cleanTitle,
+      authorId: json['author_id']?.toString(),
+      strokes: ((json['strokes'] as List?) ?? const [])
+          .whereType<Map>()
+          .map((e) => _Stroke.fromJson(Map<String, dynamic>.from(e)))
+          .toList(),
+      images: ((json['images'] as List?) ?? const [])
+          .whereType<Map>()
+          .map((e) => _BookImage.fromJson(Map<String, dynamic>.from(e)))
+          .toList(),
+      elements: ((json['elements'] as List?) ?? const [])
+          .whereType<Map>()
+          .map((e) => _BookElement.fromJson(Map<String, dynamic>.from(e)))
+          .toList(),
+    );
   }
 }
 
@@ -266,19 +269,23 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
       if (widget.bookId != null) {
         book = await db
             .from('graduation_books')
-            .select('id,owner_id,title,student_name,university,major,graduation_year,is_public,allow_writes,created_at,updated_at')
+            .select(
+                'id,owner_id,title,student_name,university,major,graduation_year,is_public,allow_writes,created_at,updated_at')
             .eq('id', widget.bookId!)
             .maybeSingle();
       } else {
         final ownerId = widget.ownerId ?? uid;
         book = await db
             .from('graduation_books')
-            .select('id,owner_id,title,student_name,university,major,graduation_year,is_public,allow_writes,created_at,updated_at')
+            .select(
+                'id,owner_id,title,student_name,university,major,graduation_year,is_public,allow_writes,created_at,updated_at')
             .eq('owner_id', ownerId)
             .maybeSingle();
       }
 
-      if (book == null && widget.bookId == null && (widget.ownerId == null || widget.ownerId == uid)) {
+      if (book == null &&
+          widget.bookId == null &&
+          (widget.ownerId == null || widget.ownerId == uid)) {
         _bookId = await db.rpc(
           'ensure_graduation_book',
           params: {
@@ -288,7 +295,12 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
             'p_graduation_year': widget.graduationYear,
           },
         );
-        book = await db.from('graduation_books').select('id,owner_id,title,student_name,university,major,graduation_year,is_public,allow_writes,created_at,updated_at').eq('id', _bookId!).single();
+        book = await db
+            .from('graduation_books')
+            .select(
+                'id,owner_id,title,student_name,university,major,graduation_year,is_public,allow_writes,created_at,updated_at')
+            .eq('id', _bookId!)
+            .single();
       }
 
       if (book == null) throw Exception('لا يوجد دفتر خريجين لهذا المستخدم');
@@ -298,7 +310,9 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
       _inviteToken = null;
       if (_owner && _bookId != null) {
         try {
-          _inviteToken = (await db.rpc('get_graduation_book_invite_token', params: {'p_book_id': _bookId})).toString();
+          _inviteToken = (await db.rpc('get_graduation_book_invite_token',
+                  params: {'p_book_id': _bookId}))
+              .toString();
         } catch (_) {}
       }
       _owner = _ownerId == uid;
@@ -306,7 +320,8 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
       _allowWrites = book['allow_writes'] != false;
 
       if (_owner && _bookId != null) {
-        await db.rpc('ensure_graduation_book_150_pages', params: {'p_book_id': _bookId});
+        await db.rpc('ensure_graduation_book_150_pages',
+            params: {'p_book_id': _bookId});
       }
 
       if (!_owner) {
@@ -329,16 +344,20 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
         }
         if (!_joined) throw Exception('استخدم رابط الدعوة للانضمام إلى الدفتر');
         if (_bookId != null && _allowWrites) {
-          await db.rpc('ensure_graduation_book_member_pages', params: {'p_book_id': _bookId});
+          await db.rpc('ensure_graduation_book_member_pages',
+              params: {'p_book_id': _bookId});
         }
       }
 
       final rows = await db
           .from('graduation_book_pages')
-          .select('id,book_id,page_number,author_id,title,strokes,images,elements,created_at,updated_at')
+          .select(
+              'id,book_id,page_number,author_id,title,strokes,images,elements,created_at,updated_at')
           .eq('book_id', _bookId!)
           .order('page_number');
-      final allPages = List<Map<String, dynamic>>.from(rows).map(_BookPage.fromJson).toList();
+      final allPages = List<Map<String, dynamic>>.from(rows)
+          .map(_BookPage.fromJson)
+          .toList();
       for (final page in allPages) {
         for (final image in page.images) {
           image.displayUrl = await SecureMediaService.resolve(image.url);
@@ -348,7 +367,8 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
       if (_owner) {
         _pages = allPages;
       } else {
-        _pages = allPages.where((page) => page.authorId == uid).take(2).toList();
+        _pages =
+            allPages.where((page) => page.authorId == uid).take(2).toList();
       }
 
       if (!_owner && _pages.length < 2) {
@@ -362,8 +382,10 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
       setState(() {
         _loading = false;
         final message = e.toString();
-        if (message.contains('PGRST205') || message.contains('graduation_books')) {
-          _error = 'ميزة دفتر الخريجين تحتاج تفعيل إعداد الصفحات في Supabase.\n\nشغّل ملف: supabase/manual/017_graduation_book_150_pages_apply.sql\nثم أعد فتح الدفتر.';
+        if (message.contains('PGRST205') ||
+            message.contains('graduation_books')) {
+          _error =
+              'ميزة دفتر الخريجين تحتاج تفعيل إعداد الصفحات في Supabase.\n\nشغّل ملف: supabase/manual/017_graduation_book_150_pages_apply.sql\nثم أعد فتح الدفتر.';
         } else {
           _error = 'تعذر فتح دفتر الخريجين.\n$message';
         }
@@ -391,21 +413,19 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
 
   Future<void> _saveBookSettings() async {
     if (!_owner || _bookId == null) return;
-    await Supabase.instance.client
-        .from('graduation_books')
-        .update({
-          'is_public': _public,
-          'allow_writes': _allowWrites,
-          'updated_at': DateTime.now().toIso8601String(),
-        })
-        .eq('id', _bookId!);
+    await Supabase.instance.client.from('graduation_books').update({
+      'is_public': _public,
+      'allow_writes': _allowWrites,
+      'updated_at': DateTime.now().toIso8601String(),
+    }).eq('id', _bookId!);
   }
 
   String get _inviteLink =>
       'zameel://graduation/${_bookId ?? ''}${_inviteToken == null ? '' : '?token=${Uri.encodeComponent(_inviteToken!)}'}';
 
   Future<void> _shareLink() async {
-    await SharePlus.instance.share(ShareParams(text: 'دفتر الخريجين في Zameel\n$_inviteLink'));
+    await SharePlus.instance
+        .share(ShareParams(text: 'دفتر الخريجين في Zameel\n$_inviteLink'));
   }
 
   Future<void> _copyLink() async {
@@ -474,8 +494,7 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
     } catch (e) {
       if (!mounted) return;
       final message = e.toString();
-      final needsStorageSetup =
-          message.contains('Bucket not found') ||
+      final needsStorageSetup = message.contains('Bucket not found') ||
           message.contains('row-level security') ||
           message.contains('new row violates') ||
           message.contains('Unauthorized') ||
@@ -510,8 +529,13 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('إلغاء')),
-          FilledButton(onPressed: () => Navigator.pop(dialogContext, controller.text.trim()), child: const Text('إضافة')),
+          TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('إلغاء')),
+          FilledButton(
+              onPressed: () =>
+                  Navigator.pop(dialogContext, controller.text.trim()),
+              child: const Text('إضافة')),
         ],
       ),
     );
@@ -606,8 +630,11 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
         final scale = scales[i % scales.length];
         image
           ..x = (a.dx + _jitter(image.url, i, .012)).clamp(.17, .83).toDouble()
-          ..y = (a.dy + _jitter(image.url, i + 90, .010)).clamp(.17, .86).toDouble()
-          ..scale = count <= 4 ? (scale + .07).clamp(.34, .56).toDouble() : scale
+          ..y = (a.dy + _jitter(image.url, i + 90, .010))
+              .clamp(.17, .86)
+              .toDouble()
+          ..scale =
+              count <= 4 ? (scale + .07).clamp(.34, .56).toDouble() : scale
           ..rotation = rotations[i % rotations.length];
       }
       return;
@@ -616,13 +643,15 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
     // Writing page: text is a flowing stack in the upper portion; images occupy
     // a dedicated lower strip so the two content types never overlap.
     final textElements = page.elements.where((e) => e.type == 'text').toList();
-    final stickerElements = page.elements.where((e) => e.type != 'text').toList();
+    final stickerElements =
+        page.elements.where((e) => e.type != 'text').toList();
 
     var y = .18;
     for (var i = 0; i < textElements.length; i++) {
       final e = textElements[i];
       final lineCount = (e.value.trim().length / 34).ceil().clamp(1, 5);
-      final blockHeight = (.055 + (lineCount - 1) * .032) * e.scale.clamp(.75, 1.0);
+      final blockHeight =
+          (.055 + (lineCount - 1) * .032) * e.scale.clamp(.75, 1.0);
       e
         ..x = .50
         ..y = y.clamp(.14, .58).toDouble()
@@ -655,8 +684,12 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
         final a = anchors[i % anchors.length];
         image
           ..x = (a.dx + _jitter(image.url, i, .008)).clamp(.14, .86).toDouble()
-          ..y = (a.dy + _jitter(image.url, i + 180, .006)).clamp(.72, .91).toDouble()
-          ..scale = count <= 3 ? (scales[i % scales.length] + .06).clamp(.27, .38).toDouble() : scales[i % scales.length]
+          ..y = (a.dy + _jitter(image.url, i + 180, .006))
+              .clamp(.72, .91)
+              .toDouble()
+          ..scale = count <= 3
+              ? (scales[i % scales.length] + .06).clamp(.27, .38).toDouble()
+              : scales[i % scales.length]
           ..rotation = rotations[i % rotations.length];
       }
     }
@@ -669,7 +702,8 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
       return true;
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر حفظ الصفحة: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('تعذر حفظ الصفحة: $e')));
       }
       return false;
     }
@@ -678,7 +712,8 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
   Future<void> _exportPdf() async {
     if (!_owner) return;
     final doc = pw.Document();
-    final pages = List<_BookPage>.from(_pages)..sort((a, b) => a.number.compareTo(b.number));
+    final pages = List<_BookPage>.from(_pages)
+      ..sort((a, b) => a.number.compareTo(b.number));
     for (final page in pages) {
       final png = await _renderPage(page);
       doc.addPage(
@@ -708,14 +743,17 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
     const height = 1697.0;
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder, const Rect.fromLTWH(0, 0, width, height));
-    canvas.drawRect(const Rect.fromLTWH(0, 0, width, height), Paint()..color = AppTheme.bookPaper);
+    canvas.drawRect(const Rect.fromLTWH(0, 0, width, height),
+        Paint()..color = AppTheme.bookPaper);
 
     final borderPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 10
       ..color = AppTheme.bookAccentLight;
     canvas.drawRRect(
-      RRect.fromRectAndRadius(const Rect.fromLTWH(18, 18, width - 36, height - 36), const Radius.circular(24)),
+      RRect.fromRectAndRadius(
+          const Rect.fromLTWH(18, 18, width - 36, height - 36),
+          const Radius.circular(24)),
       borderPaint,
     );
 
@@ -740,7 +778,8 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
         final rawH = image.height * image.scale;
         final widthCap = image.width * .36;
         final heightCap = image.height * .22;
-        final factor = [1.0, widthCap / rawW, heightCap / rawH].reduce((a, b) => a < b ? a : b);
+        final factor = [1.0, widthCap / rawW, heightCap / rawH]
+            .reduce((a, b) => a < b ? a : b);
         final w = rawW * factor;
         final h = rawH * factor;
         canvas.save();
@@ -762,7 +801,8 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
           text: element.value,
           style: TextStyle(
             fontSize: element.fontSize * element.scale,
-            fontWeight: element.type == 'text' ? FontWeight.w600 : FontWeight.normal,
+            fontWeight:
+                element.type == 'text' ? FontWeight.w600 : FontWeight.normal,
             color: Color(element.color),
           ),
         ),
@@ -779,7 +819,10 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
     final pageNumber = TextPainter(
       text: TextSpan(
         text: '${page.number}',
-        style: const TextStyle(fontSize: 28, color: AppTheme.bookText, fontWeight: FontWeight.bold),
+        style: const TextStyle(
+            fontSize: 28,
+            color: AppTheme.bookText,
+            fontWeight: FontWeight.bold),
       ),
       textDirection: TextDirection.ltr,
     )..layout();
@@ -792,7 +835,8 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
   }
 
   List<_Stroke> _cloneStrokes(List<_Stroke> strokes) => strokes
-      .map((s) => _Stroke(points: List<Offset>.from(s.points), color: s.color, width: s.width))
+      .map((s) => _Stroke(
+          points: List<Offset>.from(s.points), color: s.color, width: s.width))
       .toList();
 
   void _beginHistory(_BookPage page) {
@@ -829,19 +873,23 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
       return;
     }
     _beginHistory(page);
-    page.strokes.add(_Stroke(points: [point], color: _penColor, width: _penWidth));
+    page.strokes
+        .add(_Stroke(points: [point], color: _penColor, width: _penWidth));
     setState(() {});
   }
 
   void _drawMove(_BookPage page, Offset point) {
-    if (!_canEditPage(page) || !page.isWritingPage || page.strokes.isEmpty) return;
+    if (!_canEditPage(page) || !page.isWritingPage || page.strokes.isEmpty)
+      return;
     page.strokes.last.points.add(point);
     setState(() {});
   }
 
-  bool _canEditPage(_BookPage page) => _owner || (_canWrite && page.authorId == _uid);
+  bool _canEditPage(_BookPage page) =>
+      _owner || (_canWrite && page.authorId == _uid);
 
-  Widget _paperPage({required Widget child, bool leftPage = false, bool rightPage = false}) {
+  Widget _paperPage(
+      {required Widget child, bool leftPage = false, bool rightPage = false}) {
     return Container(
       margin: EdgeInsets.only(
         top: 4,
@@ -910,17 +958,23 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
             children: [
               Positioned.fill(
                 child: RepaintBoundary(
-                  child: CustomPaint(painter: _PagePainter(page, paintRevision)),
+                  child:
+                      CustomPaint(painter: _PagePainter(page, paintRevision)),
                 ),
               ),
-              if (editing && page.isWritingPage && page.elements.isEmpty && page.strokes.isEmpty && page.images.isEmpty)
+              if (editing &&
+                  page.isWritingPage &&
+                  page.elements.isEmpty &&
+                  page.strokes.isEmpty &&
+                  page.images.isEmpty)
                 const SizedBox.shrink(),
               if (editable && page.isWritingPage && penMode)
                 Positioned.fill(
                   child: GestureDetector(
                     behavior: HitTestBehavior.translucent,
                     onPanStart: (details) {
-                      _drawStart(page, details.localPosition, eraserOverride: eraser);
+                      _drawStart(page, details.localPosition,
+                          eraserOverride: eraser);
                       onChanged?.call();
                     },
                     onPanUpdate: (details) {
@@ -977,10 +1031,14 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
                     border: Border.all(color: AppTheme.bookEarth),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     child: Text(
                       'صفحة ${page.number}',
-                      style: const TextStyle(color: AppTheme.bookTextSoft, fontSize: 9.5, fontWeight: FontWeight.w700),
+                      style: const TextStyle(
+                          color: AppTheme.bookTextSoft,
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w700),
                     ),
                   ),
                 ),
@@ -1000,7 +1058,11 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
           gradient: LinearGradient(
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
-            colors: [AppTheme.bookOliveOverlayStrong, AppTheme.bookWhiteOverlay, AppTheme.bookOliveOverlayStrong],
+            colors: [
+              AppTheme.bookOliveOverlayStrong,
+              AppTheme.bookWhiteOverlay,
+              AppTheme.bookOliveOverlayStrong
+            ],
           ),
         ),
         child: Center(
@@ -1015,14 +1077,20 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
   }
 
   Widget _spreadView(List<_BookPage> spread) {
-    final left = spread.firstWhere((p) => p.number.isOdd, orElse: () => spread.first);
-    final right = spread.firstWhere((p) => p.number.isEven, orElse: () => spread.last);
+    final left =
+        spread.firstWhere((p) => p.number.isOdd, orElse: () => spread.first);
+    final right =
+        spread.firstWhere((p) => p.number.isEven, orElse: () => spread.last);
     return Container(
       margin: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
         boxShadow: const [
-          BoxShadow(blurRadius: 30, spreadRadius: -6, color: AppTheme.bookPhotoShadow, offset: Offset(0, 12)),
+          BoxShadow(
+              blurRadius: 30,
+              spreadRadius: -6,
+              color: AppTheme.bookPhotoShadow,
+              offset: Offset(0, 12)),
         ],
         gradient: const LinearGradient(
           begin: Alignment.topCenter,
@@ -1039,7 +1107,8 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
               child: Directionality(
                 textDirection: TextDirection.rtl,
                 child: GestureDetector(
-                  onTap: _canEditPage(left) ? () => _openPageEditor(left) : null,
+                  onTap:
+                      _canEditPage(left) ? () => _openPageEditor(left) : null,
                   child: _pageView(left, leftPage: true),
                 ),
               ),
@@ -1049,7 +1118,8 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
               child: Directionality(
                 textDirection: TextDirection.rtl,
                 child: GestureDetector(
-                  onTap: _canEditPage(right) ? () => _openPageEditor(right) : null,
+                  onTap:
+                      _canEditPage(right) ? () => _openPageEditor(right) : null,
                   child: _pageView(right, rightPage: true),
                 ),
               ),
@@ -1066,9 +1136,12 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('تفريغ الصفحة؟'),
-        content: const Text('سيتم حذف الصور والكتابة والعناصر من هذه الصفحة، مع إبقاء الصفحة نفسها للمشارك.'),
+        content: const Text(
+            'سيتم حذف الصور والكتابة والعناصر من هذه الصفحة، مع إبقاء الصفحة نفسها للمشارك.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('إلغاء')),
+          TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('إلغاء')),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
@@ -1079,7 +1152,8 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
     );
     if (confirm != true) return;
     try {
-      final mediaToDelete = page.images.map((image) => image.url).toList(growable: false);
+      final mediaToDelete =
+          page.images.map((image) => image.url).toList(growable: false);
       await Supabase.instance.client
           .from('graduation_book_pages')
           .update({
@@ -1099,11 +1173,13 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
       }
       if (mounted) setState(() {});
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم تفريغ الصفحة بنجاح ✓')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('تم تفريغ الصفحة بنجاح ✓')));
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر تفريغ الصفحة: $e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('تعذر تفريغ الصفحة: $e')));
     }
   }
 
@@ -1117,7 +1193,8 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
       MaterialPageRoute(
         builder: (_) => _GraduationPageEditor(
           title: 'تحرير الصفحة ${page.number}',
-          pageBuilder: (context, revision, onChanged, penMode, eraserMode) => _pageView(
+          pageBuilder: (context, revision, onChanged, penMode, eraserMode) =>
+              _pageView(
             page,
             editing: true,
             onChanged: onChanged,
@@ -1128,15 +1205,29 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
             rightPage: page.isWritingPage,
           ),
           onAddImage: (onChanged) => _addImage(page, onChanged: onChanged),
-          onAddText: page.isWritingPage ? (onChanged) => _addText(page, onChanged: onChanged) : null,
-          onAddSticker: page.isWritingPage ? (onChanged) => _addSticker(page, onChanged: onChanged) : null,
+          onAddText: page.isWritingPage
+              ? (onChanged) => _addText(page, onChanged: onChanged)
+              : null,
+          onAddSticker: page.isWritingPage
+              ? (onChanged) => _addSticker(page, onChanged: onChanged)
+              : null,
           onSave: () => _savePage(page),
           onClearPage: _owner ? () => _clearPage(page) : null,
           canUsePen: page.isWritingPage,
           canAddText: page.isWritingPage,
           canAddSticker: page.isWritingPage,
-          onUndo: page.isWritingPage ? (notify) { _undo(page); notify(); } : null,
-          onRedo: page.isWritingPage ? (notify) { _redo(page); notify(); } : null,
+          onUndo: page.isWritingPage
+              ? (notify) {
+                  _undo(page);
+                  notify();
+                }
+              : null,
+          onRedo: page.isWritingPage
+              ? (notify) {
+                  _redo(page);
+                  notify();
+                }
+              : null,
           onTogglePen: (enabled, notify) {
             _penMode = enabled;
             _eraser = false;
@@ -1155,7 +1246,8 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
     if (changed == true && mounted) {
       setState(() {});
       if (page.isImagePage) {
-        final candidates = _pages.where((p) => p.number == page.number + 1 && p.authorId == page.authorId);
+        final candidates = _pages.where(
+            (p) => p.number == page.number + 1 && p.authorId == page.authorId);
         final next = candidates.isEmpty ? null : candidates.first;
         if (next != null && _canEditPage(next)) {
           await _openPageEditor(next);
@@ -1165,7 +1257,8 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
   }
 
   List<List<_BookPage>> _spreads() {
-    final sorted = List<_BookPage>.from(_pages)..sort((a, b) => a.number.compareTo(b.number));
+    final sorted = List<_BookPage>.from(_pages)
+      ..sort((a, b) => a.number.compareTo(b.number));
     final result = <List<_BookPage>>[];
     for (var i = 0; i < sorted.length; i += 2) {
       if (i + 1 < sorted.length) result.add([sorted[i], sorted[i + 1]]);
@@ -1191,36 +1284,51 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text('إدارة المشاركين', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+                const Text('إدارة المشاركين',
+                    style:
+                        TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 8),
-                const Text('كل مشارك يملك صفحتين فقط. يمكنك إزالة مشارك ومسح صفحتيه.'),
+                const Text(
+                    'كل مشارك يملك صفحتين فقط. يمكنك إزالة مشارك ومسح صفحتيه.'),
                 const SizedBox(height: 10),
                 if (rows.isEmpty)
                   const Padding(
                     padding: EdgeInsets.all(18),
-                    child: Text('لا يوجد مشاركون بعد.', textAlign: TextAlign.center),
+                    child: Text('لا يوجد مشاركون بعد.',
+                        textAlign: TextAlign.center),
                   )
                 else
                   ...rows.map((row) {
                     final userId = row['user_id']?.toString() ?? '';
-                    final page = _pages.where((p) => p.authorId == userId).toList();
+                    final page =
+                        _pages.where((p) => p.authorId == userId).toList();
                     return ListTile(
-                      leading: const CircleAvatar(child: Icon(Icons.person_rounded)),
-                      title: Text(userId.length > 8 ? 'مشارك ${userId.substring(0, 8)}' : 'مشارك'),
-                      subtitle: Text('صفحات ${page.isEmpty ? 'غير محمّلة' : page.map((p) => p.number).join(' و ')}'),
+                      leading:
+                          const CircleAvatar(child: Icon(Icons.person_rounded)),
+                      title: Text(userId.length > 8
+                          ? 'مشارك ${userId.substring(0, 8)}'
+                          : 'مشارك'),
+                      subtitle: Text(
+                          'صفحات ${page.isEmpty ? 'غير محمّلة' : page.map((p) => p.number).join(' و ')}'),
                       trailing: IconButton(
                         tooltip: 'إزالة المشارك',
-                        icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+                        icon: const Icon(Icons.delete_outline_rounded,
+                            color: Colors.red),
                         onPressed: () async {
                           final confirm = await showDialog<bool>(
                             context: sheetContext,
                             builder: (dialogContext) => AlertDialog(
                               title: const Text('إزالة المشارك؟'),
-                              content: const Text('سيتم حذف صفحتي المشارك من دفتر الخريجين، ولن يتم حذف أي صفحة لمشارك آخر.'),
+                              content: const Text(
+                                  'سيتم حذف صفحتي المشارك من دفتر الخريجين، ولن يتم حذف أي صفحة لمشارك آخر.'),
                               actions: [
-                                TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('إلغاء')),
+                                TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(dialogContext, false),
+                                    child: const Text('إلغاء')),
                                 FilledButton(
-                                  onPressed: () => Navigator.pop(dialogContext, true),
+                                  onPressed: () =>
+                                      Navigator.pop(dialogContext, true),
                                   child: const Text('إزالة'),
                                 ),
                               ],
@@ -1230,17 +1338,23 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
                           try {
                             await Supabase.instance.client.rpc(
                               'remove_graduation_book_member',
-                              params: {'p_book_id': _bookId, 'p_user_id': userId},
+                              params: {
+                                'p_book_id': _bookId,
+                                'p_user_id': userId
+                              },
                             );
                             if (!mounted) return;
                             setState(() {
                               _pages.removeWhere((p) => p.authorId == userId);
-                              _pages.sort((a, b) => a.number.compareTo(b.number));
+                              _pages
+                                  .sort((a, b) => a.number.compareTo(b.number));
                             });
-                            if (sheetContext.mounted) Navigator.pop(sheetContext);
+                            if (sheetContext.mounted)
+                              Navigator.pop(sheetContext);
                           } catch (e) {
                             if (!mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر إزالة المشارك: $e')));
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                content: Text('تعذر إزالة المشارك: $e')));
                           }
                         },
                       ),
@@ -1253,7 +1367,8 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر تحميل المشاركين: $e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('تعذر تحميل المشاركين: $e')));
     }
   }
 
@@ -1269,7 +1384,9 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
             children: [
               const Align(
                 alignment: AlignmentDirectional.centerStart,
-                child: Text('⚙️ إعدادات دفتر الخريجين', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+                child: Text('⚙️ إعدادات دفتر الخريجين',
+                    style:
+                        TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
               ),
               const SizedBox(height: 10),
               SwitchListTile(
@@ -1320,8 +1437,10 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final ar = Provider.of<LanguageProvider>(context).isArabic;
-    if (_loading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (_loading)
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     if (_error != null) {
       return Scaffold(
         appBar: AppBar(title: const Text('دفتر الخريجين')),
@@ -1331,9 +1450,12 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.menu_book_rounded, size: 64, color: AppTheme.primary),
+                const Icon(Icons.menu_book_rounded,
+                    size: 64, color: AppTheme.primary),
                 const SizedBox(height: 14),
-                Text(_error!, textAlign: TextAlign.center, style: const TextStyle(height: 1.5)),
+                Text(_error!,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(height: 1.5)),
                 const SizedBox(height: 18),
                 FilledButton.icon(
                   onPressed: () {
@@ -1358,7 +1480,7 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
     return Directionality(
       textDirection: ar ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
-        backgroundColor: AppTheme.surfaceAlt,
+        backgroundColor: AppTheme.adaptiveSurfaceAlt,
         appBar: AppBar(
           title: Text('📖 دفتر الخريجين - ${widget.studentName}'),
           actions: [
@@ -1381,17 +1503,23 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
               padding: const EdgeInsets.fromLTRB(18, 10, 18, 4),
               child: Row(
                 children: [
-                  const Icon(Icons.menu_book_rounded, color: AppTheme.primary, size: 22),
+                  const Icon(Icons.menu_book_rounded,
+                      color: AppTheme.primary, size: 22),
                   const SizedBox(width: 8),
                   const Expanded(
                     child: Text(
                       'دفتر الخريجين',
-                      style: TextStyle(color: AppTheme.primaryDark, fontSize: 16, fontWeight: FontWeight.w800),
+                      style: TextStyle(
+                          color: AppTheme.primaryDark,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800),
                     ),
                   ),
                   Text(
                     _owner ? '150 صفحة • 75 فتحة' : 'صفحتاك',
-                    style: const TextStyle(color: AppTheme.textSecondary, fontWeight: FontWeight.w700),
+                    style: TextStyle(
+                        color: AppTheme.adaptiveSecondary,
+                        fontWeight: FontWeight.w700),
                   ),
                 ],
               ),
@@ -1403,7 +1531,8 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(10, 2, 10, 0),
                         child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 1100, maxHeight: 820),
+                          constraints: const BoxConstraints(
+                              maxWidth: 1100, maxHeight: 820),
                           child: AspectRatio(
                             aspectRatio: 1.00,
                             child: _owner
@@ -1419,7 +1548,9 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
                                       alignment: Alignment.center,
                                       child: const Text(
                                         'نهاية دفتر الخريجين',
-                                        style: TextStyle(fontWeight: FontWeight.w800, color: AppTheme.primaryDark),
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.w800,
+                                            color: AppTheme.primaryDark),
                                       ),
                                     ),
                                     children: spreads.map(_spreadView).toList(),
@@ -1442,17 +1573,21 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
                       border: Border.all(color: AppTheme.bookAccentLight),
                     ),
                     child: const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.touch_app_rounded, color: AppTheme.primary),
+                          Icon(Icons.touch_app_rounded,
+                              color: AppTheme.primary),
                           SizedBox(width: 8),
                           Flexible(
                             child: Text(
                               'اضغط على صفحتك لفتحها بحجم كبير والتحرير براحة، ثم احفظ وانتقل للصفحة التالية.',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: AppTheme.primaryDark, fontWeight: FontWeight.w700),
+                              style: TextStyle(
+                                  color: AppTheme.primaryDark,
+                                  fontWeight: FontWeight.w700),
                             ),
                           ),
                         ],
@@ -1496,7 +1631,8 @@ class _GraduationBookScreenState extends State<GraduationBookScreen> {
 
 class _GraduationPageEditor extends StatefulWidget {
   final String title;
-  final Widget Function(BuildContext context, int revision, VoidCallback onChanged, bool penMode, bool eraserMode) pageBuilder;
+  final Widget Function(BuildContext context, int revision,
+      VoidCallback onChanged, bool penMode, bool eraserMode) pageBuilder;
   final Future<void> Function(VoidCallback onChanged) onAddImage;
   final Future<void> Function(VoidCallback onChanged)? onAddText;
   final void Function(VoidCallback onChanged)? onAddSticker;
@@ -1565,7 +1701,8 @@ class _GraduationPageEditorState extends State<_GraduationPageEditor> {
         _dirty = false;
         _saving = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم حفظ الصفحة ✓')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('تم حفظ الصفحة ✓')));
       await Future<void>.delayed(const Duration(milliseconds: 250));
       if (mounted) Navigator.pop(context, true);
     } else {
@@ -1584,8 +1721,12 @@ class _GraduationPageEditorState extends State<_GraduationPageEditor> {
         title: const Text('الخروج دون حفظ؟'),
         content: const Text('لديك تعديلات لم تُحفظ بعد.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('البقاء')),
-          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('خروج')), 
+          TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('البقاء')),
+          FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('خروج')),
         ],
       ),
     );
@@ -1594,14 +1735,19 @@ class _GraduationPageEditorState extends State<_GraduationPageEditor> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return Scaffold(
-      backgroundColor: AppTheme.surfaceAlt,
+      backgroundColor: AppTheme.adaptiveSurfaceAlt,
       appBar: AppBar(
         title: Text(widget.title),
-        leading: IconButton(icon: const Icon(Icons.close_rounded), onPressed: _close),
+        leading: IconButton(
+            icon: const Icon(Icons.close_rounded), onPressed: _close),
         actions: [
           if (_dirty)
-            const Center(child: Padding(padding: EdgeInsets.symmetric(horizontal: 10), child: Text('غير محفوظ'))),
+            const Center(
+                child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 10),
+                    child: Text('غير محفوظ'))),
         ],
       ),
       body: Column(
@@ -1609,7 +1755,8 @@ class _GraduationPageEditorState extends State<_GraduationPageEditor> {
           Expanded(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
-              child: widget.pageBuilder(context, _revision, _changed, _penMode, _eraserMode),
+              child: widget.pageBuilder(
+                  context, _revision, _changed, _penMode, _eraserMode),
             ),
           ),
           SafeArea(
@@ -1618,66 +1765,91 @@ class _GraduationPageEditorState extends State<_GraduationPageEditor> {
               padding: const EdgeInsets.fromLTRB(10, 4, 10, 10),
               child: Material(
                 elevation: 5,
-                color: Colors.white,
+                color: AppTheme.adaptiveSurface,
                 borderRadius: BorderRadius.circular(18),
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                     child: Row(
                       children: [
                         IconButton.filledTonal(
-                          onPressed: _saving ? null : () async => widget.onAddImage(_changed),
+                          onPressed: _saving
+                              ? null
+                              : () async => widget.onAddImage(_changed),
                           icon: const Icon(Icons.add_photo_alternate_rounded),
                           tooltip: 'إضافة صورة',
                         ),
                         if (widget.canUsePen)
                           IconButton.filledTonal(
-                            onPressed: _saving ? null : () {
-                              final next = !_penMode;
-                              setState(() {
-                                _penMode = next;
-                                if (next) _eraserMode = false;
-                                _dirty = true;
-                              });
-                              widget.onTogglePen?.call(next, _notifyCanvas);
-                            },
-                            icon: Icon(_penMode && !_eraserMode ? Icons.gesture_rounded : Icons.edit_rounded),
-                            tooltip: _penMode && !_eraserMode ? 'إيقاف القلم' : 'القلم',
+                            onPressed: _saving
+                                ? null
+                                : () {
+                                    final next = !_penMode;
+                                    setState(() {
+                                      _penMode = next;
+                                      if (next) _eraserMode = false;
+                                      _dirty = true;
+                                    });
+                                    widget.onTogglePen
+                                        ?.call(next, _notifyCanvas);
+                                  },
+                            icon: Icon(_penMode && !_eraserMode
+                                ? Icons.gesture_rounded
+                                : Icons.edit_rounded),
+                            tooltip: _penMode && !_eraserMode
+                                ? 'إيقاف القلم'
+                                : 'القلم',
                           ),
                         if (widget.canUsePen)
                           IconButton.filledTonal(
-                            onPressed: _saving ? null : () {
-                              final next = !_eraserMode;
-                              setState(() {
-                                _eraserMode = next;
-                                if (next) _penMode = true;
-                                _dirty = true;
-                              });
-                              widget.onToggleEraser?.call(next, _notifyCanvas);
-                            },
-                            icon: Icon(_eraserMode ? Icons.cleaning_services_rounded : Icons.auto_fix_high_rounded),
+                            onPressed: _saving
+                                ? null
+                                : () {
+                                    final next = !_eraserMode;
+                                    setState(() {
+                                      _eraserMode = next;
+                                      if (next) _penMode = true;
+                                      _dirty = true;
+                                    });
+                                    widget.onToggleEraser
+                                        ?.call(next, _notifyCanvas);
+                                  },
+                            icon: Icon(_eraserMode
+                                ? Icons.cleaning_services_rounded
+                                : Icons.auto_fix_high_rounded),
                             tooltip: 'الممحاة',
                           ),
                         if (widget.canAddText)
                           IconButton.filledTonal(
-                            onPressed: _saving ? null : () async => widget.onAddText!(_changed),
+                            onPressed: _saving
+                                ? null
+                                : () async => widget.onAddText!(_changed),
                             icon: const Icon(Icons.text_fields_rounded),
                             tooltip: 'إضافة نص',
                           ),
                         if (widget.canAddSticker)
                           IconButton.filledTonal(
-                            onPressed: _saving ? null : () => widget.onAddSticker!(_changed),
+                            onPressed: _saving
+                                ? null
+                                : () => widget.onAddSticker!(_changed),
                             icon: const Icon(Icons.auto_awesome_rounded),
                             tooltip: 'ملصق',
                           ),
                         IconButton.filledTonal(
-                          onPressed: (_saving || !(widget.canUndo?.call() ?? false)) ? null : () => widget.onUndo?.call(_notifyCanvas),
+                          onPressed:
+                              (_saving || !(widget.canUndo?.call() ?? false))
+                                  ? null
+                                  : () => widget.onUndo?.call(_notifyCanvas),
                           icon: const Icon(Icons.undo_rounded),
                           tooltip: 'تراجع',
                         ),
                         IconButton.filledTonal(
-                          onPressed: (_saving || !(widget.canRedo?.call() ?? false)) ? null : () => widget.onRedo?.call(_notifyCanvas),
+                          onPressed:
+                              (_saving || !(widget.canRedo?.call() ?? false))
+                                  ? null
+                                  : () => widget.onRedo?.call(_notifyCanvas),
                           icon: const Icon(Icons.redo_rounded),
                           tooltip: 'إعادة',
                         ),
@@ -1685,23 +1857,30 @@ class _GraduationPageEditorState extends State<_GraduationPageEditor> {
                         FilledButton.icon(
                           onPressed: _saving ? null : _save,
                           icon: _saving
-                              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2))
                               : const Icon(Icons.save_rounded),
                           label: const Text('حفظ'),
                         ),
                         if (widget.onClearPage != null) ...[
                           const SizedBox(width: 6),
                           IconButton.filledTonal(
-                            onPressed: _saving ? null : () async {
-                              await widget.onClearPage!();
-                              if (mounted) {
-                                setState(() {
-                                  _dirty = false;
-                                  _revision++;
-                                });
-                              }
-                            },
-                            icon: const Icon(Icons.delete_sweep_rounded, color: Colors.red),
+                            onPressed: _saving
+                                ? null
+                                : () async {
+                                    await widget.onClearPage!();
+                                    if (mounted) {
+                                      setState(() {
+                                        _dirty = false;
+                                        _revision++;
+                                      });
+                                    }
+                                  },
+                            icon: const Icon(Icons.delete_sweep_rounded,
+                                color: Colors.red),
                             tooltip: 'تفريغ الصفحة (لصاحب الدفتر)',
                           ),
                         ],
@@ -1733,6 +1912,7 @@ class _CompactProfileChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final details = [
       university,
       major,
@@ -1745,7 +1925,10 @@ class _CompactProfileChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppTheme.bookAccent),
         boxShadow: const [
-          BoxShadow(blurRadius: 8, color: AppTheme.bookTealShadowLight, offset: Offset(0, 3)),
+          BoxShadow(
+              blurRadius: 8,
+              color: AppTheme.bookTealShadowLight,
+              offset: Offset(0, 3)),
         ],
       ),
       child: Column(
@@ -1756,7 +1939,10 @@ class _CompactProfileChip extends StatelessWidget {
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: AppTheme.primaryDark, fontWeight: FontWeight.w900, fontSize: 16),
+            style: const TextStyle(
+                color: AppTheme.primaryDark,
+                fontWeight: FontWeight.w900,
+                fontSize: 16),
           ),
           if (details.isNotEmpty) ...[
             const SizedBox(height: 3),
@@ -1765,7 +1951,10 @@ class _CompactProfileChip extends StatelessWidget {
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: AppTheme.bookTextDeep, fontSize: 10.5, fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                  color: AppTheme.bookTextDeep,
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w600),
             ),
           ],
         ],
@@ -1789,6 +1978,7 @@ class _ProfilePageHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1797,10 +1987,20 @@ class _ProfilePageHeader extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Text(studentName, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppTheme.primaryDark)),
-          if (university.isNotEmpty) Text(university, style: const TextStyle(color: AppTheme.textSecondary)),
-          if (major.isNotEmpty) Text(major, style: const TextStyle(color: AppTheme.textSecondary)),
-          if (year.isNotEmpty) Text('دفعة $year', style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.w700)),
+          Text(studentName,
+              style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  color: AppTheme.primaryDark)),
+          if (university.isNotEmpty)
+            Text(university,
+                style: TextStyle(color: AppTheme.adaptiveSecondary)),
+          if (major.isNotEmpty)
+            Text(major, style: TextStyle(color: AppTheme.adaptiveSecondary)),
+          if (year.isNotEmpty)
+            Text('دفعة $year',
+                style: const TextStyle(
+                    color: AppTheme.primary, fontWeight: FontWeight.w700)),
         ],
       ),
     );
@@ -1815,8 +2015,10 @@ class _PagePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final wash = Paint()..color = AppTheme.accentSoft;
-    canvas.drawCircle(Offset(size.width * .18, size.height * .76), size.shortestSide * .28, wash);
-    canvas.drawCircle(Offset(size.width * .84, size.height * .22), size.shortestSide * .22, Paint()..color = AppTheme.surface);
+    canvas.drawCircle(Offset(size.width * .18, size.height * .76),
+        size.shortestSide * .28, wash);
+    canvas.drawCircle(Offset(size.width * .84, size.height * .22),
+        size.shortestSide * .22, Paint()..color = Colors.white);
 
     for (final stroke in page.strokes) {
       final paint = Paint()
@@ -1831,7 +2033,8 @@ class _PagePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _PagePainter oldDelegate) => oldDelegate.page != page || oldDelegate.revision != revision;
+  bool shouldRepaint(covariant _PagePainter oldDelegate) =>
+      oldDelegate.page != page || oldDelegate.revision != revision;
 }
 
 class _ReadOnlyImage extends StatelessWidget {
@@ -1842,11 +2045,13 @@ class _ReadOnlyImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final rawW = image.width * image.scale;
     final rawH = image.height * image.scale;
     final widthCap = size.width * .50;
     final heightCap = size.height * .31;
-    final factor = [1.0, widthCap / rawW, heightCap / rawH].reduce((a, b) => a < b ? a : b);
+    final factor = [1.0, widthCap / rawW, heightCap / rawH]
+        .reduce((a, b) => a < b ? a : b);
     final w = rawW * factor;
     final h = rawH * factor;
     final frameW = w + 14;
@@ -1875,20 +2080,24 @@ class _ReadOnlyImage extends StatelessWidget {
           Transform.rotate(
             angle: image.rotation,
             child: Container(
-          width: frameW,
-          height: frameH,
-          padding: const EdgeInsets.fromLTRB(6, 6, 6, 12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(7),
-            boxShadow: const [
-              BoxShadow(blurRadius: 8, color: AppTheme.bookShadowSoft, offset: Offset(0, 3)),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(3),
-            child: Image.network(image.viewUrl, width: w, height: h, fit: BoxFit.cover),
-          ),
+              width: frameW,
+              height: frameH,
+              padding: const EdgeInsets.fromLTRB(6, 6, 6, 12),
+              decoration: BoxDecoration(
+                color: AppTheme.adaptiveSurface,
+                borderRadius: BorderRadius.circular(7),
+                boxShadow: const [
+                  BoxShadow(
+                      blurRadius: 8,
+                      color: AppTheme.bookShadowSoft,
+                      offset: Offset(0, 3)),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(3),
+                child: Image.network(image.viewUrl,
+                    width: w, height: h, fit: BoxFit.cover),
+              ),
             ),
           ),
         ],
@@ -1921,11 +2130,13 @@ class _BookImageEditorState extends State<_BookImageEditor> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final rawW = widget.image.width * widget.image.scale;
     final rawH = widget.image.height * widget.image.scale;
     final widthCap = widget.size.width * .50;
     final heightCap = widget.size.height * .31;
-    final factor = [1.0, widthCap / rawW, heightCap / rawH].reduce((a, b) => a < b ? a : b);
+    final factor = [1.0, widthCap / rawW, heightCap / rawH]
+        .reduce((a, b) => a < b ? a : b);
     final w = rawW * factor;
     final h = rawH * factor;
     final frameW = w + 14;
@@ -1940,10 +2151,19 @@ class _BookImageEditorState extends State<_BookImageEditor> {
           _baseRotation = widget.image.rotation;
         },
         onScaleUpdate: (details) {
-          widget.image.scale = (_baseScale * details.scale).clamp(.25, 4).toDouble();
+          widget.image.scale =
+              (_baseScale * details.scale).clamp(.25, 4).toDouble();
           widget.image.rotation = _baseRotation + details.rotation;
-          widget.image.x = ((widget.image.x * widget.size.width + details.focalPointDelta.dx) / widget.size.width).clamp(.06, .94).toDouble();
-          widget.image.y = ((widget.image.y * widget.size.height + details.focalPointDelta.dy) / widget.size.height).clamp(.12, .90).toDouble();
+          widget.image.x = ((widget.image.x * widget.size.width +
+                      details.focalPointDelta.dx) /
+                  widget.size.width)
+              .clamp(.06, .94)
+              .toDouble();
+          widget.image.y = ((widget.image.y * widget.size.height +
+                      details.focalPointDelta.dy) /
+                  widget.size.height)
+              .clamp(.12, .90)
+              .toDouble();
           widget.onChanged();
         },
         child: Stack(
@@ -1971,11 +2191,14 @@ class _BookImageEditorState extends State<_BookImageEditor> {
                 height: frameH,
                 padding: const EdgeInsets.fromLTRB(6, 6, 6, 12),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppTheme.adaptiveSurface,
                   border: Border.all(color: AppTheme.accent, width: 2),
                   borderRadius: BorderRadius.circular(7),
                   boxShadow: const [
-                    BoxShadow(blurRadius: 10, color: AppTheme.bookTealShadow, offset: Offset(0, 4)),
+                    BoxShadow(
+                        blurRadius: 10,
+                        color: AppTheme.bookTealShadow,
+                        offset: Offset(0, 4)),
                   ],
                 ),
                 clipBehavior: Clip.antiAlias,
@@ -1989,14 +2212,16 @@ class _BookImageEditorState extends State<_BookImageEditor> {
               top: -10,
               right: -10,
               child: Material(
-                color: Colors.white,
+                color: AppTheme.adaptiveSurface,
                 shape: const CircleBorder(),
                 elevation: 3,
                 child: IconButton(
                   visualDensity: VisualDensity.compact,
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints.tightFor(width: 32, height: 32),
-                  icon: const Icon(Icons.close_rounded, size: 18, color: Colors.red),
+                  constraints:
+                      const BoxConstraints.tightFor(width: 32, height: 32),
+                  icon: const Icon(Icons.close_rounded,
+                      size: 18, color: Colors.red),
                   tooltip: 'حذف الصورة',
                   onPressed: widget.onDelete,
                 ),
@@ -2035,14 +2260,17 @@ class _BookElementEditorState extends State<_BookElementEditor> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final font = widget.element.fontSize * widget.element.scale;
     final textStyle = TextStyle(
       fontSize: font,
       color: Color(widget.element.color),
-      fontWeight: widget.element.type == 'text' ? FontWeight.w600 : FontWeight.normal,
+      fontWeight:
+          widget.element.type == 'text' ? FontWeight.w600 : FontWeight.normal,
     );
     return Positioned(
-      left: widget.element.x * widget.size.width - (widget.element.type == 'sticker' ? font : widget.size.width * .30),
+      left: widget.element.x * widget.size.width -
+          (widget.element.type == 'sticker' ? font : widget.size.width * .30),
       top: widget.element.y * widget.size.height - font,
       child: GestureDetector(
         onLongPress: widget.editable ? () {} : null,
@@ -2054,10 +2282,19 @@ class _BookElementEditorState extends State<_BookElementEditor> {
             : null,
         onScaleUpdate: widget.editable
             ? (details) {
-                widget.element.scale = (_baseScale * details.scale).clamp(.5, 4).toDouble();
+                widget.element.scale =
+                    (_baseScale * details.scale).clamp(.5, 4).toDouble();
                 widget.element.rotation = _baseRotation + details.rotation;
-                widget.element.x = ((widget.element.x * widget.size.width + details.focalPointDelta.dx) / widget.size.width).clamp(.06, .94).toDouble();
-                widget.element.y = ((widget.element.y * widget.size.height + details.focalPointDelta.dy) / widget.size.height).clamp(.15, .90).toDouble();
+                widget.element.x = ((widget.element.x * widget.size.width +
+                            details.focalPointDelta.dx) /
+                        widget.size.width)
+                    .clamp(.06, .94)
+                    .toDouble();
+                widget.element.y = ((widget.element.y * widget.size.height +
+                            details.focalPointDelta.dy) /
+                        widget.size.height)
+                    .clamp(.15, .90)
+                    .toDouble();
                 widget.onChanged();
               }
             : null,
@@ -2089,14 +2326,16 @@ class _BookElementEditorState extends State<_BookElementEditor> {
                 top: -10,
                 right: -10,
                 child: Material(
-                  color: Colors.white,
+                  color: AppTheme.adaptiveSurface,
                   shape: const CircleBorder(),
                   elevation: 3,
                   child: IconButton(
                     visualDensity: VisualDensity.compact,
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints.tightFor(width: 32, height: 32),
-                    icon: const Icon(Icons.close_rounded, size: 18, color: Colors.red),
+                    constraints:
+                        const BoxConstraints.tightFor(width: 32, height: 32),
+                    icon: const Icon(Icons.close_rounded,
+                        size: 18, color: Colors.red),
                     tooltip: 'حذف العنصر',
                     onPressed: widget.onDelete,
                   ),

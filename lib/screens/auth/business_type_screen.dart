@@ -1,3 +1,4 @@
+import 'package:zameel/theme/appearance_controller.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -36,23 +37,24 @@ class GlassContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return Container(
       width: width,
       height: height,
       padding: padding ?? const EdgeInsets.all(16),
       margin: margin ?? EdgeInsets.zero,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppTheme.glassFill,
-            AppTheme.glassSoft,
+            AppTheme.adaptiveGlassFill,
+            AppTheme.adaptiveGlassSoft,
           ],
         ),
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(
-          color: AppTheme.glassBorder,
+          color: AppTheme.adaptiveGlassBorder,
           width: 1.5,
         ),
         boxShadow: [
@@ -110,6 +112,7 @@ class _BusinessTypeScreenState extends State<BusinessTypeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
     final isArabic = languageProvider.isArabic;
 
@@ -117,7 +120,7 @@ class _BusinessTypeScreenState extends State<BusinessTypeScreen> {
       textDirection: isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
       child: Scaffold(
         body: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -147,8 +150,8 @@ class _BusinessTypeScreenState extends State<BusinessTypeScreen> {
                     isArabic
                         ? 'اختر نوع النشاط التجاري الذي تمثله'
                         : 'Select the type of business you represent',
-                    style: const TextStyle(
-                      color: Colors.white70,
+                    style: TextStyle(
+                      color: AppTheme.legacySecondary,
                       fontSize: 14,
                     ),
                   ),
@@ -158,7 +161,8 @@ class _BusinessTypeScreenState extends State<BusinessTypeScreen> {
                   // ==============================================
                   Expanded(
                     child: GridView.builder(
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
                         crossAxisSpacing: 12,
                         mainAxisSpacing: 12,
@@ -200,8 +204,8 @@ class _BusinessTypeScreenState extends State<BusinessTypeScreen> {
                                     label ?? '',
                                     style: TextStyle(
                                       color: isSelected
-                                          ? Colors.white
-                                          : Colors.white70,
+                                          ? AppTheme.legacyForeground
+                                          : AppTheme.legacySecondary,
                                       fontWeight: isSelected
                                           ? FontWeight.bold
                                           : FontWeight.normal,
@@ -211,7 +215,7 @@ class _BusinessTypeScreenState extends State<BusinessTypeScreen> {
                                   ),
                                   if (isSelected) ...[
                                     const SizedBox(height: 4),
-                                    const Icon(
+                                    Icon(
                                       Icons.check_circle_rounded,
                                       color: Colors.white,
                                       size: 16,
@@ -233,10 +237,13 @@ class _BusinessTypeScreenState extends State<BusinessTypeScreen> {
                     GlassContainer(
                       child: TextField(
                         controller: _customTypeController,
-                        style: const TextStyle(color: Colors.white),
+                        style: TextStyle(color: AppTheme.legacyForeground),
                         decoration: InputDecoration(
-                          labelText: isArabic ? '✏️ اكتب نوع النشاط' : '✏️ Enter business type',
-                          labelStyle: const TextStyle(color: Colors.white70),
+                          labelText: isArabic
+                              ? '✏️ اكتب نوع النشاط'
+                              : '✏️ Enter business type',
+                          labelStyle:
+                              TextStyle(color: AppTheme.legacySecondary),
                           prefixIcon: const Icon(Icons.edit_rounded,
                               color: Colors.white70),
                           border: OutlineInputBorder(
@@ -325,8 +332,8 @@ class _BusinessTypeScreenState extends State<BusinessTypeScreen> {
                     },
                     child: Text(
                       isArabic ? '↩ العودة' : '↩ Back',
-                      style: const TextStyle(
-                        color: Colors.white70,
+                      style: TextStyle(
+                        color: AppTheme.legacySecondary,
                         fontSize: 14,
                       ),
                     ),

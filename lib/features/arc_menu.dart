@@ -31,7 +31,12 @@ class _ZameelArcMenuState extends State<_ZameelArcMenu> {
       case 3:
         return const [Offset(14, 46), Offset(84, 2), Offset(154, 46)];
       case 4:
-        return const [Offset(0, 58), Offset(56, 10), Offset(112, 10), Offset(168, 58)];
+        return const [
+          Offset(0, 58),
+          Offset(56, 10),
+          Offset(112, 10),
+          Offset(168, 58)
+        ];
       default:
         return const [
           Offset(0, 58),
@@ -45,6 +50,7 @@ class _ZameelArcMenuState extends State<_ZameelArcMenu> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final items = widget.items.take(5).toList();
     final offsets = _positions(items.length);
     return SizedBox(
@@ -68,7 +74,9 @@ class _ZameelArcMenuState extends State<_ZameelArcMenu> {
               left: widget.isArabic ? 64 : null,
               right: widget.isArabic ? null : 64,
               child: Tooltip(
-                message: widget.isArabic ? 'تخصيص الزر العائم' : 'Customize floating menu',
+                message: widget.isArabic
+                    ? 'تخصيص الزر العائم'
+                    : 'Customize floating menu',
                 child: InkWell(
                   onTap: () {
                     setState(() => open = false);
@@ -78,12 +86,15 @@ class _ZameelArcMenuState extends State<_ZameelArcMenu> {
                   child: Container(
                     width: 36,
                     height: 36,
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.white,
-                      boxShadow: [BoxShadow(blurRadius: 8, color: Colors.black26)],
+                      color: AppTheme.adaptiveSurface,
+                      boxShadow: [
+                        BoxShadow(blurRadius: 8, color: Colors.black26)
+                      ],
                     ),
-                    child: const Icon(Icons.tune_rounded, color: primaryColor, size: 20),
+                    child: const Icon(Icons.tune_rounded,
+                        color: primaryColor, size: 20),
                   ),
                 ),
               ),
@@ -101,14 +112,22 @@ class _ZameelArcMenuState extends State<_ZameelArcMenu> {
                 height: 58,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: const LinearGradient(colors: [primaryColor, secondaryColor]),
-                  boxShadow: const [BoxShadow(blurRadius: 16, offset: Offset(0, 5), color: Colors.black26)],
-                  border: Border.all(color: Colors.white.withAlpha(210), width: 2),
+                  gradient: const LinearGradient(
+                      colors: [primaryColor, secondaryColor]),
+                  boxShadow: const [
+                    BoxShadow(
+                        blurRadius: 16,
+                        offset: Offset(0, 5),
+                        color: Colors.black26)
+                  ],
+                  border:
+                      Border.all(color: Colors.white.withAlpha(210), width: 2),
                 ),
                 child: AnimatedRotation(
                   turns: open ? .125 : 0,
                   duration: const Duration(milliseconds: 220),
-                  child: Icon(open ? Icons.close_rounded : Icons.apps_rounded, color: Colors.white, size: 29),
+                  child: Icon(open ? Icons.close_rounded : Icons.apps_rounded,
+                      color: Colors.white, size: 29),
                 ),
               ),
             ),
@@ -129,8 +148,8 @@ class _ZameelArcMenuState extends State<_ZameelArcMenu> {
             Container(
               width: 49,
               height: 49,
-              decoration: const BoxDecoration(
-                color: Colors.white,
+              decoration: BoxDecoration(
+                color: AppTheme.adaptiveSurface,
                 shape: BoxShape.circle,
                 boxShadow: [BoxShadow(blurRadius: 9, color: Colors.black26)],
               ),
@@ -145,7 +164,10 @@ class _ZameelArcMenuState extends State<_ZameelArcMenu> {
               ),
               child: Text(
                 item.label,
-                style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800),
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800),
               ),
             ),
           ],

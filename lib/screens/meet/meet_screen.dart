@@ -1,3 +1,5 @@
+import 'package:zameel/widgets/verified_name.dart';
+import 'package:zameel/theme/appearance_controller.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -19,6 +21,7 @@ import 'livekit_meeting_room_screen.dart';
 
 class MeetScreen extends StatefulWidget {
   final String? participantName;
+  final String? participantId;
   final String? roomId;
   final bool startImmediately;
   final bool startWithVideo;
@@ -26,6 +29,7 @@ class MeetScreen extends StatefulWidget {
   const MeetScreen({
     super.key,
     this.participantName,
+    this.participantId,
     this.roomId,
     this.startImmediately = false,
     this.startWithVideo = true,
@@ -60,6 +64,7 @@ class _MeetScreenState extends State<MeetScreen> {
           MaterialPageRoute(
             builder: (_) => MeetingRoomScreen(
               participantName: widget.participantName,
+              participantId: widget.participantId,
               roomId: widget.roomId,
               startWithVideo: widget.startWithVideo,
               isInitiator: widget.isInitiator,
@@ -82,14 +87,19 @@ class _MeetScreenState extends State<MeetScreen> {
 
   Future<void> _loadMeetingHistory() async {
     try {
-      final response = await Supabase.instance.client.rpc('get_my_zameel_meetings');
+      final response =
+          await Supabase.instance.client.rpc('get_my_zameel_meetings');
       if (response is! List) return;
       final mapped = <Map<String, dynamic>>[];
       for (final raw in response.whereType<Map>()) {
         final row = Map<String, dynamic>.from(raw);
-        final created = DateTime.tryParse(row['created_at']?.toString() ?? '')?.toLocal();
-        final ended = DateTime.tryParse(row['ended_at']?.toString() ?? '')?.toLocal();
-        final durationMinutes = created != null && ended != null ? ended.difference(created).inMinutes : null;
+        final created =
+            DateTime.tryParse(row['created_at']?.toString() ?? '')?.toLocal();
+        final ended =
+            DateTime.tryParse(row['ended_at']?.toString() ?? '')?.toLocal();
+        final durationMinutes = created != null && ended != null
+            ? ended.difference(created).inMinutes
+            : null;
         mapped.add({
           'id': row['room_code']?.toString() ?? '',
           'title': row['title']?.toString() ?? 'Zameel Meet',
@@ -100,7 +110,8 @@ class _MeetScreenState extends State<MeetScreen> {
               ? ''
               : '${created.hour.toString().padLeft(2, '0')}:${created.minute.toString().padLeft(2, '0')}',
           'participants': (row['participant_count'] as num?)?.toInt() ?? 1,
-          'duration': durationMinutes == null ? 'نشط' : '$durationMinutes دقيقة',
+          'duration':
+              durationMinutes == null ? 'نشط' : '$durationMinutes دقيقة',
         });
       }
       if (mounted) setState(() => pastMeetings = mapped);
@@ -109,9 +120,9 @@ class _MeetScreenState extends State<MeetScreen> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
     final isArabic = languageProvider.isArabic;
 
@@ -119,12 +130,14 @@ class _MeetScreenState extends State<MeetScreen> {
       textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(
-            widget.participantName != null
-                ? '${isArabic ? 'مكالمة مع' : 'Call with'} ${widget.participantName}'
-                : '🎥 Zameel Meet',
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
+          title: VerifiedName(
+              userId: widget.participantId,
+              child: Text(
+                widget.participantName != null
+                    ? '${isArabic ? 'مكالمة مع' : 'Call with'} ${widget.participantName}'
+                    : '🎥 Zameel Meet',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              )),
           centerTitle: true,
         ),
         body: Column(
@@ -206,11 +219,14 @@ class _MeetScreenState extends State<MeetScreen> {
             ),
             child: Column(
               children: [
-                const Icon(Icons.groups_rounded, size: 52, color: Colors.white),
+                Icon(Icons.groups_rounded, size: 52, color: Colors.white),
                 const SizedBox(height: 10),
                 Text(
                   isArabic ? 'أنشئ غرفة اجتماع' : 'Create a meeting room',
-                  style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 6),
                 Text(
@@ -224,20 +240,27 @@ class _MeetScreenState extends State<MeetScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          Text(isArabic ? 'عنوان الاجتماع' : 'Meeting title', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(isArabic ? 'عنوان الاجتماع' : 'Meeting title',
+              style:
+                  const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           TextField(
             controller: _meetingTitleController,
             enabled: !_creatingRoom,
             textInputAction: TextInputAction.done,
             decoration: InputDecoration(
-              hintText: isArabic ? 'مثال: اجتماع فريق المشروع' : 'Example: Project team meeting',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              hintText: isArabic
+                  ? 'مثال: اجتماع فريق المشروع'
+                  : 'Example: Project team meeting',
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               prefixIcon: const Icon(Icons.title_rounded),
             ),
           ),
           const SizedBox(height: 18),
-          Text(isArabic ? 'إعدادات الدخول' : 'Entry settings', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(isArabic ? 'إعدادات الدخول' : 'Entry settings',
+              style:
+                  const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Card(
             elevation: 0,
@@ -245,16 +268,26 @@ class _MeetScreenState extends State<MeetScreen> {
               children: [
                 SwitchListTile(
                   value: _createMicOn,
-                  onChanged: _creatingRoom ? null : (value) => setState(() => _createMicOn = value),
-                  secondary: Icon(_createMicOn ? Icons.mic_rounded : Icons.mic_off_rounded),
-                  title: Text(isArabic ? 'الميكروفون عند الدخول' : 'Microphone on entry'),
+                  onChanged: _creatingRoom
+                      ? null
+                      : (value) => setState(() => _createMicOn = value),
+                  secondary: Icon(
+                      _createMicOn ? Icons.mic_rounded : Icons.mic_off_rounded),
+                  title: Text(isArabic
+                      ? 'الميكروفون عند الدخول'
+                      : 'Microphone on entry'),
                 ),
                 const Divider(height: 1),
                 SwitchListTile(
                   value: _createVideoOn,
-                  onChanged: _creatingRoom ? null : (value) => setState(() => _createVideoOn = value),
-                  secondary: Icon(_createVideoOn ? Icons.videocam_rounded : Icons.videocam_off_rounded),
-                  title: Text(isArabic ? 'الكاميرا عند الدخول' : 'Camera on entry'),
+                  onChanged: _creatingRoom
+                      ? null
+                      : (value) => setState(() => _createVideoOn = value),
+                  secondary: Icon(_createVideoOn
+                      ? Icons.videocam_rounded
+                      : Icons.videocam_off_rounded),
+                  title: Text(
+                      isArabic ? 'الكاميرا عند الدخول' : 'Camera on entry'),
                 ),
               ],
             ),
@@ -270,11 +303,15 @@ class _MeetScreenState extends State<MeetScreen> {
                       final title = _meetingTitleController.text.trim();
                       if (title.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(isArabic ? 'يرجى إدخال عنوان الاجتماع' : 'Enter a meeting title')),
+                          SnackBar(
+                              content: Text(isArabic
+                                  ? 'يرجى إدخال عنوان الاجتماع'
+                                  : 'Enter a meeting title')),
                         );
                         return;
                       }
-                      if (Supabase.instance.client.auth.currentUser == null) return;
+                      if (Supabase.instance.client.auth.currentUser == null)
+                        return;
                       setState(() => _creatingRoom = true);
                       try {
                         final created = await Supabase.instance.client.rpc(
@@ -282,7 +319,8 @@ class _MeetScreenState extends State<MeetScreen> {
                           params: {'target_title': title},
                         );
                         final roomCode = created?.toString() ?? '';
-                        if (roomCode.isEmpty) throw StateError('meeting_code_missing');
+                        if (roomCode.isEmpty)
+                          throw StateError('meeting_code_missing');
                         if (!mounted) return;
                         await Navigator.push(
                           context,
@@ -300,7 +338,10 @@ class _MeetScreenState extends State<MeetScreen> {
                       } catch (_) {
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(isArabic ? 'تعذر إنشاء غرفة الاجتماع' : 'Could not create the meeting room')),
+                            SnackBar(
+                                content: Text(isArabic
+                                    ? 'تعذر إنشاء غرفة الاجتماع'
+                                    : 'Could not create the meeting room')),
                           );
                         }
                       } finally {
@@ -308,9 +349,16 @@ class _MeetScreenState extends State<MeetScreen> {
                       }
                     },
               icon: _creatingRoom
-                  ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2))
                   : const Icon(Icons.add_link_rounded),
-              label: Text(isArabic ? 'إنشاء الغرفة والحصول على الرمز' : 'Create room and get code', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              label: Text(
+                  isArabic
+                      ? 'إنشاء الغرفة والحصول على الرمز'
+                      : 'Create room and get code',
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.bold)),
             ),
           ),
         ],
@@ -337,16 +385,25 @@ class _MeetScreenState extends State<MeetScreen> {
             ),
             child: Column(
               children: [
-                const Icon(Icons.meeting_room_rounded, size: 44, color: AppTheme.primaryDark),
+                const Icon(Icons.meeting_room_rounded,
+                    size: 44, color: AppTheme.primaryDark),
                 const SizedBox(height: 8),
-                Text(isArabic ? 'انضم إلى غرفة اجتماع' : 'Join a meeting room', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                Text(isArabic ? 'انضم إلى غرفة اجتماع' : 'Join a meeting room',
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 5),
-                Text(isArabic ? 'أدخل الرمز الذي شاركه معك منشئ الاجتماع.' : 'Enter the code shared by the meeting host.', textAlign: TextAlign.center),
+                Text(
+                    isArabic
+                        ? 'أدخل الرمز الذي شاركه معك منشئ الاجتماع.'
+                        : 'Enter the code shared by the meeting host.',
+                    textAlign: TextAlign.center),
               ],
             ),
           ),
           const SizedBox(height: 20),
-          Text(isArabic ? 'رمز الاجتماع' : 'Meeting code', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(isArabic ? 'رمز الاجتماع' : 'Meeting code',
+              style:
+                  const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           TextField(
             controller: _joinCodeController,
@@ -354,7 +411,8 @@ class _MeetScreenState extends State<MeetScreen> {
             textCapitalization: TextCapitalization.characters,
             decoration: InputDecoration(
               hintText: 'ZMXXXXXXXX',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               prefixIcon: const Icon(Icons.key_rounded),
             ),
           ),
@@ -365,16 +423,26 @@ class _MeetScreenState extends State<MeetScreen> {
               children: [
                 SwitchListTile(
                   value: _joinMicOn,
-                  onChanged: _joiningRoom ? null : (value) => setState(() => _joinMicOn = value),
-                  secondary: Icon(_joinMicOn ? Icons.mic_rounded : Icons.mic_off_rounded),
-                  title: Text(isArabic ? 'الميكروفون عند الدخول' : 'Microphone on entry'),
+                  onChanged: _joiningRoom
+                      ? null
+                      : (value) => setState(() => _joinMicOn = value),
+                  secondary: Icon(
+                      _joinMicOn ? Icons.mic_rounded : Icons.mic_off_rounded),
+                  title: Text(isArabic
+                      ? 'الميكروفون عند الدخول'
+                      : 'Microphone on entry'),
                 ),
                 const Divider(height: 1),
                 SwitchListTile(
                   value: _joinVideoOn,
-                  onChanged: _joiningRoom ? null : (value) => setState(() => _joinVideoOn = value),
-                  secondary: Icon(_joinVideoOn ? Icons.videocam_rounded : Icons.videocam_off_rounded),
-                  title: Text(isArabic ? 'الكاميرا عند الدخول' : 'Camera on entry'),
+                  onChanged: _joiningRoom
+                      ? null
+                      : (value) => setState(() => _joinVideoOn = value),
+                  secondary: Icon(_joinVideoOn
+                      ? Icons.videocam_rounded
+                      : Icons.videocam_off_rounded),
+                  title: Text(
+                      isArabic ? 'الكاميرا عند الدخول' : 'Camera on entry'),
                 ),
               ],
             ),
@@ -387,10 +455,14 @@ class _MeetScreenState extends State<MeetScreen> {
               onPressed: _joiningRoom
                   ? null
                   : () async {
-                      final code = _joinCodeController.text.trim().toUpperCase();
+                      final code =
+                          _joinCodeController.text.trim().toUpperCase();
                       if (code.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(isArabic ? 'يرجى إدخال رمز الاجتماع' : 'Enter a meeting code')),
+                          SnackBar(
+                              content: Text(isArabic
+                                  ? 'يرجى إدخال رمز الاجتماع'
+                                  : 'Enter a meeting code')),
                         );
                         return;
                       }
@@ -400,12 +472,17 @@ class _MeetScreenState extends State<MeetScreen> {
                           'join_zameel_meeting',
                           params: {'target_room_code': code},
                         );
-                        if (response is! List || response.isEmpty || response.first is! Map) {
+                        if (response is! List ||
+                            response.isEmpty ||
+                            response.first is! Map) {
                           throw StateError('meeting_not_found');
                         }
-                        final room = Map<String, dynamic>.from(response.first as Map);
-                        final normalizedCode = room['room_code']?.toString() ?? code;
-                        final title = room['title']?.toString() ?? normalizedCode;
+                        final room =
+                            Map<String, dynamic>.from(response.first as Map);
+                        final normalizedCode =
+                            room['room_code']?.toString() ?? code;
+                        final title =
+                            room['title']?.toString() ?? normalizedCode;
                         if (!mounted) return;
                         await Navigator.push(
                           context,
@@ -423,22 +500,29 @@ class _MeetScreenState extends State<MeetScreen> {
                       } catch (e) {
                         if (!mounted) return;
                         final rawError = e.toString().toLowerCase();
-                        final message = rawError.contains('meeting_access_revoked')
+                        final message = rawError
+                                .contains('meeting_access_revoked')
                             ? (isArabic
                                 ? 'تمت إزالتك من هذا الاجتماع بواسطة المضيف.'
                                 : 'The host removed you from this meeting.')
                             : (isArabic
                                 ? 'رمز الاجتماع غير موجود أو انتهى الاجتماع'
                                 : 'Meeting code was not found or the meeting has ended');
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+                        ScaffoldMessenger.of(context)
+                            .showSnackBar(SnackBar(content: Text(message)));
                       } finally {
                         if (mounted) setState(() => _joiningRoom = false);
                       }
                     },
               icon: _joiningRoom
-                  ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2))
                   : const Icon(Icons.login_rounded),
-              label: Text(isArabic ? 'متابعة إلى شاشة الاستعداد' : 'Continue to lobby', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              label: Text(
+                  isArabic ? 'متابعة إلى شاشة الاستعداد' : 'Continue to lobby',
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.bold)),
             ),
           ),
         ],
@@ -493,7 +577,7 @@ class _MeetScreenState extends State<MeetScreen> {
         return Card(
           margin: const EdgeInsets.only(bottom: 10),
           elevation: 0,
-          color: Colors.white,
+          color: AppTheme.adaptiveSurface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
             side: BorderSide(
@@ -602,7 +686,8 @@ class _MeetingLobbyScreenState extends State<MeetingLobbyScreen> {
     await Clipboard.setData(ClipboardData(text: widget.roomCode));
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(ar ? 'تم نسخ رمز الاجتماع' : 'Meeting code copied')),
+      SnackBar(
+          content: Text(ar ? 'تم نسخ رمز الاجتماع' : 'Meeting code copied')),
     );
   }
 
@@ -650,11 +735,14 @@ class _MeetingLobbyScreenState extends State<MeetingLobbyScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final ar = Provider.of<LanguageProvider>(context).isArabic;
     return Directionality(
       textDirection: ar ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
-        appBar: AppBar(title: Text(ar ? 'استعداد للاجتماع' : 'Meeting lobby'), centerTitle: true),
+        appBar: AppBar(
+            title: Text(ar ? 'استعداد للاجتماع' : 'Meeting lobby'),
+            centerTitle: true),
         body: SafeArea(
           child: ListView(
             padding: const EdgeInsets.all(18),
@@ -667,13 +755,24 @@ class _MeetingLobbyScreenState extends State<MeetingLobbyScreen> {
                 ),
                 child: Column(
                   children: [
-                    const Icon(Icons.groups_2_rounded, color: Colors.white, size: 48),
+                    Icon(Icons.groups_2_rounded, color: Colors.white, size: 48),
                     const SizedBox(height: 10),
-                    Text(widget.title, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 21, fontWeight: FontWeight.w800)),
+                    Text(widget.title,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 21,
+                            fontWeight: FontWeight.w800)),
                     const SizedBox(height: 12),
-                    Text(ar ? 'رمز الغرفة' : 'Room code', style: const TextStyle(color: Colors.white70)),
+                    Text(ar ? 'رمز الغرفة' : 'Room code',
+                        style: const TextStyle(color: Colors.white70)),
                     const SizedBox(height: 4),
-                    SelectableText(widget.roomCode, style: const TextStyle(color: Colors.white, fontSize: 24, letterSpacing: 2, fontWeight: FontWeight.w900)),
+                    SelectableText(widget.roomCode,
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            letterSpacing: 2,
+                            fontWeight: FontWeight.w900)),
                     const SizedBox(height: 10),
                     Wrap(
                       alignment: WrapAlignment.center,
@@ -683,13 +782,15 @@ class _MeetingLobbyScreenState extends State<MeetingLobbyScreen> {
                           onPressed: () => _copyCode(ar),
                           icon: const Icon(Icons.copy_rounded),
                           label: Text(ar ? 'نسخ الرمز' : 'Copy code'),
-                          style: OutlinedButton.styleFrom(foregroundColor: Colors.white),
+                          style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.white),
                         ),
                         OutlinedButton.icon(
                           onPressed: () => _shareCode(ar),
                           icon: const Icon(Icons.share_rounded),
                           label: Text(ar ? 'مشاركة' : 'Share'),
-                          style: OutlinedButton.styleFrom(foregroundColor: Colors.white),
+                          style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.white),
                         ),
                       ],
                     ),
@@ -699,8 +800,12 @@ class _MeetingLobbyScreenState extends State<MeetingLobbyScreen> {
               const SizedBox(height: 18),
               Text(
                 ar
-                    ? (widget.isHost ? 'الغرفة جاهزة. شارك الرمز ثم ابدأ عندما تكون مستعدًا.' : 'تحقق من إعداداتك قبل دخول غرفة الاجتماع.')
-                    : (widget.isHost ? 'Room created. Share the code and start when you are ready.' : 'Check your settings before entering the meeting room.'),
+                    ? (widget.isHost
+                        ? 'الغرفة جاهزة. شارك الرمز ثم ابدأ عندما تكون مستعدًا.'
+                        : 'تحقق من إعداداتك قبل دخول غرفة الاجتماع.')
+                    : (widget.isHost
+                        ? 'Room created. Share the code and start when you are ready.'
+                        : 'Check your settings before entering the meeting room.'),
                 style: const TextStyle(fontSize: 15, height: 1.5),
               ),
               const SizedBox(height: 14),
@@ -711,14 +816,17 @@ class _MeetingLobbyScreenState extends State<MeetingLobbyScreen> {
                     SwitchListTile(
                       value: _micOn,
                       onChanged: (value) => setState(() => _micOn = value),
-                      secondary: Icon(_micOn ? Icons.mic_rounded : Icons.mic_off_rounded),
+                      secondary: Icon(
+                          _micOn ? Icons.mic_rounded : Icons.mic_off_rounded),
                       title: Text(ar ? 'الميكروفون' : 'Microphone'),
                     ),
                     const Divider(height: 1),
                     SwitchListTile(
                       value: _videoOn,
                       onChanged: (value) => setState(() => _videoOn = value),
-                      secondary: Icon(_videoOn ? Icons.videocam_rounded : Icons.videocam_off_rounded),
+                      secondary: Icon(_videoOn
+                          ? Icons.videocam_rounded
+                          : Icons.videocam_off_rounded),
                       title: Text(ar ? 'الكاميرا' : 'Camera'),
                     ),
                   ],
@@ -759,6 +867,7 @@ class _MeetTabButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
@@ -793,6 +902,7 @@ class _MeetTabButton extends StatelessWidget {
 
 class MeetingRoomScreen extends StatefulWidget {
   final String? participantName;
+  final String? participantId;
   final String? roomId;
   final bool startWithVideo;
   final bool startMuted;
@@ -800,6 +910,7 @@ class MeetingRoomScreen extends StatefulWidget {
   const MeetingRoomScreen({
     super.key,
     this.participantName,
+    this.participantId,
     this.roomId,
     this.startWithVideo = true,
     this.startMuted = false,
@@ -811,6 +922,7 @@ class MeetingRoomScreen extends StatefulWidget {
 }
 
 class _MeetingRoomScreenState extends State<MeetingRoomScreen> {
+  String? _participantId;
   final RTCVideoRenderer _localRenderer = RTCVideoRenderer();
   final RTCVideoRenderer _remoteRenderer = RTCVideoRenderer();
   final _chatController = TextEditingController();
@@ -892,12 +1004,15 @@ class _MeetingRoomScreenState extends State<MeetingRoomScreen> {
     try {
       final directCall = await Supabase.instance.client
           .from('direct_call_sessions')
-          .select('caller_id')
+          .select('caller_id,callee_id')
           .eq('room_id', roomId)
           .maybeSingle();
       if (directCall != null) {
         _standaloneMeeting = false;
         _initiator = directCall['caller_id']?.toString() == me;
+        _participantId =
+            (_initiator ? directCall['callee_id'] : directCall['caller_id'])
+                ?.toString();
         return;
       }
       final room = await Supabase.instance.client
@@ -968,7 +1083,8 @@ class _MeetingRoomScreenState extends State<MeetingRoomScreen> {
             : false,
       });
       if (_muted) {
-        for (final track in _localStream?.getAudioTracks() ?? <MediaStreamTrack>[]) {
+        for (final track
+            in _localStream?.getAudioTracks() ?? <MediaStreamTrack>[]) {
           track.enabled = false;
         }
       }
@@ -1303,7 +1419,8 @@ class _MeetingRoomScreenState extends State<MeetingRoomScreen> {
             'signal_payload': Map<String, dynamic>.from(message),
           },
         );
-        debugPrint('Zameel WebRTC mailbox sent type=${message['type']} seq=$sequence');
+        debugPrint(
+            'Zameel WebRTC mailbox sent type=${message['type']} seq=$sequence');
       } catch (e) {
         debugPrint('Zameel WebRTC mailbox send error: $e');
       }
@@ -1328,7 +1445,8 @@ class _MeetingRoomScreenState extends State<MeetingRoomScreen> {
             ? {'target_room_code': roomId, 'after_signal_id': _lastSignalRowId}
             : {'target_room_id': roomId, 'after_signal_id': _lastSignalRowId},
       );
-      final rows = List<Map<String, dynamic>>.from(response as List? ?? const []);
+      final rows =
+          List<Map<String, dynamic>>.from(response as List? ?? const []);
       for (final row in rows) {
         final rowId = (row['signal_id'] as num?)?.toInt() ?? 0;
         if (rowId > _lastSignalRowId) _lastSignalRowId = rowId;
@@ -1745,6 +1863,7 @@ class _MeetingRoomScreenState extends State<MeetingRoomScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final ar = Provider.of<LanguageProvider>(context).isArabic;
     return Directionality(
       textDirection: ar ? TextDirection.rtl : TextDirection.ltr,
@@ -1789,28 +1908,28 @@ class _MeetingRoomScreenState extends State<MeetingRoomScreen> {
                     children: [
                       IconButton(
                         onPressed: _hangUp,
-                        icon: const Icon(Icons.close_rounded,
-                            color: Colors.white),
+                        icon: Icon(Icons.close_rounded, color: Colors.white),
                       ),
                       Expanded(
-                        child: Text(
-                          widget.participantName ?? 'Zameel Meet',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
+                        child: VerifiedName(
+                            userId: _participantId ?? widget.participantId,
+                            child: Text(
+                              widget.participantName ?? 'Zameel Meet',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            )),
                       ),
                       IconButton(
                         onPressed: () => setState(() => _chatOpen = !_chatOpen),
-                        icon:
-                            const Icon(Icons.chat_rounded, color: Colors.white),
+                        icon: Icon(Icons.chat_rounded, color: Colors.white),
                       ),
                     ],
                   ),
                   if (_starting)
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.only(top: 20),
                       child: CircularProgressIndicator(color: Colors.white),
                     )
@@ -1819,8 +1938,12 @@ class _MeetingRoomScreenState extends State<MeetingRoomScreen> {
                       padding: const EdgeInsets.only(top: 20),
                       child: Text(
                         _standaloneMeeting
-                            ? (ar ? 'بانتظار مشارك للانضمام إلى غرفة الاجتماع...' : 'Waiting for a participant to join the meeting room...')
-                            : (ar ? 'بانتظار الزميل للانضمام...' : 'Waiting for colleague...'),
+                            ? (ar
+                                ? 'بانتظار مشارك للانضمام إلى غرفة الاجتماع...'
+                                : 'Waiting for a participant to join the meeting room...')
+                            : (ar
+                                ? 'بانتظار الزميل للانضمام...'
+                                : 'Waiting for colleague...'),
                         style: const TextStyle(color: Colors.white70),
                       ),
                     ),

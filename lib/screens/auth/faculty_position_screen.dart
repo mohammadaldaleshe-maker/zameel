@@ -1,3 +1,4 @@
+import 'package:zameel/theme/appearance_controller.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -41,23 +42,24 @@ class GlassContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return Container(
       width: width,
       height: height,
       padding: padding ?? const EdgeInsets.all(16),
       margin: margin ?? EdgeInsets.zero,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppTheme.glassFill,
-            AppTheme.glassSoft,
+            AppTheme.adaptiveGlassFill,
+            AppTheme.adaptiveGlassSoft,
           ],
         ),
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(
-          color: AppTheme.glassBorder,
+          color: AppTheme.adaptiveGlassBorder,
           width: 1.5,
         ),
         boxShadow: [
@@ -90,8 +92,7 @@ class FacultyPositionScreen extends StatefulWidget {
   });
 
   @override
-  State<FacultyPositionScreen> createState() =>
-      _FacultyPositionScreenState();
+  State<FacultyPositionScreen> createState() => _FacultyPositionScreenState();
 }
 
 class _FacultyPositionScreenState extends State<FacultyPositionScreen> {
@@ -102,8 +103,16 @@ class _FacultyPositionScreenState extends State<FacultyPositionScreen> {
 
   final List<Map<String, String>> positions = [
     {'id': 'professor', 'ar': 'أستاذ', 'en': 'Professor'},
-    {'id': 'associate_professor', 'ar': 'أستاذ مشارك', 'en': 'Associate Professor'},
-    {'id': 'assistant_professor', 'ar': 'أستاذ مساعد', 'en': 'Assistant Professor'},
+    {
+      'id': 'associate_professor',
+      'ar': 'أستاذ مشارك',
+      'en': 'Associate Professor'
+    },
+    {
+      'id': 'assistant_professor',
+      'ar': 'أستاذ مساعد',
+      'en': 'Assistant Professor'
+    },
     {'id': 'lecturer', 'ar': 'محاضر', 'en': 'Lecturer'},
     {'id': 'head_of_department', 'ar': 'رئيس قسم', 'en': 'Head of Department'},
     {'id': 'dean', 'ar': 'عميد كلية', 'en': 'Dean'},
@@ -115,6 +124,7 @@ class _FacultyPositionScreenState extends State<FacultyPositionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
     final isArabic = languageProvider.isArabic;
 
@@ -122,7 +132,7 @@ class _FacultyPositionScreenState extends State<FacultyPositionScreen> {
       textDirection: isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
       child: Scaffold(
         body: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -152,8 +162,8 @@ class _FacultyPositionScreenState extends State<FacultyPositionScreen> {
                     isArabic
                         ? 'اختر مسمى وظيفتك في الجامعة'
                         : 'Select your job title at the university',
-                    style: const TextStyle(
-                      color: Colors.white70,
+                    style: TextStyle(
+                      color: AppTheme.legacySecondary,
                       fontSize: 14,
                     ),
                   ),
@@ -163,7 +173,8 @@ class _FacultyPositionScreenState extends State<FacultyPositionScreen> {
                   // ==============================================
                   Expanded(
                     child: GridView.builder(
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
                         crossAxisSpacing: 12,
                         mainAxisSpacing: 12,
@@ -173,7 +184,8 @@ class _FacultyPositionScreenState extends State<FacultyPositionScreen> {
                       itemBuilder: (context, index) {
                         final position = positions[index];
                         final isSelected = selectedPosition == position['id'];
-                        final label = isArabic ? position['ar'] : position['en'];
+                        final label =
+                            isArabic ? position['ar'] : position['en'];
 
                         return GestureDetector(
                           onTap: () {
@@ -203,7 +215,9 @@ class _FacultyPositionScreenState extends State<FacultyPositionScreen> {
                                 children: [
                                   Icon(
                                     Icons.work_rounded,
-                                    color: isSelected ? Colors.white : Colors.white70,
+                                    color: isSelected
+                                        ? Colors.white
+                                        : Colors.white70,
                                     size: 28,
                                   ),
                                   const SizedBox(height: 8),
@@ -211,8 +225,8 @@ class _FacultyPositionScreenState extends State<FacultyPositionScreen> {
                                     label ?? '',
                                     style: TextStyle(
                                       color: isSelected
-                                          ? Colors.white
-                                          : Colors.white70,
+                                          ? AppTheme.legacyForeground
+                                          : AppTheme.legacySecondary,
                                       fontWeight: isSelected
                                           ? FontWeight.bold
                                           : FontWeight.normal,
@@ -223,7 +237,7 @@ class _FacultyPositionScreenState extends State<FacultyPositionScreen> {
                                   ),
                                   if (isSelected) ...[
                                     const SizedBox(height: 4),
-                                    const Icon(
+                                    Icon(
                                       Icons.check_circle_rounded,
                                       color: Colors.white,
                                       size: 16,
@@ -245,10 +259,13 @@ class _FacultyPositionScreenState extends State<FacultyPositionScreen> {
                     GlassContainer(
                       child: TextField(
                         controller: _customPositionController,
-                        style: const TextStyle(color: Colors.white),
+                        style: TextStyle(color: AppTheme.legacyForeground),
                         decoration: InputDecoration(
-                          labelText: isArabic ? '✏️ اكتب المسمى الوظيفي' : '✏️ Enter job title',
-                          labelStyle: const TextStyle(color: Colors.white70),
+                          labelText: isArabic
+                              ? '✏️ اكتب المسمى الوظيفي'
+                              : '✏️ Enter job title',
+                          labelStyle:
+                              TextStyle(color: AppTheme.legacySecondary),
                           prefixIcon: const Icon(Icons.edit_rounded,
                               color: Colors.white70),
                           border: OutlineInputBorder(
@@ -337,8 +354,8 @@ class _FacultyPositionScreenState extends State<FacultyPositionScreen> {
                     },
                     child: Text(
                       isArabic ? '↩ العودة' : '↩ Back',
-                      style: const TextStyle(
-                        color: Colors.white70,
+                      style: TextStyle(
+                        color: AppTheme.legacySecondary,
                         fontSize: 14,
                       ),
                     ),

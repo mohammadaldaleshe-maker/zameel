@@ -1,3 +1,4 @@
+import 'package:zameel/widgets/verified_name.dart';
 import 'dart:async';
 
 import 'package:audioplayers/audioplayers.dart';
@@ -40,7 +41,8 @@ class _ZameelRadioScreenState extends State<ZameelRadioScreen> {
       if (!mounted) return;
       final completedId = _playingId;
       setState(() => _playingId = null);
-      final index = _posts.indexWhere((post) => post['id'].toString() == completedId);
+      final index =
+          _posts.indexWhere((post) => post['id'].toString() == completedId);
       if (index >= 0 && index + 1 < _posts.length) {
         _play(_posts[index + 1], forcePlay: true);
       }
@@ -59,12 +61,40 @@ class _ZameelRadioScreenState extends State<ZameelRadioScreen> {
     setState(() => _loading = true);
     try {
       final rows = await Supabase.instance.client.rpc('zameel_radio_feed');
-      if (mounted) setState(() => _posts = List<Map<String, dynamic>>.from(rows));
+      if (mounted) {
+        setState(() => _posts = List<Map<String, dynamic>>.from(rows));
+        unawaited(_loadAuthorBadges());
+      }
     } catch (error) {
       _notice(FeatureControl.errorMessage(error, 'تعذر تحميل راديو زميل'));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  Future<void> _loadAuthorBadges() async {
+    try {
+      final visiblePosts = _posts
+          .where((p) => p['is_anonymous'] != true)
+          .map((p) => p['id'])
+          .toList();
+      if (visiblePosts.isNotEmpty) {
+        final badges = await Supabase.instance.client
+            .rpc('zameel_radio_author_badges', params: {
+          'p_posts': visiblePosts.take(100).toList()
+        }).timeout(const Duration(seconds: 8));
+        if (mounted && badges is List)
+          setState(() {
+            for (final row in badges) {
+              for (final post in _posts) {
+                if (post['id'] == row['post_id'] &&
+                    post['is_anonymous'] != true)
+                  post['author_id'] = row['user_id'];
+              }
+            }
+          });
+      }
+    } catch (_) {/* Verification must not delay or hide the radio feed. */}
   }
 
   Future<void> _toggleRecording() async {
@@ -86,8 +116,10 @@ class _ZameelRadioScreenState extends State<ZameelRadioScreen> {
       return;
     }
     final directory = await getTemporaryDirectory();
-    final path = '${directory.path}/zameel_radio_${DateTime.now().millisecondsSinceEpoch}.m4a';
-    await _recorder.start(const RecordConfig(encoder: AudioEncoder.aacLc), path: path);
+    final path =
+        '${directory.path}/zameel_radio_${DateTime.now().millisecondsSinceEpoch}.m4a';
+    await _recorder.start(const RecordConfig(encoder: AudioEncoder.aacLc),
+        path: path);
     setState(() {
       _seconds = 0;
       _recordPath = null;
@@ -109,16 +141,19 @@ class _ZameelRadioScreenState extends State<ZameelRadioScreen> {
 
   Future<void> _publish() async {
     final user = Supabase.instance.client.auth.currentUser;
-    if (user == null || _recordPath == null || _seconds < 1 || _publishing) return;
+    if (user == null || _recordPath == null || _seconds < 1 || _publishing)
+      return;
     setState(() => _publishing = true);
     try {
-      final path = '${DateTime.now().microsecondsSinceEpoch}_${user.id.hashCode.abs()}.m4a';
+      final path =
+          '${DateTime.now().microsecondsSinceEpoch}_${user.id.hashCode.abs()}.m4a';
       final bytes = await SocialDailyFileService.readPathBytes(_recordPath!);
       await Supabase.instance.client.storage.from('zameel-radio').uploadBinary(
-        path,
-        bytes,
-        fileOptions: const FileOptions(contentType: 'audio/mp4', upsert: false),
-      );
+            path,
+            bytes,
+            fileOptions:
+                const FileOptions(contentType: 'audio/mp4', upsert: false),
+          );
       await Supabase.instance.client.from('zameel_radio_posts').insert({
         'user_id': user.id,
         'storage_path': path,
@@ -139,7 +174,8 @@ class _ZameelRadioScreenState extends State<ZameelRadioScreen> {
     }
   }
 
-  Future<void> _play(Map<String, dynamic> post, {bool forcePlay = false}) async {
+  Future<void> _play(Map<String, dynamic> post,
+      {bool forcePlay = false}) async {
     final id = post['id'].toString();
     if (!forcePlay && _playingId == id) {
       await _player.stop();
@@ -167,7 +203,8 @@ class _ZameelRadioScreenState extends State<ZameelRadioScreen> {
 
   Future<void> _toggleLike(Map<String, dynamic> post) async {
     try {
-      await Supabase.instance.client.rpc('zameel_toggle_radio_like', params: {'p_post_id': post['id']});
+      await Supabase.instance.client
+          .rpc('zameel_toggle_radio_like', params: {'p_post_id': post['id']});
       await _load();
     } catch (_) {
       _notice('تعذر تحديث الإعجاب الآن.');
@@ -181,14 +218,19 @@ class _ZameelRadioScreenState extends State<ZameelRadioScreen> {
         title: const Text('حذف التسجيل؟'),
         content: const Text('سيختفي التسجيل من الراديو فورًا.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('إلغاء')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('حذف')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('إلغاء')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('حذف')),
         ],
       ),
     );
     if (approved != true) return;
     try {
-      await Supabase.instance.client.rpc('zameel_remove_radio_post', params: {'p_post_id': post['id']});
+      await Supabase.instance.client
+          .rpc('zameel_remove_radio_post', params: {'p_post_id': post['id']});
       if (_playingId == post['id'].toString()) await _player.stop();
       _notice('تم حذف التسجيل.', success: true);
       await _load();
@@ -203,7 +245,8 @@ class _ZameelRadioScreenState extends State<ZameelRadioScreen> {
         'p_post_id': post['id'],
         'p_action': restore ? 'restore' : 'remove',
       });
-      _notice(restore ? 'تمت إعادة التسجيل.' : 'تم حذف التسجيل بعد المراجعة.', success: true);
+      _notice(restore ? 'تمت إعادة التسجيل.' : 'تم حذف التسجيل بعد المراجعة.',
+          success: true);
       await _load();
     } catch (_) {
       _notice('هذا الإجراء متاح للإدارة فقط.');
@@ -212,7 +255,8 @@ class _ZameelRadioScreenState extends State<ZameelRadioScreen> {
 
   Future<void> _adminMute(Map<String, dynamic> post) async {
     try {
-      await Supabase.instance.client.rpc('zameel_admin_mute_radio_author', params: {'p_post_id': post['id']});
+      await Supabase.instance.client.rpc('zameel_admin_mute_radio_author',
+          params: {'p_post_id': post['id']});
       _notice('تم كتم صاحب التسجيل إداريًا لمدة أسبوع.', success: true);
       await _load();
     } catch (_) {
@@ -226,10 +270,16 @@ class _ZameelRadioScreenState extends State<ZameelRadioScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('الإبلاغ عن المقطع'),
-        content: TextField(controller: controller, maxLength: 300, decoration: const InputDecoration(hintText: 'سبب البلاغ')),
+        content: TextField(
+            controller: controller,
+            maxLength: 300,
+            decoration: const InputDecoration(hintText: 'سبب البلاغ')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, controller.text.trim()), child: const Text('إرسال')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+              child: const Text('إرسال')),
         ],
       ),
     );
@@ -256,10 +306,12 @@ class _ZameelRadioScreenState extends State<ZameelRadioScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(text), backgroundColor: success ? Colors.green : null));
+      ..showSnackBar(SnackBar(
+          content: Text(text), backgroundColor: success ? Colors.green : null));
   }
 
-  String _duration(int seconds) => '${(seconds ~/ 60).toString().padLeft(2, '0')}:${(seconds % 60).toString().padLeft(2, '0')}';
+  String _duration(int seconds) =>
+      '${(seconds ~/ 60).toString().padLeft(2, '0')}:${(seconds % 60).toString().padLeft(2, '0')}';
 
   @override
   Widget build(BuildContext context) {
@@ -274,26 +326,46 @@ class _ZameelRadioScreenState extends State<ZameelRadioScreen> {
             children: [
               Container(
                 padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(gradient: AppTheme.signatureGradient, borderRadius: BorderRadius.circular(22)),
+                decoration: BoxDecoration(
+                    gradient: AppTheme.signatureGradient,
+                    borderRadius: BorderRadius.circular(22)),
                 child: Column(
                   children: [
-                    const Text('صوت الجامعة ليوم واحد', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900)),
+                    Text('صوت الجامعة ليوم واحد',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900)),
                     const SizedBox(height: 6),
-                    const Text('موقف مضحك أو قصة قصيرة بحد أقصى دقيقتين. تُحذف الدورة يوميًا الساعة 7 صباحًا.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white70)),
+                    const Text(
+                        'موقف مضحك أو قصة قصيرة بحد أقصى دقيقتين. تُحذف الدورة يوميًا الساعة 7 صباحًا.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white70)),
                     const SizedBox(height: 14),
-                    Text(_duration(_seconds), style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
+                    Text(_duration(_seconds),
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold)),
                     const SizedBox(height: 10),
                     FilledButton.icon(
-                      style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: _recording ? Colors.red : AppTheme.primary),
+                      style: FilledButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor:
+                              _recording ? Colors.red : AppTheme.primary),
                       onPressed: _publishing ? null : _toggleRecording,
-                      icon: Icon(_recording ? Icons.stop_circle_rounded : Icons.mic_rounded),
-                      label: Text(_recording ? 'إيقاف التسجيل' : 'ابدأ التسجيل'),
+                      icon: Icon(_recording
+                          ? Icons.stop_circle_rounded
+                          : Icons.mic_rounded),
+                      label:
+                          Text(_recording ? 'إيقاف التسجيل' : 'ابدأ التسجيل'),
                     ),
                     SwitchListTile(
                       value: _anonymous,
                       onChanged: (value) => setState(() => _anonymous = value),
                       activeColor: Colors.white,
-                      title: const Text('النشر مجهول الهوية', style: TextStyle(color: Colors.white)),
+                      title: Text('النشر مجهول الهوية',
+                          style: TextStyle(color: Colors.white)),
                     ),
                     if (_recordPath != null)
                       SizedBox(
@@ -301,7 +373,8 @@ class _ZameelRadioScreenState extends State<ZameelRadioScreen> {
                         child: FilledButton.icon(
                           onPressed: _publishing ? null : _publish,
                           icon: const Icon(Icons.send_rounded),
-                          label: Text(_publishing ? 'جارٍ النشر...' : 'نشر المقطع'),
+                          label: Text(
+                              _publishing ? 'جارٍ النشر...' : 'نشر المقطع'),
                         ),
                       ),
                   ],
@@ -311,13 +384,20 @@ class _ZameelRadioScreenState extends State<ZameelRadioScreen> {
               if (_loading)
                 const Center(child: CircularProgressIndicator())
               else if (_posts.isEmpty)
-                const Padding(padding: EdgeInsets.all(32), child: Center(child: Text('لا توجد مقاطع في دورة اليوم بعد.')))
+                const Padding(
+                    padding: EdgeInsets.all(32),
+                    child:
+                        Center(child: Text('لا توجد مقاطع في دورة اليوم بعد.')))
               else
                 ..._posts.map((post) {
                   final anonymous = post['is_anonymous'] == true;
-                  final name = anonymous ? 'زميل مجهول' : (post['author_name']?.toString() ?? 'زميل');
-                  final image = anonymous ? null : post['author_image']?.toString();
-                  final pendingReview = post['moderation_status'] == 'pending_review';
+                  final name = anonymous
+                      ? 'زميل مجهول'
+                      : (post['author_name']?.toString() ?? 'زميل');
+                  final image =
+                      anonymous ? null : post['author_image']?.toString();
+                  final pendingReview =
+                      post['moderation_status'] == 'pending_review';
                   final isAdmin = post['is_admin'] == true;
                   final canDelete = post['can_delete'] == true;
                   final liked = post['liked'] == true;
@@ -331,39 +411,80 @@ class _ZameelRadioScreenState extends State<ZameelRadioScreen> {
                           if (pendingReview)
                             const ListTile(
                               dense: true,
-                              leading: Icon(Icons.shield_outlined, color: Colors.orange),
+                              leading: Icon(Icons.shield_outlined,
+                                  color: Colors.orange),
                               title: Text('التسجيل مخفي وينتظر مراجعة الإدارة'),
                             ),
                           ListTile(
-                            leading: CircleAvatar(backgroundImage: image != null && image.isNotEmpty ? NetworkImage(image) : null, child: image == null || image.isEmpty ? const Icon(Icons.graphic_eq_rounded) : null),
-                            title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                            subtitle: Text('مدة المقطع ${_duration((post['duration_seconds'] as num?)?.toInt() ?? 0)}'),
+                            leading: CircleAvatar(
+                                backgroundImage:
+                                    image != null && image.isNotEmpty
+                                        ? NetworkImage(image)
+                                        : null,
+                                child: image == null || image.isEmpty
+                                    ? const Icon(Icons.graphic_eq_rounded)
+                                    : null),
+                            title: VerifiedName(
+                                userId: anonymous
+                                    ? null
+                                    : post['author_id']?.toString(),
+                                child: Text(name,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold))),
+                            subtitle: Text(
+                                'مدة المقطع ${_duration((post['duration_seconds'] as num?)?.toInt() ?? 0)}'),
                             onTap: pendingReview ? null : () => _play(post),
                             trailing: IconButton(
-                              onPressed: pendingReview ? null : () => _play(post),
+                              onPressed:
+                                  pendingReview ? null : () => _play(post),
                               icon: _loadingPlayId == post['id'].toString()
-                                  ? const SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                                  : Icon(_playingId == post['id'].toString() ? Icons.stop_rounded : Icons.play_arrow_rounded),
+                                  ? const SizedBox.square(
+                                      dimension: 20,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2))
+                                  : Icon(_playingId == post['id'].toString()
+                                      ? Icons.stop_rounded
+                                      : Icons.play_arrow_rounded),
                             ),
                           ),
                           ButtonBar(
                             alignment: MainAxisAlignment.spaceEvenly,
                             children: [
                               TextButton.icon(
-                                onPressed: pendingReview ? null : () => _toggleLike(post),
-                                icon: Icon(liked ? Icons.favorite_rounded : Icons.favorite_border_rounded, color: liked ? Colors.red : null),
+                                onPressed: pendingReview
+                                    ? null
+                                    : () => _toggleLike(post),
+                                icon: Icon(
+                                    liked
+                                        ? Icons.favorite_rounded
+                                        : Icons.favorite_border_rounded,
+                                    color: liked ? Colors.red : null),
                                 label: Text('$likeCount'),
                               ),
                               if (!pendingReview && !canDelete)
-                                TextButton.icon(onPressed: () => _report(post), icon: const Icon(Icons.flag_outlined), label: const Text('إبلاغ')),
+                                TextButton.icon(
+                                    onPressed: () => _report(post),
+                                    icon: const Icon(Icons.flag_outlined),
+                                    label: const Text('إبلاغ')),
                               if (canDelete)
-                                TextButton.icon(onPressed: () => _deletePost(post), icon: const Icon(Icons.delete_outline), label: const Text('حذف')),
+                                TextButton.icon(
+                                    onPressed: () => _deletePost(post),
+                                    icon: const Icon(Icons.delete_outline),
+                                    label: const Text('حذف')),
                               if (isAdmin && pendingReview) ...[
-                                TextButton(onPressed: () => _reviewPost(post, true), child: const Text('إعادة')),
-                                TextButton(onPressed: () => _reviewPost(post, false), child: const Text('حذف نهائي')),
+                                TextButton(
+                                    onPressed: () => _reviewPost(post, true),
+                                    child: const Text('إعادة')),
+                                TextButton(
+                                    onPressed: () => _reviewPost(post, false),
+                                    child: const Text('حذف نهائي')),
                               ],
                               if (isAdmin)
-                                IconButton(onPressed: () => _adminMute(post), tooltip: 'كتم إداري لأسبوع', icon: const Icon(Icons.volume_off_outlined)),
+                                IconButton(
+                                    onPressed: () => _adminMute(post),
+                                    tooltip: 'كتم إداري لأسبوع',
+                                    icon:
+                                        const Icon(Icons.volume_off_outlined)),
                             ],
                           ),
                         ],

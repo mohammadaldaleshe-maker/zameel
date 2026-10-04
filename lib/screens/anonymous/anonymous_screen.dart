@@ -1,3 +1,4 @@
+import 'package:zameel/theme/appearance_controller.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -68,8 +69,10 @@ class _AnonymousScreenState extends State<AnonymousScreen> {
     if (date == null) return '';
     final diff = DateTime.now().difference(date);
     if (diff.inMinutes < 1) return ar ? 'الآن' : 'Now';
-    if (diff.inHours < 1) return ar ? 'منذ ${diff.inMinutes} د' : '${diff.inMinutes}m ago';
-    if (diff.inDays < 1) return ar ? 'منذ ${diff.inHours} س' : '${diff.inHours}h ago';
+    if (diff.inHours < 1)
+      return ar ? 'منذ ${diff.inMinutes} د' : '${diff.inMinutes}m ago';
+    if (diff.inDays < 1)
+      return ar ? 'منذ ${diff.inHours} س' : '${diff.inHours}h ago';
     return ar ? 'منذ ${diff.inDays} ي' : '${diff.inDays}d ago';
   }
 
@@ -81,6 +84,7 @@ class _AnonymousScreenState extends State<AnonymousScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
     final isArabic = languageProvider.isArabic;
 
@@ -94,7 +98,7 @@ class _AnonymousScreenState extends State<AnonymousScreen> {
           ),
           centerTitle: true,
           elevation: 0,
-          backgroundColor: Colors.white,
+          backgroundColor: AppTheme.adaptiveSurface,
           foregroundColor: Colors.black,
         ),
         body: Column(
@@ -102,7 +106,7 @@ class _AnonymousScreenState extends State<AnonymousScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppTheme.adaptiveSurface,
                 boxShadow: [
                   BoxShadow(
                     color: AppTheme.muted.withAlpha(25),
@@ -122,7 +126,7 @@ class _AnonymousScreenState extends State<AnonymousScreen> {
                             ? '📝 اكتب رسالتك المجهولة...'
                             : '📝 Write your anonymous message...',
                         filled: true,
-                        fillColor: AppTheme.background,
+                        fillColor: AppTheme.adaptiveBackground,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
                           borderSide: BorderSide.none,
@@ -140,7 +144,7 @@ class _AnonymousScreenState extends State<AnonymousScreen> {
                     child: IconButton(
                       onPressed: _sending ? null : _sendMessage,
                       icon: _sending
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 20,
                               height: 20,
                               child: CircularProgressIndicator(
@@ -148,7 +152,7 @@ class _AnonymousScreenState extends State<AnonymousScreen> {
                                 color: Colors.white,
                               ),
                             )
-                          : const Icon(Icons.send_rounded, color: Colors.white),
+                          : Icon(Icons.send_rounded, color: Colors.white),
                     ),
                   ),
                 ],
@@ -195,7 +199,7 @@ class _AnonymousScreenState extends State<AnonymousScreen> {
                                   margin: const EdgeInsets.only(bottom: 10),
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
-                                    color: Colors.white,
+                                    color: AppTheme.adaptiveSurface,
                                     borderRadius: BorderRadius.circular(16),
                                     boxShadow: [
                                       BoxShadow(
@@ -209,7 +213,8 @@ class _AnonymousScreenState extends State<AnonymousScreen> {
                                     ),
                                   ),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Row(
                                         children: [
@@ -219,13 +224,19 @@ class _AnonymousScreenState extends State<AnonymousScreen> {
                                               vertical: 4,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: AppTheme.primaryDark.withAlpha(25),
-                                              borderRadius: BorderRadius.circular(12),
+                                              color: AppTheme.primaryDark
+                                                  .withAlpha(25),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
                                             ),
                                             child: Text(
                                               message['is_mine'] == true
-                                                  ? (isArabic ? '👤 مجهول • أنت' : '👤 Anonymous • You')
-                                                  : (isArabic ? '👤 مجهول' : '👤 Anonymous'),
+                                                  ? (isArabic
+                                                      ? '👤 مجهول • أنت'
+                                                      : '👤 Anonymous • You')
+                                                  : (isArabic
+                                                      ? '👤 مجهول'
+                                                      : '👤 Anonymous'),
                                               style: const TextStyle(
                                                 fontSize: 11,
                                                 color: AppTheme.primaryDark,
@@ -235,7 +246,8 @@ class _AnonymousScreenState extends State<AnonymousScreen> {
                                           ),
                                           const Spacer(),
                                           Text(
-                                            _time(message['created_at'], isArabic),
+                                            _time(message['created_at'],
+                                                isArabic),
                                             style: TextStyle(
                                               fontSize: 11,
                                               color: AppTheme.muted.shade400,
@@ -246,7 +258,8 @@ class _AnonymousScreenState extends State<AnonymousScreen> {
                                       const SizedBox(height: 8),
                                       Text(
                                         message['content']?.toString() ?? '',
-                                        style: const TextStyle(fontSize: 15, height: 1.5),
+                                        style: const TextStyle(
+                                            fontSize: 15, height: 1.5),
                                       ),
                                     ],
                                   ),

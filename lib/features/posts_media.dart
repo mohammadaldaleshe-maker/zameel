@@ -72,6 +72,7 @@ class _PostCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final String type = post['type'] ?? 'text';
 
     if (type == 'video') {
@@ -149,6 +150,7 @@ class _ImagePostState extends State<_ImagePost> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
     final isArabic = languageProvider.isArabic;
 
@@ -171,7 +173,9 @@ class _ImagePostState extends State<_ImagePost> {
                 context,
                 widget.post['user_id']?.toString(),
               ),
-              child: _PostOwnerAvatar(imageUrl: widget.post['profile_image']?.toString(), radius: 18.7),
+              child: _PostOwnerAvatar(
+                  imageUrl: widget.post['profile_image']?.toString(),
+                  radius: 18.7),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -184,22 +188,30 @@ class _ImagePostState extends State<_ImagePost> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(children: [Flexible(child: Text(
-                      isArabic
-                          ? (widget.post['name_ar'] ?? 'مستخدم').toString()
-                          : (widget.post['name_en'] ?? 'User').toString(),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: Colors.white,
-                      ),
-                    )), VerifiedBadge(expiresAt: widget.post['verification_expires_at']?.toString())]),
+                    Row(children: [
+                      Flexible(
+                          child: VerifiedName(
+                              userId: widget.post['user_id']?.toString(),
+                              child: Text(
+                                isArabic
+                                    ? (widget.post['name_ar'] ?? 'مستخدم')
+                                        .toString()
+                                    : (widget.post['name_en'] ?? 'User')
+                                        .toString(),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: AppTheme.legacyForeground,
+                                ),
+                              ))),
+                      const SizedBox.shrink()
+                    ]),
                     const SizedBox(height: 3),
                     Text(
                       '${isArabic ? (widget.post['department_ar'] ?? '') : (widget.post['department_en'] ?? '')} • '
                       '${isArabic ? (widget.post['time_ar'] ?? '') : (widget.post['time_en'] ?? '')}',
-                      style: const TextStyle(
-                        color: Colors.white60,
+                      style: TextStyle(
+                        color: AppTheme.legacySecondary,
                         fontSize: 12,
                       ),
                     ),
@@ -232,8 +244,8 @@ class _ImagePostState extends State<_ImagePost> {
             child: Text(
               (isArabic ? widget.post['text_ar'] : widget.post['text_en'])
                   .toString(),
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: AppTheme.legacyForeground,
                 fontSize: 16,
                 height: 1.6,
               ),
@@ -245,7 +257,7 @@ class _ImagePostState extends State<_ImagePost> {
         if (hasOrderedMedia)
           PostMediaGallery(
             post: widget.post,
-            height: 195.5,
+            height: postMediaHeight(context),
             onOpen: (item, _) => _openOrderedPostMedia(
               context,
               widget.post,
@@ -273,16 +285,16 @@ class _ImagePostState extends State<_ImagePost> {
               },
               child: SizedBox(
                 width: double.infinity,
-                height: 195.5,
+                height: postMediaHeight(context),
                 child: CachedMediaImage(
                   url: imageUrl,
                   fit: BoxFit.contain,
                   fallback: Container(
                     alignment: Alignment.center,
                     color: Colors.white10,
-                    child: const Icon(
+                    child: Icon(
                       Icons.broken_image_outlined,
-                      color: Colors.white54,
+                      color: AppTheme.legacySecondary,
                       size: 50,
                     ),
                   ),
@@ -299,17 +311,22 @@ class _ImagePostState extends State<_ImagePost> {
             Icon(
               Icons.favorite_rounded,
               size: 17,
-              color: liked ? accentColor : Colors.white60,
+              color: liked ? accentColor : AppTheme.legacySecondary,
             ),
             const SizedBox(width: 5),
             InkWell(
               onTap: () => _showPostLikesDialog(context, widget.post, isArabic),
-              child: Text('${widget.post['likes'] ?? 0}', style: const TextStyle(color: Colors.white60, fontWeight: FontWeight.w700)),
+              child: Text('${widget.post['likes'] ?? 0}',
+                  style: TextStyle(
+                      color: AppTheme.legacySecondary,
+                      fontWeight: FontWeight.w700)),
             ),
             const SizedBox(width: 14),
-            const Icon(Icons.repeat_rounded, size: 16, color: Colors.white60),
+            Icon(Icons.repeat_rounded,
+                size: 16, color: AppTheme.legacySecondary),
             const SizedBox(width: 4),
-            Text('${widget.post['shares'] ?? 0}', style: const TextStyle(color: Colors.white60)),
+            Text('${widget.post['shares'] ?? 0}',
+                style: TextStyle(color: AppTheme.legacySecondary)),
             const Spacer(),
             Text(
               '${widget.post['comments'] ?? 0} '
@@ -317,8 +334,8 @@ class _ImagePostState extends State<_ImagePost> {
                 'comments_title',
                 languageProvider.currentLanguage,
               )}',
-              style: const TextStyle(
-                color: Colors.white60,
+              style: TextStyle(
+                color: AppTheme.legacySecondary,
               ),
             ),
           ],
@@ -351,60 +368,68 @@ class _ImagePostState extends State<_ImagePost> {
                 languageProvider.currentLanguage,
               ),
               onTap: () async {
-                if (!await FeatureControl.instance.check(context, 'comments')) return;
+                if (!await FeatureControl.instance.check(context, 'comments'))
+                  return;
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => FeatureControl.instance.page('comments', CommentsScreen(
-                      post: widget.post,
-                    )),
+                    builder: (_) => FeatureControl.instance.page(
+                        'comments',
+                        CommentsScreen(
+                          post: widget.post,
+                        )),
                   ),
                 );
               },
               color: Colors.white70,
             ),
             // SAVE
-            if (FeatureControl.instance.visible('saved_posts')) _PostAction(
-              icon: isSaved
-                  ? Icons.bookmark_rounded
-                  : Icons.bookmark_border_rounded,
-              text: isArabic ? 'حفظ' : 'Save',
-              active: isSaved,
-              color: isSaved ? accentColor : Colors.white70,
-              onTap: () {
-                setState(() {
-                  widget.post['isSaved'] = !isSaved;
-                  if (widget.post['isSaved'] == true) {
-                    widget.savedPosts.insert(
-                      0,
-                      widget.post,
-                    );
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          isArabic ? 'تم حفظ المنشور' : 'Post saved',
+            if (FeatureControl.instance.visible('saved_posts'))
+              _PostAction(
+                icon: isSaved
+                    ? Icons.bookmark_rounded
+                    : Icons.bookmark_border_rounded,
+                text: isArabic ? 'حفظ' : 'Save',
+                active: isSaved,
+                color: isSaved ? accentColor : Colors.white70,
+                onTap: () {
+                  setState(() {
+                    widget.post['isSaved'] = !isSaved;
+                    if (widget.post['isSaved'] == true) {
+                      widget.savedPosts.insert(
+                        0,
+                        widget.post,
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            isArabic ? 'تم حفظ المنشور' : 'Post saved',
+                          ),
+                          backgroundColor: Colors.green,
+                          duration: const Duration(seconds: 1),
                         ),
-                        backgroundColor: Colors.green,
-                        duration: const Duration(seconds: 1),
-                      ),
-                    );
-                  } else {
-                    widget.savedPosts.removeWhere(
-                      (p) => p['id'] == widget.post['id'] || p['text'] == widget.post['text'],
-                    );
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          isArabic ? 'تم إلغاء حفظ المنشور' : 'Post removed from saved',
+                      );
+                    } else {
+                      widget.savedPosts.removeWhere(
+                        (p) =>
+                            p['id'] == widget.post['id'] ||
+                            p['text'] == widget.post['text'],
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            isArabic
+                                ? 'تم إلغاء حفظ المنشور'
+                                : 'Post removed from saved',
+                          ),
+                          backgroundColor: Colors.orange,
+                          duration: const Duration(seconds: 1),
                         ),
-                        backgroundColor: Colors.orange,
-                        duration: const Duration(seconds: 1),
-                      ),
-                    );
-                  }
-                });
-              },
-            ),
+                      );
+                    }
+                  });
+                },
+              ),
             // SHARE
             _PostAction(
               icon: Icons.share_outlined,
@@ -457,6 +482,7 @@ class _VideoPost extends StatefulWidget {
 class _VideoPostState extends State<_VideoPost> {
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final bool liked = widget.post['liked'] ?? false;
     final String videoUrl = widget.post['video_url'] ??
         'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4';
@@ -468,61 +494,72 @@ class _VideoPostState extends State<_VideoPost> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-  children: [
-    GestureDetector(
-      onTap: () => _openUserProfile(
-        context,
-        widget.post['user_id']?.toString(),
-      ),
-      child: _PostOwnerAvatar(imageUrl: widget.post['profile_image']?.toString(), radius: 18.7),
-    ),
-    const SizedBox(width: 10),
-    Expanded(
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () => _openUserProfile(
-          context,
-          widget.post['user_id']?.toString(),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(children: [Flexible(child: Text(
-              isArabic ? widget.post['name_ar'] : widget.post['name_en'],
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: Colors.white,
+            GestureDetector(
+              onTap: () => _openUserProfile(
+                context,
+                widget.post['user_id']?.toString(),
               ),
-            )), VerifiedBadge(expiresAt: widget.post['verification_expires_at']?.toString())]),
-            const SizedBox(height: 3),
-            Text(
-              '${isArabic ? widget.post['department_ar'] : widget.post['department_en']} • '
-              '${isArabic ? widget.post['time_ar'] : widget.post['time_en']}',
-              style: const TextStyle(
-                color: Colors.white60,
-                fontSize: 12,
+              child: _PostOwnerAvatar(
+                  imageUrl: widget.post['profile_image']?.toString(),
+                  radius: 18.7),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => _openUserProfile(
+                  context,
+                  widget.post['user_id']?.toString(),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [
+                      Flexible(
+                          child: VerifiedName(
+                              userId: widget.post['user_id']?.toString(),
+                              child: Text(
+                                isArabic
+                                    ? widget.post['name_ar']
+                                    : widget.post['name_en'],
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: AppTheme.legacyForeground,
+                                ),
+                              ))),
+                      const SizedBox.shrink()
+                    ]),
+                    const SizedBox(height: 3),
+                    Text(
+                      '${isArabic ? widget.post['department_ar'] : widget.post['department_en']} • '
+                      '${isArabic ? widget.post['time_ar'] : widget.post['time_en']}',
+                      style: TextStyle(
+                        color: AppTheme.legacySecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
               ),
+            ),
+            PostReportMenu(
+              postId: widget.post['id']?.toString() ?? '',
+              authorId: widget.post['user_id']?.toString(),
+              ar: isArabic,
+              canDelete: widget.isAdmin ||
+                  widget.post['user_id']?.toString() ==
+                      Supabase.instance.client.auth.currentUser?.id,
+              onDelete: widget.onDelete,
             ),
           ],
         ),
-      ),
-    ),
-    PostReportMenu(
-      postId: widget.post['id']?.toString() ?? '',
-      authorId: widget.post['user_id']?.toString(),
-      ar: isArabic,
-      canDelete: widget.isAdmin || widget.post['user_id']?.toString() ==
-          Supabase.instance.client.auth.currentUser?.id,
-      onDelete: widget.onDelete,
-    ),
-  ],
-),
         const SizedBox(height: 10),
         if (hasOrderedMedia)
           PostMediaGallery(
             post: widget.post,
-            height: 195.5,
+            height: postMediaHeight(context),
             onOpen: (item, _) => _openOrderedPostMedia(
               context,
               widget.post,
@@ -547,7 +584,7 @@ class _VideoPostState extends State<_VideoPost> {
                 ),
               ),
               child: SizedBox(
-                height: 195.5,
+                height: postMediaHeight(context),
                 width: double.infinity,
                 child: VideoPlayerWidget(videoUrl: videoUrl),
               ),
@@ -556,26 +593,43 @@ class _VideoPostState extends State<_VideoPost> {
         const SizedBox(height: 10),
         Text(
           isArabic ? widget.post['text_ar'] : widget.post['text_en'],
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: AppTheme.legacyForeground,
             fontSize: 14,
             height: 1.4,
           ),
         ),
         const SizedBox(height: 10),
         Row(children: [
-          InkWell(onTap: () => _showPostLikesDialog(context, widget.post, isArabic), child: Row(children: [const Icon(Icons.favorite_rounded, size: 16, color: Colors.white60), const SizedBox(width: 4), Text('${widget.post['likes'] ?? 0}', style: const TextStyle(color: Colors.white60, fontWeight: FontWeight.w700))])),
+          InkWell(
+              onTap: () => _showPostLikesDialog(context, widget.post, isArabic),
+              child: Row(children: [
+                Icon(Icons.favorite_rounded,
+                    size: 16, color: AppTheme.legacySecondary),
+                const SizedBox(width: 4),
+                Text('${widget.post['likes'] ?? 0}',
+                    style: TextStyle(
+                        color: AppTheme.legacySecondary,
+                        fontWeight: FontWeight.w700))
+              ])),
           const SizedBox(width: 14),
-          const Icon(Icons.repeat_rounded, size: 16, color: Colors.white60), const SizedBox(width: 4),
-          Text('${widget.post['shares'] ?? 0}', style: const TextStyle(color: Colors.white60)),
-          const Spacer(), Text('${widget.post['comments'] ?? 0} ${Translations.translate('comments_title', languageProvider.currentLanguage)}', style: const TextStyle(color: Colors.white60)),
+          Icon(Icons.repeat_rounded, size: 16, color: AppTheme.legacySecondary),
+          const SizedBox(width: 4),
+          Text('${widget.post['shares'] ?? 0}',
+              style: TextStyle(color: AppTheme.legacySecondary)),
+          const Spacer(),
+          Text(
+              '${widget.post['comments'] ?? 0} ${Translations.translate('comments_title', languageProvider.currentLanguage)}',
+              style: TextStyle(color: AppTheme.legacySecondary)),
         ]),
         const Divider(color: Colors.white24, height: 22),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             _PostAction(
-              icon: liked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+              icon: liked
+                  ? Icons.favorite_rounded
+                  : Icons.favorite_border_rounded,
               text: '${widget.post['likes'] ?? 0}',
               active: liked,
               onTap: widget.onLike,
@@ -585,40 +639,48 @@ class _VideoPostState extends State<_VideoPost> {
               icon: Icons.comment_rounded,
               text: '${widget.post['comments']}',
               onTap: () async {
-                if (!await FeatureControl.instance.check(context, 'comments')) return;
+                if (!await FeatureControl.instance.check(context, 'comments'))
+                  return;
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => FeatureControl.instance.page('comments', CommentsScreen(
-                      post: widget.post,
-                    )),
+                    builder: (_) => FeatureControl.instance.page(
+                        'comments',
+                        CommentsScreen(
+                          post: widget.post,
+                        )),
                   ),
                 );
               },
               color: Colors.white70,
             ),
-            if (FeatureControl.instance.visible('saved_posts')) _PostAction(
-              icon: widget.post['isSaved'] == true
-                  ? Icons.bookmark_rounded
-                  : Icons.bookmark_border_rounded,
-              text: isArabic ? 'حفظ' : 'Save',
-              color: widget.post['isSaved'] == true ? accentColor : Colors.white70,
-              onTap: () {
-                setState(() {
-                  widget.post['isSaved'] = !(widget.post['isSaved'] == true);
-                });
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      widget.post['isSaved'] == true
-                          ? (isArabic ? '✅ تم حفظ الفيديو' : '✅ Video saved')
-                          : (isArabic ? '🗑️ تم إلغاء حفظ الفيديو' : '🗑️ Video removed from saved'),
+            if (FeatureControl.instance.visible('saved_posts'))
+              _PostAction(
+                icon: widget.post['isSaved'] == true
+                    ? Icons.bookmark_rounded
+                    : Icons.bookmark_border_rounded,
+                text: isArabic ? 'حفظ' : 'Save',
+                color: widget.post['isSaved'] == true
+                    ? accentColor
+                    : Colors.white70,
+                onTap: () {
+                  setState(() {
+                    widget.post['isSaved'] = !(widget.post['isSaved'] == true);
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        widget.post['isSaved'] == true
+                            ? (isArabic ? '✅ تم حفظ الفيديو' : '✅ Video saved')
+                            : (isArabic
+                                ? '🗑️ تم إلغاء حفظ الفيديو'
+                                : '🗑️ Video removed from saved'),
+                      ),
+                      backgroundColor: AppTheme.primary,
                     ),
-                    backgroundColor: AppTheme.primary,
-                  ),
-                );
-              },
-            ),
+                  );
+                },
+              ),
             _PostAction(
               icon: Icons.share_rounded,
               text: isArabic ? 'مشاركة' : 'Share',
@@ -627,8 +689,12 @@ class _VideoPostState extends State<_VideoPost> {
                 if (widget.onShareToProfile != null) {
                   await widget.onShareToProfile!(widget.post);
                 }
-                final videoUrl = '${widget.post['video_url'] ?? widget.post['videoUrl'] ?? ''}';
-                await Clipboard.setData(ClipboardData(text: videoUrl.isNotEmpty ? videoUrl : '${widget.post['text_ar'] ?? widget.post['text_en'] ?? ''}'));
+                final videoUrl =
+                    '${widget.post['video_url'] ?? widget.post['videoUrl'] ?? ''}';
+                await Clipboard.setData(ClipboardData(
+                    text: videoUrl.isNotEmpty
+                        ? videoUrl
+                        : '${widget.post['text_ar'] ?? widget.post['text_en'] ?? ''}'));
               },
             ),
           ],
@@ -638,18 +704,72 @@ class _VideoPostState extends State<_VideoPost> {
   }
 }
 
-Future<void> _showPostLikesDialog(BuildContext context, Map<String, dynamic> post, bool isArabic) async {
+Future<void> _showPostLikesDialog(
+    BuildContext context, Map<String, dynamic> post, bool isArabic) async {
   final postId = post['id'];
   if (postId == null) return;
   try {
-    final rows = await Supabase.instance.client.from('likes').select('user_id, users(name, profile_image)').eq('post_id', postId).order('created_at', ascending: false);
+    final rows = await Supabase.instance.client
+        .from('likes')
+        .select('user_id, users(name, profile_image)')
+        .eq('post_id', postId)
+        .order('created_at', ascending: false);
     if (!context.mounted) return;
-    showModalBottomSheet(context: context, showDragHandle: true, builder: (_) => Directionality(textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr, child: SizedBox(height: 480, child: Column(children: [Padding(padding: const EdgeInsets.all(16), child: Text(isArabic ? 'الأشخاص الذين أعجبوا بالمنشور' : 'People who liked this post', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800))), Expanded(child: rows.isEmpty ? Center(child: Text(isArabic ? 'لا توجد إعجابات بعد' : 'No likes yet')) : ListView.builder(itemCount: rows.length, itemBuilder: (_, i) { final u = rows[i]['users']; final name = u is Map ? (u['name']?.toString() ?? 'User') : 'User'; final image = u is Map ? u['profile_image']?.toString() : null; return ListTile(leading: CircleAvatar(backgroundImage: image != null && image.isNotEmpty ? NetworkImage(image) : null, child: image == null || image.isEmpty ? const Icon(Icons.person) : null), title: Text(name, style: const TextStyle(fontWeight: FontWeight.w700))); }))]))));
+    showModalBottomSheet(
+        context: context,
+        showDragHandle: true,
+        builder: (_) => Directionality(
+            textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+            child: SizedBox(
+                height: 480,
+                child: Column(children: [
+                  Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                          isArabic
+                              ? 'الأشخاص الذين أعجبوا بالمنشور'
+                              : 'People who liked this post',
+                          style: const TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.w800))),
+                  Expanded(
+                      child: rows.isEmpty
+                          ? Center(
+                              child: Text(isArabic
+                                  ? 'لا توجد إعجابات بعد'
+                                  : 'No likes yet'))
+                          : ListView.builder(
+                              itemCount: rows.length,
+                              itemBuilder: (_, i) {
+                                final u = rows[i]['users'];
+                                final name = u is Map
+                                    ? (u['name']?.toString() ?? 'User')
+                                    : 'User';
+                                final image = u is Map
+                                    ? u['profile_image']?.toString()
+                                    : null;
+                                return ListTile(
+                                    leading: CircleAvatar(
+                                        backgroundImage:
+                                            image != null && image.isNotEmpty
+                                                ? NetworkImage(image)
+                                                : null,
+                                        child: image == null || image.isEmpty
+                                            ? const Icon(Icons.person)
+                                            : null),
+                                    title: VerifiedName(
+                                        userId: rows[i]['user_id']?.toString(),
+                                        child: Text(name,
+                                            style: const TextStyle(
+                                                fontWeight: FontWeight.w700))));
+                              }))
+                ]))));
   } catch (e) {
-    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(FeatureControl.errorMessage(e, 'تعذر تحميل قائمة الإعجابات'))));
+    if (context.mounted)
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(
+              FeatureControl.errorMessage(e, 'تعذر تحميل قائمة الإعجابات'))));
   }
 }
-
 
 // ============================================================
 // MEDIA VIEWER
@@ -684,10 +804,11 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
   final TextEditingController _commentController = TextEditingController();
   final FocusNode _commentFocus = FocusNode();
 
-  String get _url => (widget.isVideo
-          ? (widget.post['video_url'] ?? widget.post['videoUrl'])
-          : (widget.post['image_url'] ?? widget.post['imageUrl']))
-      ?.toString() ??
+  String get _url =>
+      (widget.isVideo
+              ? (widget.post['video_url'] ?? widget.post['videoUrl'])
+              : (widget.post['image_url'] ?? widget.post['imageUrl']))
+          ?.toString() ??
       '';
 
   int _count(dynamic value) {
@@ -712,7 +833,8 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
     if (user == null || postId == null || widget.post['is_demo'] == true) {
       setState(() {
         widget.post['liked'] = !liked;
-        widget.post['likes_count'] = liked ? (oldCount > 0 ? oldCount - 1 : 0) : oldCount + 1;
+        widget.post['likes_count'] =
+            liked ? (oldCount > 0 ? oldCount - 1 : 0) : oldCount + 1;
         widget.post['likes'] = widget.post['likes_count'];
       });
       widget.onLikeChanged?.call();
@@ -735,14 +857,17 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
       if (!mounted) return;
       setState(() {
         widget.post['liked'] = !liked;
-        widget.post['likes_count'] = liked ? (oldCount > 0 ? oldCount - 1 : 0) : oldCount + 1;
+        widget.post['likes_count'] =
+            liked ? (oldCount > 0 ? oldCount - 1 : 0) : oldCount + 1;
         widget.post['likes'] = widget.post['likes_count'];
       });
       widget.onLikeChanged?.call();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(FeatureControl.errorMessage(e, 'تعذر تحديث الإعجاب'))),
+          SnackBar(
+              content:
+                  Text(FeatureControl.errorMessage(e, 'تعذر تحديث الإعجاب'))),
         );
       }
     } finally {
@@ -779,7 +904,9 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(FeatureControl.errorMessage(e, 'تعذر تحديث الحفظ'))),
+          SnackBar(
+              content:
+                  Text(FeatureControl.errorMessage(e, 'تعذر تحديث الحفظ'))),
         );
       }
     } finally {
@@ -798,7 +925,8 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
         }, onConflict: 'post_id,shared_by');
       } catch (_) {}
     }
-    final currentShares = _count(widget.post['shares_count'] ?? widget.post['shares']);
+    final currentShares =
+        _count(widget.post['shares_count'] ?? widget.post['shares']);
     if (mounted) {
       setState(() {
         widget.post['shares_count'] = currentShares + 1;
@@ -807,7 +935,8 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
     }
     await SharePlus.instance.share(
       ShareParams(
-        text: '${widget.post['text_ar'] ?? widget.post['text_en'] ?? ''}${_url.isEmpty ? '' : '\n$_url'}',
+        text:
+            '${widget.post['text_ar'] ?? widget.post['text_en'] ?? ''}${_url.isEmpty ? '' : '\n$_url'}',
         subject: 'Zameel',
       ),
     );
@@ -852,20 +981,23 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
         'content': text,
       });
       _commentController.clear();
-      final currentComments = _count(widget.post['comments_count'] ?? widget.post['comments']);
+      final currentComments =
+          _count(widget.post['comments_count'] ?? widget.post['comments']);
       if (!mounted) return;
       setState(() {
         widget.post['comments_count'] = currentComments + 1;
         widget.post['comments'] = currentComments + 1;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(isArabic ? 'تم إضافة التعليق ✓' : 'Comment added ✓')),
+        SnackBar(
+            content: Text(isArabic ? 'تم إضافة التعليق ✓' : 'Comment added ✓')),
       );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(FeatureControl.errorMessage(e, isArabic ? 'تعذر إضافة التعليق' : 'Could not add comment')),
+            content: Text(FeatureControl.errorMessage(
+                e, isArabic ? 'تعذر إضافة التعليق' : 'Could not add comment')),
           ),
         );
       }
@@ -878,13 +1010,16 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
     if (!await FeatureControl.instance.check(context, 'comments')) return;
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => FeatureControl.instance.page('comments', CommentsScreen(post: widget.post))),
+      MaterialPageRoute(
+          builder: (_) => FeatureControl.instance
+              .page('comments', CommentsScreen(post: widget.post))),
     );
     if (mounted) setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     if (widget.isVideo && widget.enableVerticalPaging) {
       return _VerticalPostVideoViewer(initialPost: widget.post);
     }
@@ -893,11 +1028,12 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
     final liked = widget.post['liked'] == true;
     final saved = widget.post['isSaved'] == true;
     final text = (isArabic
-            ? (widget.post['text_ar'] ?? widget.post['text_en'])
-            : (widget.post['text_en'] ?? widget.post['text_ar']))
-        ?.toString() ??
+                ? (widget.post['text_ar'] ?? widget.post['text_en'])
+                : (widget.post['text_en'] ?? widget.post['text_ar']))
+            ?.toString() ??
         '';
-    final comments = _count(widget.post['comments_count'] ?? widget.post['comments']);
+    final comments =
+        _count(widget.post['comments_count'] ?? widget.post['comments']);
     final hasMedia = _url.isNotEmpty;
     final ownerId = widget.post['user_id']?.toString();
     final ownerData = widget.post['users'] is Map
@@ -922,7 +1058,10 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
       child: Scaffold(
         backgroundColor: Colors.black,
         appBar: _controlsVisible
-            ? AppBar(backgroundColor: Colors.black, foregroundColor: Colors.white, title: Text(title))
+            ? AppBar(
+                backgroundColor: Colors.black,
+                foregroundColor: Colors.white,
+                title: Text(title))
             : null,
         body: SafeArea(
           top: false,
@@ -939,15 +1078,21 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
                                       ? (widget.videoActive
                                           ? VerticalAutoplayVideoPlayer(
                                               videoUrl: _url,
-                                              onControlsVisibilityChanged: (visible) {
-                                                if (mounted && _controlsVisible != visible) setState(() => _controlsVisible = visible);
+                                              onControlsVisibilityChanged:
+                                                  (visible) {
+                                                if (mounted &&
+                                                    _controlsVisible != visible)
+                                                  setState(() =>
+                                                      _controlsVisible =
+                                                          visible);
                                               },
                                             )
                                           : const ColoredBox(
                                               color: Colors.black,
                                               child: Center(
                                                 child: Icon(
-                                                  Icons.play_circle_outline_rounded,
+                                                  Icons
+                                                      .play_circle_outline_rounded,
                                                   color: Colors.white38,
                                                   size: 54,
                                                 ),
@@ -955,13 +1100,18 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
                                             ))
                                       : VideoPlayerWidget(
                                           videoUrl: _url,
-                                          onControlsVisibilityChanged: (visible) {
-                                            if (mounted && _controlsVisible != visible) setState(() => _controlsVisible = visible);
+                                          onControlsVisibilityChanged:
+                                              (visible) {
+                                            if (mounted &&
+                                                _controlsVisible != visible)
+                                              setState(() =>
+                                                  _controlsVisible = visible);
                                           },
                                         ))
                                   : GestureDetector(
                                       behavior: HitTestBehavior.opaque,
-                                      onTap: () => setState(() => _controlsVisible = !_controlsVisible),
+                                      onTap: () => setState(() =>
+                                          _controlsVisible = !_controlsVisible),
                                       child: InteractiveViewer(
                                         minScale: 0.5,
                                         maxScale: 5,
@@ -981,11 +1131,13 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
                           if (_controlsVisible && text.trim().isNotEmpty)
                             Container(
                               width: double.infinity,
-                              padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+                              padding:
+                                  const EdgeInsets.fromLTRB(16, 10, 16, 12),
                               color: Colors.black,
                               child: Text(
                                 text,
-                                style: const TextStyle(color: Colors.white, height: 1.45),
+                                style: TextStyle(
+                                    color: Colors.white, height: 1.45),
                               ),
                             ),
                         ],
@@ -1005,7 +1157,7 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
                             child: Text(
                               text,
                               textAlign: TextAlign.start,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 20,
                                 height: 1.65,
@@ -1015,134 +1167,154 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
                         ),
                       ),
               ),
-              if (_controlsVisible) Material(
-                color: Colors.black,
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundImage: ownerImage.isNotEmpty
-                        ? NetworkImage(ownerImage)
-                        : null,
-                    child: ownerImage.isEmpty
-                        ? const Icon(Icons.person_rounded)
-                        : null,
-                  ),
-                  title: Text(
-                    ownerName,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
+              if (_controlsVisible)
+                Material(
+                  color: Colors.black,
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      backgroundImage: ownerImage.isNotEmpty
+                          ? NetworkImage(ownerImage)
+                          : null,
+                      child: ownerImage.isEmpty
+                          ? const Icon(Icons.person_rounded)
+                          : null,
                     ),
+                    title: VerifiedName(
+                        userId: widget.post['user_id']?.toString(),
+                        child: Text(
+                          ownerName,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        )),
+                    subtitle: Text(
+                      isArabic ? 'صاحب المنشور' : 'Post author',
+                      style: const TextStyle(color: Colors.white60),
+                    ),
+                    trailing: const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      color: AppTheme.accent,
+                      size: 16,
+                    ),
+                    onTap: ownerId == null || ownerId.isEmpty
+                        ? null
+                        : () => _openUserProfile(context, ownerId),
                   ),
-                  subtitle: Text(
-                    isArabic ? 'صاحب المنشور' : 'Post author',
-                    style: const TextStyle(color: Colors.white60),
-                  ),
-                  trailing: const Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    color: AppTheme.accent,
-                    size: 16,
-                  ),
-                  onTap: ownerId == null || ownerId.isEmpty
-                      ? null
-                      : () => _openUserProfile(context, ownerId),
                 ),
-              ),
-              if (_controlsVisible) Container(
-                color: Colors.black.withAlpha(240),
-                padding: const EdgeInsets.fromLTRB(10, 6, 10, 8),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        IconButton(
-                          tooltip: isArabic ? 'إعجاب' : 'Like',
-                          onPressed: _toggleLike,
-                          icon: Icon(
-                            liked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                            color: liked ? accentColor : Colors.white,
-                          ),
-                        ),
-                        if (FeatureControl.instance.visible('comments')) IconButton(
-                          tooltip: isArabic ? 'تعليق' : 'Comment',
-                          onPressed: () => _commentFocus.requestFocus(),
-                          icon: const Icon(Icons.comment_outlined, color: Colors.white),
-                        ),
-                        IconButton(
-                          tooltip: isArabic ? 'مشاركة' : 'Share',
-                          onPressed: _share,
-                          icon: const Icon(Icons.share_rounded, color: Colors.white),
-                        ),
-                        if (FeatureControl.instance.visible('saved_posts')) IconButton(
-                          tooltip: isArabic ? 'حفظ' : 'Save',
-                          onPressed: _toggleSave,
-                          icon: Icon(
-                            saved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-                            color: saved ? accentColor : Colors.white,
-                          ),
-                        ),
-                        if (hasMedia)
+              if (_controlsVisible)
+                Container(
+                  color: Colors.black.withAlpha(240),
+                  padding: const EdgeInsets.fromLTRB(10, 6, 10, 8),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
                           IconButton(
-                            tooltip: isArabic ? 'نسخ الرابط' : 'Copy link',
-                            onPressed: _copyLink,
-                            icon: const Icon(Icons.link_rounded, color: Colors.white),
+                            tooltip: isArabic ? 'إعجاب' : 'Like',
+                            onPressed: _toggleLike,
+                            icon: Icon(
+                              liked
+                                  ? Icons.favorite_rounded
+                                  : Icons.favorite_border_rounded,
+                              color: liked ? accentColor : Colors.white,
+                            ),
                           ),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _commentController,
-                            focusNode: _commentFocus,
-                            minLines: 1,
-                            maxLines: 3,
-                            style: const TextStyle(color: Colors.white),
-                            textInputAction: TextInputAction.send,
-                            onSubmitted: (_) => _addComment(isArabic),
-                            decoration: InputDecoration(
-                              hintText: isArabic ? 'اكتب تعليقًا...' : 'Write a comment...',
-                              hintStyle: const TextStyle(color: Colors.white54),
-                              filled: true,
-                              fillColor: Colors.white10,
-                              isDense: true,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(24),
-                                borderSide: BorderSide.none,
+                          if (FeatureControl.instance.visible('comments'))
+                            IconButton(
+                              tooltip: isArabic ? 'تعليق' : 'Comment',
+                              onPressed: () => _commentFocus.requestFocus(),
+                              icon: Icon(Icons.comment_outlined,
+                                  color: Colors.white),
+                            ),
+                          IconButton(
+                            tooltip: isArabic ? 'مشاركة' : 'Share',
+                            onPressed: _share,
+                            icon:
+                                Icon(Icons.share_rounded, color: Colors.white),
+                          ),
+                          if (FeatureControl.instance.visible('saved_posts'))
+                            IconButton(
+                              tooltip: isArabic ? 'حفظ' : 'Save',
+                              onPressed: _toggleSave,
+                              icon: Icon(
+                                saved
+                                    ? Icons.bookmark_rounded
+                                    : Icons.bookmark_border_rounded,
+                                color: saved ? accentColor : Colors.white,
+                              ),
+                            ),
+                          if (hasMedia)
+                            IconButton(
+                              tooltip: isArabic ? 'نسخ الرابط' : 'Copy link',
+                              onPressed: _copyLink,
+                              icon:
+                                  Icon(Icons.link_rounded, color: Colors.white),
+                            ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _commentController,
+                              focusNode: _commentFocus,
+                              minLines: 1,
+                              maxLines: 3,
+                              style: TextStyle(color: Colors.white),
+                              textInputAction: TextInputAction.send,
+                              onSubmitted: (_) => _addComment(isArabic),
+                              decoration: InputDecoration(
+                                hintText: isArabic
+                                    ? 'اكتب تعليقًا...'
+                                    : 'Write a comment...',
+                                hintStyle:
+                                    const TextStyle(color: Colors.white54),
+                                filled: true,
+                                fillColor: Colors.white10,
+                                isDense: true,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(24),
+                                  borderSide: BorderSide.none,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 6),
-                        IconButton.filled(
-                          onPressed: _sendingComment ? null : () => _addComment(isArabic),
-                          icon: _sendingComment
-                              ? const SizedBox(
-                                  width: 17,
-                                  height: 17,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                )
-                              : const Icon(Icons.send_rounded),
-                        ),
-                      ],
-                    ),
-                    Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: TextButton.icon(
-                        onPressed: _openComments,
-                        icon: const Icon(Icons.forum_outlined, size: 18),
-                        label: Text(
-                          isArabic
-                              ? 'عرض التعليقات ($comments)'
-                              : 'View comments ($comments)',
-                        ),
-                        style: TextButton.styleFrom(foregroundColor: Colors.white70),
+                          const SizedBox(width: 6),
+                          IconButton.filled(
+                            onPressed: _sendingComment
+                                ? null
+                                : () => _addComment(isArabic),
+                            icon: _sendingComment
+                                ? const SizedBox(
+                                    width: 17,
+                                    height: 17,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2),
+                                  )
+                                : const Icon(Icons.send_rounded),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: TextButton.icon(
+                          onPressed: _openComments,
+                          icon: const Icon(Icons.forum_outlined, size: 18),
+                          label: Text(
+                            isArabic
+                                ? 'عرض التعليقات ($comments)'
+                                : 'View comments ($comments)',
+                          ),
+                          style: TextButton.styleFrom(
+                              foregroundColor: Colors.white70),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
             ],
           ),
         ),
@@ -1165,8 +1337,7 @@ class _VerticalPostVideoViewer extends StatefulWidget {
       _VerticalPostVideoViewerState();
 }
 
-class _VerticalPostVideoViewerState
-    extends State<_VerticalPostVideoViewer> {
+class _VerticalPostVideoViewerState extends State<_VerticalPostVideoViewer> {
   late final PageController _pageController;
   late List<Map<String, dynamic>> _posts;
   int _currentIndex = 0;
@@ -1209,6 +1380,7 @@ class _VerticalPostVideoViewerState
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return Scaffold(
       backgroundColor: Colors.black,
       body: PageView.builder(
@@ -1248,6 +1420,7 @@ class _PostAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return InkWell(
       onTap: onTap,
       child: Row(
@@ -1310,6 +1483,7 @@ class _TextPostState extends State<_TextPost> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final bool liked = widget.post['liked'] ?? false;
     final languageProvider = Provider.of<LanguageProvider>(context);
     final isArabic = languageProvider.isArabic;
@@ -1327,7 +1501,9 @@ class _TextPostState extends State<_TextPost> {
                 context,
                 widget.post['user_id']?.toString(),
               ),
-              child: _PostOwnerAvatar(imageUrl: widget.post['profile_image']?.toString(), radius: 18.7),
+              child: _PostOwnerAvatar(
+                  imageUrl: widget.post['profile_image']?.toString(),
+                  radius: 18.7),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -1340,20 +1516,28 @@ class _TextPostState extends State<_TextPost> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(children: [Flexible(child: Text(
-                      isArabic ? widget.post['name_ar'] : widget.post['name_en'],
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: Colors.white,
-                      ),
-                    )), VerifiedBadge(expiresAt: widget.post['verification_expires_at']?.toString())]),
+                    Row(children: [
+                      Flexible(
+                          child: VerifiedName(
+                              userId: widget.post['user_id']?.toString(),
+                              child: Text(
+                                isArabic
+                                    ? widget.post['name_ar']
+                                    : widget.post['name_en'],
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: AppTheme.legacyForeground,
+                                ),
+                              ))),
+                      const SizedBox.shrink()
+                    ]),
                     const SizedBox(height: 3),
                     Text(
                       '${isArabic ? widget.post['department_ar'] : widget.post['department_en']} • '
                       '${isArabic ? widget.post['time_ar'] : widget.post['time_en']}',
-                      style: const TextStyle(
-                        color: Colors.white60,
+                      style: TextStyle(
+                        color: AppTheme.legacySecondary,
                         fontSize: 12,
                       ),
                     ),
@@ -1392,8 +1576,8 @@ class _TextPostState extends State<_TextPost> {
           },
           child: Text(
             isArabic ? widget.post['text_ar'] : widget.post['text_en'],
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: AppTheme.legacyForeground,
               fontSize: 16,
               height: 1.6,
             ),
@@ -1403,7 +1587,7 @@ class _TextPostState extends State<_TextPost> {
           const SizedBox(height: 12),
           PostMediaGallery(
             post: widget.post,
-            height: 195.5,
+            height: postMediaHeight(context),
             onOpen: (item, _) => _openOrderedPostMedia(
               context,
               widget.post,
@@ -1420,21 +1604,26 @@ class _TextPostState extends State<_TextPost> {
             Icon(
               Icons.favorite_rounded,
               size: 17,
-              color: liked ? accentColor : Colors.white60,
+              color: liked ? accentColor : AppTheme.legacySecondary,
             ),
             const SizedBox(width: 5),
             InkWell(
               onTap: () => _showPostLikesDialog(context, widget.post, isArabic),
-              child: Text('${widget.post['likes'] ?? 0}', style: const TextStyle(color: Colors.white60, fontWeight: FontWeight.w700)),
+              child: Text('${widget.post['likes'] ?? 0}',
+                  style: TextStyle(
+                      color: AppTheme.legacySecondary,
+                      fontWeight: FontWeight.w700)),
             ),
             const SizedBox(width: 20),
-            const Icon(Icons.repeat_rounded, size: 16, color: Colors.white60),
+            Icon(Icons.repeat_rounded,
+                size: 16, color: AppTheme.legacySecondary),
             const SizedBox(width: 4),
-            Text('${widget.post['shares'] ?? 0}', style: const TextStyle(color: Colors.white60)),
+            Text('${widget.post['shares'] ?? 0}',
+                style: TextStyle(color: AppTheme.legacySecondary)),
             const SizedBox(width: 20),
             Text(
               '${widget.post['comments'] ?? 0} ${Translations.translate('comments_title', languageProvider.currentLanguage)}',
-              style: const TextStyle(color: Colors.white60),
+              style: TextStyle(color: AppTheme.legacySecondary),
             ),
           ],
         ),
@@ -1446,7 +1635,9 @@ class _TextPostState extends State<_TextPost> {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             _PostAction(
-              icon: liked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+              icon: liked
+                  ? Icons.favorite_rounded
+                  : Icons.favorite_border_rounded,
               text: isArabic ? 'إعجاب' : 'Like',
               active: liked,
               onTap: widget.onLike,
@@ -1459,57 +1650,65 @@ class _TextPostState extends State<_TextPost> {
                 languageProvider.currentLanguage,
               ),
               onTap: () async {
-                if (!await FeatureControl.instance.check(context, 'comments')) return;
+                if (!await FeatureControl.instance.check(context, 'comments'))
+                  return;
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => FeatureControl.instance.page('comments', CommentsScreen(
-                      post: widget.post,
-                    )),
+                    builder: (_) => FeatureControl.instance.page(
+                        'comments',
+                        CommentsScreen(
+                          post: widget.post,
+                        )),
                   ),
                 );
               },
               color: Colors.white70,
             ),
-            if (FeatureControl.instance.visible('saved_posts')) _PostAction(
-              icon: isSaved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-              text: isArabic ? 'حفظ' : 'Save',
-              active: isSaved,
-              color: isSaved ? accentColor : Colors.white70,
-              onTap: () {
-                setState(() {
-                  widget.post['isSaved'] = !isSaved;
-                  if (widget.post['isSaved']) {
-                    widget.savedPosts.insert(
-                      0,
-                      widget.post,
-                    );
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          isArabic ? '✅ تم حفظ المنشور' : 'Post saved',
+            if (FeatureControl.instance.visible('saved_posts'))
+              _PostAction(
+                icon: isSaved
+                    ? Icons.bookmark_rounded
+                    : Icons.bookmark_border_rounded,
+                text: isArabic ? 'حفظ' : 'Save',
+                active: isSaved,
+                color: isSaved ? accentColor : Colors.white70,
+                onTap: () {
+                  setState(() {
+                    widget.post['isSaved'] = !isSaved;
+                    if (widget.post['isSaved']) {
+                      widget.savedPosts.insert(
+                        0,
+                        widget.post,
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            isArabic ? '✅ تم حفظ المنشور' : 'Post saved',
+                          ),
+                          backgroundColor: Colors.green,
+                          duration: const Duration(seconds: 1),
                         ),
-                        backgroundColor: Colors.green,
-                        duration: const Duration(seconds: 1),
-                      ),
-                    );
-                  } else {
-                    widget.savedPosts.removeWhere(
-                      (p) => p['text'] == widget.post['text'],
-                    );
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          isArabic ? '🗑️ تم إلغاء الحفظ' : 'Post removed from saved',
+                      );
+                    } else {
+                      widget.savedPosts.removeWhere(
+                        (p) => p['text'] == widget.post['text'],
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            isArabic
+                                ? '🗑️ تم إلغاء الحفظ'
+                                : 'Post removed from saved',
+                          ),
+                          backgroundColor: Colors.orange,
+                          duration: const Duration(seconds: 1),
                         ),
-                        backgroundColor: Colors.orange,
-                        duration: const Duration(seconds: 1),
-                      ),
-                    );
-                  }
-                });
-              },
-            ),
+                      );
+                    }
+                  });
+                },
+              ),
             _PostAction(
               icon: Icons.share_outlined,
               text: isArabic ? 'مشاركة' : 'Share',

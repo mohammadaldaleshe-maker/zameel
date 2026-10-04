@@ -1,3 +1,4 @@
+import 'package:zameel/theme/appearance_controller.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -39,23 +40,24 @@ class GlassContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return Container(
       width: width,
       height: height,
       padding: padding ?? const EdgeInsets.all(16),
       margin: margin ?? EdgeInsets.zero,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppTheme.glassFill,
-            AppTheme.glassSoft,
+            AppTheme.adaptiveGlassFill,
+            AppTheme.adaptiveGlassSoft,
           ],
         ),
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(
-          color: AppTheme.glassBorder,
+          color: AppTheme.adaptiveGlassBorder,
           width: 1.5,
         ),
         boxShadow: [
@@ -195,6 +197,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   // ============================================================
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
     final isArabic = languageProvider.isArabic;
 
@@ -214,7 +217,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ),
         body: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -247,7 +250,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         color: Colors.white.withAlpha(25),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.person_add_rounded,
                         size: 40,
                         color: Colors.white,
@@ -259,10 +262,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     // Title
                     Text(
                       isArabic ? 'إنشاء حساب جديد' : 'Create Account',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: AppTheme.legacyForeground,
                       ),
                     ),
 
@@ -273,9 +276,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       isArabic
                           ? 'انضم إلى مجتمع Zameel'
                           : 'Join the Zameel community',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
-                        color: Colors.white70,
+                        color: AppTheme.legacySecondary,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -286,12 +289,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     GlassContainer(
                       child: TextField(
                         controller: _nameController,
-                        style: const TextStyle(color: Colors.white),
+                        style: TextStyle(color: AppTheme.legacyForeground),
                         decoration: InputDecoration(
-                          labelText:
-                              isArabic ? 'الاسم الكامل' : 'Full Name',
+                          labelText: isArabic ? 'الاسم الكامل' : 'Full Name',
                           labelStyle:
-                              const TextStyle(color: Colors.white70),
+                              TextStyle(color: AppTheme.legacySecondary),
                           prefixIcon: const Icon(
                             Icons.person_rounded,
                             color: Colors.white70,
@@ -313,11 +315,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       child: TextField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
-                        style: const TextStyle(color: Colors.white),
+                        style: TextStyle(color: AppTheme.legacyForeground),
                         decoration: InputDecoration(
                           labelText: isArabic ? 'البريد الإلكتروني' : 'Email',
                           labelStyle:
-                              const TextStyle(color: Colors.white70),
+                              TextStyle(color: AppTheme.legacySecondary),
                           prefixIcon: const Icon(
                             Icons.email_rounded,
                             color: Colors.white70,
@@ -339,12 +341,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       child: TextField(
                         controller: _passwordController,
                         obscureText: _obscurePassword,
-                        style: const TextStyle(color: Colors.white),
+                        style: TextStyle(color: AppTheme.legacyForeground),
                         decoration: InputDecoration(
-                          labelText:
-                              isArabic ? 'كلمة المرور' : 'Password',
+                          labelText: isArabic ? 'كلمة المرور' : 'Password',
                           labelStyle:
-                              const TextStyle(color: Colors.white70),
+                              TextStyle(color: AppTheme.legacySecondary),
                           prefixIcon: const Icon(
                             Icons.lock_rounded,
                             color: Colors.white70,
@@ -386,17 +387,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: primaryColor,
                               foregroundColor: Colors.white,
-                              minimumSize:
-                                  const Size(double.infinity, 55),
+                              minimumSize: const Size(double.infinity, 55),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(30),
                               ),
                               elevation: 5,
                             ),
                             child: Text(
-                              isArabic
-                                  ? '📝 إنشاء حساب'
-                                  : '📝 Create Account',
+                              isArabic ? '📝 إنشاء حساب' : '📝 Create Account',
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -414,8 +412,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           isArabic
                               ? 'لديك حساب بالفعل؟'
                               : 'Already have an account?',
-                          style: const TextStyle(
-                            color: Colors.white70,
+                          style: TextStyle(
+                            color: AppTheme.legacySecondary,
                           ),
                         ),
                         TextButton(
@@ -429,8 +427,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           },
                           child: Text(
                             isArabic ? 'تسجيل الدخول' : 'Login',
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: AppTheme.legacyForeground,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -496,8 +494,7 @@ class _EmailOtpScreenState extends State<EmailOtpScreen> {
     });
 
     try {
-      final response =
-          await Supabase.instance.client.auth.verifyOTP(
+      final response = await Supabase.instance.client.auth.verifyOTP(
         email: widget.email,
         token: token,
         type: OtpType.signup,
@@ -612,6 +609,7 @@ class _EmailOtpScreenState extends State<EmailOtpScreen> {
   // ============================================================
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
     final isArabic = languageProvider.isArabic;
 
@@ -631,7 +629,7 @@ class _EmailOtpScreenState extends State<EmailOtpScreen> {
           ),
         ),
         body: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -655,7 +653,7 @@ class _EmailOtpScreenState extends State<EmailOtpScreen> {
                         color: Colors.white.withAlpha(25),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.mark_email_read_rounded,
                         size: 45,
                         color: Colors.white,
@@ -670,10 +668,10 @@ class _EmailOtpScreenState extends State<EmailOtpScreen> {
                           ? 'تأكيد البريد الإلكتروني'
                           : 'Verify Your Email',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 25,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: AppTheme.legacyForeground,
                       ),
                     ),
 
@@ -685,9 +683,9 @@ class _EmailOtpScreenState extends State<EmailOtpScreen> {
                           ? 'أرسلنا رمز تحقق مكونًا من 6 أرقام إلى'
                           : 'We sent a 6-digit verification code to',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
-                        color: Colors.white70,
+                        color: AppTheme.legacySecondary,
                       ),
                     ),
 
@@ -697,10 +695,10 @@ class _EmailOtpScreenState extends State<EmailOtpScreen> {
                     Text(
                       widget.email,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: AppTheme.legacyForeground,
                       ),
                     ),
 
@@ -713,8 +711,8 @@ class _EmailOtpScreenState extends State<EmailOtpScreen> {
                         keyboardType: TextInputType.number,
                         textAlign: TextAlign.center,
                         maxLength: 6,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: AppTheme.legacyForeground,
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 10,
@@ -724,7 +722,7 @@ class _EmailOtpScreenState extends State<EmailOtpScreen> {
                           labelText:
                               isArabic ? 'رمز التحقق' : 'Verification Code',
                           labelStyle:
-                              const TextStyle(color: Colors.white70),
+                              TextStyle(color: AppTheme.legacySecondary),
                           prefixIcon: const Icon(
                             Icons.lock_outline_rounded,
                             color: Colors.white70,
@@ -751,17 +749,14 @@ class _EmailOtpScreenState extends State<EmailOtpScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: primaryColor,
                               foregroundColor: Colors.white,
-                              minimumSize:
-                                  const Size(double.infinity, 55),
+                              minimumSize: const Size(double.infinity, 55),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(30),
                               ),
                               elevation: 5,
                             ),
                             child: Text(
-                              isArabic
-                                  ? '✅ تأكيد الرمز'
-                                  : '✅ Verify Code',
+                              isArabic ? '✅ تأكيد الرمز' : '✅ Verify Code',
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -787,8 +782,8 @@ class _EmailOtpScreenState extends State<EmailOtpScreen> {
                               isArabic
                                   ? '📩 إعادة إرسال الرمز'
                                   : '📩 Resend Code',
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: AppTheme.legacyForeground,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -808,11 +803,9 @@ class _EmailOtpScreenState extends State<EmailOtpScreen> {
                         );
                       },
                       child: Text(
-                        isArabic
-                            ? 'العودة إلى تسجيل الدخول'
-                            : 'Back to Login',
-                        style: const TextStyle(
-                          color: Colors.white70,
+                        isArabic ? 'العودة إلى تسجيل الدخول' : 'Back to Login',
+                        style: TextStyle(
+                          color: AppTheme.legacySecondary,
                         ),
                       ),
                     ),

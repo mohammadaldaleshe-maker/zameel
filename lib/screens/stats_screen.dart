@@ -1,3 +1,4 @@
+import 'package:zameel/theme/appearance_controller.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -68,6 +69,7 @@ class _StatsScreenState extends State<StatsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
     final isArabic = languageProvider.isArabic;
 
@@ -79,12 +81,42 @@ class _StatsScreenState extends State<StatsScreen> {
     final activeDays = _value('active_days', widget.activeDays);
 
     final stats = <Map<String, dynamic>>[
-      {'icon': Icons.article_rounded, 'label_ar': 'المنشورات', 'label_en': 'Posts', 'value': postsCount},
-      {'icon': Icons.favorite_rounded, 'label_ar': 'الإعجابات', 'label_en': 'Likes', 'value': likesCount},
-      {'icon': Icons.comment_rounded, 'label_ar': 'التعليقات', 'label_en': 'Comments', 'value': commentsCount},
-      {'icon': Icons.people_rounded, 'label_ar': 'الزملاء', 'label_en': 'Colleagues', 'value': friendsCount},
-      {'icon': Icons.menu_book_rounded, 'label_ar': 'الكتب', 'label_en': 'Books', 'value': savedBooksCount},
-      {'icon': Icons.calendar_today_rounded, 'label_ar': 'أيام النشاط', 'label_en': 'Active Days', 'value': activeDays},
+      {
+        'icon': Icons.article_rounded,
+        'label_ar': 'المنشورات',
+        'label_en': 'Posts',
+        'value': postsCount
+      },
+      {
+        'icon': Icons.favorite_rounded,
+        'label_ar': 'الإعجابات',
+        'label_en': 'Likes',
+        'value': likesCount
+      },
+      {
+        'icon': Icons.comment_rounded,
+        'label_ar': 'التعليقات',
+        'label_en': 'Comments',
+        'value': commentsCount
+      },
+      {
+        'icon': Icons.people_rounded,
+        'label_ar': 'الزملاء',
+        'label_en': 'Colleagues',
+        'value': friendsCount
+      },
+      {
+        'icon': Icons.menu_book_rounded,
+        'label_ar': 'الكتب',
+        'label_en': 'Books',
+        'value': savedBooksCount
+      },
+      {
+        'icon': Icons.calendar_today_rounded,
+        'label_ar': 'أيام النشاط',
+        'label_en': 'Active Days',
+        'value': activeDays
+      },
     ];
 
     final weeklyActivity = _weekly.isEmpty
@@ -93,7 +125,8 @@ class _StatsScreenState extends State<StatsScreen> {
             return {'day': _weekday(date, isArabic), 'value': 0};
           })
         : _weekly.map((row) {
-            final date = DateTime.tryParse(row['day_date']?.toString() ?? '') ?? DateTime.now();
+            final date = DateTime.tryParse(row['day_date']?.toString() ?? '') ??
+                DateTime.now();
             return {
               'day': _weekday(date, isArabic),
               'value': (row['activity_count'] as num?)?.toInt() ?? 0,
@@ -115,7 +148,7 @@ class _StatsScreenState extends State<StatsScreen> {
           ),
           centerTitle: true,
           elevation: 0,
-          backgroundColor: Colors.white,
+          backgroundColor: AppTheme.adaptiveSurface,
           foregroundColor: Colors.black,
         ),
         body: _loading
@@ -139,19 +172,28 @@ class _StatsScreenState extends State<StatsScreen> {
                       child: Column(
                         children: [
                           Text(
-                            isArabic ? '📈 إحصائياتك الحقيقية' : '📈 Your Live Stats',
-                            style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                            isArabic
+                                ? '📈 إحصائياتك الحقيقية'
+                                : '📈 Your Live Stats',
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            isArabic ? 'محسوبة من نشاط حسابك في Zameel' : 'Calculated from your Zameel account activity',
-                            style: const TextStyle(color: Colors.white70, fontSize: 14),
+                            isArabic
+                                ? 'محسوبة من نشاط حسابك في Zameel'
+                                : 'Calculated from your Zameel account activity',
+                            style: const TextStyle(
+                                color: Colors.white70, fontSize: 14),
                           ),
                           const SizedBox(height: 20),
                           GridView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: 3,
                               crossAxisSpacing: 12,
                               mainAxisSpacing: 12,
@@ -168,15 +210,23 @@ class _StatsScreenState extends State<StatsScreen> {
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(stat['icon'] as IconData, color: Colors.white, size: 28),
+                                    Icon(stat['icon'] as IconData,
+                                        color: Colors.white, size: 28),
                                     const SizedBox(height: 6),
                                     Text(
                                       '${stat['value']}',
-                                      style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                                      style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold),
                                     ),
                                     Text(
-                                      isArabic ? stat['label_ar'].toString() : stat['label_en'].toString(),
-                                      style: TextStyle(color: Colors.white.withAlpha(179), fontSize: 11),
+                                      isArabic
+                                          ? stat['label_ar'].toString()
+                                          : stat['label_en'].toString(),
+                                      style: TextStyle(
+                                          color: Colors.white.withAlpha(179),
+                                          fontSize: 11),
                                     ),
                                   ],
                                 ),
@@ -189,16 +239,20 @@ class _StatsScreenState extends State<StatsScreen> {
                     const SizedBox(height: 24),
                     Text(
                       isArabic ? '📅 النشاط الأسبوعي' : '📅 Weekly Activity',
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppTheme.adaptiveSurface,
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
-                          BoxShadow(color: AppTheme.muted.withAlpha(25), blurRadius: 8, offset: const Offset(0, 2)),
+                          BoxShadow(
+                              color: AppTheme.muted.withAlpha(25),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2)),
                         ],
                       ),
                       child: SizedBox(
@@ -208,11 +262,14 @@ class _StatsScreenState extends State<StatsScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: weeklyActivity.map((day) {
                             final value = day['value'] as int;
-                            final height = value == 0 ? 4.0 : 100.0 * value / maxValue;
+                            final height =
+                                value == 0 ? 4.0 : 100.0 * value / maxValue;
                             return Column(
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
-                                Text('$value', style: const TextStyle(fontSize: 10, color: AppTheme.muted)),
+                                Text('$value',
+                                    style: const TextStyle(
+                                        fontSize: 10, color: AppTheme.muted)),
                                 const SizedBox(height: 4),
                                 Container(
                                   width: 28,
@@ -223,7 +280,10 @@ class _StatsScreenState extends State<StatsScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 6),
-                                Text(day['day'].toString(), style: TextStyle(fontSize: 11, color: AppTheme.muted.shade600)),
+                                Text(day['day'].toString(),
+                                    style: TextStyle(
+                                        fontSize: 11,
+                                        color: AppTheme.muted.shade600)),
                               ],
                             );
                           }).toList(),
@@ -233,19 +293,44 @@ class _StatsScreenState extends State<StatsScreen> {
                     const SizedBox(height: 24),
                     Text(
                       isArabic ? '🏆 الإنجازات' : '🏆 Achievements',
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 12),
                     Wrap(
                       spacing: 10,
                       runSpacing: 10,
                       children: [
-                        _AchievementChip(icon: Icons.emoji_events_rounded, label: isArabic ? 'أول منشور' : 'First Post', color: AppTheme.tertiary, unlocked: postsCount >= 1),
-                        _AchievementChip(icon: Icons.favorite_rounded, label: isArabic ? '100 إعجاب' : '100 Likes', color: Colors.redAccent, unlocked: likesCount >= 100),
-                        _AchievementChip(icon: Icons.people_rounded, label: isArabic ? '10 زملاء' : '10 Colleagues', color: AppTheme.primary, unlocked: friendsCount >= 10),
-                        _AchievementChip(icon: Icons.menu_book_rounded, label: isArabic ? '5 كتب' : '5 Books', color: AppTheme.primaryDark, unlocked: savedBooksCount >= 5),
-                        _AchievementChip(icon: Icons.calendar_month_rounded, label: isArabic ? '30 يوم نشاط' : '30 Active Days', color: AppTheme.primary, unlocked: activeDays >= 30),
-                        _AchievementChip(icon: Icons.comment_rounded, label: isArabic ? '50 تعليق' : '50 Comments', color: AppTheme.primary, unlocked: commentsCount >= 50),
+                        _AchievementChip(
+                            icon: Icons.emoji_events_rounded,
+                            label: isArabic ? 'أول منشور' : 'First Post',
+                            color: AppTheme.tertiary,
+                            unlocked: postsCount >= 1),
+                        _AchievementChip(
+                            icon: Icons.favorite_rounded,
+                            label: isArabic ? '100 إعجاب' : '100 Likes',
+                            color: Colors.redAccent,
+                            unlocked: likesCount >= 100),
+                        _AchievementChip(
+                            icon: Icons.people_rounded,
+                            label: isArabic ? '10 زملاء' : '10 Colleagues',
+                            color: AppTheme.primary,
+                            unlocked: friendsCount >= 10),
+                        _AchievementChip(
+                            icon: Icons.menu_book_rounded,
+                            label: isArabic ? '5 كتب' : '5 Books',
+                            color: AppTheme.primaryDark,
+                            unlocked: savedBooksCount >= 5),
+                        _AchievementChip(
+                            icon: Icons.calendar_month_rounded,
+                            label: isArabic ? '30 يوم نشاط' : '30 Active Days',
+                            color: AppTheme.primary,
+                            unlocked: activeDays >= 30),
+                        _AchievementChip(
+                            icon: Icons.comment_rounded,
+                            label: isArabic ? '50 تعليق' : '50 Comments',
+                            color: AppTheme.primary,
+                            unlocked: commentsCount >= 50),
                       ],
                     ),
                   ],
@@ -271,17 +356,20 @@ class _AchievementChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
         color: unlocked ? color.withAlpha(25) : AppTheme.muted.shade100,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: unlocked ? color : AppTheme.muted.shade300, width: 1.5),
+        border: Border.all(
+            color: unlocked ? color : AppTheme.muted.shade300, width: 1.5),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: unlocked ? color : AppTheme.muted.shade400, size: 18),
+          Icon(icon,
+              color: unlocked ? color : AppTheme.muted.shade400, size: 18),
           const SizedBox(width: 6),
           Text(
             label,
@@ -293,7 +381,8 @@ class _AchievementChip extends StatelessWidget {
           ),
           if (unlocked) ...[
             const SizedBox(width: 6),
-            const Icon(Icons.check_circle_rounded, color: Colors.green, size: 16),
+            const Icon(Icons.check_circle_rounded,
+                color: Colors.green, size: 16),
           ],
         ],
       ),

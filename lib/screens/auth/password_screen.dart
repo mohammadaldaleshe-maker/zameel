@@ -1,3 +1,4 @@
+import 'package:zameel/theme/appearance_controller.dart';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -40,23 +41,24 @@ class GlassContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return Container(
       width: width,
       height: height,
       padding: padding ?? const EdgeInsets.all(16),
       margin: margin ?? EdgeInsets.zero,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppTheme.glassFill,
-            AppTheme.glassSoft,
+            AppTheme.adaptiveGlassFill,
+            AppTheme.adaptiveGlassSoft,
           ],
         ),
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(
-          color: AppTheme.glassBorder,
+          color: AppTheme.adaptiveGlassBorder,
           width: 1.5,
         ),
         boxShadow: [
@@ -85,13 +87,11 @@ class PasswordScreen extends StatefulWidget {
   });
 
   @override
-  State<PasswordScreen> createState() =>
-      _PasswordScreenState();
+  State<PasswordScreen> createState() => _PasswordScreenState();
 }
 
 class _PasswordScreenState extends State<PasswordScreen> {
-  final TextEditingController _passwordController =
-      TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
 
   final TextEditingController _confirmPasswordController =
       TextEditingController();
@@ -119,8 +119,7 @@ class _PasswordScreenState extends State<PasswordScreen> {
   }
 
   bool get _doPasswordsMatch {
-    return _passwordController.text ==
-            _confirmPasswordController.text &&
+    return _passwordController.text == _confirmPasswordController.text &&
         _confirmPasswordController.text.isNotEmpty;
   }
 
@@ -140,32 +139,28 @@ class _PasswordScreenState extends State<PasswordScreen> {
 
     if (password.length < 8) {
       setState(() {
-        _passwordError =
-            'يجب أن تكون كلمة المرور 8 أحرف على الأقل';
+        _passwordError = 'يجب أن تكون كلمة المرور 8 أحرف على الأقل';
       });
       return;
     }
 
     if (!password.contains(RegExp(r'[A-Z]'))) {
       setState(() {
-        _passwordError =
-            'يجب أن تحتوي على حرف كبير (A-Z)';
+        _passwordError = 'يجب أن تحتوي على حرف كبير (A-Z)';
       });
       return;
     }
 
     if (!password.contains(RegExp(r'[a-z]'))) {
       setState(() {
-        _passwordError =
-            'يجب أن تحتوي على حرف صغير (a-z)';
+        _passwordError = 'يجب أن تحتوي على حرف صغير (a-z)';
       });
       return;
     }
 
     if (!password.contains(RegExp(r'[0-9]'))) {
       setState(() {
-        _passwordError =
-            'يجب أن تحتوي على رقم (0-9)';
+        _passwordError = 'يجب أن تحتوي على رقم (0-9)';
       });
       return;
     }
@@ -186,27 +181,16 @@ class _PasswordScreenState extends State<PasswordScreen> {
       return 'مستخدم';
     }
 
-    final fullName =
-        Map<String, dynamic>.from(rawFullName);
+    final fullName = Map<String, dynamic>.from(rawFullName);
 
     final parts = [
-      (fullName['firstName'] ?? '')
-          .toString()
-          .trim(),
-      (fullName['fatherName'] ?? '')
-          .toString()
-          .trim(),
-      (fullName['grandfatherName'] ?? '')
-          .toString()
-          .trim(),
-      (fullName['familyName'] ?? '')
-          .toString()
-          .trim(),
+      (fullName['firstName'] ?? '').toString().trim(),
+      (fullName['fatherName'] ?? '').toString().trim(),
+      (fullName['grandfatherName'] ?? '').toString().trim(),
+      (fullName['familyName'] ?? '').toString().trim(),
     ].where((part) => part.isNotEmpty).toList();
 
-    return parts.isEmpty
-        ? 'مستخدم'
-        : parts.join(' ');
+    return parts.isEmpty ? 'مستخدم' : parts.join(' ');
   }
 
   // ============================================================
@@ -256,35 +240,25 @@ class _PasswordScreenState extends State<PasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final languageProvider =
-        Provider.of<LanguageProvider>(
+    AppearanceScope.observe(context);
+    final languageProvider = Provider.of<LanguageProvider>(
       context,
     );
 
-    final isArabic =
-        languageProvider.isArabic;
+    final isArabic = languageProvider.isArabic;
 
-    final passwordValid =
-        _isPasswordValid;
+    final passwordValid = _isPasswordValid;
 
-    final passwordsMatch =
-        _doPasswordsMatch;
+    final passwordsMatch = _doPasswordsMatch;
 
     return Directionality(
-      textDirection:
-          isArabic
-              ? ui.TextDirection.rtl
-              : ui.TextDirection.ltr,
+      textDirection: isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
       child: Scaffold(
         body: Container(
-          decoration:
-              const BoxDecoration(
-            gradient:
-                LinearGradient(
-              begin:
-                  Alignment.topLeft,
-              end:
-                  Alignment.bottomRight,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
               colors: [
                 gradientStart,
                 gradientEnd,
@@ -293,11 +267,9 @@ class _PasswordScreenState extends State<PasswordScreen> {
           ),
           child: SafeArea(
             child: Padding(
-              padding:
-                  const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(20),
               child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(
                     height: 10,
@@ -308,16 +280,11 @@ class _PasswordScreenState extends State<PasswordScreen> {
                   // ==================================================
 
                   Text(
-                    isArabic
-                        ? '🔐 كلمة المرور'
-                        : '🔐 Password',
-                    style:
-                        GoogleFonts.ibmPlexSansArabic(
-                      color:
-                          Colors.white,
+                    isArabic ? '🔐 كلمة المرور' : '🔐 Password',
+                    style: GoogleFonts.ibmPlexSansArabic(
+                      color: Colors.white,
                       fontSize: 24,
-                      fontWeight:
-                          FontWeight.bold,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
 
@@ -329,10 +296,8 @@ class _PasswordScreenState extends State<PasswordScreen> {
                     isArabic
                         ? 'أنشئ كلمة مرور قوية لحماية حسابك'
                         : 'Create a strong password to protect your account',
-                    style:
-                        const TextStyle(
-                      color:
-                          Colors.white70,
+                    style: TextStyle(
+                      color: AppTheme.legacySecondary,
                       fontSize: 14,
                     ),
                   ),
@@ -346,78 +311,54 @@ class _PasswordScreenState extends State<PasswordScreen> {
                   // ==================================================
 
                   GlassContainer(
-                    padding:
-                        const EdgeInsets.all(
+                    padding: const EdgeInsets.all(
                       12,
                     ),
-                    child:
-                        Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment
-                              .start,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           isArabic
                               ? '📌 متطلبات كلمة المرور:'
                               : '📌 Password Requirements:',
-                          style:
-                              const TextStyle(
-                            color:
-                                Colors.white,
-                            fontWeight:
-                                FontWeight
-                                    .bold,
+                          style: TextStyle(
+                            color: AppTheme.legacyForeground,
+                            fontWeight: FontWeight.bold,
                             fontSize: 13,
                           ),
                         ),
-
                         const SizedBox(
                           height: 6,
                         ),
-
                         _buildRequirement(
                           isArabic
                               ? '8 أحرف على الأقل'
                               : 'At least 8 characters',
-                          _passwordController
-                                  .text
-                                  .length >=
-                              8,
+                          _passwordController.text.length >= 8,
                         ),
-
                         _buildRequirement(
                           isArabic
                               ? 'حرف كبير (A-Z)'
                               : 'Uppercase letter (A-Z)',
-                          _passwordController
-                              .text
-                              .contains(
+                          _passwordController.text.contains(
                             RegExp(
                               r'[A-Z]',
                             ),
                           ),
                         ),
-
                         _buildRequirement(
                           isArabic
                               ? 'حرف صغير (a-z)'
                               : 'Lowercase letter (a-z)',
-                          _passwordController
-                              .text
-                              .contains(
+                          _passwordController.text.contains(
                             RegExp(
                               r'[a-z]',
                             ),
                           ),
                         ),
-
                         _buildRequirement(
-                          isArabic
-                              ? 'رقم (0-9)'
-                              : 'Number (0-9)',
-                          _passwordController
-                              .text
-                              .contains(
+                          isArabic ? 'رقم (0-9)' : 'Number (0-9)',
+                          _passwordController.text.contains(
                             RegExp(
                               r'[0-9]',
                             ),
@@ -436,86 +377,55 @@ class _PasswordScreenState extends State<PasswordScreen> {
                   // ==================================================
 
                   GlassContainer(
-                    child:
-                        TextField(
-                      controller:
-                          _passwordController,
-                      obscureText:
-                          _obscurePassword,
-                      style:
-                          const TextStyle(
-                        color:
-                            Colors.white,
+                    child: TextField(
+                      controller: _passwordController,
+                      obscureText: _obscurePassword,
+                      style: TextStyle(
+                        color: AppTheme.legacyForeground,
                       ),
-                      onChanged:
-                          (_) {
+                      onChanged: (_) {
                         _validatePassword();
                         setState(
                           () {},
                         );
                       },
-                      decoration:
-                          InputDecoration(
-                        labelText:
-                            isArabic
-                                ? '🔑 كلمة المرور'
-                                : '🔑 Password',
-                        labelStyle:
-                            const TextStyle(
-                          color:
-                              Colors.white70,
+                      decoration: InputDecoration(
+                        labelText: isArabic ? '🔑 كلمة المرور' : '🔑 Password',
+                        labelStyle: TextStyle(
+                          color: AppTheme.legacySecondary,
                         ),
-                        prefixIcon:
-                            const Icon(
-                          Icons
-                              .lock_rounded,
-                          color:
-                              Colors.white70,
+                        prefixIcon: const Icon(
+                          Icons.lock_rounded,
+                          color: Colors.white70,
                         ),
-                        suffixIcon:
-                            IconButton(
+                        suffixIcon: IconButton(
                           onPressed: () {
                             setState(
                               () {
-                                _obscurePassword =
-                                    !_obscurePassword;
+                                _obscurePassword = !_obscurePassword;
                               },
                             );
                           },
                           icon: Icon(
                             _obscurePassword
-                                ? Icons
-                                    .visibility_rounded
-                                : Icons
-                                    .visibility_off_rounded,
-                            color:
-                                Colors.white70,
+                                ? Icons.visibility_rounded
+                                : Icons.visibility_off_rounded,
+                            color: Colors.white70,
                           ),
                         ),
-                        border:
-                            OutlineInputBorder(
-                          borderRadius:
-                              BorderRadius
-                                  .circular(
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(
                             16,
                           ),
-                          borderSide:
-                              BorderSide
-                                  .none,
+                          borderSide: BorderSide.none,
                         ),
-                        filled:
-                            true,
-                        fillColor:
-                            Colors.white
-                                .withAlpha(
+                        filled: true,
+                        fillColor: AppTheme.adaptiveSurface.withAlpha(
                           25,
                         ),
-                        errorText:
-                            _passwordError,
-                        errorStyle:
-                            const TextStyle(
-                          color:
-                              Colors.redAccent,
+                        errorText: _passwordError,
+                        errorStyle: const TextStyle(
+                          color: Colors.redAccent,
                         ),
                       ),
                     ),
@@ -530,43 +440,29 @@ class _PasswordScreenState extends State<PasswordScreen> {
                   // ==================================================
 
                   GlassContainer(
-                    child:
-                        TextField(
-                      controller:
-                          _confirmPasswordController,
-                      obscureText:
-                          _obscureConfirmPassword,
-                      style:
-                          const TextStyle(
-                        color:
-                            Colors.white,
+                    child: TextField(
+                      controller: _confirmPasswordController,
+                      obscureText: _obscureConfirmPassword,
+                      style: TextStyle(
+                        color: AppTheme.legacyForeground,
                       ),
-                      onChanged:
-                          (_) {
+                      onChanged: (_) {
                         setState(
                           () {},
                         );
                       },
-                      decoration:
-                          InputDecoration(
-                        labelText:
-                            isArabic
-                                ? '✅ تأكيد كلمة المرور'
-                                : '✅ Confirm Password',
-                        labelStyle:
-                            const TextStyle(
-                          color:
-                              Colors.white70,
+                      decoration: InputDecoration(
+                        labelText: isArabic
+                            ? '✅ تأكيد كلمة المرور'
+                            : '✅ Confirm Password',
+                        labelStyle: TextStyle(
+                          color: AppTheme.legacySecondary,
                         ),
-                        prefixIcon:
-                            const Icon(
-                          Icons
-                              .lock_outline_rounded,
-                          color:
-                              Colors.white70,
+                        prefixIcon: const Icon(
+                          Icons.lock_outline_rounded,
+                          color: Colors.white70,
                         ),
-                        suffixIcon:
-                            IconButton(
+                        suffixIcon: IconButton(
                           onPressed: () {
                             setState(
                               () {
@@ -577,45 +473,29 @@ class _PasswordScreenState extends State<PasswordScreen> {
                           },
                           icon: Icon(
                             _obscureConfirmPassword
-                                ? Icons
-                                    .visibility_rounded
-                                : Icons
-                                    .visibility_off_rounded,
-                            color:
-                                Colors.white70,
+                                ? Icons.visibility_rounded
+                                : Icons.visibility_off_rounded,
+                            color: Colors.white70,
                           ),
                         ),
-                        border:
-                            OutlineInputBorder(
-                          borderRadius:
-                              BorderRadius
-                                  .circular(
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(
                             16,
                           ),
-                          borderSide:
-                              BorderSide
-                                  .none,
+                          borderSide: BorderSide.none,
                         ),
-                        filled:
-                            true,
-                        fillColor:
-                            Colors.white
-                                .withAlpha(
+                        filled: true,
+                        fillColor: AppTheme.adaptiveSurface.withAlpha(
                           25,
                         ),
-                        errorText:
-                            passwordsMatch ||
-                                    _confirmPasswordController
-                                        .text
-                                        .isEmpty
-                                ? null
-                                : isArabic
-                                    ? '❌ كلمة المرور غير متطابقة'
-                                    : '❌ Passwords do not match',
-                        errorStyle:
-                            const TextStyle(
-                          color:
-                              Colors.redAccent,
+                        errorText: passwordsMatch ||
+                                _confirmPasswordController.text.isEmpty
+                            ? null
+                            : isArabic
+                                ? '❌ كلمة المرور غير متطابقة'
+                                : '❌ Passwords do not match',
+                        errorStyle: const TextStyle(
+                          color: Colors.redAccent,
                         ),
                       ),
                     ),
@@ -628,40 +508,24 @@ class _PasswordScreenState extends State<PasswordScreen> {
                   // ==================================================
 
                   SizedBox(
-                    width:
-                        double.infinity,
-                    child:
-                        ElevatedButton(
+                    width: double.infinity,
+                    child: ElevatedButton(
                       onPressed:
-                          (_isLoading ||
-                                  !passwordValid ||
-                                  !passwordsMatch)
+                          (_isLoading || !passwordValid || !passwordsMatch)
                               ? null
                               : _createAccount,
-                      style:
-                          ElevatedButton.styleFrom(
-                        backgroundColor:
-                            passwordValid &&
-                                    passwordsMatch
-                                ? Colors.white
-                                : AppTheme.muted
-                                    .shade400,
-                        foregroundColor:
-                            passwordValid &&
-                                    passwordsMatch
-                                ? primaryColor
-                                : AppTheme.muted
-                                    .shade600,
-                        padding:
-                            const EdgeInsets
-                                .symmetric(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: passwordValid && passwordsMatch
+                            ? Colors.white
+                            : AppTheme.muted.shade400,
+                        foregroundColor: passwordValid && passwordsMatch
+                            ? primaryColor
+                            : AppTheme.muted.shade600,
+                        padding: const EdgeInsets.symmetric(
                           vertical: 16,
                         ),
-                        shape:
-                            RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius
-                                  .circular(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
                             30,
                           ),
                         ),
@@ -670,25 +534,16 @@ class _PasswordScreenState extends State<PasswordScreen> {
                           ? const SizedBox(
                               height: 22,
                               width: 22,
-                              child:
-                                  CircularProgressIndicator(
-                                color:
-                                    primaryColor,
-                                strokeWidth:
-                                    2,
+                              child: CircularProgressIndicator(
+                                color: primaryColor,
+                                strokeWidth: 2,
                               ),
                             )
                           : Text(
-                              isArabic
-                                  ? 'إنشاء الحساب →'
-                                  : 'Create Account →',
-                              style:
-                                  const TextStyle(
-                                fontSize:
-                                    18,
-                                fontWeight:
-                                    FontWeight
-                                        .bold,
+                              isArabic ? 'إنشاء الحساب →' : 'Create Account →',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                     ),
@@ -703,24 +558,18 @@ class _PasswordScreenState extends State<PasswordScreen> {
                   // ==================================================
 
                   TextButton(
-                    onPressed:
-                        _isLoading
-                            ? null
-                            : () {
-                                Navigator.pop(
-                                  context,
-                                );
-                              },
+                    onPressed: _isLoading
+                        ? null
+                        : () {
+                            Navigator.pop(
+                              context,
+                            );
+                          },
                     child: Text(
-                      isArabic
-                          ? '↩ العودة'
-                          : '↩ Back',
-                      style:
-                          const TextStyle(
-                        color:
-                            Colors.white70,
-                        fontSize:
-                            14,
+                      isArabic ? '↩ العودة' : '↩ Back',
+                      style: TextStyle(
+                        color: AppTheme.legacySecondary,
+                        fontSize: 14,
                       ),
                     ),
                   ),
@@ -742,19 +591,14 @@ class _PasswordScreenState extends State<PasswordScreen> {
     bool isMet,
   ) {
     return Padding(
-      padding:
-          const EdgeInsets.symmetric(
+      padding: const EdgeInsets.symmetric(
         vertical: 2,
       ),
       child: Row(
         children: [
           Icon(
-            isMet
-                ? Icons.check_circle_rounded
-                : Icons.circle_rounded,
-            color: isMet
-                ? Colors.green
-                : Colors.white24,
+            isMet ? Icons.check_circle_rounded : Icons.circle_rounded,
+            color: isMet ? Colors.green : Colors.white24,
             size: 16,
           ),
           const SizedBox(
@@ -762,11 +606,9 @@ class _PasswordScreenState extends State<PasswordScreen> {
           ),
           Text(
             text,
-            style:
-                TextStyle(
-              color: isMet
-                  ? Colors.white
-                  : Colors.white54,
+            style: TextStyle(
+              color:
+                  isMet ? AppTheme.legacyForeground : AppTheme.legacySecondary,
               fontSize: 12,
             ),
           ),

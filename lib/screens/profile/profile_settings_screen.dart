@@ -1,3 +1,4 @@
+import 'appearance_screen.dart';
 import 'account_verification_screen.dart';
 import '../promotions/audience_profile_screen.dart';
 import 'package:flutter/material.dart';
@@ -222,6 +223,19 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         body: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            Card(
+                child: ListTile(
+              leading: const Icon(Icons.palette_outlined),
+              title: Text(ar ? 'مظهر التطبيق' : 'App appearance'),
+              subtitle: Text(ar
+                  ? 'الأصلي، الفاتح، الداكن أو حسب الهاتف'
+                  : 'Original, light, dark or follow device'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => AppearanceScreen(arabic: ar))),
+            )),
             Card(
                 child: ListTile(
                     leading:

@@ -1,3 +1,4 @@
+import 'package:zameel/theme/appearance_controller.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -36,23 +37,24 @@ class GlassContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return Container(
       width: width,
       height: height,
       padding: padding ?? const EdgeInsets.all(16),
       margin: margin ?? EdgeInsets.zero,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppTheme.glassFill,
-            AppTheme.glassSoft,
+            AppTheme.adaptiveGlassFill,
+            AppTheme.adaptiveGlassSoft,
           ],
         ),
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(
-          color: AppTheme.glassBorder,
+          color: AppTheme.adaptiveGlassBorder,
           width: 1.5,
         ),
         boxShadow: [
@@ -111,6 +113,7 @@ class _AcademicYearScreenState extends State<AcademicYearScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
     final isArabic = languageProvider.isArabic;
 
@@ -118,7 +121,7 @@ class _AcademicYearScreenState extends State<AcademicYearScreen> {
       textDirection: isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
       child: Scaffold(
         body: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -148,8 +151,8 @@ class _AcademicYearScreenState extends State<AcademicYearScreen> {
                     isArabic
                         ? 'اختر سنتك الدراسية الحالية'
                         : 'Select your current academic year',
-                    style: const TextStyle(
-                      color: Colors.white70,
+                    style: TextStyle(
+                      color: AppTheme.legacySecondary,
                       fontSize: 14,
                     ),
                   ),
@@ -159,7 +162,8 @@ class _AcademicYearScreenState extends State<AcademicYearScreen> {
                   // ==============================================
                   Expanded(
                     child: GridView.builder(
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 3,
                         crossAxisSpacing: 12,
                         mainAxisSpacing: 12,
@@ -196,8 +200,8 @@ class _AcademicYearScreenState extends State<AcademicYearScreen> {
                                     year,
                                     style: TextStyle(
                                       color: isSelected
-                                          ? Colors.white
-                                          : Colors.white70,
+                                          ? AppTheme.legacyForeground
+                                          : AppTheme.legacySecondary,
                                       fontWeight: isSelected
                                           ? FontWeight.bold
                                           : FontWeight.normal,
@@ -207,7 +211,7 @@ class _AcademicYearScreenState extends State<AcademicYearScreen> {
                                   ),
                                   if (isSelected) ...[
                                     const SizedBox(height: 4),
-                                    const Icon(
+                                    Icon(
                                       Icons.check_circle_rounded,
                                       color: Colors.white,
                                       size: 20,
@@ -270,8 +274,8 @@ class _AcademicYearScreenState extends State<AcademicYearScreen> {
                     },
                     child: Text(
                       isArabic ? '↩ العودة' : '↩ Back',
-                      style: const TextStyle(
-                        color: Colors.white70,
+                      style: TextStyle(
+                        color: AppTheme.legacySecondary,
                         fontSize: 14,
                       ),
                     ),

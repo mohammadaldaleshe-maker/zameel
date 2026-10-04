@@ -1,3 +1,5 @@
+import 'package:zameel/theme/appearance_controller.dart';
+import 'package:zameel/widgets/verified_name.dart';
 import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -250,6 +252,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
     final isArabic = languageProvider.isArabic;
 
@@ -270,13 +273,13 @@ class _SearchScreenState extends State<SearchScreen> {
                 controller: _searchController,
                 autofocus: true,
                 onChanged: _performSearch,
-                style: const TextStyle(color: Colors.black),
+                style: TextStyle(color: AppTheme.adaptiveText),
                 cursorColor: Colors.black,
                 decoration: InputDecoration(
                   hintText: isArabic
                       ? 'ابحث عن مستخدمين، منشورات، كتب...'
                       : 'Search for users, posts, books...',
-                  hintStyle: const TextStyle(color: Colors.black54),
+                  hintStyle: TextStyle(color: AppTheme.adaptiveSecondary),
                   prefixIcon:
                       const Icon(Icons.search_rounded, color: Colors.black54),
                   suffixIcon: _searchController.text.isNotEmpty
@@ -571,6 +574,7 @@ class _SearchTabButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
@@ -610,10 +614,11 @@ class _UserResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       elevation: 0,
-      color: Colors.white,
+      color: AppTheme.adaptiveSurface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
@@ -622,10 +627,12 @@ class _UserResultCard extends StatelessWidget {
       ),
       child: ListTile(
         leading: _SearchUserAvatar(user: user),
-        title: Text(
-          user['name']?.toString() ?? 'User',
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: VerifiedName(
+            userId: user['id']?.toString(),
+            child: Text(
+              user['name']?.toString() ?? 'User',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            )),
         subtitle: Text(
           [user['department'], user['university']]
               .where((v) => v?.toString().trim().isNotEmpty == true)
@@ -669,6 +676,7 @@ class _SearchUserAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final image = user['profile_image']?.toString();
     final hasImage = image != null && image.isNotEmpty;
     return CircleAvatar(
@@ -693,6 +701,7 @@ class _PostResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final primary = post[isArabic ? 'text_ar' : 'text_en']?.toString() ?? '';
     final fallback = post[isArabic ? 'text_en' : 'text_ar']?.toString() ?? '';
     final text = primary.trim().isNotEmpty ? primary : fallback;
@@ -707,7 +716,7 @@ class _PostResultCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       elevation: 0,
-      color: Colors.white,
+      color: AppTheme.adaptiveSurface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(color: AppTheme.muted.shade200),
@@ -745,6 +754,7 @@ class _BookResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final title = book[isArabic ? 'title_ar' : 'title_en']?.toString() ??
         book['title']?.toString() ??
         '';
@@ -757,7 +767,7 @@ class _BookResultCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       elevation: 0,
-      color: Colors.white,
+      color: AppTheme.adaptiveSurface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(color: AppTheme.muted.shade200),
@@ -794,32 +804,34 @@ class _SearchErrorResult extends StatelessWidget {
   const _SearchErrorResult({required this.isArabic, required this.onRetry});
 
   @override
-  Widget build(BuildContext context) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.cloud_off_rounded,
-                  size: 58, color: AppTheme.muted),
-              const SizedBox(height: 12),
-              Text(
-                isArabic
-                    ? 'تعذر إكمال البحث الآن'
-                    : 'Search is temporarily unavailable',
-                style:
-                    const TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
+  Widget build(BuildContext context) => AppearanceScope.rebuild(
+      context,
+      () => Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.cloud_off_rounded,
+                      size: 58, color: AppTheme.muted),
+                  const SizedBox(height: 12),
+                  Text(
+                    isArabic
+                        ? 'تعذر إكمال البحث الآن'
+                        : 'Search is temporarily unavailable',
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w800, fontSize: 17),
+                  ),
+                  const SizedBox(height: 10),
+                  FilledButton.icon(
+                    onPressed: onRetry,
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: Text(isArabic ? 'إعادة المحاولة' : 'Retry'),
+                  ),
+                ],
               ),
-              const SizedBox(height: 10),
-              FilledButton.icon(
-                onPressed: onRetry,
-                icon: const Icon(Icons.refresh_rounded),
-                label: Text(isArabic ? 'إعادة المحاولة' : 'Retry'),
-              ),
-            ],
-          ),
-        ),
-      );
+            ),
+          ));
 }
 
 class _EmptyResult extends StatelessWidget {
@@ -829,6 +841,7 @@ class _EmptyResult extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,

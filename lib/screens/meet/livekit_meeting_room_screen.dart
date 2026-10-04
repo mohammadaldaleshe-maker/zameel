@@ -1,3 +1,4 @@
+import 'package:zameel/widgets/verified_name.dart';
 import 'dart:async';
 import 'dart:convert';
 
@@ -31,8 +32,7 @@ class LiveKitMeetingRoomScreen extends StatefulWidget {
       _LiveKitMeetingRoomScreenState();
 }
 
-class _LiveKitMeetingRoomScreenState
-    extends State<LiveKitMeetingRoomScreen> {
+class _LiveKitMeetingRoomScreenState extends State<LiveKitMeetingRoomScreen> {
   static const _chatTopic = 'zameel.meet.chat';
 
   lk.Room? _room;
@@ -201,7 +201,8 @@ class _LiveKitMeetingRoomScreenState
     final local = _room?.localParticipant;
     if (local == null || !_videoOn) return;
     try {
-      final publication = local.getTrackPublicationBySource(lk.TrackSource.camera);
+      final publication =
+          local.getTrackPublicationBySource(lk.TrackSource.camera);
       final track = publication?.track;
       if (track is lk.LocalVideoTrack) {
         _cameraPosition = _cameraPosition.switched();
@@ -230,7 +231,9 @@ class _LiveKitMeetingRoomScreenState
       if (decoded is! Map) return;
       final text = decoded['text']?.toString().trim() ?? '';
       if (text.isEmpty) return;
-      final sender = decoded['sender']?.toString().trim();
+      final sender = event.participant?.name.isNotEmpty == true
+          ? event.participant!.name
+          : decoded['sender']?.toString().trim();
       if (!mounted) return;
       setState(() {
         _messages.add(
@@ -241,6 +244,7 @@ class _LiveKitMeetingRoomScreenState
                     ? event.participant!.name
                     : 'Zameel'),
             text: text,
+            userId: event.participant?.identity,
             mine: false,
           ),
         );
@@ -257,7 +261,8 @@ class _LiveKitMeetingRoomScreenState
     final sender = local.name.isNotEmpty ? local.name : 'Zameel';
     if (mounted) {
       setState(() {
-        _messages.add(_MeetingChatMessage(sender: sender, text: text, mine: true));
+        _messages.add(_MeetingChatMessage(
+            sender: sender, text: text, userId: local.identity, mine: true));
       });
     }
     _scrollChatToBottom();
@@ -436,8 +441,9 @@ class _LiveKitMeetingRoomScreenState
                   _buildHeader(ar, participants.length),
                   Expanded(
                     child: _loading
-                        ? const Center(
-                            child: CircularProgressIndicator(color: Colors.white),
+                        ? Center(
+                            child:
+                                CircularProgressIndicator(color: Colors.white),
                           )
                         : _error != null
                             ? _buildError(ar)
@@ -499,7 +505,9 @@ class _LiveKitMeetingRoomScreenState
           IconButton(
             onPressed: () => setState(() => _chatOpen = !_chatOpen),
             icon: Icon(
-              _chatOpen ? Icons.chat_bubble_rounded : Icons.chat_bubble_outline_rounded,
+              _chatOpen
+                  ? Icons.chat_bubble_rounded
+                  : Icons.chat_bubble_outline_rounded,
               color: Colors.white,
             ),
           ),
@@ -572,7 +580,8 @@ class _LiveKitMeetingRoomScreenState
             onTap: _toggleMic,
           ),
           _control(
-            icon: _videoOn ? Icons.videocam_rounded : Icons.videocam_off_rounded,
+            icon:
+                _videoOn ? Icons.videocam_rounded : Icons.videocam_off_rounded,
             label: ar ? 'الكاميرا' : 'Camera',
             onTap: _toggleVideo,
           ),
@@ -582,7 +591,9 @@ class _LiveKitMeetingRoomScreenState
             onTap: _switchCamera,
           ),
           _control(
-            icon: _speakerOn ? Icons.volume_up_rounded : Icons.hearing_disabled_rounded,
+            icon: _speakerOn
+                ? Icons.volume_up_rounded
+                : Icons.hearing_disabled_rounded,
             label: ar ? 'الصوت' : 'Speaker',
             onTap: _toggleSpeaker,
           ),
@@ -628,7 +639,7 @@ class _LiveKitMeetingRoomScreenState
             Text(
               label,
               maxLines: 1,
-              style: const TextStyle(color: Colors.white, fontSize: 10),
+              style: TextStyle(color: Colors.white, fontSize: 10),
             ),
           ],
         ),
@@ -674,13 +685,15 @@ class _LiveKitMeetingRoomScreenState
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  message.sender,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 11,
-                                  ),
-                                ),
+                                VerifiedName(
+                                    userId: message.userId,
+                                    child: Text(
+                                      message.sender,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 11,
+                                      ),
+                                    )),
                                 Text(message.text),
                               ],
                             ),
@@ -696,7 +709,8 @@ class _LiveKitMeetingRoomScreenState
                     controller: _chatController,
                     onSubmitted: (_) => _sendChat(),
                     decoration: InputDecoration(
-                      hintText: ar ? 'رسالة للاجتماع...' : 'Message the meeting...',
+                      hintText:
+                          ar ? 'رسالة للاجتماع...' : 'Message the meeting...',
                       isDense: true,
                     ),
                   ),
@@ -720,7 +734,8 @@ class _LiveKitMeetingRoomScreenState
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.cloud_off_rounded, color: Colors.white54, size: 64),
+            const Icon(Icons.cloud_off_rounded,
+                color: Colors.white54, size: 64),
             const SizedBox(height: 14),
             Text(
               _friendlyError(ar),
@@ -830,9 +845,8 @@ class _LiveKitParticipantTileState extends State<_LiveKitParticipantTile> {
         color: const Color(0xFF102829),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: widget.participant.isSpeaking
-              ? AppTheme.primary
-              : Colors.white12,
+          color:
+              widget.participant.isSpeaking ? AppTheme.primary : Colors.white12,
           width: widget.participant.isSpeaking ? 3 : 1,
         ),
       ),
@@ -846,7 +860,8 @@ class _LiveKitParticipantTileState extends State<_LiveKitParticipantTile> {
             )
           else
             const Center(
-              child: Icon(Icons.person_rounded, size: 70, color: Colors.white24),
+              child:
+                  Icon(Icons.person_rounded, size: 70, color: Colors.white24),
             ),
           Positioned(
             left: 8,
@@ -867,23 +882,26 @@ class _LiveKitParticipantTileState extends State<_LiveKitParticipantTile> {
                   ),
                   const SizedBox(width: 5),
                   Expanded(
-                    child: Text(
-                      widget.isLocal
-                          ? '${widget.isArabic ? 'أنت' : 'You'} • $name'
-                          : name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                      ),
-                    ),
+                    child: VerifiedName(
+                        userId: widget.participant.identity,
+                        child: Text(
+                          widget.isLocal
+                              ? '${widget.isArabic ? 'أنت' : 'You'} • $name'
+                              : name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                          ),
+                        )),
                   ),
                   if (widget.canModerate)
                     PopupMenuButton<String>(
                       padding: EdgeInsets.zero,
-                      icon: const Icon(Icons.more_vert_rounded, color: Colors.white, size: 19),
+                      icon: Icon(Icons.more_vert_rounded,
+                          color: Colors.white, size: 19),
                       onSelected: (value) {
                         if (value == 'mute') widget.onMute();
                         if (value == 'remove') widget.onRemove();
@@ -891,11 +909,15 @@ class _LiveKitParticipantTileState extends State<_LiveKitParticipantTile> {
                       itemBuilder: (context) => [
                         PopupMenuItem(
                           value: 'mute',
-                          child: Text(widget.isArabic ? 'كتم الميكروفون' : 'Mute microphone'),
+                          child: Text(widget.isArabic
+                              ? 'كتم الميكروفون'
+                              : 'Mute microphone'),
                         ),
                         PopupMenuItem(
                           value: 'remove',
-                          child: Text(widget.isArabic ? 'إزالة من الاجتماع' : 'Remove from meeting'),
+                          child: Text(widget.isArabic
+                              ? 'إزالة من الاجتماع'
+                              : 'Remove from meeting'),
                         ),
                       ],
                     ),
@@ -916,12 +938,14 @@ class _LiveKitParticipantTileState extends State<_LiveKitParticipantTile> {
 }
 
 class _MeetingChatMessage {
+  final String? userId;
   final String sender;
   final String text;
   final bool mine;
 
   const _MeetingChatMessage({
     required this.sender,
+    this.userId,
     required this.text,
     required this.mine,
   });

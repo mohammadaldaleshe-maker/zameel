@@ -17,6 +17,7 @@ class _DrawerItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return ListTile(
       leading: Icon(
         icon,
@@ -33,8 +34,8 @@ class _DrawerItem extends StatelessWidget {
           ? Container(
               width: 8,
               height: 8,
-              decoration: const BoxDecoration(
-                color: Colors.white,
+              decoration: BoxDecoration(
+                color: AppTheme.adaptiveSurface,
                 shape: BoxShape.circle,
               ),
             )
@@ -69,6 +70,7 @@ class _ProfileAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final hasBytes = imageBytes != null && imageBytes!.isNotEmpty;
     return Stack(
       children: [
@@ -118,7 +120,7 @@ class _ProfileAvatar extends StatelessWidget {
                 color: primaryColor,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.camera_alt_rounded,
                 color: Colors.white,
                 size: 13,
@@ -147,6 +149,7 @@ class _CreateAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
@@ -196,6 +199,7 @@ class _ProfileOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return GlassContainer(
       margin: const EdgeInsets.symmetric(
         horizontal: 12,
@@ -258,15 +262,18 @@ class DemoProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final ar = Provider.of<LanguageProvider>(context).isArabic;
-    final name = user['name']?.toString() ?? (ar ? 'مستخدم تجريبي' : 'Demo user');
+    final name =
+        user['name']?.toString() ?? (ar ? 'مستخدم تجريبي' : 'Demo user');
     final role = user['role']?.toString() ?? 'student';
     final department = user['department']?.toString() ?? '';
-    final myPosts = _demoPosts.where((p) => p['user_id'] == user['id']).toList();
+    final myPosts =
+        _demoPosts.where((p) => p['user_id'] == user['id']).toList();
     return Directionality(
       textDirection: ar ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
-        backgroundColor: AppTheme.background,
+        backgroundColor: AppTheme.adaptiveBackground,
         appBar: AppBar(title: const SizedBox.shrink()),
         body: ListView(
           padding: const EdgeInsets.only(bottom: 32),
@@ -275,21 +282,61 @@ class DemoProfileScreen extends StatelessWidget {
               margin: const EdgeInsets.fromLTRB(12, 12, 12, 8),
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(colors: [AppTheme.primary, AppTheme.primaryDark]),
+                gradient: const LinearGradient(
+                    colors: [AppTheme.primary, AppTheme.primaryDark]),
                 borderRadius: BorderRadius.circular(28),
               ),
               child: Column(children: [
-                CircleAvatar(radius: 42, backgroundColor: Colors.white.withValues(alpha: .92), child: Text(name.isNotEmpty ? name.substring(0, 1) : 'ز', style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: AppTheme.primaryDark))),
+                CircleAvatar(
+                    radius: 42,
+                    backgroundColor: Colors.white.withValues(alpha: .92),
+                    child: Text(name.isNotEmpty ? name.substring(0, 1) : 'ز',
+                        style: const TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.w900,
+                            color: AppTheme.primaryDark))),
                 const SizedBox(height: 10),
-                Text(name, style: const TextStyle(color: Colors.white, fontSize: 23, fontWeight: FontWeight.w900)),
+                VerifiedName(
+                    userId: user['id']?.toString(),
+                    child: Text(name,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 23,
+                            fontWeight: FontWeight.w900))),
                 const SizedBox(height: 5),
-                Text(department, style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w600)),
+                Text(department,
+                    style: const TextStyle(
+                        color: Colors.white70, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 8),
-                Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7), decoration: BoxDecoration(color: Colors.white.withValues(alpha: .15), borderRadius: BorderRadius.circular(20)), child: Text(role == 'company' ? 'نشاط تجاري تجريبي' : 'حساب تجريبي', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700))),
+                Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                    decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: .15),
+                        borderRadius: BorderRadius.circular(20)),
+                    child: Text(
+                        role == 'company' ? 'نشاط تجاري تجريبي' : 'حساب تجريبي',
+                        style: TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.w700))),
               ]),
             ),
-            Padding(padding: const EdgeInsets.fromLTRB(16, 10, 16, 8), child: Text(ar ? 'منشورات المستخدم' : 'User posts', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900))),
-            ...myPosts.map((post) => Card(margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 6), child: Padding(padding: const EdgeInsets.all(16), child: Text(ar ? post['text_ar'].toString() : post['text_en'].toString(), style: const TextStyle(fontSize: 15, height: 1.5, fontWeight: FontWeight.w600))))) ,
+            Padding(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+                child: Text(ar ? 'منشورات المستخدم' : 'User posts',
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.w900))),
+            ...myPosts.map((post) => Card(
+                margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(
+                        ar
+                            ? post['text_ar'].toString()
+                            : post['text_en'].toString(),
+                        style: const TextStyle(
+                            fontSize: 15,
+                            height: 1.5,
+                            fontWeight: FontWeight.w600))))),
           ],
         ),
       ),
@@ -307,9 +354,19 @@ class _PostOwnerAvatar extends StatelessWidget {
   const _PostOwnerAvatar({this.imageUrl, this.radius = 22});
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final url = imageUrl?.trim();
-    return CircleAvatar(radius: radius, backgroundColor: Colors.white24, backgroundImage: (url != null && url.isNotEmpty) ? ResizeImage(NetworkImage(url), width: (radius * 2 * MediaQuery.devicePixelRatioOf(context)).round().clamp(1, 256)) : null,
-      child: (url == null || url.isEmpty) ? const Icon(Icons.person, color: Colors.white70) : null);
+    return CircleAvatar(
+        radius: radius,
+        backgroundColor: Colors.white24,
+        backgroundImage: (url != null && url.isNotEmpty)
+            ? ResizeImage(NetworkImage(url),
+                width: (radius * 2 * MediaQuery.devicePixelRatioOf(context))
+                    .round()
+                    .clamp(1, 256))
+            : null,
+        child: (url == null || url.isEmpty)
+            ? const Icon(Icons.person, color: Colors.white70)
+            : null);
   }
 }
-

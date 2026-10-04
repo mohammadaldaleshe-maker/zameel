@@ -99,11 +99,21 @@ class _ZameelDailyHubState extends State<ZameelDailyHub> {
         ),
         child: Row(
           children: [
-            Expanded(child: _quickAction(Icons.chat_bubble_rounded, ar ? 'دردشة' : 'Chat', widget.onChat)),
-            Expanded(child: _quickAction(Icons.calendar_month_rounded, ar ? 'جدولي' : 'Schedule', widget.onCalendar)),
-            Expanded(child: _quickAction(Icons.groups_rounded, ar ? 'مجموعاتي' : 'Groups', widget.onGroups)),
-            Expanded(child: _quickAction(Icons.menu_book_rounded, ar ? 'كتب' : 'Books', widget.onBooks)),
-            Expanded(child: _quickAction(Icons.movie_creation_rounded, ar ? 'فيديو' : 'Videos', widget.onSocial)),
+            Expanded(
+                child: _quickAction(Icons.chat_bubble_rounded,
+                    ar ? 'دردشة' : 'Chat', widget.onChat)),
+            Expanded(
+                child: _quickAction(Icons.calendar_month_rounded,
+                    ar ? 'جدولي' : 'Schedule', widget.onCalendar)),
+            Expanded(
+                child: _quickAction(Icons.groups_rounded,
+                    ar ? 'مجموعاتي' : 'Groups', widget.onGroups)),
+            Expanded(
+                child: _quickAction(Icons.menu_book_rounded,
+                    ar ? 'كتب' : 'Books', widget.onBooks)),
+            Expanded(
+                child: _quickAction(Icons.movie_creation_rounded,
+                    ar ? 'فيديو' : 'Videos', widget.onSocial)),
           ],
         ),
       ),
@@ -121,12 +131,18 @@ class _ZameelDailyHubState extends State<ZameelDailyHub> {
             Container(
               width: 42,
               height: 42,
-              decoration: BoxDecoration(color: Colors.white.withAlpha(35), shape: BoxShape.circle),
+              decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(35), shape: BoxShape.circle),
               child: Icon(icon, color: Colors.white, size: 21),
             ),
             const SizedBox(height: 5),
-            Text(label, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700),
-                maxLines: 1, overflow: TextOverflow.ellipsis),
+            Text(label,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis),
           ],
         ),
       ),
@@ -139,7 +155,10 @@ class _ZameelDailyHubState extends State<ZameelDailyHub> {
       contentPadding: EdgeInsets.zero,
       value: _tasks[index],
       onChanged: (_) => _toggleTask(index),
-      title: Text(title, style: TextStyle(fontSize: 13, decoration: _tasks[index] ? TextDecoration.lineThrough : null)),
+      title: Text(title,
+          style: TextStyle(
+              fontSize: 13,
+              decoration: _tasks[index] ? TextDecoration.lineThrough : null)),
       controlAffinity: ListTileControlAffinity.leading,
     );
   }

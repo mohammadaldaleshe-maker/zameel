@@ -1,3 +1,4 @@
+import 'package:zameel/theme/appearance_controller.dart';
 import '../../widgets/profile_image_cropper.dart';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
@@ -46,19 +47,20 @@ class GlassContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return Container(
       width: width,
       height: height,
       padding: padding ?? const EdgeInsets.all(16),
       margin: margin ?? EdgeInsets.zero,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppTheme.glassFill, AppTheme.glassSoft],
+          colors: [AppTheme.adaptiveGlassFill, AppTheme.adaptiveGlassSoft],
         ),
         borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(color: AppTheme.glassBorder, width: 1.5),
+        border: Border.all(color: AppTheme.adaptiveGlassBorder, width: 1.5),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withAlpha(25),
@@ -293,6 +295,7 @@ class _ProfilePictureScreenState extends State<ProfilePictureScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
 
     final isArabic = languageProvider.isArabic;
@@ -301,7 +304,7 @@ class _ProfilePictureScreenState extends State<ProfilePictureScreen> {
       textDirection: isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
       child: Scaffold(
         body: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -337,7 +340,8 @@ class _ProfilePictureScreenState extends State<ProfilePictureScreen> {
                     isArabic
                         ? 'اختر صورة شخصية لتظهر في ملفك الشخصي'
                         : 'Choose a profile picture to appear on your profile',
-                    style: const TextStyle(color: Colors.white70, fontSize: 14),
+                    style: TextStyle(
+                        color: AppTheme.legacySecondary, fontSize: 14),
                     textAlign: TextAlign.center,
                   ),
 
@@ -379,8 +383,8 @@ class _ProfilePictureScreenState extends State<ProfilePictureScreen> {
                           child: Container(
                             width: 40,
                             height: 40,
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
+                            decoration: BoxDecoration(
+                              color: AppTheme.adaptiveSurface,
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
@@ -401,7 +405,7 @@ class _ProfilePictureScreenState extends State<ProfilePictureScreen> {
                         ? '👆 اضغط لتغيير الصورة'
                         : '👆 Tap to change picture',
                     style: TextStyle(
-                      color: Colors.white.withAlpha(179),
+                      color: AppTheme.legacyForeground.withAlpha(179),
                       fontSize: 13,
                     ),
                   ),
@@ -461,8 +465,8 @@ class _ProfilePictureScreenState extends State<ProfilePictureScreen> {
                           },
                     child: Text(
                       isArabic ? '⏭ تخطي هذه الخطوة' : '⏭ Skip this step',
-                      style: const TextStyle(
-                        color: Colors.white70,
+                      style: TextStyle(
+                        color: AppTheme.legacySecondary,
                         fontSize: 14,
                       ),
                     ),
@@ -559,6 +563,7 @@ class _ImageSourceButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(

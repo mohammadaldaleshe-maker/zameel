@@ -141,15 +141,17 @@ class _AuthGateState extends State<AuthGate> {
   }
 
   @override
-  Widget build(BuildContext context) => FutureBuilder<Widget>(
-        key: ValueKey(_userId),
-        future: _initialScreen,
-        builder: (context, snapshot) =>
-            snapshot.data ??
-            const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            ),
-      );
+  Widget build(BuildContext context) => AppearanceScope.rebuild(
+      context,
+      () => FutureBuilder<Widget>(
+            key: ValueKey(_userId),
+            future: _initialScreen,
+            builder: (context, snapshot) =>
+                snapshot.data ??
+                const Scaffold(
+                  body: Center(child: CircularProgressIndicator()),
+                ),
+          ));
 
   @override
   void dispose() {
@@ -164,6 +166,7 @@ class RegistrationRequiredScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
@@ -246,43 +249,50 @@ class ZameelApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<LanguageProvider>(
-      builder: (context, languageProvider, child) {
-        return MaterialApp(
-          navigatorKey: zameelNavigatorKey,
-          debugShowCheckedModeBanner: false,
-          title: 'Zameel',
-          locale: languageProvider.currentLocale,
-          supportedLocales: const [
-            Locale('ar', ''),
-            Locale('en', ''),
-          ],
-          localizationsDelegates: const [
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          theme: AppTheme.theme(
-              arabic: languageProvider.isArabic, brightness: Brightness.light),
-          darkTheme: AppTheme.theme(
-              arabic: languageProvider.isArabic, brightness: Brightness.dark),
-          themeMode: ThemeMode.system,
-          builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(context).copyWith(
-                textScaler:
-                    CompactTextScaler(MediaQuery.textScalerOf(context))),
-            child: AccountAccessMonitor(
-              child: Listener(
-                behavior: HitTestBehavior.translucent,
-                onPointerDown: (_) => ScreenAwakeService.registerActivity(),
-                child: child ?? const SizedBox.shrink(),
-              ),
-            ),
-          ),
-          home: const AuthGate(),
-        );
-      },
-    );
+    AppearanceScope.observe(context);
+    return ListenableBuilder(
+        listenable: AppearanceController.instance,
+        builder: (context, _) => Consumer<LanguageProvider>(
+              builder: (context, languageProvider, child) {
+                return MaterialApp(
+                  navigatorKey: zameelNavigatorKey,
+                  debugShowCheckedModeBanner: false,
+                  title: 'Zameel',
+                  locale: languageProvider.currentLocale,
+                  supportedLocales: const [
+                    Locale('ar', ''),
+                    Locale('en', ''),
+                  ],
+                  localizationsDelegates: const [
+                    GlobalMaterialLocalizations.delegate,
+                    GlobalWidgetsLocalizations.delegate,
+                    GlobalCupertinoLocalizations.delegate,
+                  ],
+                  theme: AppTheme.theme(
+                      arabic: languageProvider.isArabic,
+                      brightness: Brightness.light),
+                  darkTheme: AppTheme.theme(
+                      arabic: languageProvider.isArabic,
+                      brightness: Brightness.dark),
+                  themeMode: AppearanceController.instance.themeMode,
+                  builder: (context, child) => AppearanceScope(
+                      child: MediaQuery(
+                    data: MediaQuery.of(context).copyWith(
+                        textScaler: CompactTextScaler(
+                            MediaQuery.textScalerOf(context))),
+                    child: AccountAccessMonitor(
+                      child: Listener(
+                        behavior: HitTestBehavior.translucent,
+                        onPointerDown: (_) =>
+                            ScreenAwakeService.registerActivity(),
+                        child: child ?? const SizedBox.shrink(),
+                      ),
+                    ),
+                  )),
+                  home: const AuthGate(),
+                );
+              },
+            ));
   }
 }
 
@@ -296,11 +306,11 @@ const Color secondaryColor = AppTheme.secondary;
 const Color accentColor = AppTheme.tertiary;
 const Color redColor = AppTheme.error;
 
-const Color glassColor = AppTheme.glassFill;
-const Color glassBorder = AppTheme.glassBorder;
+Color get glassColor => AppTheme.adaptiveGlassFill;
+Color get glassBorder => AppTheme.adaptiveGlassBorder;
 
-const Color gradientStart = AppTheme.primary;
-const Color gradientEnd = AppTheme.secondary;
+Color get gradientStart => AppTheme.pageStart;
+Color get gradientEnd => AppTheme.pageEnd;
 
 // Demo content remains visible alongside real Supabase content. These entries
 // are local-only and are never written into the user's real database.
@@ -459,23 +469,24 @@ class GlassContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return Container(
       width: width,
       height: height,
       padding: padding ?? const EdgeInsets.all(16),
       margin: margin ?? EdgeInsets.zero,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppTheme.glassFill,
-            AppTheme.glassSoft,
+            AppTheme.adaptiveGlassFill,
+            AppTheme.adaptiveGlassSoft,
           ],
         ),
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(
-          color: AppTheme.glassBorder,
+          color: AppTheme.adaptiveGlassBorder,
           width: 1.5,
         ),
         boxShadow: [

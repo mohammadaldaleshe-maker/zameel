@@ -1,0 +1,23 @@
+{
+  "release": 137,
+  "app_version": "2.0.3+12",
+  "admin_version": "1.3.12",
+  "dart_analysis": "No issues found: lib and test",
+  "admin_tests_passed": 58,
+  "postgres_checks_passed": 144,
+  "admin_browser": "Passed: verification moved to promotions; payment mismatch rejected; exact JOD1 accepted; no JS errors (mock API)",
+  "native_flutter_tests": "Not run locally; run Check on Windows before SQL/deployment",
+  "android_build": "Not run locally",
+  "live_sql_applied": false,
+  "live_function_deployed": false,
+  "github_pushed": false,
+  "phone_checked": false,
+  "media_height_screen_fraction": 0.65,
+  "appearance_choices": [
+    "original",
+    "light",
+    "dark",
+    "system"
+  ],
+  "verification_price_fils": 1000
+}

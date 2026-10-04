@@ -1,3 +1,4 @@
+import 'package:zameel/theme/appearance_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/language_provider.dart';
@@ -22,7 +23,6 @@ class _JobsScreenState extends State<JobsScreen> {
   Set<String> _savedJobIds = {};
   bool _remoteLoading = false;
   int selectedFilter = 0; // 0 = الكل, 1 = وظائف, 2 = تدريب, 3 = تدريب صيفي
-
 
   @override
   void initState() {
@@ -120,6 +120,7 @@ class _JobsScreenState extends State<JobsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
     final isArabic = languageProvider.isArabic;
 
@@ -300,6 +301,7 @@ class _FilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -342,6 +344,7 @@ class _JobCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final rawColor = job['color'];
     final Color color = rawColor is Color
         ? rawColor
@@ -354,7 +357,7 @@ class _JobCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       elevation: 0,
-      color: Colors.white,
+      color: AppTheme.adaptiveSurface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
@@ -536,6 +539,7 @@ class _InfoChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return Row(
       children: [
         Icon(
@@ -572,6 +576,7 @@ class JobDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final rawColor = job['color'];
     final Color color = rawColor is Color
         ? rawColor
@@ -625,7 +630,7 @@ class JobDetailsScreen extends StatelessWidget {
                           color: Colors.red,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Text(
+                        child: Text(
                           '🔥 عاجل',
                           style: TextStyle(
                             color: Colors.white,
@@ -863,6 +868,7 @@ class _DetailChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
@@ -905,6 +911,7 @@ class _DetailSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -955,6 +962,7 @@ class _DetailInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(

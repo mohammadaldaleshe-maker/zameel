@@ -1,3 +1,4 @@
+import 'package:zameel/theme/appearance_controller.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -25,17 +26,16 @@ class WelcomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final languageProvider =
-        Provider.of<LanguageProvider>(context);
+    AppearanceScope.observe(context);
+    final languageProvider = Provider.of<LanguageProvider>(context);
 
     final isArabic = languageProvider.isArabic;
 
     return Directionality(
-      textDirection:
-          isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
+      textDirection: isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
       child: Scaffold(
         body: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -59,8 +59,7 @@ class WelcomeScreen extends StatelessWidget {
                         vertical: 20,
                       ),
                       child: Column(
-                        mainAxisAlignment:
-                            MainAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           // ==================================================
                           // LANGUAGE BUTTON
@@ -71,8 +70,7 @@ class WelcomeScreen extends StatelessWidget {
                             child: Container(
                               decoration: BoxDecoration(
                                 color: Colors.white.withAlpha(25),
-                                borderRadius:
-                                    BorderRadius.circular(20),
+                                borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
                                   color: Colors.white.withAlpha(70),
                                 ),
@@ -81,7 +79,7 @@ class WelcomeScreen extends StatelessWidget {
                                 onPressed: () {
                                   languageProvider.toggleLanguage();
                                 },
-                                icon: const Icon(
+                                icon: Icon(
                                   Icons.language,
                                   color: Colors.white,
                                 ),
@@ -102,12 +100,12 @@ class WelcomeScreen extends StatelessWidget {
                             width: 140,
                             height: 140,
                             decoration: BoxDecoration(
-                              gradient: const LinearGradient(
+                              gradient: LinearGradient(
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                                 colors: [
                                   AppTheme.glassMid,
-                                  AppTheme.glassSoft,
+                                  AppTheme.adaptiveGlassSoft,
                                 ],
                               ),
                               shape: BoxShape.circle,
@@ -155,8 +153,8 @@ class WelcomeScreen extends StatelessWidget {
                                 ? 'منصة الطلاب الجامعيين'
                                 : 'University Students Platform',
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: Colors.white70,
+                            style: TextStyle(
+                              color: AppTheme.legacySecondary,
                               fontSize: 16,
                             ),
                           ),
@@ -168,8 +166,8 @@ class WelcomeScreen extends StatelessWidget {
                                 ? 'تعلّم، تواصل، شارك، وكن جزءًا من مجتمعك الجامعي'
                                 : 'Learn, connect, share and be part of your university community',
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: Colors.white60,
+                            style: TextStyle(
+                              color: AppTheme.legacyForeground60,
                               fontSize: 14,
                               height: 1.5,
                             ),
@@ -189,8 +187,7 @@ class WelcomeScreen extends StatelessWidget {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) =>
-                                        const AuthChoiceScreen(),
+                                    builder: (_) => const AuthChoiceScreen(),
                                   ),
                                 );
                               },
@@ -199,8 +196,7 @@ class WelcomeScreen extends StatelessWidget {
                                 foregroundColor: primaryColor,
                                 elevation: 8,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(30),
+                                  borderRadius: BorderRadius.circular(30),
                                 ),
                               ),
                               child: Text(
@@ -221,8 +217,8 @@ class WelcomeScreen extends StatelessWidget {
                             isArabic
                                 ? 'أهلًا بك في Zameel'
                                 : 'Welcome to Zameel',
-                            style: const TextStyle(
-                              color: Colors.white54,
+                            style: TextStyle(
+                              color: AppTheme.legacySecondary,
                               fontSize: 13,
                             ),
                           ),
@@ -249,14 +245,13 @@ class AuthChoiceScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final languageProvider =
-        Provider.of<LanguageProvider>(context);
+    AppearanceScope.observe(context);
+    final languageProvider = Provider.of<LanguageProvider>(context);
 
     final isArabic = languageProvider.isArabic;
 
     return Directionality(
-      textDirection:
-          isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
+      textDirection: isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
       child: Scaffold(
         appBar: AppBar(
           backgroundColor: Colors.transparent,
@@ -265,7 +260,7 @@ class AuthChoiceScreen extends StatelessWidget {
         ),
         extendBodyBehindAppBar: true,
         body: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -280,14 +275,13 @@ class AuthChoiceScreen extends StatelessWidget {
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(30),
                 child: Column(
-                  mainAxisAlignment:
-                      MainAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // ==================================================
                     // TITLE
                     // ==================================================
 
-                    const Icon(
+                    Icon(
                       Icons.school_rounded,
                       color: Colors.white,
                       size: 70,
@@ -296,9 +290,7 @@ class AuthChoiceScreen extends StatelessWidget {
                     const SizedBox(height: 25),
 
                     Text(
-                      isArabic
-                          ? 'مرحبًا بك في Zameel'
-                          : 'Welcome to Zameel',
+                      isArabic ? 'مرحبًا بك في Zameel' : 'Welcome to Zameel',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.ibmPlexSansArabic(
                         color: Colors.white,
@@ -314,8 +306,8 @@ class AuthChoiceScreen extends StatelessWidget {
                           ? 'اختر كيف تريد المتابعة'
                           : 'Choose how you want to continue',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.white70,
+                      style: TextStyle(
+                        color: AppTheme.legacySecondary,
                         fontSize: 15,
                       ),
                     ),
@@ -334,8 +326,7 @@ class AuthChoiceScreen extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) =>
-                                  const LoginScreen(),
+                              builder: (_) => const LoginScreen(),
                             ),
                           );
                         },
@@ -344,14 +335,11 @@ class AuthChoiceScreen extends StatelessWidget {
                           foregroundColor: primaryColor,
                           elevation: 8,
                           shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.circular(30),
+                            borderRadius: BorderRadius.circular(30),
                           ),
                         ),
                         child: Text(
-                          isArabic
-                              ? '🔑 تسجيل الدخول'
-                              : '🔑 Login',
+                          isArabic ? '🔑 تسجيل الدخول' : '🔑 Login',
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -374,20 +362,18 @@ class AuthChoiceScreen extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) =>
-                                  const RoleSelectionScreen(),
+                              builder: (_) => const RoleSelectionScreen(),
                             ),
                           );
                         },
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.white,
-                          side: const BorderSide(
+                          side: BorderSide(
                             color: Colors.white,
                             width: 2,
                           ),
                           shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.circular(30),
+                            borderRadius: BorderRadius.circular(30),
                           ),
                         ),
                         child: Text(
@@ -409,8 +395,8 @@ class AuthChoiceScreen extends StatelessWidget {
                           ? 'يمكنك تسجيل الدخول إذا كان لديك حساب بالفعل'
                           : 'Login if you already have an account',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.white54,
+                      style: TextStyle(
+                        color: AppTheme.legacySecondary,
                         fontSize: 12,
                       ),
                     ),

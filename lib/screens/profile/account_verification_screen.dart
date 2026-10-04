@@ -1,3 +1,4 @@
+import '../../widgets/verified_name.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -39,6 +40,8 @@ class _AccountVerificationScreenState extends State<AccountVerificationScreen> {
             .limit(1)
       ]);
       if (!mounted) return;
+      VerificationDirectory.instance
+          .updateOwn(uid, result[0]['verification_expires_at']?.toString());
       setState(() {
         _expires = result[0]['verification_expires_at']?.toString();
         final rows = result[1] as List;

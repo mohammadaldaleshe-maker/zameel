@@ -1,3 +1,5 @@
+import 'package:zameel/theme/appearance_controller.dart';
+import 'package:zameel/widgets/verified_name.dart';
 import 'package:flutter/material.dart';
 import '../../services/feature_control.dart';
 import 'package:intl/intl.dart';
@@ -31,7 +33,8 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
   void initState() {
     super.initState();
     _load();
-    _channel = RemainingServices.subscribeToGroupMessages(widget.groupId, _load);
+    _channel =
+        RemainingServices.subscribeToGroupMessages(widget.groupId, _load);
   }
 
   Future<void> _load() async {
@@ -67,7 +70,9 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(FeatureControl.errorMessage(error, 'تعذر إرسال الرسالة إلى المجموعة'))),
+        SnackBar(
+            content: Text(FeatureControl.errorMessage(
+                error, 'تعذر إرسال الرسالة إلى المجموعة'))),
       );
     } finally {
       if (mounted) setState(() => _sending = false);
@@ -84,6 +89,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final me = Supabase.instance.client.auth.currentUser?.id;
     return Scaffold(
       appBar: AppBar(title: Text(widget.groupName)),
@@ -101,7 +107,11 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                         itemBuilder: (context, index) {
                           final message = _messages[index];
                           final isMe = message['user_id']?.toString() == me;
-                          final name = message['sender_name']?.toString().trim().isNotEmpty == true
+                          final name = message['sender_name']
+                                      ?.toString()
+                                      .trim()
+                                      .isNotEmpty ==
+                                  true
                               ? message['sender_name'].toString().trim()
                               : 'زميل';
                           final created = DateTime.tryParse(
@@ -123,33 +133,43 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                                 borderRadius: BorderRadius.circular(16),
                                 border: isMe
                                     ? null
-                                    : Border.all(color: AppTheme.muted.shade200),
+                                    : Border.all(
+                                        color: AppTheme.muted.shade200),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    name,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                      color: isMe ? Colors.white : AppTheme.primaryDark,
-                                    ),
-                                  ),
+                                  VerifiedName(
+                                      userId: message['user_id']?.toString(),
+                                      child: Text(
+                                        name,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          color: isMe
+                                              ? Colors.white
+                                              : AppTheme.primaryDark,
+                                        ),
+                                      )),
                                   const SizedBox(height: 3),
                                   Text(
                                     message['content']?.toString() ?? '',
                                     style: TextStyle(
-                                      color: isMe ? Colors.white : Colors.black87,
+                                      color: isMe
+                                          ? Colors.white
+                                          : AppTheme.adaptiveText,
                                       fontSize: 15,
                                     ),
                                   ),
                                   if (created != null) ...[
                                     const SizedBox(height: 4),
                                     Text(
-                                      DateFormat('dd/MM/yyyy • HH:mm').format(created),
+                                      DateFormat('dd/MM/yyyy • HH:mm')
+                                          .format(created),
                                       style: TextStyle(
-                                        color: isMe ? Colors.white70 : AppTheme.muted,
+                                        color: isMe
+                                            ? Colors.white70
+                                            : AppTheme.muted,
                                         fontSize: 10,
                                       ),
                                     ),
@@ -170,15 +190,15 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                   Expanded(
                     child: TextField(
                       controller: _controller,
-                      style: const TextStyle(color: Colors.black87),
+                      style: TextStyle(color: AppTheme.adaptiveText),
                       minLines: 1,
                       maxLines: 4,
                       textInputAction: TextInputAction.newline,
                       decoration: InputDecoration(
                         hintText: 'اكتب رسالة للمجموعة...',
-                        hintStyle: const TextStyle(color: Colors.black54),
+                        hintStyle: TextStyle(color: AppTheme.adaptiveSecondary),
                         filled: true,
-                        fillColor: Colors.white,
+                        fillColor: AppTheme.adaptiveSurface,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
                           borderSide: BorderSide.none,

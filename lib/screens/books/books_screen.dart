@@ -1,3 +1,5 @@
+import 'package:zameel/theme/appearance_controller.dart';
+import 'package:zameel/widgets/verified_name.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
@@ -322,34 +324,45 @@ class _BooksScreenState extends State<BooksScreen> {
                                   title: Text(
                                       request['listing_title']?.toString() ??
                                           ''),
-                                  subtitle: Text([
-                                    incoming
-                                        ? request['requester_name']
-                                                ?.toString() ??
-                                            ''
-                                        : request['owner_name']?.toString() ??
-                                            '',
-                                    _bookRequestRoleLabel(request, ar),
-                                    if (incoming)
-                                      request['requester_university']
-                                              ?.toString() ??
-                                          '',
-                                    if (incoming)
-                                      request['requester_college']
-                                              ?.toString() ??
-                                          '',
-                                    if ((request['initial_message']
-                                                ?.toString() ??
-                                            '')
-                                        .isNotEmpty)
-                                      '“${request['initial_message']}”',
-                                    _requestStatusLabel(
-                                        request['request_status']?.toString() ??
-                                            '',
-                                        ar),
-                                  ]
-                                      .where((value) => value.isNotEmpty)
-                                      .join(' • ')),
+                                  subtitle: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        VerifiedName(
+                                            userId: (incoming
+                                                    ? request['requester_id']
+                                                    : request['owner_id'])
+                                                ?.toString(),
+                                            child: Text((incoming
+                                                        ? request[
+                                                            'requester_name']
+                                                        : request['owner_name'])
+                                                    ?.toString() ??
+                                                '')),
+                                        Text([
+                                          _bookRequestRoleLabel(request, ar),
+                                          if (incoming)
+                                            request['requester_university']
+                                                    ?.toString() ??
+                                                '',
+                                          if (incoming)
+                                            request['requester_college']
+                                                    ?.toString() ??
+                                                '',
+                                          if ((request['initial_message']
+                                                      ?.toString() ??
+                                                  '')
+                                              .isNotEmpty)
+                                            '“${request['initial_message']}”',
+                                          _requestStatusLabel(
+                                              request['request_status']
+                                                      ?.toString() ??
+                                                  '',
+                                              ar),
+                                        ]
+                                            .where((value) => value.isNotEmpty)
+                                            .join(' • '))
+                                      ]),
                                   onTap: accepted
                                       ? () => _openAcceptedBookChat(request)
                                       : null,
@@ -1107,6 +1120,7 @@ class _BooksScreenState extends State<BooksScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
     final isArabic = languageProvider.isArabic;
     final currentFilters = isArabic
@@ -1198,7 +1212,7 @@ class _BooksScreenState extends State<BooksScreen> {
                               gradient: AppTheme.signatureGradientRtl,
                               borderRadius: BorderRadius.circular(15),
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.local_library_rounded,
                               color: Colors.white,
                               size: 29,
@@ -1658,6 +1672,7 @@ class _MyLibraryScreenState extends State<MyLibraryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final ar = Provider.of<LanguageProvider>(context).isArabic;
     final count = _summary['completed_operations']?.toString() ?? '0';
     final ambassador = (_summary['title_label']?.toString() ?? '').isNotEmpty;
@@ -1757,6 +1772,7 @@ class _BookCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
     final isArabic = languageProvider.isArabic;
 
@@ -1834,13 +1850,15 @@ class _BookCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 6),
                         Expanded(
-                            child: Text(book['owner_name'].toString(),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppTheme.primaryDark))),
+                            child: VerifiedName(
+                                userId: book['owner_id']?.toString(),
+                                child: Text(book['owner_name'].toString(),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppTheme.primaryDark)))),
                       ]),
                     ],
                     const SizedBox(height: 3),
@@ -1970,6 +1988,7 @@ class BookDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
     final isArabic = languageProvider.isArabic;
 
@@ -2030,8 +2049,10 @@ class BookDetailsScreen extends StatelessWidget {
                         ? const Icon(Icons.person_rounded)
                         : null,
                   ),
-                  title: Text(book['owner_name'].toString(),
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  title: VerifiedName(
+                      userId: book['owner_id']?.toString(),
+                      child: Text(book['owner_name'].toString(),
+                          style: const TextStyle(fontWeight: FontWeight.bold))),
                   subtitle: Text([
                     book['owner_university'],
                     book['owner_college']
@@ -2443,6 +2464,7 @@ class _BookExchangeChatScreenState extends State<BookExchangeChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final ar = Provider.of<LanguageProvider>(context).isArabic;
     final me = Supabase.instance.client.auth.currentUser?.id;
     final phone = _contact['phone']?.toString() ?? '';
@@ -2507,8 +2529,9 @@ class _BookExchangeChatScreenState extends State<BookExchangeChatScreen> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 14, vertical: 10),
                       decoration: BoxDecoration(
-                        color:
-                            mine ? AppTheme.primaryLight : AppTheme.surfaceAlt,
+                        color: mine
+                            ? AppTheme.primaryLight
+                            : AppTheme.adaptiveSurfaceAlt,
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Text(message['message_text']?.toString() ?? ''),

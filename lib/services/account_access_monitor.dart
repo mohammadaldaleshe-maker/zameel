@@ -1,3 +1,5 @@
+import 'package:zameel/theme/appearance_controller.dart';
+import 'package:zameel/theme/app_theme.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -78,6 +80,7 @@ class _AccountAccessMonitorState extends State<AccountAccessMonitor>
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final decision = _decision;
     if (decision == null) return widget.child;
     final blocked = decision['status'] == 'blocked';
@@ -101,7 +104,7 @@ class _AccountAccessMonitorState extends State<AccountAccessMonitor>
                       'حسابك معلّق للمشاهدة فقط. السبب: '
                       '${decision['reason'] ?? ''}. المدة: $deadline',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.black87)),
+                      style: TextStyle(color: AppTheme.adaptiveText)),
                 )),
           ),
           Expanded(child: widget.child),
@@ -129,19 +132,19 @@ class _AccountAccessMonitorState extends State<AccountAccessMonitor>
                           blocked
                               ? 'تم حظر حسابك في زميل'
                               : 'تم تعليق حسابك في زميل',
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 21,
                               fontWeight: FontWeight.bold,
-                              color: Colors.black87)),
+                              color: AppTheme.adaptiveText)),
                       const SizedBox(height: 16),
                       Text('السبب: ${decision['reason'] ?? ''}',
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
-                              fontSize: 16, color: Colors.black87)),
+                          style: TextStyle(
+                              fontSize: 16, color: AppTheme.adaptiveText)),
                       const SizedBox(height: 9),
                       Text('المدة: $deadline',
                           textAlign: TextAlign.center,
-                          style: const TextStyle(color: Colors.black87)),
+                          style: TextStyle(color: AppTheme.adaptiveText)),
                       const SizedBox(height: 20),
                       OutlinedButton(
                           onPressed: _refresh,

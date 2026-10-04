@@ -1,3 +1,4 @@
+import 'package:zameel/theme/appearance_controller.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -37,23 +38,24 @@ class GlassContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return Container(
       width: width,
       height: height,
       padding: padding ?? const EdgeInsets.all(16),
       margin: margin ?? EdgeInsets.zero,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppTheme.glassFill,
-            AppTheme.glassSoft,
+            AppTheme.adaptiveGlassFill,
+            AppTheme.adaptiveGlassSoft,
           ],
         ),
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(
-          color: AppTheme.glassBorder,
+          color: AppTheme.adaptiveGlassBorder,
           width: 1.5,
         ),
         boxShadow: [
@@ -92,8 +94,7 @@ class UniversitySelectionScreen extends StatefulWidget {
       _UniversitySelectionScreenState();
 }
 
-class _UniversitySelectionScreenState
-    extends State<UniversitySelectionScreen> {
+class _UniversitySelectionScreenState extends State<UniversitySelectionScreen> {
   String? selectedUniversity;
   String? selectedCollege;
   String? selectedDepartment;
@@ -107,6 +108,7 @@ class _UniversitySelectionScreenState
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
     final isArabic = languageProvider.isArabic;
     final filtered = filteredUniversities;
@@ -117,7 +119,7 @@ class _UniversitySelectionScreenState
       textDirection: isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
       child: Scaffold(
         body: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -147,8 +149,8 @@ class _UniversitySelectionScreenState
                     isArabic
                         ? 'اختر جامعتك وكليتك وتخصصك'
                         : 'Select your university, college and major',
-                    style: const TextStyle(
-                      color: Colors.white70,
+                    style: TextStyle(
+                      color: AppTheme.legacySecondary,
                       fontSize: 14,
                     ),
                   ),
@@ -164,8 +166,10 @@ class _UniversitySelectionScreenState
                         });
                       },
                       decoration: InputDecoration(
-                        hintText: isArabic ? '🔍 ابحث عن الجامعة...' : '🔍 Search for university...',
-                        hintStyle: const TextStyle(color: Colors.white70),
+                        hintText: isArabic
+                            ? '🔍 ابحث عن الجامعة...'
+                            : '🔍 Search for university...',
+                        hintStyle: TextStyle(color: AppTheme.legacySecondary),
                         prefixIcon: const Icon(Icons.search_rounded,
                             color: Colors.white70),
                         filled: true,
@@ -175,7 +179,7 @@ class _UniversitySelectionScreenState
                           borderSide: BorderSide.none,
                         ),
                       ),
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: AppTheme.legacyForeground),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -187,48 +191,52 @@ class _UniversitySelectionScreenState
                       children: [
                         if (government.isNotEmpty) ...[
                           Text(
-                            isArabic ? '🏛️ جامعات حكومية' : '🏛️ Government Universities',
-                            style: const TextStyle(
-                              color: Colors.white,
+                            isArabic
+                                ? '🏛️ جامعات حكومية'
+                                : '🏛️ Government Universities',
+                            style: TextStyle(
+                              color: AppTheme.legacyForeground,
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           const SizedBox(height: 8),
                           ...government.map((u) => _UniversityCard(
-                            university: u,
-                            isSelected: selectedUniversity == u.name,
-                            onTap: () {
-                              setState(() {
-                                selectedUniversity = u.name;
-                                selectedCollege = null;
-                                selectedDepartment = null;
-                              });
-                            },
-                          )),
+                                university: u,
+                                isSelected: selectedUniversity == u.name,
+                                onTap: () {
+                                  setState(() {
+                                    selectedUniversity = u.name;
+                                    selectedCollege = null;
+                                    selectedDepartment = null;
+                                  });
+                                },
+                              )),
                           const SizedBox(height: 16),
                         ],
                         if (private.isNotEmpty) ...[
                           Text(
-                            isArabic ? '🏛️ جامعات خاصة' : '🏛️ Private Universities',
-                            style: const TextStyle(
-                              color: Colors.white,
+                            isArabic
+                                ? '🏛️ جامعات خاصة'
+                                : '🏛️ Private Universities',
+                            style: TextStyle(
+                              color: AppTheme.legacyForeground,
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           const SizedBox(height: 8),
                           ...private.map((u) => _UniversityCard(
-                            university: u,
-                            isSelected: selectedUniversity == u.name,
-                            onTap: () {
-                              setState(() {
-                                selectedUniversity = u.name;
-                                selectedCollege = null;
-                                selectedDepartment = null;
-                              });
-                            },
-                          )),
+                                university: u,
+                                isSelected: selectedUniversity == u.name,
+                                onTap: () {
+                                  setState(() {
+                                    selectedUniversity = u.name;
+                                    selectedCollege = null;
+                                    selectedDepartment = null;
+                                  });
+                                },
+                              )),
                         ],
                       ],
                     ),
@@ -285,8 +293,8 @@ class _UniversitySelectionScreenState
                     },
                     child: Text(
                       isArabic ? '↩ العودة' : '↩ Back',
-                      style: const TextStyle(
-                        color: Colors.white70,
+                      style: TextStyle(
+                        color: AppTheme.legacySecondary,
                         fontSize: 14,
                       ),
                     ),
@@ -318,6 +326,7 @@ class _UniversityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
     final isArabic = languageProvider.isArabic;
 
@@ -346,10 +355,14 @@ class _UniversityCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    translateText(university.name, languageProvider.currentLanguage),
+                    translateText(
+                        university.name, languageProvider.currentLanguage),
                     style: TextStyle(
-                      color: isSelected ? Colors.white : Colors.white70,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      color: isSelected
+                          ? AppTheme.legacyForeground
+                          : AppTheme.legacySecondary,
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.normal,
                       fontSize: 15,
                     ),
                   ),
@@ -357,8 +370,8 @@ class _UniversityCard extends StatelessWidget {
                     isArabic
                         ? '📍 ${university.city} - ${university.type}'
                         : '📍 ${university.city} - ${university.type}',
-                    style: const TextStyle(
-                      color: Colors.white60,
+                    style: TextStyle(
+                      color: AppTheme.legacyForeground60,
                       fontSize: 12,
                     ),
                   ),
@@ -399,8 +412,7 @@ class CollegeSelectionScreen extends StatefulWidget {
   });
 
   @override
-  State<CollegeSelectionScreen> createState() =>
-      _CollegeSelectionScreenState();
+  State<CollegeSelectionScreen> createState() => _CollegeSelectionScreenState();
 }
 
 class _CollegeSelectionScreenState extends State<CollegeSelectionScreen> {
@@ -408,6 +420,7 @@ class _CollegeSelectionScreenState extends State<CollegeSelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
     final isArabic = languageProvider.isArabic;
 
@@ -415,7 +428,7 @@ class _CollegeSelectionScreenState extends State<CollegeSelectionScreen> {
       textDirection: isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
       child: Scaffold(
         body: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -439,9 +452,10 @@ class _CollegeSelectionScreenState extends State<CollegeSelectionScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    translateText(widget.university.name, languageProvider.currentLanguage),
-                    style: const TextStyle(
-                      color: Colors.white70,
+                    translateText(widget.university.name,
+                        languageProvider.currentLanguage),
+                    style: TextStyle(
+                      color: AppTheme.legacySecondary,
                       fontSize: 14,
                     ),
                   ),
@@ -469,7 +483,9 @@ class _CollegeSelectionScreenState extends State<CollegeSelectionScreen> {
                                   ),
                                   child: Icon(
                                     Icons.school_rounded,
-                                    color: isSelected ? Colors.white : Colors.white70,
+                                    color: isSelected
+                                        ? Colors.white
+                                        : Colors.white70,
                                     size: 24,
                                   ),
                                 ),
@@ -479,7 +495,9 @@ class _CollegeSelectionScreenState extends State<CollegeSelectionScreen> {
                                     translateText(college.name,
                                         languageProvider.currentLanguage),
                                     style: TextStyle(
-                                      color: isSelected ? Colors.white : Colors.white70,
+                                      color: isSelected
+                                          ? AppTheme.legacyForeground
+                                          : AppTheme.legacySecondary,
                                       fontWeight: isSelected
                                           ? FontWeight.bold
                                           : FontWeight.normal,
@@ -488,7 +506,7 @@ class _CollegeSelectionScreenState extends State<CollegeSelectionScreen> {
                                   ),
                                 ),
                                 if (isSelected)
-                                  const Icon(
+                                  Icon(
                                     Icons.check_circle_rounded,
                                     color: Colors.white,
                                     size: 24,
@@ -550,8 +568,8 @@ class _CollegeSelectionScreenState extends State<CollegeSelectionScreen> {
                     },
                     child: Text(
                       isArabic ? '↩ العودة' : '↩ Back',
-                      style: const TextStyle(
-                        color: Colors.white70,
+                      style: TextStyle(
+                        color: AppTheme.legacySecondary,
                         fontSize: 14,
                       ),
                     ),
@@ -593,12 +611,12 @@ class DepartmentSelectionScreen extends StatefulWidget {
       _DepartmentSelectionScreenState();
 }
 
-class _DepartmentSelectionScreenState
-    extends State<DepartmentSelectionScreen> {
+class _DepartmentSelectionScreenState extends State<DepartmentSelectionScreen> {
   String? selectedDepartment;
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
     final isArabic = languageProvider.isArabic;
 
@@ -606,7 +624,7 @@ class _DepartmentSelectionScreenState
       textDirection: isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
       child: Scaffold(
         body: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -630,9 +648,10 @@ class _DepartmentSelectionScreenState
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    translateText(widget.college.name, languageProvider.currentLanguage),
-                    style: const TextStyle(
-                      color: Colors.white70,
+                    translateText(
+                        widget.college.name, languageProvider.currentLanguage),
+                    style: TextStyle(
+                      color: AppTheme.legacySecondary,
                       fontSize: 14,
                     ),
                   ),
@@ -660,17 +679,21 @@ class _DepartmentSelectionScreenState
                                   ),
                                   child: Icon(
                                     Icons.menu_book_rounded,
-                                    color: isSelected ? Colors.white : Colors.white70,
+                                    color: isSelected
+                                        ? Colors.white
+                                        : Colors.white70,
                                     size: 24,
                                   ),
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(
-                                    translateText(dept,
-                                        languageProvider.currentLanguage),
+                                    translateText(
+                                        dept, languageProvider.currentLanguage),
                                     style: TextStyle(
-                                      color: isSelected ? Colors.white : Colors.white70,
+                                      color: isSelected
+                                          ? AppTheme.legacyForeground
+                                          : AppTheme.legacySecondary,
                                       fontWeight: isSelected
                                           ? FontWeight.bold
                                           : FontWeight.normal,
@@ -679,7 +702,7 @@ class _DepartmentSelectionScreenState
                                   ),
                                 ),
                                 if (isSelected)
-                                  const Icon(
+                                  Icon(
                                     Icons.check_circle_rounded,
                                     color: Colors.white,
                                     size: 24,
@@ -740,8 +763,8 @@ class _DepartmentSelectionScreenState
                     },
                     child: Text(
                       isArabic ? '↩ العودة' : '↩ Back',
-                      style: const TextStyle(
-                        color: Colors.white70,
+                      style: TextStyle(
+                        color: AppTheme.legacySecondary,
                         fontSize: 14,
                       ),
                     ),

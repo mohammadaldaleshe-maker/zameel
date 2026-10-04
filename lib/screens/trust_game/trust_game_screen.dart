@@ -1,3 +1,4 @@
+import 'package:zameel/widgets/verified_name.dart';
 import 'dart:async';
 import 'dart:math';
 
@@ -672,7 +673,9 @@ class _TrustGameScreenState extends State<TrustGameScreen>
                   if (_state['opponent'] is Map)
                     ListTile(
                       leading: const Icon(Icons.person),
-                      title: Text('${_state['opponent']['name'] ?? ''}'),
+                      title: VerifiedName(
+                          userId: _state['opponent']['id']?.toString(),
+                          child: Text('${_state['opponent']['name'] ?? ''}')),
                       subtitle: Text(
                         _t('زميلك في المباراة', 'Your match partner'),
                       ),

@@ -1,3 +1,4 @@
+import 'package:zameel/theme/appearance_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -77,11 +78,12 @@ class _BusinessScreenState extends State<BusinessScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final ar = Provider.of<LanguageProvider>(context).isArabic;
     return Directionality(
       textDirection: ar ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
-        backgroundColor: AppTheme.surfaceAlt,
+        backgroundColor: AppTheme.adaptiveSurfaceAlt,
         appBar: AppBar(
           title: Text(ar ? 'شركاء Zameel' : 'Zameel Partners'),
           actions: [
@@ -115,7 +117,7 @@ class _BusinessScreenState extends State<BusinessScreen> {
                             ? 'ابحث عن شركة، منتج أو عرض'
                             : 'Search companies, products or offers',
                         filled: true,
-                        fillColor: Colors.white,
+                        fillColor: AppTheme.adaptiveSurface,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(18),
                           borderSide: BorderSide.none,
@@ -141,10 +143,12 @@ class _BusinessScreenState extends State<BusinessScreen> {
                       children: [
                         Text(
                           ar ? 'شركاء معتمدون' : 'Approved partners',
-                          style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800),
+                          style: const TextStyle(
+                              fontSize: 19, fontWeight: FontWeight.w800),
                         ),
                         const Spacer(),
-                        Text('${filtered.length}', style: const TextStyle(color: AppTheme.muted)),
+                        Text('${filtered.length}',
+                            style: const TextStyle(color: AppTheme.muted)),
                       ],
                     ),
                     const SizedBox(height: 10),
@@ -153,7 +157,8 @@ class _BusinessScreenState extends State<BusinessScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 48),
                         child: Column(
                           children: [
-                            const Icon(Icons.business_outlined, size: 54, color: AppTheme.muted),
+                            const Icon(Icons.business_outlined,
+                                size: 54, color: AppTheme.muted),
                             const SizedBox(height: 10),
                             Text(
                               ar
@@ -179,7 +184,8 @@ class _BusinessScreenState extends State<BusinessScreen> {
   Widget _hero(bool ar) => Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(colors: [AppTheme.primaryDark, AppTheme.primaryDark]),
+          gradient: const LinearGradient(
+              colors: [AppTheme.primaryDark, AppTheme.primaryDark]),
           borderRadius: BorderRadius.circular(24),
         ),
         child: Column(
@@ -194,13 +200,17 @@ class _BusinessScreenState extends State<BusinessScreen> {
                     color: Colors.white.withAlpha(35),
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Image.asset('assets/branding/zameel_mark.png', fit: BoxFit.contain),
+                  child: Image.asset('assets/branding/zameel_mark.png',
+                      fit: BoxFit.contain),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     ar ? 'منظومة شركاء Zameel' : 'Zameel Partner Network',
-                    style: const TextStyle(color: Colors.white, fontSize: 21, fontWeight: FontWeight.w800),
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 21,
+                        fontWeight: FontWeight.w800),
                   ),
                 ),
               ],
@@ -241,7 +251,8 @@ class _BusinessScreenState extends State<BusinessScreen> {
                     color: AppTheme.accentSoft,
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Icon(p['icon'] as IconData, color: AppTheme.primaryDark, size: 28),
+                  child: Icon(p['icon'] as IconData,
+                      color: AppTheme.primaryDark, size: 28),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -253,12 +264,14 @@ class _BusinessScreenState extends State<BusinessScreen> {
                           Expanded(
                             child: Text(
                               p['name']?.toString() ?? '',
-                              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w800, fontSize: 16),
                             ),
                           ),
                           if ((p['tag']?.toString() ?? '').isNotEmpty)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 7, vertical: 3),
                               decoration: BoxDecoration(
                                 color: AppTheme.accentSoft,
                                 borderRadius: BorderRadius.circular(8),
@@ -279,7 +292,8 @@ class _BusinessScreenState extends State<BusinessScreen> {
                         p['desc']?.toString() ?? '',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: AppTheme.muted, height: 1.35),
+                        style: const TextStyle(
+                            color: AppTheme.muted, height: 1.35),
                       ),
                     ],
                   ),
@@ -288,7 +302,8 @@ class _BusinessScreenState extends State<BusinessScreen> {
                   IconButton(
                     tooltip: ar ? 'حذف الشريك' : 'Delete partner',
                     onPressed: () => _confirmDeletePartner(p, ar),
-                    icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+                    icon: const Icon(Icons.delete_outline_rounded,
+                        color: Colors.red),
                   )
                 else
                   const Icon(Icons.chevron_left_rounded, color: AppTheme.muted),
@@ -303,19 +318,22 @@ class _BusinessScreenState extends State<BusinessScreen> {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              const Icon(Icons.verified_user_rounded, color: Color(0xFF16A34A), size: 30),
+              const Icon(Icons.verified_user_rounded,
+                  color: Color(0xFF16A34A), size: 30),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(ar ? 'مزايا مخصصة للطلاب' : 'Student-first benefits', style: const TextStyle(fontWeight: FontWeight.w800)),
+                    Text(ar ? 'مزايا مخصصة للطلاب' : 'Student-first benefits',
+                        style: const TextStyle(fontWeight: FontWeight.w800)),
                     const SizedBox(height: 4),
                     Text(
                       ar
                           ? 'لا يظهر هنا إلا الشركاء المعتمدون من Zameel، وتبقى العروض منفصلة بوضوح عن المحتوى الأكاديمي.'
                           : 'Only Zameel-approved partners appear here, and offers remain clearly separate from academic content.',
-                      style: const TextStyle(color: AppTheme.muted, height: 1.4),
+                      style:
+                          const TextStyle(color: AppTheme.muted, height: 1.4),
                     ),
                   ],
                 ),
@@ -342,16 +360,20 @@ class _BusinessScreenState extends State<BusinessScreen> {
   Future<void> _openPartnerWebsite(String rawUrl, bool ar) async {
     final value = rawUrl.trim();
     if (value.isEmpty) return;
-    final normalized = value.startsWith('http://') || value.startsWith('https://')
-        ? value : 'https://$value';
+    final normalized =
+        value.startsWith('http://') || value.startsWith('https://')
+            ? value
+            : 'https://$value';
     final uri = Uri.tryParse(normalized);
-    if (uri == null || !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(ar ? 'تعذر فتح موقع الشريك' : 'Could not open partner website'),
-      ));
+    if (uri == null ||
+        !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(
+              ar ? 'تعذر فتح موقع الشريك' : 'Could not open partner website'),
+        ));
     }
   }
-
 
   Future<void> _showAddPartner(bool ar) async {
     final name = TextEditingController();
@@ -384,13 +406,21 @@ class _BusinessScreenState extends State<BusinessScreen> {
                     border: const OutlineInputBorder(),
                   ),
                   items: [
-                    DropdownMenuItem(value: 'offers', child: Text(ar ? 'عروض طلابية' : 'Student offers')),
-                    DropdownMenuItem(value: 'education', child: Text(ar ? 'تعليم' : 'Education')),
-                    DropdownMenuItem(value: 'career', child: Text(ar ? 'وظائف' : 'Career')),
-                    DropdownMenuItem(value: 'services', child: Text(ar ? 'خدمات' : 'Services')),
+                    DropdownMenuItem(
+                        value: 'offers',
+                        child: Text(ar ? 'عروض طلابية' : 'Student offers')),
+                    DropdownMenuItem(
+                        value: 'education',
+                        child: Text(ar ? 'تعليم' : 'Education')),
+                    DropdownMenuItem(
+                        value: 'career', child: Text(ar ? 'وظائف' : 'Career')),
+                    DropdownMenuItem(
+                        value: 'services',
+                        child: Text(ar ? 'خدمات' : 'Services')),
                   ],
                   onChanged: (value) {
-                    if (value != null) setDialogState(() => categoryValue = value);
+                    if (value != null)
+                      setDialogState(() => categoryValue = value);
                   },
                 ),
                 const SizedBox(height: 10),
@@ -415,7 +445,9 @@ class _BusinessScreenState extends State<BusinessScreen> {
                   controller: website,
                   keyboardType: TextInputType.url,
                   decoration: InputDecoration(
-                    labelText: ar ? 'الموقع الإلكتروني (اختياري)' : 'Website (optional)',
+                    labelText: ar
+                        ? 'الموقع الإلكتروني (اختياري)'
+                        : 'Website (optional)',
                     border: const OutlineInputBorder(),
                   ),
                 ),
@@ -444,12 +476,17 @@ class _BusinessScreenState extends State<BusinessScreen> {
                   await _load();
                   if (!mounted) return;
                   ScaffoldMessenger.of(this.context).showSnackBar(
-                    SnackBar(content: Text(ar ? '✅ تمت إضافة الشريك' : '✅ Partner added')),
+                    SnackBar(
+                        content: Text(
+                            ar ? '✅ تمت إضافة الشريك' : '✅ Partner added')),
                   );
                 } catch (_) {
                   if (!mounted) return;
                   ScaffoldMessenger.of(this.context).showSnackBar(
-                    SnackBar(content: Text(ar ? 'تعذر إضافة الشريك' : 'Could not add partner')),
+                    SnackBar(
+                        content: Text(ar
+                            ? 'تعذر إضافة الشريك'
+                            : 'Could not add partner')),
                   );
                 }
               },
@@ -460,7 +497,8 @@ class _BusinessScreenState extends State<BusinessScreen> {
     );
   }
 
-  Future<void> _confirmDeletePartner(Map<String, dynamic> partner, bool ar) async {
+  Future<void> _confirmDeletePartner(
+      Map<String, dynamic> partner, bool ar) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -489,12 +527,14 @@ class _BusinessScreenState extends State<BusinessScreen> {
       await _load();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(ar ? '🗑️ تم حذف الشريك' : '🗑️ Partner deleted')),
+        SnackBar(
+            content: Text(ar ? '🗑️ تم حذف الشريك' : '🗑️ Partner deleted')),
       );
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(ar ? 'تعذر حذف الشريك' : 'Could not delete partner')),
+        SnackBar(
+            content: Text(ar ? 'تعذر حذف الشريك' : 'Could not delete partner')),
       );
     }
   }
@@ -509,7 +549,9 @@ class _BusinessScreenState extends State<BusinessScreen> {
                 : 'A space for approved organizations offering discounts, training, jobs or useful student services.',
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: Text(ar ? 'حسنًا' : 'OK')),
+            TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(ar ? 'حسنًا' : 'OK')),
           ],
         ),
       );

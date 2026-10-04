@@ -1,3 +1,4 @@
+import 'package:zameel/theme/app_theme.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -326,7 +327,12 @@ class _VerticalAutoplayVideoPlayerState
         child: Stack(
           fit: StackFit.expand,
           children: [
-            VideoPlayer(controller),
+            FittedBox(
+                fit: BoxFit.contain,
+                child: SizedBox(
+                    width: controller.value.size.width,
+                    height: controller.value.size.height,
+                    child: VideoPlayer(controller))),
             AnimatedOpacity(
               opacity: _controlsVisible ? 1 : 0,
               duration: const Duration(milliseconds: 180),

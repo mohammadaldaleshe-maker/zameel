@@ -1,3 +1,5 @@
+import 'package:zameel/theme/appearance_controller.dart';
+import 'package:zameel/widgets/verified_name.dart';
 import 'package:flutter/material.dart';
 import '../../services/feature_control.dart';
 import 'package:flutter/foundation.dart';
@@ -48,10 +50,13 @@ List<List<Map<String, dynamic>>> _groupStories(
 ) {
   final groups = <String, List<Map<String, dynamic>>>{};
   for (final story in stories) {
-    groups.putIfAbsent(_storyOwnerKey(story), () => <Map<String, dynamic>>[]).add(story);
+    groups
+        .putIfAbsent(_storyOwnerKey(story), () => <Map<String, dynamic>>[])
+        .add(story);
   }
   final result = groups.values.toList();
-  final mineIndex = result.indexWhere((group) => group.any((story) => story['isMine'] == true));
+  final mineIndex = result
+      .indexWhere((group) => group.any((story) => story['isMine'] == true));
   if (mineIndex > 0) {
     final mine = result.removeAt(mineIndex);
     result.insert(0, mine);
@@ -59,7 +64,8 @@ List<List<Map<String, dynamic>>> _groupStories(
   return result;
 }
 
-class _StoriesWidgetState extends State<StoriesWidget> with WidgetsBindingObserver {
+class _StoriesWidgetState extends State<StoriesWidget>
+    with WidgetsBindingObserver {
   late final List<Map<String, dynamic>> _stories;
   bool _loading = true;
   String _storyAudience = 'public';
@@ -71,10 +77,13 @@ class _StoriesWidgetState extends State<StoriesWidget> with WidgetsBindingObserv
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _stories = widget.stories.map((story) => Map<String, dynamic>.from(story)).toList();
+    _stories = widget.stories
+        .map((story) => Map<String, dynamic>.from(story))
+        .toList();
     _restoreStories();
     _loadStories();
-    _refreshTimer = Timer.periodic(const Duration(minutes: 2), (_) => _loadStories());
+    _refreshTimer =
+        Timer.periodic(const Duration(minutes: 2), (_) => _loadStories());
   }
 
   @override
@@ -88,7 +97,8 @@ class _StoriesWidgetState extends State<StoriesWidget> with WidgetsBindingObserv
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _refreshTimer?.cancel();
-      _refreshTimer = Timer.periodic(const Duration(minutes: 2), (_) => _loadStories());
+      _refreshTimer =
+          Timer.periodic(const Duration(minutes: 2), (_) => _loadStories());
       _loadStories();
     } else {
       _refreshTimer?.cancel();
@@ -99,9 +109,14 @@ class _StoriesWidgetState extends State<StoriesWidget> with WidgetsBindingObserv
     final userId = ZameelSocialService.uid;
     if (userId == null || widget.friendsOnly) return;
     final cached = await HomeSnapshotService.read(userId, 'stories');
-    if (!mounted || _remoteShown || ZameelSocialService.uid != userId || cached.isEmpty) return;
+    if (!mounted ||
+        _remoteShown ||
+        ZameelSocialService.uid != userId ||
+        cached.isEmpty) return;
     setState(() {
-      _stories..clear()..addAll(cached);
+      _stories
+        ..clear()
+        ..addAll(cached);
       _loading = false;
     });
   }
@@ -116,13 +131,14 @@ class _StoriesWidgetState extends State<StoriesWidget> with WidgetsBindingObserv
     final userId = ZameelSocialService.uid;
     try {
       final remote = await ZameelSocialService.loadStories(
-          friendsOnly: widget.friendsOnly, resolveMedia: false)
+              friendsOnly: widget.friendsOnly, resolveMedia: false)
           .timeout(const Duration(seconds: 15));
       if (!mounted || ZameelSocialService.uid != userId) return;
       _remoteShown = true;
       final currentUserId = ZameelSocialService.uid;
       final normalized = remote.map((story) {
-        final createdAt = DateTime.tryParse(story['created_at']?.toString() ?? '');
+        final createdAt =
+            DateTime.tryParse(story['created_at']?.toString() ?? '');
         final age = createdAt == null
             ? Duration.zero
             : DateTime.now().toUtc().difference(createdAt.toUtc());
@@ -186,7 +202,8 @@ class _StoriesWidgetState extends State<StoriesWidget> with WidgetsBindingObserv
   }
 
   void _addMyStory() {
-    final isArabic = Provider.of<LanguageProvider>(context, listen: false).isArabic;
+    final isArabic =
+        Provider.of<LanguageProvider>(context, listen: false).isArabic;
     var audience = _storyAudience;
 
     showModalBottomSheet(
@@ -210,11 +227,14 @@ class _StoriesWidgetState extends State<StoriesWidget> with WidgetsBindingObserv
                     Text(
                       isArabic ? 'أضف حالة جديدة' : 'Add a new story',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 18),
                     Text(
-                      isArabic ? 'من يستطيع رؤية الحالة؟' : 'Who can see this story?',
+                      isArabic
+                          ? 'من يستطيع رؤية الحالة؟'
+                          : 'Who can see this story?',
                       style: const TextStyle(fontWeight: FontWeight.w800),
                     ),
                     const SizedBox(height: 10),
@@ -226,19 +246,23 @@ class _StoriesWidgetState extends State<StoriesWidget> with WidgetsBindingObserv
                           selected: audience == 'public',
                           avatar: const Icon(Icons.public_rounded, size: 18),
                           label: Text(isArabic ? 'العامة' : 'Public'),
-                          onSelected: (_) => setSheetState(() => audience = 'public'),
+                          onSelected: (_) =>
+                              setSheetState(() => audience = 'public'),
                         ),
                         ChoiceChip(
                           selected: audience == 'college',
-                          avatar: const Icon(Icons.account_balance_rounded, size: 18),
+                          avatar: const Icon(Icons.account_balance_rounded,
+                              size: 18),
                           label: Text(isArabic ? 'الكلية' : 'College'),
-                          onSelected: (_) => setSheetState(() => audience = 'college'),
+                          onSelected: (_) =>
+                              setSheetState(() => audience = 'college'),
                         ),
                         ChoiceChip(
                           selected: audience == 'department',
                           avatar: const Icon(Icons.school_rounded, size: 18),
                           label: Text(isArabic ? 'التخصص' : 'Major'),
-                          onSelected: (_) => setSheetState(() => audience = 'department'),
+                          onSelected: (_) =>
+                              setSheetState(() => audience = 'department'),
                         ),
                       ],
                     ),
@@ -282,7 +306,8 @@ class _StoriesWidgetState extends State<StoriesWidget> with WidgetsBindingObserv
                     Text(
                       '${isArabic ? 'الخصوصية' : 'Privacy'}: ${_audienceLabel(isArabic, audience)}',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: AppTheme.muted.shade600, fontSize: 12),
+                      style: TextStyle(
+                          color: AppTheme.muted.shade600, fontSize: 12),
                     ),
                   ],
                 ),
@@ -296,7 +321,8 @@ class _StoriesWidgetState extends State<StoriesWidget> with WidgetsBindingObserv
 
   void _showTextStoryDialog() {
     final controller = TextEditingController();
-    final isArabic = Provider.of<LanguageProvider>(context, listen: false).isArabic;
+    final isArabic =
+        Provider.of<LanguageProvider>(context, listen: false).isArabic;
 
     showDialog(
       context: context,
@@ -316,7 +342,9 @@ class _StoriesWidgetState extends State<StoriesWidget> with WidgetsBindingObserv
                 maxLines: 4,
                 autofocus: true,
                 decoration: InputDecoration(
-                  hintText: isArabic ? 'اكتب ما تريد مشاركته...' : 'Write what you want to share...',
+                  hintText: isArabic
+                      ? 'اكتب ما تريد مشاركته...'
+                      : 'Write what you want to share...',
                   border: const OutlineInputBorder(),
                 ),
               ),
@@ -340,7 +368,10 @@ class _StoriesWidgetState extends State<StoriesWidget> with WidgetsBindingObserv
               onPressed: () async {
                 if (controller.text.trim().isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(isArabic ? 'يرجى كتابة نص الحالة' : 'Please write a story text')),
+                    SnackBar(
+                        content: Text(isArabic
+                            ? 'يرجى كتابة نص الحالة'
+                            : 'Please write a story text')),
                   );
                   return;
                 }
@@ -359,7 +390,8 @@ class _StoriesWidgetState extends State<StoriesWidget> with WidgetsBindingObserv
                 };
                 setState(() => _stories.insert(0, localStory));
                 try {
-                  final remoteId = await _publishRemote(mediaType: 'text', caption: caption);
+                  final remoteId =
+                      await _publishRemote(mediaType: 'text', caption: caption);
                   if (remoteId != null) localStory['id'] = remoteId;
                 } catch (error) {
                   if (FeatureControl.isSuspendedError(error)) {
@@ -367,13 +399,17 @@ class _StoriesWidgetState extends State<StoriesWidget> with WidgetsBindingObserv
                     _showMessage(FeatureControl.suspendedMessage);
                     return;
                   }
-                  _showMessage(isArabic ? 'نُشرت محليًا، وتعذرت المزامنة حاليًا' : 'Published locally; sync is currently unavailable');
+                  _showMessage(isArabic
+                      ? 'نُشرت محليًا، وتعذرت المزامنة حاليًا'
+                      : 'Published locally; sync is currently unavailable');
                 }
                 if (!mounted || !dialogContext.mounted) return;
                 Navigator.pop(dialogContext);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(isArabic ? '✅ تم نشر حالتك!' : '✅ Your story was published!'),
+                    content: Text(isArabic
+                        ? '✅ تم نشر حالتك!'
+                        : '✅ Your story was published!'),
                     backgroundColor: Colors.green,
                   ),
                 );
@@ -393,9 +429,11 @@ class _StoriesWidgetState extends State<StoriesWidget> with WidgetsBindingObserv
   Future<void> _pickImageStory() async {
     final source = await _storyMediaSource(video: false);
     if (source == null) return;
-    final image = await ImagePicker().pickImage(source: source, imageQuality: 80, maxWidth: 1920);
+    final image = await ImagePicker()
+        .pickImage(source: source, imageQuality: 80, maxWidth: 1920);
     if (image == null) return;
-    final isArabic = Provider.of<LanguageProvider>(context, listen: false).isArabic;
+    final isArabic =
+        Provider.of<LanguageProvider>(context, listen: false).isArabic;
     final bytes = await image.readAsBytes();
     if (!mounted) return;
     final localStory = <String, dynamic>{
@@ -426,12 +464,15 @@ class _StoriesWidgetState extends State<StoriesWidget> with WidgetsBindingObserv
         _showMessage(FeatureControl.suspendedMessage);
         return;
       }
-      _showMessage(isArabic ? 'نُشرت محليًا، وتعذرت المزامنة حاليًا' : 'Published locally; sync is currently unavailable');
+      _showMessage(isArabic
+          ? 'نُشرت محليًا، وتعذرت المزامنة حاليًا'
+          : 'Published locally; sync is currently unavailable');
     }
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(isArabic ? '✅ تم نشر صورتك!' : '✅ Your photo was published!'),
+        content:
+            Text(isArabic ? '✅ تم نشر صورتك!' : '✅ Your photo was published!'),
         backgroundColor: Colors.green,
       ),
     );
@@ -445,7 +486,8 @@ class _StoriesWidgetState extends State<StoriesWidget> with WidgetsBindingObserv
       maxDuration: const Duration(seconds: 45),
     );
     if (video == null || !mounted) return;
-    final isArabic = Provider.of<LanguageProvider>(context, listen: false).isArabic;
+    final isArabic =
+        Provider.of<LanguageProvider>(context, listen: false).isArabic;
     final videoBytes = kIsWeb ? await video.readAsBytes() : null;
     if (!mounted) return;
     final localStory = <String, dynamic>{
@@ -476,12 +518,15 @@ class _StoriesWidgetState extends State<StoriesWidget> with WidgetsBindingObserv
         _showMessage(FeatureControl.suspendedMessage);
         return;
       }
-      _showMessage(isArabic ? 'نُشرت محليًا، وتعذرت المزامنة حاليًا' : 'Published locally; sync is currently unavailable');
+      _showMessage(isArabic
+          ? 'نُشرت محليًا، وتعذرت المزامنة حاليًا'
+          : 'Published locally; sync is currently unavailable');
     }
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(isArabic ? '✅ تم نشر الفيديو!' : '✅ Your video was published!'),
+        content: Text(
+            isArabic ? '✅ تم نشر الفيديو!' : '✅ Your video was published!'),
         backgroundColor: Colors.green,
       ),
     );
@@ -491,9 +536,11 @@ class _StoriesWidgetState extends State<StoriesWidget> with WidgetsBindingObserv
       showModalBottomSheet<ImageSource>(
         context: context,
         showDragHandle: true,
-        builder: (sheetContext) => SafeArea(child: Wrap(children: [
+        builder: (sheetContext) => SafeArea(
+            child: Wrap(children: [
           ListTile(
-            leading: Icon(video ? Icons.videocam_rounded : Icons.photo_camera_rounded),
+            leading: Icon(
+                video ? Icons.videocam_rounded : Icons.photo_camera_rounded),
             title: Text(video ? 'التسجيل من الكاميرا' : 'التصوير من الكاميرا'),
             subtitle: video ? const Text('بحد أقصى 45 ثانية') : null,
             onTap: () => Navigator.pop(sheetContext, ImageSource.camera),
@@ -508,7 +555,8 @@ class _StoriesWidgetState extends State<StoriesWidget> with WidgetsBindingObserv
 
   void _showMessage(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _openStoryGroup(
@@ -521,7 +569,8 @@ class _StoriesWidgetState extends State<StoriesWidget> with WidgetsBindingObserv
     }
     final ordered = groups.expand((group) => group).toList(growable: true);
     final selectedKey = _storyOwnerKey(selectedGroup.first);
-    final initialIndex = ordered.indexWhere((story) => _storyOwnerKey(story) == selectedKey);
+    final initialIndex =
+        ordered.indexWhere((story) => _storyOwnerKey(story) == selectedKey);
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -536,7 +585,8 @@ class _StoriesWidgetState extends State<StoriesWidget> with WidgetsBindingObserv
             if (!mounted) return;
             final id = story['id'];
             setState(() {
-              _stories.removeWhere((item) => identical(item, story) || (id != null && item['id'] == id));
+              _stories.removeWhere((item) =>
+                  identical(item, story) || (id != null && item['id'] == id));
             });
           },
         ),
@@ -546,13 +596,17 @@ class _StoriesWidgetState extends State<StoriesWidget> with WidgetsBindingObserv
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final isArabic = Provider.of<LanguageProvider>(context).isArabic;
     final groups = _groupStories(_stories);
     final mineGroup = groups.firstWhere(
       (group) => group.any((story) => story['isMine'] == true),
       orElse: () => <Map<String, dynamic>>[],
     );
-    final otherGroups = groups.where((group) => group.isNotEmpty && group.every((story) => story['isMine'] != true)).toList();
+    final otherGroups = groups
+        .where((group) =>
+            group.isNotEmpty && group.every((story) => story['isMine'] != true))
+        .toList();
 
     return Container(
       color: Colors.transparent,
@@ -606,6 +660,7 @@ class _StoryGroupCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final isArabic = Provider.of<LanguageProvider>(context).isArabic;
     final first = stories.isEmpty ? const <String, dynamic>{} : stories.first;
     final imageUrl = first['profileImage']?.toString() ?? '';
@@ -631,7 +686,11 @@ class _StoryGroupCard extends StatelessWidget {
                     shape: BoxShape.circle,
                     gradient: !isMine && hasUnviewed
                         ? const LinearGradient(
-                            colors: [AppTheme.warning, AppTheme.accent, AppTheme.primaryDark],
+                            colors: [
+                              AppTheme.warning,
+                              AppTheme.accent,
+                              AppTheme.primaryDark
+                            ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           )
@@ -643,13 +702,20 @@ class _StoryGroupCard extends StatelessWidget {
                   padding: const EdgeInsets.all(2),
                   child: ClipOval(
                     child: stories.isNotEmpty
-                        ? _StoryCirclePreview(key: ValueKey(first['id']), story: first)
+                        ? _StoryCirclePreview(
+                            key: ValueKey(first['id']), story: first)
                         : ColoredBox(
                             color: AppTheme.primaryLight,
                             child: Center(
                               child: imageUrl.isNotEmpty
-                                  ? Image.network(imageUrl, width: 58, height: 58, fit: BoxFit.cover)
-                                  : Icon(isMine ? Icons.person_rounded : Icons.person_outline_rounded, color: AppTheme.primaryDark, size: 30),
+                                  ? Image.network(imageUrl,
+                                      width: 58, height: 58, fit: BoxFit.cover)
+                                  : Icon(
+                                      isMine
+                                          ? Icons.person_rounded
+                                          : Icons.person_outline_rounded,
+                                      color: AppTheme.primaryDark,
+                                      size: 30),
                             ),
                           ),
                   ),
@@ -669,7 +735,8 @@ class _StoryGroupCard extends StatelessWidget {
                         shape: BoxShape.circle,
                         border: Border.all(color: Colors.white, width: 2),
                       ),
-                      child: const Icon(Icons.add_rounded, color: Colors.white, size: 15),
+                      child: const Icon(Icons.add_rounded,
+                          color: Colors.white, size: 15),
                     ),
                   ),
                 ),
@@ -678,17 +745,23 @@ class _StoryGroupCard extends StatelessWidget {
           const SizedBox(height: 4),
           SizedBox(
             width: 72,
-            child: Text(
-              name,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 11,
-                color: hasUnviewed && !isMine ? Colors.black87 : AppTheme.muted,
-                fontWeight: hasUnviewed && !isMine ? FontWeight.bold : FontWeight.normal,
-              ),
-            ),
+            child: VerifiedName(
+                userId: first['user_id']?.toString(),
+                child: Text(
+                  name,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: hasUnviewed && !isMine
+                        ? AppTheme.adaptiveText
+                        : AppTheme.muted,
+                    fontWeight: hasUnviewed && !isMine
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                  ),
+                )),
           ),
         ],
       ),
@@ -717,7 +790,10 @@ class _StoryCirclePreviewState extends State<_StoryCirclePreview> {
 
   Future<void> _prepareVideo(String url) async {
     final controller = await VideoSourceService.controller(url);
-    if (!mounted) { await controller.dispose(); return; }
+    if (!mounted) {
+      await controller.dispose();
+      return;
+    }
     _controller = controller;
     try {
       await controller.initialize();
@@ -742,26 +818,45 @@ class _StoryCirclePreviewState extends State<_StoryCirclePreview> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final image = widget.story['imagePath']?.toString() ?? '';
     final controller = _controller;
     if (controller != null && controller.value.isInitialized) {
       return SizedBox.expand(
         child: FittedBox(
           fit: BoxFit.cover,
-          child: SizedBox(width: controller.value.size.width, height: controller.value.size.height, child: VideoPlayer(controller)),
+          child: SizedBox(
+              width: controller.value.size.width,
+              height: controller.value.size.height,
+              child: VideoPlayer(controller)),
         ),
       );
     }
     if (image.isNotEmpty) {
-      return SizedBox(width: 58, height: 58, child: CachedMediaImage(
-        url: image, fit: BoxFit.cover, cacheWidth: 180,
-        fallback: const Icon(Icons.image_outlined),
-      ));
+      return SizedBox(
+          width: 58,
+          height: 58,
+          child: CachedMediaImage(
+            url: image,
+            fit: BoxFit.cover,
+            cacheWidth: 180,
+            fallback: const Icon(Icons.image_outlined),
+          ));
     }
     final text = widget.story['text']?.toString() ?? '';
     return ColoredBox(
       color: AppTheme.primary,
-      child: Center(child: Padding(padding: const EdgeInsets.all(5), child: Text(text, maxLines: 3, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)))),
+      child: Center(
+          child: Padding(
+              padding: const EdgeInsets.all(5),
+              child: Text(text,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold)))),
     );
   }
 }
@@ -785,6 +880,7 @@ class _StoryTypeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -851,7 +947,8 @@ class _StoryVideoPlayerState extends State<_StoryVideoPlayer> {
     super.didUpdateWidget(oldWidget);
     final controller = _controller;
     if (oldWidget.pausedForReport == widget.pausedForReport ||
-        controller == null || !controller.value.isInitialized) return;
+        controller == null ||
+        !controller.value.isInitialized) return;
     if (widget.pausedForReport) {
       _resumeAfterReport = controller.value.isPlaying;
       unawaited(controller.pause());
@@ -864,12 +961,18 @@ class _StoryVideoPlayerState extends State<_StoryVideoPlayer> {
   Future<void> _initialize() async {
     try {
       final path = widget.path;
-      final isNetworkSource = path.startsWith('http://') || path.startsWith('https://') ||
+      final isNetworkSource = path.startsWith('http://') ||
+          path.startsWith('https://') ||
           path.startsWith('zameel-private://');
       if (isNetworkSource) {
         _controller = await VideoSourceService.controller(path);
-        if (!mounted) { await _controller?.dispose(); return; }
-      } else if (kIsWeb || path.startsWith('blob:') || path.startsWith('data:')) {
+        if (!mounted) {
+          await _controller?.dispose();
+          return;
+        }
+      } else if (kIsWeb ||
+          path.startsWith('blob:') ||
+          path.startsWith('data:')) {
         // Flutter Web cannot use VideoPlayerController.file. ImagePicker Web
         // normally returns a blob URL; use it directly. If a blob URL is not
         // available, fall back to a data URL built from the selected bytes.
@@ -912,6 +1015,7 @@ class _StoryVideoPlayerState extends State<_StoryVideoPlayer> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     if (_error != null) {
       return SizedBox(
         width: 300,
@@ -922,7 +1026,8 @@ class _StoryVideoPlayerState extends State<_StoryVideoPlayer> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.video_library_outlined, color: Colors.white, size: 52),
+                const Icon(Icons.video_library_outlined,
+                    color: Colors.white, size: 52),
                 const SizedBox(height: 12),
                 Text(
                   kIsWeb
@@ -990,6 +1095,7 @@ class _StoryImagePreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     // Flutter Web لا يدعم Image.file/FileImage. البايتات هي المسار الآمن
     // للمعاينة الفورية بعد اختيار صورة من معرض الجهاز.
     if (bytes != null && bytes!.isNotEmpty) {
@@ -1004,14 +1110,23 @@ class _StoryImagePreview extends StatelessWidget {
 
     final value = path ?? '';
     final hasNetworkScheme = value.startsWith('http://') ||
-        value.startsWith('https://') || value.startsWith('zameel-private://');
+        value.startsWith('https://') ||
+        value.startsWith('zameel-private://');
     if (hasNetworkScheme) {
-      return SizedBox(width: width, height: height, child: CachedMediaImage(
-        url: value, fit: BoxFit.cover, fallback: _fallback(),
-      ));
+      return SizedBox(
+          width: width,
+          height: height,
+          child: CachedMediaImage(
+            url: value,
+            fit: BoxFit.cover,
+            fallback: _fallback(),
+          ));
     }
     if (value.startsWith('blob:') || value.startsWith('data:')) {
-      return Image.network(value, width: width, height: height, fit: BoxFit.cover,
+      return Image.network(value,
+          width: width,
+          height: height,
+          fit: BoxFit.cover,
           errorBuilder: (_, __, ___) => _fallback());
     }
 
@@ -1137,7 +1252,9 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
     final story = widget.stories[_currentIndex];
     final id = story['id']?.toString() ?? '';
     if (id.isNotEmpty && story['isMine'] != true) {
-      try { await ZameelSocialService.recordStoryView(id); } catch (_) {}
+      try {
+        await ZameelSocialService.recordStoryView(id);
+      } catch (_) {}
     }
   }
 
@@ -1181,7 +1298,13 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
     try {
       final liked = await ZameelSocialService.toggleStoryReaction(id);
       if (!mounted) return;
-      setState(() { if (liked) { _reactedStories.add(id); } else { _reactedStories.remove(id); } });
+      setState(() {
+        if (liked) {
+          _reactedStories.add(id);
+        } else {
+          _reactedStories.remove(id);
+        }
+      });
       await _loadCurrentEngagementCounts();
     } catch (_) {}
   }
@@ -1230,47 +1353,76 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
                 ),
                 TabBar(
                   tabs: [
-                    Tab(text: ar ? 'المشاهدون (${viewers.length})' : 'Viewers (${viewers.length})'),
-                    Tab(text: ar ? 'الإعجابات (${reactions.length})' : 'Likes (${reactions.length})'),
+                    Tab(
+                        text: ar
+                            ? 'المشاهدون (${viewers.length})'
+                            : 'Viewers (${viewers.length})'),
+                    Tab(
+                        text: ar
+                            ? 'الإعجابات (${reactions.length})'
+                            : 'Likes (${reactions.length})'),
                   ],
                 ),
                 Expanded(
                   child: TabBarView(
                     children: [
                       viewers.isEmpty
-                          ? Center(child: Text(ar ? 'لا توجد مشاهدات بعد' : 'No views yet'))
+                          ? Center(
+                              child: Text(
+                                  ar ? 'لا توجد مشاهدات بعد' : 'No views yet'))
                           : ListView.builder(
                               itemCount: viewers.length,
                               itemBuilder: (_, i) {
                                 final row = viewers[i];
-                                final name = row['name']?.toString() ?? (ar ? 'زميل' : 'Colleague');
-                                final image = row['profile_image']?.toString() ?? '';
+                                final name = row['name']?.toString() ??
+                                    (ar ? 'زميل' : 'Colleague');
+                                final image =
+                                    row['profile_image']?.toString() ?? '';
                                 return ListTile(
                                   leading: CircleAvatar(
-                                    backgroundImage: image.isNotEmpty ? NetworkImage(image) : null,
-                                    child: image.isEmpty ? const Icon(Icons.person) : null,
+                                    backgroundImage: image.isNotEmpty
+                                        ? NetworkImage(image)
+                                        : null,
+                                    child: image.isEmpty
+                                        ? const Icon(Icons.person)
+                                        : null,
                                   ),
-                                  title: Text(name),
-                                  trailing: const Icon(Icons.visibility_rounded, size: 19),
+                                  title: VerifiedName(
+                                      userId: row['user_id']?.toString(),
+                                      child: Text(name)),
+                                  trailing: const Icon(Icons.visibility_rounded,
+                                      size: 19),
                                 );
                               },
                             ),
                       reactions.isEmpty
-                          ? Center(child: Text(ar ? 'لا توجد إعجابات بعد' : 'No likes yet'))
+                          ? Center(
+                              child: Text(
+                                  ar ? 'لا توجد إعجابات بعد' : 'No likes yet'))
                           : ListView.builder(
                               itemCount: reactions.length,
                               itemBuilder: (_, i) {
                                 final row = reactions[i];
-                                final name = row['name']?.toString() ?? (ar ? 'زميل' : 'Colleague');
-                                final image = row['profile_image']?.toString() ?? '';
-                                final reaction = row['reaction']?.toString() ?? '❤️';
+                                final name = row['name']?.toString() ??
+                                    (ar ? 'زميل' : 'Colleague');
+                                final image =
+                                    row['profile_image']?.toString() ?? '';
+                                final reaction =
+                                    row['reaction']?.toString() ?? '❤️';
                                 return ListTile(
                                   leading: CircleAvatar(
-                                    backgroundImage: image.isNotEmpty ? NetworkImage(image) : null,
-                                    child: image.isEmpty ? const Icon(Icons.person) : null,
+                                    backgroundImage: image.isNotEmpty
+                                        ? NetworkImage(image)
+                                        : null,
+                                    child: image.isEmpty
+                                        ? const Icon(Icons.person)
+                                        : null,
                                   ),
-                                  title: Text(name),
-                                  trailing: Text(reaction, style: const TextStyle(fontSize: 22)),
+                                  title: VerifiedName(
+                                      userId: row['user_id']?.toString(),
+                                      child: Text(name)),
+                                  trailing: Text(reaction,
+                                      style: const TextStyle(fontSize: 22)),
                                 );
                               },
                             ),
@@ -1375,7 +1527,8 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              FeatureControl.errorMessage(e, isArabic ? 'تعذر حذف الحالة' : 'Could not delete story'),
+              FeatureControl.errorMessage(
+                  e, isArabic ? 'تعذر حذف الحالة' : 'Could not delete story'),
             ),
           ),
         );
@@ -1387,6 +1540,7 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final isArabic = Provider.of<LanguageProvider>(context).isArabic;
     if (widget.stories.isEmpty) {
       return const Scaffold(backgroundColor: Colors.black);
@@ -1419,8 +1573,10 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
               final isMine = story['isMine'] == true;
               final imagePath = story['imagePath']?.toString() ?? '';
               final videoPath = story['videoPath']?.toString() ?? '';
-              final hasImage = imagePath.isNotEmpty || story['imageBytes'] is Uint8List;
-              final hasVideo = videoPath.isNotEmpty || story['videoBytes'] is Uint8List;
+              final hasImage =
+                  imagePath.isNotEmpty || story['imageBytes'] is Uint8List;
+              final hasVideo =
+                  videoPath.isNotEmpty || story['videoBytes'] is Uint8List;
               final displayName = isMine
                   ? (isArabic ? 'أنت' : 'You')
                   : ((story['name']?.toString().trim().isNotEmpty ?? false)
@@ -1480,7 +1636,7 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
                               child: Text(
                                 text,
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 22,
                                   height: 1.55,
@@ -1489,21 +1645,26 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
                               ),
                             ),
                           const SizedBox(height: 18),
-                          Text(
-                            displayName,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          VerifiedName(
+                              userId: story['user_id']?.toString(),
+                              child: Text(
+                                displayName,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              )),
                           const SizedBox(height: 6),
-                          Text(time, style: const TextStyle(color: Colors.white70)),
-                          if ((hasImage || hasVideo) && text.trim().isNotEmpty) ...[
+                          Text(time,
+                              style: const TextStyle(color: Colors.white70)),
+                          if ((hasImage || hasVideo) &&
+                              text.trim().isNotEmpty) ...[
                             const SizedBox(height: 18),
                             Container(
                               constraints: const BoxConstraints(maxWidth: 560),
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 12),
                               decoration: BoxDecoration(
                                 color: Colors.black45,
                                 borderRadius: BorderRadius.circular(14),
@@ -1511,20 +1672,24 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
                               child: Text(
                                 text,
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(color: Colors.white, fontSize: 16),
+                                style: TextStyle(
+                                    color: Colors.white, fontSize: 16),
                               ),
                             ),
                           ],
                           const SizedBox(height: 10),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 5),
                             decoration: BoxDecoration(
                               color: Colors.white12,
                               borderRadius: BorderRadius.circular(999),
                             ),
                             child: Text(
-                              _audienceText(isArabic, story['audience']?.toString()),
-                              style: const TextStyle(color: Colors.white70, fontSize: 12),
+                              _audienceText(
+                                  isArabic, story['audience']?.toString()),
+                              style: const TextStyle(
+                                  color: Colors.white70, fontSize: 12),
                             ),
                           ),
                         ],
@@ -1587,16 +1752,37 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
             child: InkWell(
               onTap: current['user_id'] == null
                   ? null
-                  : () => Navigator.push(context, MaterialPageRoute(builder: (_) => ProfileScreen(userId: current['user_id'].toString()))),
+                  : () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => ProfileScreen(
+                              userId: current['user_id'].toString()))),
               child: Row(children: [
                 CircleAvatar(
                   radius: 19,
                   backgroundColor: Colors.white24,
-                  backgroundImage: (current['profileImage']?.toString() ?? '').isNotEmpty ? NetworkImage(current['profileImage'].toString()) : null,
-                  child: (current['profileImage']?.toString() ?? '').isEmpty ? const Icon(Icons.person, color: Colors.white) : null,
+                  backgroundImage:
+                      (current['profileImage']?.toString() ?? '').isNotEmpty
+                          ? NetworkImage(current['profileImage'].toString())
+                          : null,
+                  child: (current['profileImage']?.toString() ?? '').isEmpty
+                      ? const Icon(Icons.person, color: Colors.white)
+                      : null,
                 ),
                 const SizedBox(width: 9),
-                Expanded(child: Text(currentIsMine ? (isArabic ? 'أنت' : 'You') : (current['name']?.toString() ?? (isArabic ? 'زميل' : 'Colleague')), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800))),
+                Expanded(
+                    child: VerifiedName(
+                        userId: current['user_id']?.toString(),
+                        child: Text(
+                            currentIsMine
+                                ? (isArabic ? 'أنت' : 'You')
+                                : (current['name']?.toString() ??
+                                    (isArabic ? 'زميل' : 'Colleague')),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800)))),
               ]),
             ),
           ),
@@ -1619,9 +1805,14 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
               child: MediaReportButton(
                 contentId: current['id']?.toString() ?? '',
                 authorId: current['user_id']?.toString(),
-                contentType: 'story', ar: isArabic,
-                onReportOpened: () { if (mounted) setState(() => _reporting = true); },
-                onReportClosed: () { if (mounted) setState(() => _reporting = false); },
+                contentType: 'story',
+                ar: isArabic,
+                onReportOpened: () {
+                  if (mounted) setState(() => _reporting = true);
+                },
+                onReportClosed: () {
+                  if (mounted) setState(() => _reporting = false);
+                },
               ),
             ),
           if (currentIsMine)
@@ -1639,7 +1830,8 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
                     ? const SizedBox(
                         width: 18,
                         height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white),
                       )
                     : const Icon(Icons.delete_outline_rounded),
               ),
@@ -1662,12 +1854,20 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
                 else
                   FilledButton.tonalIcon(
                     onPressed: _toggleCurrentReaction,
-                    style: FilledButton.styleFrom(backgroundColor: Colors.black45, foregroundColor: Colors.white),
+                    style: FilledButton.styleFrom(
+                        backgroundColor: Colors.black45,
+                        foregroundColor: Colors.white),
                     icon: Icon(
-                      _reactedStories.contains(current['id']?.toString() ?? '') ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                      color: _reactedStories.contains(current['id']?.toString() ?? '') ? Colors.redAccent : Colors.white,
+                      _reactedStories.contains(current['id']?.toString() ?? '')
+                          ? Icons.favorite_rounded
+                          : Icons.favorite_border_rounded,
+                      color: _reactedStories
+                              .contains(current['id']?.toString() ?? '')
+                          ? Colors.redAccent
+                          : Colors.white,
                     ),
-                    label: Text('${_reactionCounts[current['id']?.toString()] ?? 0}'),
+                    label: Text(
+                        '${_reactionCounts[current['id']?.toString()] ?? 0}'),
                   ),
               ],
             ),

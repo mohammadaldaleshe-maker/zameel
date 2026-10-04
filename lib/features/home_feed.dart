@@ -506,7 +506,9 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
     } catch (_) {
       if (mounted && db.auth.currentUser?.id == user)
         setState(() => _promotedPosts = []);
-    } finally { _promotionsLoading = false; }
+    } finally {
+      _promotionsLoading = false;
+    }
   }
 
   List<Map<String, dynamic>> get _visiblePosts {
@@ -746,6 +748,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
         builder: (_) => IncomingCallScreen(
             roomId: roomId,
             callerName: callerName,
+            callerId: actorId,
             callerImage: callerImage,
             video: video),
       ),
@@ -776,6 +779,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
     Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(
         builder: (_) => MeetScreen(
+          participantId: actorId,
           participantName: callerName,
           roomId: roomId,
           startImmediately: true,
@@ -1525,7 +1529,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                 ? TextDirection.rtl
                 : TextDirection.ltr,
             child: AlertDialog(
-              backgroundColor: Colors.white.withAlpha(242),
+              backgroundColor: AppTheme.adaptiveSurface.withAlpha(242),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
@@ -1584,7 +1588,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                         controller: controller,
                         maxLines: 5,
                         autofocus: true,
-                        style: const TextStyle(color: Colors.black),
+                        style: TextStyle(color: AppTheme.adaptiveText),
                         cursorColor: Colors.black,
                         decoration: InputDecoration(
                           hintText: Translations.translate(
@@ -1647,7 +1651,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                           return Container(
                             margin: const EdgeInsets.only(bottom: 6),
                             decoration: BoxDecoration(
-                              color: AppTheme.surfaceAlt,
+                              color: AppTheme.adaptiveSurfaceAlt,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: ListTile(
@@ -1664,15 +1668,15 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                                 file.name,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(color: Colors.black87),
+                                style: TextStyle(color: AppTheme.adaptiveText),
                               ),
                               subtitle: Builder(
                                 builder: (_) {
                                   final size = file.lengthSync;
                                   return Text(
                                     '${(size / (1024 * 1024)).toStringAsFixed(1)} MB',
-                                    style:
-                                        const TextStyle(color: Colors.black54),
+                                    style: TextStyle(
+                                        color: AppTheme.adaptiveSecondary),
                                   );
                                 },
                               ),
@@ -1743,7 +1747,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
     return Drawer(
       backgroundColor: Colors.transparent,
       child: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -1772,10 +1776,10 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                         fit: BoxFit.contain,
                       ),
                       const SizedBox(width: 10),
-                      const Text(
+                      Text(
                         'Zameel',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: AppTheme.legacyForeground,
                           fontSize: 24,
                           fontWeight: FontWeight.w900,
                           letterSpacing: .4,
@@ -1819,20 +1823,21 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                                         (isArabic ? 'مستخدم' : 'User'),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                        color: Colors.white,
+                                    style: TextStyle(
+                                        color: AppTheme.legacyForeground,
                                         fontSize: 21,
                                         fontWeight: FontWeight.w900),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(isArabic ? 'الصفحة الشخصية' : 'Profile',
-                                      style: const TextStyle(
-                                          color: Colors.white70, fontSize: 12)),
+                                      style: TextStyle(
+                                          color: AppTheme.legacySecondary,
+                                          fontSize: 12)),
                                 ],
                               ),
                             ),
-                            const Icon(Icons.chevron_right_rounded,
-                                color: Colors.white70),
+                            Icon(Icons.chevron_right_rounded,
+                                color: AppTheme.legacySecondary),
                           ],
                         ),
                       ),
@@ -2097,6 +2102,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
     final isArabic = languageProvider.isArabic;
 
@@ -2108,7 +2114,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
         drawerEdgeDragWidth: 28,
         drawerEnableOpenDragGesture: true,
         appBar: AppBar(
-          backgroundColor: Colors.white,
+          backgroundColor: AppTheme.adaptiveSurface,
           foregroundColor: primaryColor,
           elevation: 1,
           leading: Builder(
@@ -2192,8 +2198,8 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                               _unreadNotifications > 99
                                   ? '99+'
                                   : '$_unreadNotifications',
-                              style: const TextStyle(
-                                  color: Colors.white,
+                              style: TextStyle(
+                                  color: AppTheme.legacyForeground,
                                   fontSize: 8,
                                   fontWeight: FontWeight.bold)))),
               ]),
@@ -2203,7 +2209,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
         body: Stack(
           children: [
             Container(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -2374,9 +2380,13 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                                           child: image == null || image.isEmpty
                                               ? const Icon(Icons.person)
                                               : null),
-                                      title: Text(name,
-                                          style: const TextStyle(
-                                              fontWeight: FontWeight.w700)));
+                                      title: VerifiedName(
+                                          userId:
+                                              rows[i]['user_id']?.toString(),
+                                          child: Text(name,
+                                              style: const TextStyle(
+                                                  fontWeight:
+                                                      FontWeight.w700))));
                                 }))
                   ]))));
     } catch (e) {
@@ -2479,7 +2489,8 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                   'comments': post['comments_count'] ?? 0,
                   'shares': post['shares_count'] ?? 0,
                   'profile_image': userData['profile_image'],
-                  'verification_expires_at': userData['verification_expires_at'],
+                  'verification_expires_at':
+                      userData['verification_expires_at'],
                   'liked': isLiked,
                 },
                 onLike: () =>
@@ -2604,7 +2615,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
             margin: const EdgeInsets.all(12),
             padding: const EdgeInsets.fromLTRB(18, 10, 18, 18),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppTheme.adaptiveSurface,
               borderRadius: BorderRadius.circular(26),
               boxShadow: const [
                 BoxShadow(
@@ -2633,8 +2644,8 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                     isArabic
                         ? 'ماذا تريد أن تشارك؟'
                         : 'What would you like to share?',
-                    style: const TextStyle(
-                      color: Colors.black,
+                    style: TextStyle(
+                      color: AppTheme.adaptiveText,
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
                     ),
@@ -2747,8 +2758,8 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                         'feed_share',
                         languageProvider.currentLanguage,
                       ),
-                      style: const TextStyle(
-                        color: Colors.white70,
+                      style: TextStyle(
+                        color: AppTheme.legacySecondary,
                       ),
                     ),
                   ),
@@ -2854,8 +2865,8 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                       child: Container(
                         width: 34,
                         height: 34,
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
+                        decoration: BoxDecoration(
+                          color: AppTheme.adaptiveSurface,
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
@@ -2874,8 +2885,8 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                   'profile_student',
                   languageProvider.currentLanguage,
                 ),
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: AppTheme.legacyForeground,
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
@@ -2887,8 +2898,8 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                   languageProvider.currentLanguage,
                 ),
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white70,
+                style: TextStyle(
+                  color: AppTheme.legacySecondary,
                   fontSize: 14,
                 ),
               ),
@@ -2896,8 +2907,8 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
               Text(
                 '${translateText(widget.college.name, languageProvider.currentLanguage)} • ${translateText(widget.department, languageProvider.currentLanguage)}',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white70,
+                style: TextStyle(
+                  color: AppTheme.legacySecondary,
                   fontSize: 13,
                 ),
               ),
@@ -3110,6 +3121,7 @@ class _ComposerMenuAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return Material(
       color: const Color(0xFFF3F1FF),
       borderRadius: BorderRadius.circular(18),
@@ -3132,15 +3144,15 @@ class _ComposerMenuAction extends StatelessWidget {
                   ),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, color: Colors.white, size: 25),
+                child: Icon(icon, color: AppTheme.legacyForeground, size: 25),
               ),
               const SizedBox(height: 9),
               Text(
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.black,
+                style: TextStyle(
+                  color: AppTheme.adaptiveText,
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
                 ),

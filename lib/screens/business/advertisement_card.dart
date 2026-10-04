@@ -1,3 +1,5 @@
+import 'package:zameel/theme/appearance_controller.dart';
+import 'package:zameel/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
 import '../../services/advertising_service.dart';
@@ -7,8 +9,12 @@ import '../../widgets/video_player_widget.dart';
 import 'partner_ads_screen.dart';
 
 class AdvertisementCard extends StatelessWidget {
-  const AdvertisementCard({super.key, required this.ad, required this.isArabic,
-    this.openOnTap = true, this.onHide});
+  const AdvertisementCard(
+      {super.key,
+      required this.ad,
+      required this.isArabic,
+      this.openOnTap = true,
+      this.onHide});
 
   final Map<String, dynamic> ad;
   final bool isArabic;
@@ -17,57 +23,78 @@ class AdvertisementCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final partner = ad['business_partners'];
     final name = partner is Map ? partner['name']?.toString() ?? '' : '';
     final partnerId = ad['partner_id']?.toString() ?? '';
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
       child: InkWell(
-        onTap: openOnTap ? () => Navigator.push(context, MaterialPageRoute<void>(
-          builder: (_) => AdvertisementDetails(ad: ad, isArabic: isArabic),
-        )) : null,
+        onTap: openOnTap
+            ? () => Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (_) =>
+                      AdvertisementDetails(ad: ad, isArabic: isArabic),
+                ))
+            : null,
         child: Padding(
           padding: const EdgeInsets.all(10),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               const Icon(Icons.campaign_outlined, color: Color(0xFF08736D)),
               const SizedBox(width: 8),
-              Expanded(child: Align(
+              Expanded(
+                  child: Align(
                 alignment: AlignmentDirectional.centerStart,
                 child: TextButton(
-                  onPressed: partnerId.isEmpty ? null : () => Navigator.push(
-                    context,
-                    MaterialPageRoute<void>(builder: (_) => PartnerAdsScreen(
-                      partner: {'id': partnerId, 'name': name}, isArabic: isArabic,
-                    )),
-                  ),
-                  child: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  onPressed: partnerId.isEmpty
+                      ? null
+                      : () => Navigator.push(
+                            context,
+                            MaterialPageRoute<void>(
+                                builder: (_) => PartnerAdsScreen(
+                                      partner: {'id': partnerId, 'name': name},
+                                      isArabic: isArabic,
+                                    )),
+                          ),
+                  child: Text(name,
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
                 ),
               )),
-              Text(isArabic ? 'إعلان' : 'Ad', style: const TextStyle(color: Color(0xFF08736D))),
+              Text(isArabic ? 'إعلان' : 'Ad',
+                  style: const TextStyle(color: Color(0xFF08736D))),
             ]),
             const SizedBox(height: 9),
-            Text(ad['title']?.toString() ?? '', style: Theme.of(context).textTheme.titleMedium),
+            Text(ad['title']?.toString() ?? '',
+                style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 5),
             Text(ad['body']?.toString() ?? '',
-              maxLines: openOnTap ? 8 : null,
-              overflow: openOnTap ? TextOverflow.ellipsis : null),
+                maxLines: openOnTap ? 8 : null,
+                overflow: openOnTap ? TextOverflow.ellipsis : null),
             _AdMedia(media: ad['media'], preview: openOnTap),
             const SizedBox(height: 8),
-            Text('${ad['view_count'] ?? 0} ${isArabic ? 'مشاهدة' : 'views'}   ·   ${ad['likes_count'] ?? 0} ${isArabic ? 'إعجاب' : 'likes'}   ·   ${ad['comments_count'] ?? 0} ${isArabic ? 'تعليق' : 'comments'}',
-                style: const TextStyle(color: Colors.black54)),
-            if (onHide != null) TextButton(
-              onPressed: () async {
-                try {
-                  await onHide!();
-                } catch (error) {
-                  if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(FeatureControl.errorMessage(error, 'تعذر إخفاء الإعلان'))),
-                  );
-                }
-              },
-              child: Text(isArabic ? 'لا يهمني هذا الإعلان' : 'Not interested'),
-            ),
+            Text(
+                '${ad['view_count'] ?? 0} ${isArabic ? 'مشاهدة' : 'views'}   ·   ${ad['likes_count'] ?? 0} ${isArabic ? 'إعجاب' : 'likes'}   ·   ${ad['comments_count'] ?? 0} ${isArabic ? 'تعليق' : 'comments'}',
+                style: TextStyle(color: AppTheme.adaptiveSecondary)),
+            if (onHide != null)
+              TextButton(
+                onPressed: () async {
+                  try {
+                    await onHide!();
+                  } catch (error) {
+                    if (context.mounted)
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                            content: Text(FeatureControl.errorMessage(
+                                error, 'تعذر إخفاء الإعلان'))),
+                      );
+                  }
+                },
+                child:
+                    Text(isArabic ? 'لا يهمني هذا الإعلان' : 'Not interested'),
+              ),
           ]),
         ),
       ),
@@ -89,15 +116,17 @@ class _AdMediaState extends State<_AdMedia> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final items = widget.media is List ? widget.media as List : const [];
-    final urls = items.whereType<Map>().where((m) => m['url'] is String).toList();
+    final urls =
+        items.whereType<Map>().where((m) => m['url'] is String).toList();
     if (urls.isEmpty) return const SizedBox.shrink();
     final size = MediaQuery.sizeOf(context);
     final mediaHeight = (size.width - 40) * 16 / 9;
     return SizedBox(
       width: double.infinity,
-      height: mediaHeight < size.height * 0.82
-          ? mediaHeight : size.height * 0.82,
+      height:
+          mediaHeight < size.height * 0.82 ? mediaHeight : size.height * 0.82,
       child: Stack(
         children: [
           PageView.builder(
@@ -108,32 +137,41 @@ class _AdMediaState extends State<_AdMedia> {
               final url = item['url'].toString();
               if (item['type'] == 'video') {
                 return widget.preview || index != currentIndex
-                    ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    ? Center(
+                        child:
+                            Column(mainAxisSize: MainAxisSize.min, children: [
                         const Icon(Icons.play_circle_outline_rounded, size: 64),
-                        Text(widget.preview ? 'فيديو · افتح الإعلان للتشغيل' : 'فيديو'),
+                        Text(widget.preview
+                            ? 'فيديو · افتح الإعلان للتشغيل'
+                            : 'فيديو'),
                       ]))
                     : VideoPlayerWidget(videoUrl: url);
               }
               return CachedMediaImage(
                 url: url,
                 fit: BoxFit.contain,
-                fallback: const Center(child: Icon(Icons.broken_image_outlined)),
+                fallback:
+                    const Center(child: Icon(Icons.broken_image_outlined)),
               );
             },
           ),
-          if (urls.length > 1) PositionedDirectional(
-            top: 12,
-            end: 12,
-            child: IgnorePointer(child: DecoratedBox(
-              decoration: BoxDecoration(color: Colors.black87,
-                borderRadius: BorderRadius.circular(14)),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                child: Text('${currentIndex + 1}/${urls.length}',
-                  style: const TextStyle(color: Colors.white)),
-              ),
-            )),
-          ),
+          if (urls.length > 1)
+            PositionedDirectional(
+              top: 12,
+              end: 12,
+              child: IgnorePointer(
+                  child: DecoratedBox(
+                decoration: BoxDecoration(
+                    color: Colors.black87,
+                    borderRadius: BorderRadius.circular(14)),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  child: Text('${currentIndex + 1}/${urls.length}',
+                      style: const TextStyle(color: Colors.white)),
+                ),
+              )),
+            ),
         ],
       ),
     );
@@ -141,7 +179,8 @@ class _AdMediaState extends State<_AdMedia> {
 }
 
 class AdvertisementDetails extends StatefulWidget {
-  const AdvertisementDetails({super.key, required this.ad, required this.isArabic});
+  const AdvertisementDetails(
+      {super.key, required this.ad, required this.isArabic});
   final Map<String, dynamic> ad;
   final bool isArabic;
 
@@ -167,16 +206,20 @@ class _AdvertisementDetailsState extends State<AdvertisementDetails> {
     try {
       await AdvertisingService.recordView(id);
       final results = await Future.wait([
-        AdvertisingService.isLiked(id), AdvertisingService.comments(id),
+        AdvertisingService.isLiked(id),
+        AdvertisingService.comments(id),
       ]);
-      if (mounted) setState(() {
-        liked = results[0] as bool;
-        comments = results[1] as List<Map<String, dynamic>>;
-      });
+      if (mounted)
+        setState(() {
+          liked = results[0] as bool;
+          comments = results[1] as List<Map<String, dynamic>>;
+        });
     } catch (error) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(FeatureControl.errorMessage(error, 'تعذر تحميل الإعلان')),
-      ));
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content:
+              Text(FeatureControl.errorMessage(error, 'تعذر تحميل الإعلان')),
+        ));
     }
   }
 
@@ -191,9 +234,11 @@ class _AdvertisementDetailsState extends State<AdvertisementDetails> {
       await AdvertisingService.setLiked(id, liked: !liked);
       if (mounted) setState(() => liked = !liked);
     } catch (error) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(FeatureControl.errorMessage(error, 'تعذر تسجيل الإعجاب')),
-      ));
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content:
+              Text(FeatureControl.errorMessage(error, 'تعذر تسجيل الإعجاب')),
+        ));
     }
   }
 
@@ -206,9 +251,11 @@ class _AdvertisementDetailsState extends State<AdvertisementDetails> {
       final fresh = await AdvertisingService.comments(id);
       if (mounted) setState(() => comments = fresh);
     } catch (error) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(FeatureControl.errorMessage(error, 'تعذر إضافة التعليق')),
-      ));
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content:
+              Text(FeatureControl.errorMessage(error, 'تعذر إضافة التعليق')),
+        ));
     } finally {
       if (mounted) setState(() => submitting = false);
     }
@@ -216,6 +263,7 @@ class _AdvertisementDetailsState extends State<AdvertisementDetails> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final ar = widget.isArabic;
     return Directionality(
       textDirection: ar ? TextDirection.rtl : TextDirection.ltr,
@@ -224,20 +272,27 @@ class _AdvertisementDetailsState extends State<AdvertisementDetails> {
         body: ListView(padding: const EdgeInsets.all(12), children: [
           AdvertisementCard(ad: widget.ad, isArabic: ar, openOnTap: false),
           Wrap(spacing: 8, children: [
-            TextButton.icon(onPressed: _like,
-              icon: Icon(liked ? Icons.favorite : Icons.favorite_border),
-              label: Text(ar ? 'إعجاب' : 'Like')),
+            TextButton.icon(
+                onPressed: _like,
+                icon: Icon(liked ? Icons.favorite : Icons.favorite_border),
+                label: Text(ar ? 'إعجاب' : 'Like')),
             Text('${widget.ad['view_count'] ?? 0} ${ar ? 'مشاهدة' : 'views'}'),
           ]),
-          Text(ar ? 'التعليقات' : 'Comments', style: Theme.of(context).textTheme.titleMedium),
+          Text(ar ? 'التعليقات' : 'Comments',
+              style: Theme.of(context).textTheme.titleMedium),
           ...comments.map((comment) => ListTile(
-            leading: const Icon(Icons.person_outline),
-            title: Text(comment['body']?.toString() ?? ''),
-          )),
+                leading: const Icon(Icons.person_outline),
+                title: Text(comment['body']?.toString() ?? ''),
+              )),
           Row(children: [
-            Expanded(child: TextField(controller: controller,
-              decoration: InputDecoration(hintText: ar ? 'اكتب تعليقاً' : 'Write a comment'))),
-            IconButton(onPressed: submitting ? null : _comment, icon: const Icon(Icons.send_rounded)),
+            Expanded(
+                child: TextField(
+                    controller: controller,
+                    decoration: InputDecoration(
+                        hintText: ar ? 'اكتب تعليقاً' : 'Write a comment'))),
+            IconButton(
+                onPressed: submitting ? null : _comment,
+                icon: const Icon(Icons.send_rounded)),
           ]),
         ]),
       ),

@@ -1,3 +1,4 @@
+import 'package:zameel/theme/appearance_controller.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -102,7 +103,8 @@ class _ZameelLibraryScreenState extends State<ZameelLibraryScreen> {
       padding: const EdgeInsets.only(bottom: 7),
       child: Card(
         child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
           leading: CircleAvatar(
             backgroundColor: AppTheme.primaryLight,
             child: Icon(
@@ -135,8 +137,10 @@ class _ZameelLibraryScreenState extends State<ZameelLibraryScreen> {
   }
 
   @override
-  Widget build(BuildContext context) =>
-      FeatureControl.instance.page('zameel_library', _buildLibraryContent(context));
+  Widget build(BuildContext context) => AppearanceScope.rebuild(
+      context,
+      () => FeatureControl.instance
+          .page('zameel_library', _buildLibraryContent(context)));
 
   Widget _buildLibraryContent(BuildContext context) {
     final ar = Provider.of<LanguageProvider>(context).isArabic;
@@ -176,7 +180,8 @@ class _ZameelLibraryScreenState extends State<ZameelLibraryScreen> {
                       padding: const EdgeInsets.all(18),
                       decoration: BoxDecoration(
                         gradient: AppTheme.signatureGradientRtl,
-                        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+                        borderRadius:
+                            BorderRadius.circular(AppTheme.cardRadius),
                       ),
                       child: Row(
                         children: [
@@ -187,7 +192,7 @@ class _ZameelLibraryScreenState extends State<ZameelLibraryScreen> {
                               color: Colors.white.withValues(alpha: .17),
                               borderRadius: BorderRadius.circular(18),
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.local_library_rounded,
                               color: Colors.white,
                               size: 34,
@@ -227,7 +232,8 @@ class _ZameelLibraryScreenState extends State<ZameelLibraryScreen> {
                     const SizedBox(height: 10),
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 10),
                       decoration: BoxDecoration(
                         color: AppTheme.accentSoft,
                         borderRadius: BorderRadius.circular(12),
@@ -318,7 +324,8 @@ class _ZameelLibraryScreenState extends State<ZameelLibraryScreen> {
                           padding: const EdgeInsets.only(bottom: 10),
                           child: Card(
                             child: ExpansionTile(
-                              key: PageStorageKey('zameel-library-group-$index'),
+                              key:
+                                  PageStorageKey('zameel-library-group-$index'),
                               initiallyExpanded: expanded,
                               onExpansionChanged: (value) {
                                 setState(() {
@@ -335,19 +342,21 @@ class _ZameelLibraryScreenState extends State<ZameelLibraryScreen> {
                               ),
                               title: Text(
                                 group.labelFor(ar),
-                                style: const TextStyle(fontWeight: FontWeight.w900),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w900),
                               ),
                               subtitle: Text(
                                 ar
                                     ? '${group.specialties.length} تخصصاً • $totalItems مادة مفهرسة'
                                     : '${group.specialties.length} subjects • $totalItems indexed items',
                               ),
-                              childrenPadding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+                              childrenPadding:
+                                  const EdgeInsets.fromLTRB(10, 0, 10, 10),
                               children: expanded
                                   ? group.specialties
                                       .map(
-                                        (specialty) =>
-                                            _specialtyTile(context, ar, specialty),
+                                        (specialty) => _specialtyTile(
+                                            context, ar, specialty),
                                       )
                                       .toList()
                                   : const [SizedBox.shrink()],
@@ -504,8 +513,10 @@ class _ZameelLibraryCategoryScreenState
   }
 
   @override
-  Widget build(BuildContext context) =>
-      FeatureControl.instance.page('zameel_library', _buildLibraryContent(context));
+  Widget build(BuildContext context) => AppearanceScope.rebuild(
+      context,
+      () => FeatureControl.instance
+          .page('zameel_library', _buildLibraryContent(context)));
 
   Widget _buildLibraryContent(BuildContext context) {
     final ar = Provider.of<LanguageProvider>(context).isArabic;
@@ -650,7 +661,8 @@ class _ZameelLibraryCategoryScreenState
                             itemBuilder: (context, index) {
                               if (index >= visible.length) {
                                 return Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 8),
                                   child: OutlinedButton.icon(
                                     onPressed: () {
                                       setState(() => _visibleLimit += 40);
@@ -800,8 +812,10 @@ class _ZameelLibraryDetailsScreenState
   }
 
   @override
-  Widget build(BuildContext context) =>
-      FeatureControl.instance.page('zameel_library', _buildLibraryContent(context));
+  Widget build(BuildContext context) => AppearanceScope.rebuild(
+      context,
+      () => FeatureControl.instance
+          .page('zameel_library', _buildLibraryContent(context)));
 
   Widget _buildLibraryContent(BuildContext context) {
     final ar = Provider.of<LanguageProvider>(context).isArabic;
@@ -858,9 +872,7 @@ class _ZameelLibraryDetailsScreenState
                 Chip(
                   avatar: const Icon(Icons.download_rounded, size: 17),
                   label: Text(
-                    ar
-                        ? '$_downloadCount تحميل'
-                        : '$_downloadCount downloads',
+                    ar ? '$_downloadCount تحميل' : '$_downloadCount downloads',
                   ),
                 ),
                 if (item.curated)
@@ -872,7 +884,7 @@ class _ZameelLibraryDetailsScreenState
               Text(
                 '${ar ? 'المؤلف/الجهة' : 'Author/source'}: ${item.author}',
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: AppTheme.textSecondary),
+                style: TextStyle(color: AppTheme.adaptiveSecondary),
               ),
             ],
             const SizedBox(height: 18),
@@ -880,7 +892,9 @@ class _ZameelLibraryDetailsScreenState
               title: ar ? 'نبذة' : 'About',
               child: Text(
                 item.descriptionFor(ar).trim().isEmpty
-                    ? (ar ? 'لا توجد نبذة إضافية.' : 'No additional description.')
+                    ? (ar
+                        ? 'لا توجد نبذة إضافية.'
+                        : 'No additional description.')
                     : item.descriptionFor(ar),
                 style: const TextStyle(height: 1.55),
               ),
@@ -966,6 +980,7 @@ class _LibraryItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return Card(
       child: InkWell(
         borderRadius: BorderRadius.circular(AppTheme.cardRadius),
@@ -1018,8 +1033,8 @@ class _LibraryItemCard extends StatelessWidget {
                         item.author,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: AppTheme.textSecondary,
+                        style: TextStyle(
+                          color: AppTheme.adaptiveSecondary,
                           fontSize: 12,
                         ),
                       ),
@@ -1099,6 +1114,7 @@ class _SuggestionBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -1113,7 +1129,8 @@ class _SuggestionBanner extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
+              style:
+                  const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
             ),
           ),
         ],
@@ -1129,6 +1146,7 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(14),

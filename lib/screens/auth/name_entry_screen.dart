@@ -1,4 +1,5 @@
-﻿import 'dart:ui' as ui;
+import 'package:zameel/theme/appearance_controller.dart';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -33,23 +34,24 @@ class GlassContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return Container(
       width: width,
       height: height,
       padding: padding ?? const EdgeInsets.all(16),
       margin: margin ?? EdgeInsets.zero,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppTheme.glassFill,
-            AppTheme.glassSoft,
+            AppTheme.adaptiveGlassFill,
+            AppTheme.adaptiveGlassSoft,
           ],
         ),
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(
-          color: AppTheme.glassBorder,
+          color: AppTheme.adaptiveGlassBorder,
           width: 1.5,
         ),
         boxShadow: [
@@ -78,17 +80,14 @@ class NameEntryScreen extends StatefulWidget {
 }
 
 class _NameEntryScreenState extends State<NameEntryScreen> {
-  final TextEditingController _firstNameController =
-      TextEditingController();
+  final TextEditingController _firstNameController = TextEditingController();
 
-  final TextEditingController _fatherNameController =
-      TextEditingController();
+  final TextEditingController _fatherNameController = TextEditingController();
 
   final TextEditingController _grandfatherNameController =
       TextEditingController();
 
-  final TextEditingController _familyNameController =
-      TextEditingController();
+  final TextEditingController _familyNameController = TextEditingController();
 
   String? selectedGender;
 
@@ -141,9 +140,7 @@ class _NameEntryScreenState extends State<NameEntryScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            isArabic
-                ? 'الرجاء اختيار الجنس'
-                : 'Please select gender',
+            isArabic ? 'الرجاء اختيار الجنس' : 'Please select gender',
           ),
           backgroundColor: Colors.red,
         ),
@@ -189,17 +186,16 @@ class _NameEntryScreenState extends State<NameEntryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final languageProvider =
-        Provider.of<LanguageProvider>(context);
+    AppearanceScope.observe(context);
+    final languageProvider = Provider.of<LanguageProvider>(context);
 
     final isArabic = languageProvider.isArabic;
 
     return Directionality(
-      textDirection:
-          isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
+      textDirection: isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
       child: Scaffold(
         body: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -213,93 +209,69 @@ class _NameEntryScreenState extends State<NameEntryScreen> {
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 10),
-
                   Text(
-                    isArabic
-                        ? '👤 الاسم الكامل'
-                        : '👤 Full Name',
+                    isArabic ? '👤 الاسم الكامل' : '👤 Full Name',
                     style: GoogleFonts.ibmPlexSansArabic(
                       color: Colors.white,
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-
                   const SizedBox(height: 8),
-
                   Text(
                     isArabic
                         ? 'أدخل اسمك كما يظهر في الهوية الرسمية'
                         : 'Enter your name as it appears on official ID',
-                    style: const TextStyle(
-                      color: Colors.white70,
+                    style: TextStyle(
+                      color: AppTheme.legacySecondary,
                       fontSize: 14,
                     ),
                   ),
-
                   const SizedBox(height: 30),
-
                   _NameField(
                     controller: _firstNameController,
-                    label:
-                        isArabic ? 'الاسم الأول' : 'First Name',
+                    label: isArabic ? 'الاسم الأول' : 'First Name',
                     icon: Icons.person_rounded,
                   ),
-
                   const SizedBox(height: 16),
-
                   _NameField(
                     controller: _fatherNameController,
-                    label:
-                        isArabic ? 'اسم الأب' : "Father's Name",
+                    label: isArabic ? 'اسم الأب' : "Father's Name",
                     icon: Icons.person_rounded,
                   ),
-
                   const SizedBox(height: 16),
-
                   _NameField(
                     controller: _grandfatherNameController,
-                    label:
-                        isArabic
-                            ? 'اسم الجد'
-                            : "Grandfather's Name",
+                    label: isArabic ? 'اسم الجد' : "Grandfather's Name",
                     icon: Icons.person_rounded,
                   ),
-
                   const SizedBox(height: 16),
-
                   _NameField(
                     controller: _familyNameController,
-                    label:
-                        isArabic ? 'اسم العائلة (مطلوب)' : 'Family Name (Required)',
+                    label: isArabic
+                        ? 'اسم العائلة (مطلوب)'
+                        : 'Family Name (Required)',
                     icon: Icons.family_restroom_rounded,
                   ),
-
                   const SizedBox(height: 20),
-
                   Text(
                     isArabic ? 'الجنس' : 'Gender',
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: AppTheme.legacyForeground,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-
                   const SizedBox(height: 8),
-
                   Row(
                     children: [
                       Expanded(
                         child: _GenderButton(
-                          label:
-                              isArabic ? 'ذكر' : 'Male',
-                          isSelected:
-                              selectedGender == 'male',
+                          label: isArabic ? 'ذكر' : 'Male',
+                          isSelected: selectedGender == 'male',
                           onTap: () {
                             setState(() {
                               selectedGender = 'male';
@@ -310,10 +282,8 @@ class _NameEntryScreenState extends State<NameEntryScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: _GenderButton(
-                          label:
-                              isArabic ? 'أنثى' : 'Female',
-                          isSelected:
-                              selectedGender == 'female',
+                          label: isArabic ? 'أنثى' : 'Female',
+                          isSelected: selectedGender == 'female',
                           onTap: () {
                             setState(() {
                               selectedGender = 'female';
@@ -323,9 +293,7 @@ class _NameEntryScreenState extends State<NameEntryScreen> {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 30),
-
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -333,20 +301,15 @@ class _NameEntryScreenState extends State<NameEntryScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white,
                         foregroundColor: primaryColor,
-                        padding:
-                            const EdgeInsets.symmetric(
+                        padding: const EdgeInsets.symmetric(
                           vertical: 16,
                         ),
-                        shape:
-                            RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(30),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
                         ),
                       ),
                       child: Text(
-                        isArabic
-                            ? 'التالي →'
-                            : 'Next →',
+                        isArabic ? 'التالي →' : 'Next →',
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -354,26 +317,21 @@ class _NameEntryScreenState extends State<NameEntryScreen> {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 10),
-
                   Center(
                     child: TextButton(
                       onPressed: () {
                         Navigator.pop(context);
                       },
                       child: Text(
-                        isArabic
-                            ? '↩ العودة'
-                            : '↩ Back',
-                        style: const TextStyle(
-                          color: Colors.white70,
+                        isArabic ? '↩ العودة' : '↩ Back',
+                        style: TextStyle(
+                          color: AppTheme.legacySecondary,
                           fontSize: 14,
                         ),
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 20),
                 ],
               ),
@@ -398,29 +356,28 @@ class _NameField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return GlassContainer(
       child: TextField(
         controller: controller,
-        style: const TextStyle(
-          color: Colors.white,
+        style: TextStyle(
+          color: AppTheme.legacyForeground,
         ),
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: const TextStyle(
-            color: Colors.white70,
+          labelStyle: TextStyle(
+            color: AppTheme.legacySecondary,
           ),
           prefixIcon: Icon(
             icon,
             color: Colors.white70,
           ),
           border: OutlineInputBorder(
-            borderRadius:
-                BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide.none,
           ),
           filled: true,
-          fillColor:
-              Colors.white.withAlpha(25),
+          fillColor: Colors.white.withAlpha(25),
         ),
       ),
     );
@@ -440,23 +397,18 @@ class _GenderButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(
+        padding: const EdgeInsets.symmetric(
           vertical: 14,
         ),
         decoration: BoxDecoration(
-          color: isSelected
-              ? Colors.white.withAlpha(25)
-              : Colors.transparent,
-          borderRadius:
-              BorderRadius.circular(12),
+          color: isSelected ? Colors.white.withAlpha(25) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected
-                ? Colors.white
-                : Colors.white24,
+            color: isSelected ? Colors.white : Colors.white24,
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -465,11 +417,9 @@ class _GenderButton extends StatelessWidget {
             label,
             style: TextStyle(
               color: isSelected
-                  ? Colors.white
-                  : Colors.white70,
-              fontWeight: isSelected
-                  ? FontWeight.bold
-                  : FontWeight.normal,
+                  ? AppTheme.legacyForeground
+                  : AppTheme.legacySecondary,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               fontSize: 16,
             ),
           ),

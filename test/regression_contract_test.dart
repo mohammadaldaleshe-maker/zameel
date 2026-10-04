@@ -20,9 +20,12 @@ void main() {
           sql,
           contains(
               'revoke all on function public.get_social_discovery_candidates'));
-      expect(screen, contains("'enabled':true"));
-      expect(screen, contains("'enabled':false"));
-      expect(screen, contains("matched=await db.rpc('react_social_discovery'"));
+      expect(screen, matches(RegExp(r"'enabled'\s*:\s*true")));
+      expect(screen, matches(RegExp(r"'enabled'\s*:\s*false")));
+      expect(
+          screen,
+          matches(RegExp(
+              r"matched\s*=\s*await\s+db\.rpc\(\s*'react_social_discovery'")));
       expect(profile, isNot(contains('social_discovery_profiles')));
     });
 

@@ -1,3 +1,4 @@
+import 'package:zameel/theme/appearance_controller.dart';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -44,19 +45,20 @@ class GlassContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return Container(
       width: width,
       height: height,
       padding: padding ?? const EdgeInsets.all(16),
       margin: margin ?? EdgeInsets.zero,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppTheme.glassFill, AppTheme.glassSoft],
+          colors: [AppTheme.adaptiveGlassFill, AppTheme.adaptiveGlassSoft],
         ),
         borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(color: AppTheme.glassBorder, width: 1.5),
+        border: Border.all(color: AppTheme.adaptiveGlassBorder, width: 1.5),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withAlpha(25),
@@ -190,6 +192,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
 
     final isArabic = languageProvider.isArabic;
@@ -218,7 +221,7 @@ class _LoginScreenState extends State<LoginScreen> {
         // BODY
         // ======================================================
         body: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -258,10 +261,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   // ==================================================
                   Text(
                     isArabic ? 'مرحباً بعودتك!' : 'Welcome Back!',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: AppTheme.legacyForeground,
                     ),
                   ),
 
@@ -272,7 +275,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   // ==================================================
                   Text(
                     isArabic ? 'سجل الدخول للاستمرار' : 'Login to continue',
-                    style: const TextStyle(fontSize: 14, color: Colors.white70),
+                    style: TextStyle(
+                        fontSize: 14, color: AppTheme.legacySecondary),
                   ),
 
                   const SizedBox(height: 30),
@@ -284,12 +288,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: TextField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: AppTheme.legacyForeground),
                       decoration: InputDecoration(
                         labelText: isArabic
                             ? 'البريد الإلكتروني أو رقم الهاتف'
                             : 'Email or phone number',
-                        labelStyle: const TextStyle(color: Colors.white70),
+                        labelStyle: TextStyle(color: AppTheme.legacySecondary),
                         prefixIcon: const Icon(
                           Icons.alternate_email_rounded,
                           color: Colors.white70,
@@ -313,10 +317,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: TextField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: AppTheme.legacyForeground),
                       decoration: InputDecoration(
                         labelText: isArabic ? 'كلمة المرور' : 'Password',
-                        labelStyle: const TextStyle(color: Colors.white70),
+                        labelStyle: TextStyle(color: AppTheme.legacySecondary),
                         prefixIcon: const Icon(
                           Icons.lock_rounded,
                           color: Colors.white70,
@@ -350,7 +354,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   // LOGIN BUTTON / LOADING
                   // ==================================================
                   _isLoading
-                      ? const Center(
+                      ? Center(
                           child: CircularProgressIndicator(color: Colors.white),
                         )
                       : ElevatedButton(
@@ -383,7 +387,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       Text(
                         isArabic ? 'ليس لديك حساب؟' : "Don't have an account?",
-                        style: const TextStyle(color: Colors.white70),
+                        style: TextStyle(color: AppTheme.legacySecondary),
                       ),
                       TextButton(
                         onPressed: () {
@@ -396,8 +400,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         },
                         child: Text(
                           isArabic ? 'إنشاء حساب' : 'Create Account',
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: AppTheme.legacyForeground,
                             fontWeight: FontWeight.bold,
                           ),
                         ),

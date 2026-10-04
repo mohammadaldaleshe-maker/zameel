@@ -1,3 +1,5 @@
+import 'package:zameel/theme/appearance_controller.dart';
+import 'package:zameel/widgets/verified_name.dart';
 import 'package:flutter/material.dart';
 
 import '../../theme/app_theme.dart';
@@ -8,10 +10,12 @@ class SuggestedColleaguesSection extends StatefulWidget {
   const SuggestedColleaguesSection({super.key});
 
   @override
-  State<SuggestedColleaguesSection> createState() => _SuggestedColleaguesSectionState();
+  State<SuggestedColleaguesSection> createState() =>
+      _SuggestedColleaguesSectionState();
 }
 
-class _SuggestedColleaguesSectionState extends State<SuggestedColleaguesSection> {
+class _SuggestedColleaguesSectionState
+    extends State<SuggestedColleaguesSection> {
   final _search = TextEditingController();
   List<Map<String, dynamic>> _items = const [];
   bool _loading = true;
@@ -27,8 +31,12 @@ class _SuggestedColleaguesSectionState extends State<SuggestedColleaguesSection>
   Future<void> _restore() async {
     final version = _loadVersion;
     final rows = await ColleagueSuggestionService.recentSuggestions();
-    if (mounted && _loading && version == _loadVersion && _search.text.isEmpty &&
-        _items.isEmpty && rows.isNotEmpty) {
+    if (mounted &&
+        _loading &&
+        version == _loadVersion &&
+        _search.text.isEmpty &&
+        _items.isEmpty &&
+        rows.isNotEmpty) {
       setState(() => _items = rows);
     }
   }
@@ -43,14 +51,19 @@ class _SuggestedColleaguesSectionState extends State<SuggestedColleaguesSection>
     final version = ++_loadVersion;
     if (mounted) setState(() => _loading = true);
     try {
-      final rows = await ColleagueSuggestionService.suggestions(searchText: searchText);
+      final rows =
+          await ColleagueSuggestionService.suggestions(searchText: searchText);
       if (mounted && version == _loadVersion) setState(() => _items = rows);
-      if (searchText.isEmpty && ColleagueSuggestionService.signalsPending &&
-          mounted && version == _loadVersion) {
+      if (searchText.isEmpty &&
+          ColleagueSuggestionService.signalsPending &&
+          mounted &&
+          version == _loadVersion) {
         // Improve ranking once optional contact/location signals are ready,
         // without delaying the first visible suggestions.
-        ColleagueSuggestionService.suggestions(refreshSignals: true).then((fresh) {
-          if (mounted && version == _loadVersion) setState(() => _items = fresh);
+        ColleagueSuggestionService.suggestions(refreshSignals: true)
+            .then((fresh) {
+          if (mounted && version == _loadVersion)
+            setState(() => _items = fresh);
         }).catchError((Object _) {});
       }
     } catch (_) {
@@ -65,33 +78,52 @@ class _SuggestedColleaguesSectionState extends State<SuggestedColleaguesSection>
 
   Future<void> _add(Map<String, dynamic> item) async {
     try {
-      await ColleagueSuggestionService.sendRequest(item['user_id']?.toString() ?? '');
+      await ColleagueSuggestionService.sendRequest(
+          item['user_id']?.toString() ?? '');
       if (mounted) setState(() => item['request_status'] = 'pending');
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر إرسال طلب الزمالة: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('تعذر إرسال طلب الزمالة: $e')));
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return Card(
       margin: const EdgeInsets.fromLTRB(12, 8, 12, 6),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Row(children: [Icon(Icons.group_add_outlined, color: AppTheme.primary), SizedBox(width: 8), Text('زملاء مقترحون', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17))]),
+          const Row(children: [
+            Icon(Icons.group_add_outlined, color: AppTheme.primary),
+            SizedBox(width: 8),
+            Text('زملاء مقترحون',
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17))
+          ]),
           const SizedBox(height: 10),
           TextField(
             controller: _search,
             textInputAction: TextInputAction.search,
             onSubmitted: _load,
-            decoration: InputDecoration(prefixIcon: const Icon(Icons.search), hintText: 'ابحث عن زملاء آخرين', suffixIcon: IconButton(onPressed: () => _load(_search.text), icon: const Icon(Icons.arrow_forward)), isDense: true, border: const OutlineInputBorder()),
+            decoration: InputDecoration(
+                prefixIcon: const Icon(Icons.search),
+                hintText: 'ابحث عن زملاء آخرين',
+                suffixIcon: IconButton(
+                    onPressed: () => _load(_search.text),
+                    icon: const Icon(Icons.arrow_forward)),
+                isDense: true,
+                border: const OutlineInputBorder()),
           ),
           const SizedBox(height: 10),
           if (_loading && _items.isEmpty)
-            const Padding(padding: EdgeInsets.all(10), child: LinearProgressIndicator())
+            const Padding(
+                padding: EdgeInsets.all(10), child: LinearProgressIndicator())
           else if (_items.isEmpty)
-            const Padding(padding: EdgeInsets.all(10), child: Text('لا توجد اقتراحات جديدة حاليًا.'))
+            const Padding(
+                padding: EdgeInsets.all(10),
+                child: Text('لا توجد اقتراحات جديدة حاليًا.'))
           else
             SizedBox(
               height: 158,
@@ -103,19 +135,48 @@ class _SuggestedColleaguesSectionState extends State<SuggestedColleaguesSection>
                   final u = _items[i];
                   final image = u['profile_image']?.toString();
                   final pending = u['request_status'] == 'pending';
-                  return SizedBox(width: 126, child: InkWell(
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ProfileScreen(userId: u['user_id']?.toString()))),
-                    child: Column(children: [
-                      CircleAvatar(radius: 31, backgroundImage: image != null && image.isNotEmpty
-                          ? ResizeImage.resizeIfNeeded(200, 200, NetworkImage(image)) : null,
-                        child: image == null || image.isEmpty ? const Icon(Icons.person, size: 30) : null),
-                      const SizedBox(height: 5),
-                      Text(u['name']?.toString() ?? 'زميل', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800)),
-                      Text(u['match_reason']?.toString() ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 10, color: AppTheme.textSecondary)),
-                      const SizedBox(height: 5),
-                      SizedBox(width: double.infinity, height: 31, child: FilledButton.tonal(onPressed: pending ? null : () => _add(u), child: Text(pending ? 'تم الإرسال' : 'إضافة', style: const TextStyle(fontSize: 11)))),
-                    ]),
-                  ));
+                  return SizedBox(
+                      width: 126,
+                      child: InkWell(
+                        onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => ProfileScreen(
+                                    userId: u['user_id']?.toString()))),
+                        child: Column(children: [
+                          CircleAvatar(
+                              radius: 31,
+                              backgroundImage: image != null && image.isNotEmpty
+                                  ? ResizeImage.resizeIfNeeded(
+                                      200, 200, NetworkImage(image))
+                                  : null,
+                              child: image == null || image.isEmpty
+                                  ? const Icon(Icons.person, size: 30)
+                                  : null),
+                          const SizedBox(height: 5),
+                          VerifiedName(
+                              userId: (u['id'] ?? u['user_id'])?.toString(),
+                              child: Text(u['name']?.toString() ?? 'زميل',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w800))),
+                          Text(u['match_reason']?.toString() ?? '',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  fontSize: 10,
+                                  color: AppTheme.adaptiveSecondary)),
+                          const SizedBox(height: 5),
+                          SizedBox(
+                              width: double.infinity,
+                              height: 31,
+                              child: FilledButton.tonal(
+                                  onPressed: pending ? null : () => _add(u),
+                                  child: Text(pending ? 'تم الإرسال' : 'إضافة',
+                                      style: const TextStyle(fontSize: 11)))),
+                        ]),
+                      ));
                 },
               ),
             ),

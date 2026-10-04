@@ -56,15 +56,20 @@ class AdvertisingService {
     final uid = _db.auth.currentUser?.id;
     if (uid == null) return;
     await _db.from('advertisement_hides').upsert({
-      'advertisement_id': id, 'user_id': uid,
+      'advertisement_id': id,
+      'user_id': uid,
     });
   }
 
   static Future<bool> isLiked(String id) async {
     final uid = _db.auth.currentUser?.id;
     if (uid == null) return false;
-    final row = await _db.from('advertisement_likes').select('advertisement_id')
-        .eq('advertisement_id', id).eq('user_id', uid).maybeSingle();
+    final row = await _db
+        .from('advertisement_likes')
+        .select('advertisement_id')
+        .eq('advertisement_id', id)
+        .eq('user_id', uid)
+        .maybeSingle();
     return row != null;
   }
 
@@ -73,16 +78,21 @@ class AdvertisingService {
     if (uid == null) return;
     if (liked) {
       await _db.from('advertisement_likes').insert({
-        'advertisement_id': id, 'user_id': uid,
+        'advertisement_id': id,
+        'user_id': uid,
       });
     } else {
-      await _db.from('advertisement_likes').delete()
-          .eq('advertisement_id', id).eq('user_id', uid);
+      await _db
+          .from('advertisement_likes')
+          .delete()
+          .eq('advertisement_id', id)
+          .eq('user_id', uid);
     }
   }
 
   static Future<List<Map<String, dynamic>>> comments(String id) async {
-    final rows = await _db.from('advertisement_comments')
+    final rows = await _db
+        .from('advertisement_comments')
         .select('id,author_id,parent_id,body,created_at')
         .eq('advertisement_id', id)
         .order('created_at', ascending: true)
@@ -94,7 +104,9 @@ class AdvertisingService {
     final uid = _db.auth.currentUser?.id;
     if (uid == null || body.trim().isEmpty) return;
     await _db.from('advertisement_comments').insert({
-      'advertisement_id': id, 'author_id': uid, 'body': body.trim(),
+      'advertisement_id': id,
+      'author_id': uid,
+      'body': body.trim(),
     });
   }
 }

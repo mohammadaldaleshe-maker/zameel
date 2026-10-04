@@ -26,19 +26,53 @@ class ZameelV2HubScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final modules = <_V2Module>[
-      _V2Module('🏠', 'Zameel Daily', 'الرئيسية اليومية', ZameelDailyHub(isArabic: true, onStories: () {}, onChat: () {}, onCalendar: () {}, onGroups: () {}, onBooks: () {}, onCreatePost: () {}, onSocial: () {}), featureKey: 'feed_posts'),
-      _V2Module('🌐', 'Community', 'المجتمع', const _InfoModuleScreen(title: 'المجتمع', subtitle: 'العامة • جامعتي • كليتي • تخصصي • مجموعاتي'), featureKey: 'feed_posts'),
-      _V2Module('📚', 'Study', 'الدراسة', const BooksScreen(), featureKey: 'books_market'),
-      _V2Module('🤖', 'AI Study', 'Zameel AI', const AIScreen(), featureKey: 'zameel_ai'),
-      _V2Module('👥', 'Classmates', 'زملائي', const FriendsScreen(), featureKey: 'suggested_colleagues'),
-      _V2Module('🎓', 'Study Groups', 'مجموعات الدراسة', const GroupsScreen(), featureKey: 'groups'),
-      _V2Module('💬', 'Messages', 'الرسائل', const ChatScreen(), featureKey: 'direct_chat'),
-      _V2Module('🔔', 'Notifications', 'الإشعارات', const NotificationsScreen(), featureKey: 'notifications_center'),
-      _V2Module('📅', 'Calendar', 'التقويم', CalendarScreen(), featureKey: 'university_calendar'),
-      _V2Module('🏫', 'Campus', 'الحرم الجامعي', const CampusScreen(), featureKey: 'campus_world'),
-      _V2Module('💼', 'Jobs', 'الفرص والوظائف', const JobsScreen(), featureKey: 'jobs_training'),
-      _V2Module('🔎', 'Search', 'البحث الشامل', const SearchScreen(), featureKey: 'global_search'),
-    ].where((module) => module.featureKey == null || FeatureControl.instance.visible(module.featureKey!)).toList();
+      _V2Module(
+          '🏠',
+          'Zameel Daily',
+          'الرئيسية اليومية',
+          ZameelDailyHub(
+              isArabic: true,
+              onStories: () {},
+              onChat: () {},
+              onCalendar: () {},
+              onGroups: () {},
+              onBooks: () {},
+              onCreatePost: () {},
+              onSocial: () {}),
+          featureKey: 'feed_posts'),
+      _V2Module(
+          '🌐',
+          'Community',
+          'المجتمع',
+          const _InfoModuleScreen(
+              title: 'المجتمع',
+              subtitle: 'العامة • جامعتي • كليتي • تخصصي • مجموعاتي'),
+          featureKey: 'feed_posts'),
+      _V2Module('📚', 'Study', 'الدراسة', const BooksScreen(),
+          featureKey: 'books_market'),
+      _V2Module('🤖', 'AI Study', 'Zameel AI', const AIScreen(),
+          featureKey: 'zameel_ai'),
+      _V2Module('👥', 'Classmates', 'زملائي', const FriendsScreen(),
+          featureKey: 'suggested_colleagues'),
+      _V2Module('🎓', 'Study Groups', 'مجموعات الدراسة', const GroupsScreen(),
+          featureKey: 'groups'),
+      _V2Module('💬', 'Messages', 'الرسائل', const ChatScreen(),
+          featureKey: 'direct_chat'),
+      _V2Module('🔔', 'Notifications', 'الإشعارات', const NotificationsScreen(),
+          featureKey: 'notifications_center'),
+      _V2Module('📅', 'Calendar', 'التقويم', CalendarScreen(),
+          featureKey: 'university_calendar'),
+      _V2Module('🏫', 'Campus', 'الحرم الجامعي', const CampusScreen(),
+          featureKey: 'campus_world'),
+      _V2Module('💼', 'Jobs', 'الفرص والوظائف', const JobsScreen(),
+          featureKey: 'jobs_training'),
+      _V2Module('🔎', 'Search', 'البحث الشامل', const SearchScreen(),
+          featureKey: 'global_search'),
+    ]
+        .where((module) =>
+            module.featureKey == null ||
+            FeatureControl.instance.visible(module.featureKey!))
+        .toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -60,12 +94,19 @@ class ZameelV2HubScreen extends StatelessWidget {
                   end: Alignment.bottomLeft,
                 ),
               ),
-              child: const Column(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Zameel 2.0', style: TextStyle(color: Colors.white, fontSize: 30, fontWeight: FontWeight.w900)),
+                  Text('Zameel 2.0',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 30,
+                          fontWeight: FontWeight.w900)),
                   SizedBox(height: 8),
-                  Text('نظام حياة الطالب: مجتمع + دراسة + ذكاء اصطناعي + زملاء + حرم + مستقبل', style: TextStyle(color: Colors.white, fontSize: 15, height: 1.45)),
+                  Text(
+                      'نظام حياة الطالب: مجتمع + دراسة + ذكاء اصطناعي + زملاء + حرم + مستقبل',
+                      style: TextStyle(
+                          color: Colors.white, fontSize: 15, height: 1.45)),
                 ],
               ),
             ),
@@ -85,8 +126,10 @@ class ZameelV2HubScreen extends StatelessWidget {
                 return InkWell(
                   borderRadius: BorderRadius.circular(20),
                   onTap: () => module.featureKey == null
-                      ? Navigator.push(context, MaterialPageRoute(builder: (_) => module.page))
-                      : FeatureControl.instance.open(context, module.featureKey!, () => module.page),
+                      ? Navigator.push(context,
+                          MaterialPageRoute(builder: (_) => module.page))
+                      : FeatureControl.instance
+                          .open(context, module.featureKey!, () => module.page),
                   child: Ink(
                     decoration: BoxDecoration(
                       color: Theme.of(context).colorScheme.surface,
@@ -99,11 +142,17 @@ class ZameelV2HubScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(module.icon, style: const TextStyle(fontSize: 30)),
+                          Text(module.icon,
+                              style: const TextStyle(fontSize: 30)),
                           const SizedBox(height: 8),
-                          Text(module.ar, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                          Text(module.ar,
+                              style: const TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.w800)),
                           const SizedBox(height: 3),
-                          Text(module.en, style: TextStyle(fontSize: 11, color: AppTheme.muted.shade600)),
+                          Text(module.en,
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  color: AppTheme.muted.shade600)),
                         ],
                       ),
                     ),
@@ -114,7 +163,8 @@ class ZameelV2HubScreen extends StatelessWidget {
             const SizedBox(height: 18),
             const _InfoModuleScreen(
               title: 'خريطة الإصدار',
-              subtitle: 'V2.0 Foundation → V2.1 Daily → V2.2 Study → V2.3 People → V2.4 Campus → V2.5 Future',
+              subtitle:
+                  'V2.0 Foundation → V2.1 Daily → V2.2 Study → V2.3 People → V2.4 Campus → V2.5 Future',
             ),
           ],
         ),
@@ -146,9 +196,12 @@ class _InfoModuleScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+            Text(title,
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
             const SizedBox(height: 8),
-            Text(subtitle, style: TextStyle(color: AppTheme.muted.shade700, height: 1.5)),
+            Text(subtitle,
+                style: TextStyle(color: AppTheme.muted.shade700, height: 1.5)),
           ],
         ),
       ),

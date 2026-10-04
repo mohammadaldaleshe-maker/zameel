@@ -1,3 +1,4 @@
+import 'appearance_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -13,6 +14,49 @@ class CompactTextScaler extends TextScaler {
 }
 
 class AppTheme {
+  static Color get adaptiveGlassFill =>
+      originalAppearance ? glassFill : adaptiveSurface;
+  static Color get adaptiveGlassSoft =>
+      originalAppearance ? glassSoft : adaptiveSurfaceAlt;
+  static Color get adaptiveGlassBorder => originalAppearance
+      ? glassBorder
+      : darkAppearance
+          ? const Color(0xFF363B51)
+          : border;
+  static bool get originalAppearance => AppearanceController.instance.original;
+  static bool get darkAppearance =>
+      AppearanceController.instance.brightness == Brightness.dark;
+  static Color get pageStart => originalAppearance
+      ? primary
+      : darkAppearance
+          ? night
+          : const Color(0xFFF7F8FC);
+  static Color get pageEnd => originalAppearance
+      ? secondary
+      : darkAppearance
+          ? night
+          : const Color(0xFFF7F8FC);
+  static Color get legacyForeground => originalAppearance || darkAppearance
+      ? const Color(0xFFF4F5FA)
+      : const Color(0xFF151725);
+  static Color get legacySecondary => originalAppearance || darkAppearance
+      ? const Color(0xFFB9BECE)
+      : const Color(0xFF62677A);
+  static Color get adaptiveBackground =>
+      darkAppearance ? night : const Color(0xFFF7F8FC);
+  static Color get adaptiveSurfaceAlt =>
+      darkAppearance ? nightSurfaceAlt : const Color(0xFFF0F2F8);
+  static Color get adaptiveSurface => darkAppearance ? nightSurface : surface;
+  static Color get adaptiveSecondary =>
+      darkAppearance ? const Color(0xFFB9BECE) : const Color(0xFF62677A);
+
+
+
+
+  static Color get adaptiveText =>
+      darkAppearance ? const Color(0xFFF4F5FA) : const Color(0xFF151725);
+  static Color get legacyForeground38 => legacyForeground.withAlpha(97);
+  static Color get legacyForeground60 => legacyForeground.withAlpha(153);
   static const Color primary = Color(0xFF3152E8);
   static const Color primaryDark = Color(0xFF4B23B7);
   static const Color primaryLight = Color(0xFFE9EDFF);

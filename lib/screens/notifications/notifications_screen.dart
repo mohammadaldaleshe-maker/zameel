@@ -1,3 +1,5 @@
+import 'package:zameel/theme/appearance_controller.dart';
+import 'package:zameel/widgets/verified_name.dart';
 import '../profile/account_verification_screen.dart';
 import 'dart:async';
 import 'dart:ui' as ui;
@@ -21,14 +23,15 @@ import '../../services/message_notification_grouping.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
-  @override State<NotificationsScreen> createState() => _NotificationsScreenState();
+  @override
+  State<NotificationsScreen> createState() => _NotificationsScreenState();
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
   SupabaseClient get db => Supabase.instance.client;
   String? get uid => db.auth.currentUser?.id;
-  List<Map<String,dynamic>> _items=[];
-  bool _loading=true;
+  List<Map<String, dynamic>> _items = [];
+  bool _loading = true;
   RealtimeChannel? _notificationsChannel;
   Timer? _reloadDebounce;
   List<Map<String, dynamic>> get _displayItems =>
@@ -36,7 +39,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   int get _unread => _displayItems.where((e) => e['is_read'] == false).length;
 
   @override
-  void initState(){
+  void initState() {
     super.initState();
     _load();
     _subscribeNotifications();
@@ -70,27 +73,60 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     _notificationsChannel?.unsubscribe();
     super.dispose();
   }
+
   Future<void> _load() async {
-    if(uid==null)return;
-    try{final rows=await db.from('notifications').select('*, actor:users!notifications_actor_id_fkey(id,name,profile_image)').eq('user_id',uid!).order('created_at',ascending:false).limit(100);if(mounted)setState(()=>_items=List<Map<String,dynamic>>.from(rows));}
-    catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر تحميل الإشعارات: $e')));}
-    finally{if(mounted)setState(()=>_loading=false);}
+    if (uid == null) return;
+    try {
+      final rows = await db
+          .from('notifications')
+          .select(
+              '*, actor:users!notifications_actor_id_fkey(id,name,profile_image)')
+          .eq('user_id', uid!)
+          .order('created_at', ascending: false)
+          .limit(100);
+      if (mounted)
+        setState(() => _items = List<Map<String, dynamic>>.from(rows));
+    } catch (e) {
+      if (mounted)
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('تعذر تحميل الإشعارات: $e')));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
-  Future<void> _read(Map<String,dynamic> n) async {
+
+  Future<void> _read(Map<String, dynamic> n) async {
     final ids = n['_group_ids'] is List
         ? List<String>.from(n['_group_ids'] as List)
         : <String>[n['id'].toString()];
     try {
-      await db.from('notifications').update({'is_read': true}).inFilter('id', ids);
-      if (mounted) setState(() {
-        for (final item in _items) {
-          if (ids.contains(item['id']?.toString())) item['is_read'] = true;
-        }
-      });
+      await db
+          .from('notifications')
+          .update({'is_read': true}).inFilter('id', ids);
+      if (mounted)
+        setState(() {
+          for (final item in _items) {
+            if (ids.contains(item['id']?.toString())) item['is_read'] = true;
+          }
+        });
     } catch (_) {}
   }
-  Future<void> _markAll() async { try{await db.from('notifications').update({'is_read':true}).eq('user_id',uid!);await _load();}catch(_){}}
-  Future<void> _clear() async { try{await db.from('notifications').delete().eq('user_id',uid!);await _load();}catch(_){}}
+
+  Future<void> _markAll() async {
+    try {
+      await db
+          .from('notifications')
+          .update({'is_read': true}).eq('user_id', uid!);
+      await _load();
+    } catch (_) {}
+  }
+
+  Future<void> _clear() async {
+    try {
+      await db.from('notifications').delete().eq('user_id', uid!);
+      await _load();
+    } catch (_) {}
+  }
 
   Map<String, dynamic> _notificationData(Map<String, dynamic> n) {
     final raw = n['data'];
@@ -108,9 +144,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         data['video']?.toString().toLowerCase() == 'true' ||
         type == 'incoming_video_call';
     final actor = n['actor'];
-    final callerName = actor is Map && actor['name']?.toString().trim().isNotEmpty == true
-        ? actor['name'].toString()
-        : 'Colleague';
+    final callerName =
+        actor is Map && actor['name']?.toString().trim().isNotEmpty == true
+            ? actor['name'].toString()
+            : 'Colleague';
     await _read(n);
     if (!mounted) return;
     final accepted = await Navigator.push<bool>(
@@ -120,6 +157,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         builder: (_) => IncomingCallScreen(
           roomId: roomId,
           callerName: callerName,
+          callerId: n['actor_id']?.toString(),
           callerImage: actor is Map ? actor['profile_image']?.toString() : null,
           video: video,
         ),
@@ -127,7 +165,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
     if (accepted != true) {
       try {
-        await db.from('direct_call_sessions').update({'status': 'declined', 'ended_at': DateTime.now().toUtc().toIso8601String()}).eq('room_id', roomId).eq('status', 'ringing');
+        await db
+            .from('direct_call_sessions')
+            .update({
+              'status': 'declined',
+              'ended_at': DateTime.now().toUtc().toIso8601String()
+            })
+            .eq('room_id', roomId)
+            .eq('status', 'ringing');
       } catch (_) {}
       return;
     }
@@ -136,6 +181,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => MeetScreen(
+          participantId: n['actor_id']?.toString(),
           participantName: callerName,
           roomId: roomId,
           startImmediately: true,
@@ -146,17 +192,24 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-
   Future<void> _openNotificationSource(Map<String, dynamic> n) async {
     final type = n['type']?.toString() ?? '';
     final data = _notificationData(n);
     if (type == 'account_verification_review') {
-      if (mounted) Navigator.push(context, MaterialPageRoute(builder: (_) => const AccountVerificationScreen()));
+      if (mounted)
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (_) => const AccountVerificationScreen()));
       return;
     }
     if (type.startsWith('friend_request')) {
-      if (!await FeatureControl.instance.check(context, 'suggested_colleagues')) return;
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const FriendsScreen(initialTab: 1)));
+      if (!await FeatureControl.instance.check(context, 'suggested_colleagues'))
+        return;
+      Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (_) => const FriendsScreen(initialTab: 1)));
       return;
     }
     if (type == 'incoming_video_call' || type == 'incoming_voice_call') {
@@ -180,42 +233,68 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       }
       return;
     }
-    final postId = (data['post_id'] ?? data['target_post_id'])?.toString() ?? '';
+    final postId =
+        (data['post_id'] ?? data['target_post_id'])?.toString() ?? '';
     if (postId.isNotEmpty) {
       if (!await FeatureControl.instance.check(context, 'feed_posts') ||
           !await FeatureControl.instance.check(context, 'comments')) return;
       try {
-        final post = await db.from('posts').select('*, users(name,profile_image,gender,role,university,college,department)').eq('id', postId).maybeSingle();
+        final post = await db
+            .from('posts')
+            .select(
+                '*, users(name,profile_image,gender,role,university,college,department)')
+            .eq('id', postId)
+            .maybeSingle();
         if (post != null && mounted) {
           final resolvedPost = Map<String, dynamic>.from(post);
           await SecureMediaService.resolvePost(resolvedPost);
           if (!mounted) return;
-          Navigator.push(context, MaterialPageRoute(builder: (_) => CommentsScreen(post: resolvedPost, highlightedCommentId: data['comment_id']?.toString())));
+          Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (_) => CommentsScreen(
+                      post: resolvedPost,
+                      highlightedCommentId: data['comment_id']?.toString())));
           return;
         }
       } catch (_) {}
     }
     final conversationId = data['conversation_id']?.toString() ?? '';
-    final actorId = n['actor_id']?.toString() ?? data['sender_id']?.toString() ?? '';
+    final actorId =
+        n['actor_id']?.toString() ?? data['sender_id']?.toString() ?? '';
     if (conversationId.isNotEmpty && actorId.isNotEmpty) {
       if (!await FeatureControl.instance.check(context, 'direct_chat')) return;
       final actor = n['actor'];
       final name = actor is Map ? actor['name']?.toString() : null;
       if (mounted) {
-        Navigator.push(context, MaterialPageRoute(builder: (_) => ChatDetailScreen(conversationId: conversationId, partnerId: actorId, partnerName: name?.trim().isNotEmpty == true ? name! : 'Colleague')));
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (_) => ChatDetailScreen(
+                    conversationId: conversationId,
+                    partnerId: actorId,
+                    partnerName: name?.trim().isNotEmpty == true
+                        ? name!
+                        : 'Colleague')));
       }
       return;
     }
     final storyId = data['story_id']?.toString() ?? '';
     if (storyId.isNotEmpty && mounted) {
       if (!await FeatureControl.instance.check(context, 'stories')) return;
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const Scaffold(body: SafeArea(child: StoriesWidget()))));
+      Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (_) =>
+                  const Scaffold(body: SafeArea(child: StoriesWidget()))));
     }
   }
 
   @override
-  Widget build(BuildContext context) =>
-      FeatureControl.instance.page('notifications_center', _buildNotifications(context));
+  Widget build(BuildContext context) => AppearanceScope.rebuild(
+      context,
+      () => FeatureControl.instance
+          .page('notifications_center', _buildNotifications(context)));
 
   Widget _buildNotifications(BuildContext context) {
     final ar = Provider.of<LanguageProvider>(context).isArabic;
@@ -223,7 +302,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return Directionality(
       textDirection: ar ? ui.TextDirection.rtl : ui.TextDirection.ltr,
       child: Scaffold(
-        backgroundColor: AppTheme.surfaceAlt,
+        backgroundColor: AppTheme.adaptiveSurfaceAlt,
         appBar: AppBar(
           title: Text(
             ar ? '🔔 الإشعارات ($_unread)' : '🔔 Notifications ($_unread)',
@@ -244,10 +323,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             : _displayItems.isEmpty
                 ? Center(
                     child: Text(
-                      ar
-                          ? 'لا توجد إشعارات بعد'
-                          : 'No notifications yet',
-                      style: const TextStyle(color: Colors.black87),
+                      ar ? 'لا توجد إشعارات بعد' : 'No notifications yet',
+                      style: TextStyle(color: AppTheme.adaptiveText),
                     ),
                   )
                 : RefreshIndicator(
@@ -266,11 +343,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                     ? Icons.call_rounded
                                     : type.startsWith('book_exchange_')
                                         ? Icons.menu_book_rounded
-                                        : (type == 'like' || type == 'post_like')
-                                        ? Icons.favorite_rounded
-                                        : (type == 'comment' || type == 'post_comment')
-                                            ? Icons.comment_rounded
-                                            : Icons.notifications_rounded;
+                                        : (type == 'like' ||
+                                                type == 'post_like')
+                                            ? Icons.favorite_rounded
+                                            : (type == 'comment' ||
+                                                    type == 'post_comment')
+                                                ? Icons.comment_rounded
+                                                : Icons.notifications_rounded;
                         final color = AppTheme.primary;
 
                         return Card(
@@ -287,30 +366,65 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               backgroundColor: color.withAlpha(25),
                               child: Icon(icon, color: color),
                             ),
-                            title: Text(
-                              type == 'message' && n['actor'] is Map &&
-                                      (n['actor'] as Map)['name']?.toString().isNotEmpty == true
-                                  ? (ar
-                                      ? '${(n['actor'] as Map)['name']} أرسل لك رسالة'
-                                      : '${(n['actor'] as Map)['name']} sent you a message')
-                                  : ((ar ? n['title_ar'] : n['title_en'])?.toString().trim().isNotEmpty == true
-                                      ? (ar ? n['title_ar'] : n['title_en']).toString()
-                                      : n['message']?.toString() ?? ''),
-                              style: const TextStyle(fontWeight: FontWeight.w800,
-                                  color: Colors.black87),
-                            ),
+                            title: VerifiedName(
+                                userId: type == 'message'
+                                    ? n['actor_id']?.toString()
+                                    : null,
+                                child: Text(
+                                  type == 'message' &&
+                                          n['actor'] is Map &&
+                                          (n['actor'] as Map)['name']
+                                                  ?.toString()
+                                                  .isNotEmpty ==
+                                              true
+                                      ? (ar
+                                          ? '${(n['actor'] as Map)['name']} أرسل لك رسالة'
+                                          : '${(n['actor'] as Map)['name']} sent you a message')
+                                      : ((ar ? n['title_ar'] : n['title_en'])
+                                                  ?.toString()
+                                                  .trim()
+                                                  .isNotEmpty ==
+                                              true
+                                          ? (ar ? n['title_ar'] : n['title_en'])
+                                              .toString()
+                                          : n['message']?.toString() ?? ''),
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      color: AppTheme.adaptiveText),
+                                )),
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                if (type != 'message' &&
+                                    n['actor'] is Map &&
+                                    (n['actor'] as Map)['name']
+                                            ?.toString()
+                                            .isNotEmpty ==
+                                        true)
+                                  VerifiedName(
+                                      userId: n['actor_id']?.toString(),
+                                      child: Text(
+                                          (n['actor'] as Map)['name']
+                                              .toString(),
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.w700))),
                                 Text(
-                                  (ar ? n['body_ar'] : n['body_en'])?.toString().trim().isNotEmpty == true
-                                      ? (ar ? n['body_ar'] : n['body_en']).toString()
+                                  (ar ? n['body_ar'] : n['body_en'])
+                                              ?.toString()
+                                              .trim()
+                                              .isNotEmpty ==
+                                          true
+                                      ? (ar ? n['body_ar'] : n['body_en'])
+                                          .toString()
                                       : n['type']?.toString() ?? '',
-                                  style: const TextStyle(color: Colors.black87),
+                                  style:
+                                      TextStyle(color: AppTheme.adaptiveText),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(_formatTime(n['created_at'], ar),
-                                    style: const TextStyle(fontSize: 11, color: Colors.black54)),
+                                    style: TextStyle(
+                                        fontSize: 11,
+                                        color: AppTheme.adaptiveSecondary)),
                               ],
                             ),
                             trailing: n['is_read'] == true
@@ -328,5 +442,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       ),
     );
   }
-  String _formatTime(dynamic raw,bool ar){final d=DateTime.tryParse(raw?.toString()??'')?.toLocal();if(d==null)return '';return DateFormat(ar?'yyyy/MM/dd • HH:mm':'MMM d, yyyy • HH:mm',ar?'ar':'en').format(d);}
+
+  String _formatTime(dynamic raw, bool ar) {
+    final d = DateTime.tryParse(raw?.toString() ?? '')?.toLocal();
+    if (d == null) return '';
+    return DateFormat(
+            ar ? 'yyyy/MM/dd • HH:mm' : 'MMM d, yyyy • HH:mm', ar ? 'ar' : 'en')
+        .format(d);
+  }
 }

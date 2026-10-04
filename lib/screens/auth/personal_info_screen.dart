@@ -1,3 +1,4 @@
+import 'package:zameel/theme/appearance_controller.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -36,23 +37,24 @@ class GlassContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     return Container(
       width: width,
       height: height,
       padding: padding ?? const EdgeInsets.all(16),
       margin: margin ?? EdgeInsets.zero,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppTheme.glassFill,
-            AppTheme.glassSoft,
+            AppTheme.adaptiveGlassFill,
+            AppTheme.adaptiveGlassSoft,
           ],
         ),
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(
-          color: AppTheme.glassBorder,
+          color: AppTheme.adaptiveGlassBorder,
           width: 1.5,
         ),
         boxShadow: [
@@ -114,7 +116,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
     if (value.contains(RegExp(r'\s'))) return false;
 
     // يمنع الأحرف العربية وغير اللاتينية
-        final emailRegex = RegExp(
+    final emailRegex = RegExp(
       r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$",
     );
 
@@ -176,15 +178,15 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
     final isArabic = languageProvider.isArabic;
 
     return Directionality(
-      textDirection:
-          isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
+      textDirection: isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
       child: Scaffold(
         body: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -216,8 +218,8 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                     isArabic
                         ? 'أدخل معلوماتك الشخصية للتواصل'
                         : 'Enter your personal information for contact',
-                    style: const TextStyle(
-                      color: Colors.white70,
+                    style: TextStyle(
+                      color: AppTheme.legacySecondary,
                       fontSize: 14,
                     ),
                   ),
@@ -238,8 +240,8 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                               textInputAction: TextInputAction.next,
                               autocorrect: false,
                               enableSuggestions: false,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: AppTheme.legacyForeground,
                               ),
                               decoration: InputDecoration(
                                 labelText: isArabic
@@ -248,24 +250,22 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                                 hintText: isArabic
                                     ? 'example@gmail.com'
                                     : 'example@gmail.com',
-                                hintStyle: const TextStyle(
-                                  color: Colors.white38,
+                                hintStyle: TextStyle(
+                                  color: AppTheme.legacyForeground38,
                                 ),
-                                labelStyle: const TextStyle(
-                                  color: Colors.white70,
+                                labelStyle: TextStyle(
+                                  color: AppTheme.legacySecondary,
                                 ),
                                 prefixIcon: const Icon(
                                   Icons.email_rounded,
                                   color: Colors.white70,
                                 ),
                                 border: OutlineInputBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(16),
+                                  borderRadius: BorderRadius.circular(16),
                                   borderSide: BorderSide.none,
                                 ),
                                 filled: true,
-                                fillColor:
-                                    Colors.white.withAlpha(25),
+                                fillColor: Colors.white.withAlpha(25),
                               ),
                             ),
                           ),
@@ -277,22 +277,38 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  isArabic ? 'اختر وسيلة التحقق' : 'Choose verification method',
-                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                  isArabic
+                                      ? 'اختر وسيلة التحقق'
+                                      : 'Choose verification method',
+                                  style: TextStyle(
+                                      color: AppTheme.legacyForeground,
+                                      fontWeight: FontWeight.bold),
                                 ),
                                 RadioListTile<String>(
                                   value: 'email',
                                   groupValue: _verificationMethod,
                                   activeColor: Colors.white,
-                                  title: Text(isArabic ? 'رمز إلى البريد الإلكتروني' : 'Code by email', style: const TextStyle(color: Colors.white)),
-                                  onChanged: (value) => setState(() => _verificationMethod = value!),
+                                  title: Text(
+                                      isArabic
+                                          ? 'رمز إلى البريد الإلكتروني'
+                                          : 'Code by email',
+                                      style: TextStyle(
+                                          color: AppTheme.legacyForeground)),
+                                  onChanged: (value) => setState(
+                                      () => _verificationMethod = value!),
                                 ),
                                 RadioListTile<String>(
                                   value: 'phone',
                                   groupValue: _verificationMethod,
                                   activeColor: Colors.white,
-                                  title: Text(isArabic ? 'رمز SMS إلى رقم الهاتف' : 'SMS code to phone', style: const TextStyle(color: Colors.white)),
-                                  onChanged: (value) => setState(() => _verificationMethod = value!),
+                                  title: Text(
+                                      isArabic
+                                          ? 'رمز SMS إلى رقم الهاتف'
+                                          : 'SMS code to phone',
+                                      style: TextStyle(
+                                          color: AppTheme.legacyForeground)),
+                                  onChanged: (value) => setState(
+                                      () => _verificationMethod = value!),
                                 ),
                               ],
                             ),
@@ -305,26 +321,51 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  isArabic ? 'كيف يظهر اسمك؟' : 'How should your name appear?',
-                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                  isArabic
+                                      ? 'كيف يظهر اسمك؟'
+                                      : 'How should your name appear?',
+                                  style: TextStyle(
+                                      color: AppTheme.legacyForeground,
+                                      fontWeight: FontWeight.bold),
                                 ),
                                 RadioListTile<String>(
-                                  value: 'first_father', groupValue: _displayNameFormat,
+                                  value: 'first_father',
+                                  groupValue: _displayNameFormat,
                                   activeColor: Colors.white,
-                                  title: Text(isArabic ? 'الاسم + اسم الأب' : 'First + father name', style: const TextStyle(color: Colors.white)),
-                                  onChanged: (value) => setState(() => _displayNameFormat = value!),
+                                  title: Text(
+                                      isArabic
+                                          ? 'الاسم + اسم الأب'
+                                          : 'First + father name',
+                                      style: TextStyle(
+                                          color: AppTheme.legacyForeground)),
+                                  onChanged: (value) => setState(
+                                      () => _displayNameFormat = value!),
                                 ),
                                 RadioListTile<String>(
-                                  value: 'first_family', groupValue: _displayNameFormat,
+                                  value: 'first_family',
+                                  groupValue: _displayNameFormat,
                                   activeColor: Colors.white,
-                                  title: Text(isArabic ? 'الاسم + اسم العائلة' : 'First + family name', style: const TextStyle(color: Colors.white)),
-                                  onChanged: (value) => setState(() => _displayNameFormat = value!),
+                                  title: Text(
+                                      isArabic
+                                          ? 'الاسم + اسم العائلة'
+                                          : 'First + family name',
+                                      style: TextStyle(
+                                          color: AppTheme.legacyForeground)),
+                                  onChanged: (value) => setState(
+                                      () => _displayNameFormat = value!),
                                 ),
                                 RadioListTile<String>(
-                                  value: 'full_three', groupValue: _displayNameFormat,
+                                  value: 'full_three',
+                                  groupValue: _displayNameFormat,
                                   activeColor: Colors.white,
-                                  title: Text(isArabic ? 'الاسم + اسم الأب + اسم العائلة' : 'First + father + family name', style: const TextStyle(color: Colors.white)),
-                                  onChanged: (value) => setState(() => _displayNameFormat = value!),
+                                  title: Text(
+                                      isArabic
+                                          ? 'الاسم + اسم الأب + اسم العائلة'
+                                          : 'First + father + family name',
+                                      style: TextStyle(
+                                          color: AppTheme.legacyForeground)),
+                                  onChanged: (value) => setState(
+                                      () => _displayNameFormat = value!),
                                 ),
                               ],
                             ),
@@ -340,28 +381,26 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                               controller: _phoneController,
                               keyboardType: TextInputType.phone,
                               textInputAction: TextInputAction.next,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: AppTheme.legacyForeground,
                               ),
                               decoration: InputDecoration(
                                 labelText: isArabic
                                     ? '📱 رقم الهاتف'
                                     : '📱 Phone Number',
-                                labelStyle: const TextStyle(
-                                  color: Colors.white70,
+                                labelStyle: TextStyle(
+                                  color: AppTheme.legacySecondary,
                                 ),
                                 prefixIcon: const Icon(
                                   Icons.phone_rounded,
                                   color: Colors.white70,
                                 ),
                                 border: OutlineInputBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(16),
+                                  borderRadius: BorderRadius.circular(16),
                                   borderSide: BorderSide.none,
                                 ),
                                 filled: true,
-                                fillColor:
-                                    Colors.white.withAlpha(25),
+                                fillColor: Colors.white.withAlpha(25),
                               ),
                             ),
                           ),
@@ -375,28 +414,26 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                             child: TextField(
                               controller: _addressController,
                               maxLines: 2,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: AppTheme.legacyForeground,
                               ),
                               decoration: InputDecoration(
                                 labelText: isArabic
                                     ? '📍 العنوان (اختياري)'
                                     : '📍 Address (Optional)',
-                                labelStyle: const TextStyle(
-                                  color: Colors.white70,
+                                labelStyle: TextStyle(
+                                  color: AppTheme.legacySecondary,
                                 ),
                                 prefixIcon: const Icon(
                                   Icons.location_on_rounded,
                                   color: Colors.white70,
                                 ),
                                 border: OutlineInputBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(16),
+                                  borderRadius: BorderRadius.circular(16),
                                   borderSide: BorderSide.none,
                                 ),
                                 filled: true,
-                                fillColor:
-                                    Colors.white.withAlpha(25),
+                                fillColor: Colors.white.withAlpha(25),
                               ),
                             ),
                           ),
@@ -409,50 +446,36 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                           GlassContainer(
                             padding: const EdgeInsets.all(14),
                             child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  isArabic
-                                      ? '📌 ملخص المعلومات'
-                                      : '📌 Summary',
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  isArabic ? '📌 ملخص المعلومات' : '📌 Summary',
+                                  style: TextStyle(
+                                    color: AppTheme.legacyForeground,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
                                   ),
                                 ),
                                 const SizedBox(height: 8),
-
                                 _buildInfoRow(
                                   isArabic ? '👤 الدور' : '👤 Role',
                                   _getRoleName(isArabic),
                                 ),
-
                                 if (widget.university != null)
                                   _buildInfoRow(
-                                    isArabic
-                                        ? '🏛️ الجامعة'
-                                        : '🏛️ University',
+                                    isArabic ? '🏛️ الجامعة' : '🏛️ University',
                                     widget.university!,
                                   ),
-
                                 if (widget.college != null)
                                   _buildInfoRow(
-                                    isArabic
-                                        ? '📚 الكلية'
-                                        : '📚 College',
+                                    isArabic ? '📚 الكلية' : '📚 College',
                                     widget.college!,
                                   ),
-
                                 if (widget.department != null)
                                   _buildInfoRow(
-                                    isArabic
-                                        ? '📖 التخصص'
-                                        : '📖 Major',
+                                    isArabic ? '📖 التخصص' : '📖 Major',
                                     widget.department!,
                                   ),
-
                                 if (widget.academicYear != null)
                                   _buildInfoRow(
                                     isArabic
@@ -475,10 +498,8 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () {
-                        final email =
-                            _emailController.text.trim();
-                        final phone =
-                            _phoneController.text.trim();
+                        final email = _emailController.text.trim();
+                        final phone = _phoneController.text.trim();
 
                         // ------------------------------------------
                         // EMAIL EMPTY
@@ -531,18 +552,12 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                                 'phone': phone,
                                 'verificationMethod': _verificationMethod,
                                 'displayNameFormat': _displayNameFormat,
-                                'address':
-                                    _addressController.text.trim(),
-                                'university':
-                                    widget.university,
-                                'college':
-                                    widget.college,
-                                'department':
-                                    widget.department,
-                                'academicYear':
-                                    widget.academicYear,
-                                'businessType':
-                                    widget.businessType,
+                                'address': _addressController.text.trim(),
+                                'university': widget.university,
+                                'college': widget.college,
+                                'department': widget.department,
+                                'academicYear': widget.academicYear,
+                                'businessType': widget.businessType,
                               },
                             ),
                           ),
@@ -551,11 +566,9 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white,
                         foregroundColor: primaryColor,
-                        padding:
-                            const EdgeInsets.symmetric(vertical: 16),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(30),
+                          borderRadius: BorderRadius.circular(30),
                         ),
                       ),
                       child: Text(
@@ -576,8 +589,8 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                     },
                     child: Text(
                       isArabic ? '↩ العودة' : '↩ Back',
-                      style: const TextStyle(
-                        color: Colors.white70,
+                      style: TextStyle(
+                        color: AppTheme.legacySecondary,
                         fontSize: 14,
                       ),
                     ),
@@ -598,16 +611,16 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
         children: [
           Text(
             '$label: ',
-            style: const TextStyle(
-              color: Colors.white60,
+            style: TextStyle(
+              color: AppTheme.legacyForeground60,
               fontSize: 13,
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: AppTheme.legacyForeground,
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
@@ -622,24 +635,16 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   String _getRoleName(bool isArabic) {
     switch (widget.role) {
       case 'student':
-        return isArabic
-            ? 'طالب جامعي'
-            : 'University Student';
+        return isArabic ? 'طالب جامعي' : 'University Student';
 
       case 'faculty':
-        return isArabic
-            ? 'عضو هيئة تدريس'
-            : 'Faculty Member';
+        return isArabic ? 'عضو هيئة تدريس' : 'Faculty Member';
 
       case 'business':
-        return isArabic
-            ? 'نشاط تجاري'
-            : 'Business';
+        return isArabic ? 'نشاط تجاري' : 'Business';
 
       case 'community':
-        return isArabic
-            ? 'مستخدم مجتمع محلي'
-            : 'Community Member';
+        return isArabic ? 'مستخدم مجتمع محلي' : 'Community Member';
 
       default:
         return widget.role;

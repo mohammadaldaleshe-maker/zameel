@@ -1,5 +1,6 @@
+import 'package:zameel/theme/appearance_controller.dart';
+import 'package:zameel/widgets/verified_name.dart';
 import '../../widgets/cached_media_image.dart';
-import '../../widgets/verified_badge.dart';
 import 'dart:async';
 import 'profile_photo_screen.dart';
 import '../../widgets/compact_post.dart';
@@ -802,6 +803,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final ar = Provider.of<LanguageProvider>(context).isArabic;
     if (!_loading &&
         _profile != null &&
@@ -1136,12 +1138,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 10),
             Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               Flexible(
-                  child: Text('$name',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                          fontSize: 23, fontWeight: FontWeight.w800))),
-              VerifiedBadge(
-                  expiresAt: _profile?['verification_expires_at']?.toString()),
+                  child: VerifiedName(
+                      userId: widget.userId,
+                      child: Text('$name',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              fontSize: 23, fontWeight: FontWeight.w800)))),
+              const SizedBox.shrink(),
             ]),
             if (!isMe && _targetOnline)
               Padding(
@@ -1417,7 +1420,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           const SizedBox(width: 6),
           Text('${_posts.length + _sharedPosts.length}',
-              style: const TextStyle(color: AppTheme.textSecondary)),
+              style: TextStyle(color: AppTheme.adaptiveSecondary)),
         ]),
       );
 
@@ -1448,7 +1451,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ? 'قد تكون المنشورات خاصة أو مخصصة للزملاء.'
                             : 'Posts may be private or limited to colleagues.'),
                     textAlign: TextAlign.center,
-                    style: const TextStyle(color: AppTheme.textSecondary))
+                    style: TextStyle(color: AppTheme.adaptiveSecondary))
               ]))));
 
   Widget _postCard(Map<String, dynamic> post, bool ar) {
@@ -1494,22 +1497,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(children: [Flexible(child: Text(
-                          _profile?['name']?.toString() ??
-                              (ar ? 'طالب Zameel' : 'Zameel Student'),
-                          style: const TextStyle(fontWeight: FontWeight.w800))), VerifiedBadge(
-                          expiresAt:
-                              _profile?['verification_expires_at']?.toString())]),
+                      Row(children: [
+                        Flexible(
+                            child: VerifiedName(
+                                userId: widget.userId,
+                                child: Text(
+                                    _profile?['name']?.toString() ??
+                                        (ar ? 'طالب Zameel' : 'Zameel Student'),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w800)))),
+                        const SizedBox.shrink()
+                      ]),
                       Text(_profile?['university']?.toString() ?? '',
-                          style: const TextStyle(
-                              color: AppTheme.textSecondary, fontSize: 11)),
+                          style: TextStyle(
+                              color: AppTheme.adaptiveSecondary, fontSize: 11)),
                     ],
                   ),
                 ),
                 IconButton(
                   onPressed: () => _showPostMenu(post, ar),
-                  icon: const Icon(Icons.more_horiz_rounded,
-                      color: AppTheme.textSecondary),
+                  icon: Icon(Icons.more_horiz_rounded,
+                      color: AppTheme.adaptiveSecondary),
                 ),
               ],
             ),
@@ -1525,7 +1533,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             if (hasOrderedMedia)
               Padding(
                 padding: const EdgeInsets.only(top: 12),
-                child: PostMediaGallery(post: post, height: 204),
+                child: PostMediaGallery(
+                    post: post, height: postMediaHeight(context)),
               ),
             if (!hasOrderedMedia && image != null && image.isNotEmpty)
               Padding(
@@ -1535,10 +1544,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: InkWell(
                     onTap: () => _openImage(image),
                     child: SizedBox(
-                      height: 204,
+                      height: postMediaHeight(context),
                       child: CachedMediaImage(
                           url: image,
-                          fit: BoxFit.cover,
+                          fit: BoxFit.contain,
                           fallback: const Center(
                               child: Icon(Icons.broken_image_outlined))),
                     ),
@@ -1550,7 +1559,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 padding: const EdgeInsets.only(top: 12),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(14),
-                  child: VideoPlayerWidget(videoUrl: video),
+                  child: SizedBox(
+                      height: postMediaHeight(context),
+                      width: double.infinity,
+                      child: VideoPlayerWidget(videoUrl: video)),
                 ),
               ),
             const SizedBox(height: 10),
@@ -1558,31 +1570,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 Icon(Icons.favorite_rounded,
                     size: 16,
-                    color: liked ? AppTheme.accent : AppTheme.textSecondary),
+                    color:
+                        liked ? AppTheme.accent : AppTheme.adaptiveSecondary),
                 const SizedBox(width: 5),
                 InkWell(
                   onTap: () => _showLikes(post, ar),
                   child: Text('${post['likes_count'] ?? 0}',
-                      style: const TextStyle(
-                          color: AppTheme.textSecondary,
+                      style: TextStyle(
+                          color: AppTheme.adaptiveSecondary,
                           fontWeight: FontWeight.w700)),
                 ),
                 const SizedBox(width: 15),
-                const Icon(Icons.chat_bubble_outline_rounded,
-                    size: 16, color: AppTheme.textSecondary),
+                Icon(Icons.chat_bubble_outline_rounded,
+                    size: 16, color: AppTheme.adaptiveSecondary),
                 const SizedBox(width: 5),
                 Text('${post['comments_count'] ?? 0}',
-                    style: const TextStyle(color: AppTheme.textSecondary)),
+                    style: TextStyle(color: AppTheme.adaptiveSecondary)),
                 const SizedBox(width: 15),
-                const Icon(Icons.repeat_rounded,
-                    size: 16, color: AppTheme.textSecondary),
+                Icon(Icons.repeat_rounded,
+                    size: 16, color: AppTheme.adaptiveSecondary),
                 const SizedBox(width: 5),
                 Text('${post['shares_count'] ?? 0}',
-                    style: const TextStyle(color: AppTheme.textSecondary)),
+                    style: TextStyle(color: AppTheme.adaptiveSecondary)),
                 const Spacer(),
                 Text(_formatDate(post['created_at']),
-                    style: const TextStyle(
-                        fontSize: 11, color: AppTheme.textSecondary)),
+                    style: TextStyle(
+                        fontSize: 11, color: AppTheme.adaptiveSecondary)),
               ],
             ),
             const Divider(height: 18),
@@ -1623,13 +1636,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Column(children: [
                 Icon(active ? Icons.favorite_rounded : icon,
                     size: 20,
-                    color: active ? AppTheme.accent : AppTheme.textSecondary),
+                    color:
+                        active ? AppTheme.accent : AppTheme.adaptiveSecondary),
                 const SizedBox(height: 3),
                 Text(label,
                     style: TextStyle(
                         fontSize: 11,
-                        color:
-                            active ? AppTheme.accent : AppTheme.textSecondary))
+                        color: active
+                            ? AppTheme.accent
+                            : AppTheme.adaptiveSecondary))
               ])));
 
   void _openPost(Map<String, dynamic> post) => FeatureControl.instance
@@ -1653,8 +1668,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: CachedMediaImage(
                     url: imageUrl,
                     fit: BoxFit.contain,
-                    fallback: const Icon(Icons.broken_image_outlined,
-                        color: Colors.white)),
+                    fallback:
+                        Icon(Icons.broken_image_outlined, color: Colors.white)),
               ),
             ),
           ),
@@ -2270,9 +2285,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     child: image == null || image.isEmpty
                                         ? const Icon(Icons.person)
                                         : null),
-                                title: Text(name,
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.w700)));
+                                title: VerifiedName(
+                                    userId: rows[i]['user_id']?.toString(),
+                                    child: Text(name,
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.w700))));
                           }))
             ]),
           ),
@@ -2571,6 +2588,7 @@ class ProfileActivityScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final items = <Map<String, dynamic>>[];
     for (final post in posts.take(20)) {
       items.add({
@@ -2625,6 +2643,7 @@ class ProfileAchievementsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final achievements = [
       (
         ar ? 'أول منشور' : 'First post',
@@ -2672,11 +2691,11 @@ class ProfileAchievementsScreen extends StatelessWidget {
                     leading: CircleAvatar(
                         backgroundColor: unlocked
                             ? AppTheme.primaryLight
-                            : AppTheme.surfaceAlt,
+                            : AppTheme.adaptiveSurfaceAlt,
                         child: Icon(a.$4 as IconData,
                             color: unlocked
                                 ? AppTheme.primaryDark
-                                : AppTheme.textSecondary)),
+                                : AppTheme.adaptiveSecondary)),
                     title: Text(a.$1 as String,
                         style: const TextStyle(fontWeight: FontWeight.w800)),
                     subtitle: Text(a.$2 as String),
@@ -2684,8 +2703,9 @@ class ProfileAchievementsScreen extends StatelessWidget {
                         unlocked
                             ? Icons.check_circle_rounded
                             : Icons.lock_outline_rounded,
-                        color:
-                            unlocked ? Colors.green : AppTheme.textSecondary)));
+                        color: unlocked
+                            ? Colors.green
+                            : AppTheme.adaptiveSecondary)));
           },
         ),
       ),
@@ -2696,21 +2716,24 @@ class ProfileAchievementsScreen extends StatelessWidget {
 class _ProfileLoading extends StatelessWidget {
   const _ProfileLoading();
   @override
-  Widget build(BuildContext context) =>
-      const Scaffold(body: Center(child: CircularProgressIndicator()));
+  Widget build(BuildContext context) => AppearanceScope.rebuild(context,
+      () => const Scaffold(body: Center(child: CircularProgressIndicator())));
 }
 
 class _NotFound extends StatelessWidget {
   final bool ar;
   const _NotFound({required this.ar});
   @override
-  Widget build(BuildContext context) => Scaffold(
-      appBar: AppBar(),
-      body: Center(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Image.asset('assets/branding/zameel_mark.png', width: 80, height: 80),
-        const SizedBox(height: 12),
-        Text(ar ? 'المستخدم غير موجود' : 'User not found',
-            style: const TextStyle(fontWeight: FontWeight.bold))
-      ])));
+  Widget build(BuildContext context) => AppearanceScope.rebuild(
+      context,
+      () => Scaffold(
+          appBar: AppBar(),
+          body: Center(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Image.asset('assets/branding/zameel_mark.png',
+                width: 80, height: 80),
+            const SizedBox(height: 12),
+            Text(ar ? 'المستخدم غير موجود' : 'User not found',
+                style: const TextStyle(fontWeight: FontWeight.bold))
+          ]))));
 }

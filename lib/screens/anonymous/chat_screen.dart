@@ -1,3 +1,4 @@
+import 'package:zameel/theme/appearance_controller.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import '../../services/feature_control.dart';
@@ -80,7 +81,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _showSearchDialog() {
     final controller = TextEditingController();
-    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+    final languageProvider =
+        Provider.of<LanguageProvider>(context, listen: false);
     final isArabic = languageProvider.isArabic;
     showDialog(
       context: context,
@@ -89,7 +91,9 @@ class _ChatScreenState extends State<ChatScreen> {
           final q = controller.text.trim().toLowerCase();
           final results = chats.where((chat) {
             final name = '${chat['name_ar']} ${chat['name_en']}'.toLowerCase();
-            final message = '${chat['lastMessage_ar']} ${chat['lastMessage_en']}'.toLowerCase();
+            final message =
+                '${chat['lastMessage_ar']} ${chat['lastMessage_en']}'
+                    .toLowerCase();
             return q.isEmpty || name.contains(q) || message.contains(q);
           }).toList();
           return AlertDialog(
@@ -113,14 +117,19 @@ class _ChatScreenState extends State<ChatScreen> {
                   SizedBox(
                     height: 240,
                     child: results.isEmpty
-                        ? Center(child: Text(isArabic ? 'لا توجد نتائج' : 'No results'))
+                        ? Center(
+                            child:
+                                Text(isArabic ? 'لا توجد نتائج' : 'No results'))
                         : ListView(
                             children: results.map((chat) {
-                              final name = isArabic ? chat['name_ar'] : chat['name_en'];
+                              final name =
+                                  isArabic ? chat['name_ar'] : chat['name_en'];
                               return ListTile(
                                 leading: CircleAvatar(child: Text('$name'[0])),
                                 title: Text(name),
-                                subtitle: Text(isArabic ? chat['lastMessage_ar'] : chat['lastMessage_en']),
+                                subtitle: Text(isArabic
+                                    ? chat['lastMessage_ar']
+                                    : chat['lastMessage_en']),
                                 onTap: () {
                                   Navigator.pop(dialogContext);
                                   Navigator.push(
@@ -148,7 +157,8 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _startNewChat() {
-    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+    final languageProvider =
+        Provider.of<LanguageProvider>(context, listen: false);
     final isArabic = languageProvider.isArabic;
     showDialog(
       context: context,
@@ -186,13 +196,14 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
     final isArabic = languageProvider.isArabic;
 
     return Directionality(
       textDirection: isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
       child: Scaffold(
-        backgroundColor: AppTheme.background,
+        backgroundColor: AppTheme.adaptiveBackground,
         appBar: AppBar(
           title: Text(
             isArabic ? '💬 الدردشة' : '💬 Chat',
@@ -200,14 +211,16 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           centerTitle: true,
           elevation: 0,
-          backgroundColor: Colors.white,
+          backgroundColor: AppTheme.adaptiveSurface,
           foregroundColor: Colors.black,
           actions: [
-            if (FeatureControl.instance.visible('anonymous_messages')) IconButton(
-              onPressed: () => FeatureControl.instance.open(context, 'anonymous_messages', () => const AnonymousScreen()),
-              icon: const Icon(Icons.visibility_off_rounded),
-              tooltip: isArabic ? 'الرسائل المجهولة' : 'Anonymous Messages',
-            ),
+            if (FeatureControl.instance.visible('anonymous_messages'))
+              IconButton(
+                onPressed: () => FeatureControl.instance.open(context,
+                    'anonymous_messages', () => const AnonymousScreen()),
+                icon: const Icon(Icons.visibility_off_rounded),
+                tooltip: isArabic ? 'الرسائل المجهولة' : 'Anonymous Messages',
+              ),
             IconButton(
               onPressed: _showSearchDialog,
               icon: const Icon(Icons.search_rounded),
@@ -227,9 +240,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      isArabic
-                          ? '📭 لا توجد محادثات'
-                          : '📭 No chats',
+                      isArabic ? '📭 لا توجد محادثات' : '📭 No chats',
                       style: TextStyle(
                         fontSize: 18,
                         color: AppTheme.muted.shade600,
@@ -250,13 +261,15 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
               )
             : ListView.builder(
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                 itemCount: chats.length,
                 itemBuilder: (context, index) {
                   final chat = chats[index];
                   final bool isUnread = (chat['unread'] ?? 0) > 0;
                   final bool isOnline = chat['online'] ?? false;
-                  final String name = isArabic ? chat['name_ar'] : chat['name_en'];
+                  final String name =
+                      isArabic ? chat['name_ar'] : chat['name_en'];
                   final String lastMessage = isArabic
                       ? chat['lastMessage_ar']
                       : chat['lastMessage_en'];
@@ -279,7 +292,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       margin: const EdgeInsets.only(bottom: 8),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppTheme.adaptiveSurface,
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
@@ -315,14 +328,18 @@ class _ChatScreenState extends State<ChatScreen> {
                                   child: Container(
                                     width: 14,
                                     height: 14,
-                                    decoration: const BoxDecoration(
+                                    decoration: BoxDecoration(
                                       color: Colors.green,
                                       shape: BoxShape.circle,
                                       border: BorderDirectional(
-                                        top: BorderSide(color: Colors.white, width: 2),
-                                        bottom: BorderSide(color: Colors.white, width: 2),
-                                        start: BorderSide(color: Colors.white, width: 2),
-                                        end: BorderSide(color: Colors.white, width: 2),
+                                        top: BorderSide(
+                                            color: Colors.white, width: 2),
+                                        bottom: BorderSide(
+                                            color: Colors.white, width: 2),
+                                        start: BorderSide(
+                                            color: Colors.white, width: 2),
+                                        end: BorderSide(
+                                            color: Colors.white, width: 2),
                                       ),
                                     ),
                                   ),
@@ -369,7 +386,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                         style: TextStyle(
                                           fontSize: 14,
                                           color: isUnread
-                                              ? Colors.black87
+                                              ? AppTheme.adaptiveText
                                               : AppTheme.muted.shade600,
                                           fontWeight: isUnread
                                               ? FontWeight.w600
@@ -389,7 +406,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                         ),
                                         child: Text(
                                           '${chat['unread']}',
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             color: Colors.white,
                                             fontSize: 10,
                                             fontWeight: FontWeight.bold,
@@ -490,6 +507,7 @@ class _ChatDetailScreenState extends State<_ChatDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final isArabic = widget.isArabic;
 
     return Directionality(
@@ -516,7 +534,7 @@ class _ChatDetailScreenState extends State<_ChatDetailScreen> {
           ),
           centerTitle: false,
           elevation: 0,
-          backgroundColor: Colors.white,
+          backgroundColor: AppTheme.adaptiveSurface,
           foregroundColor: Colors.black,
         ),
         body: Column(
@@ -531,12 +549,12 @@ class _ChatDetailScreenState extends State<_ChatDetailScreen> {
                 itemBuilder: (context, index) {
                   final message = _messages[index];
                   final isMe = message['isMe'] ?? false;
-                  final text = isArabic ? message['text_ar'] : message['text_en'];
+                  final text =
+                      isArabic ? message['text_ar'] : message['text_en'];
 
                   return Align(
-                    alignment: isMe
-                        ? Alignment.centerRight
-                        : Alignment.centerLeft,
+                    alignment:
+                        isMe ? Alignment.centerRight : Alignment.centerLeft,
                     child: Container(
                       margin: const EdgeInsets.only(bottom: 8),
                       padding: const EdgeInsets.symmetric(
@@ -544,9 +562,8 @@ class _ChatDetailScreenState extends State<_ChatDetailScreen> {
                         vertical: 10,
                       ),
                       decoration: BoxDecoration(
-                        color: isMe
-                            ? AppTheme.primary
-                            : AppTheme.muted.shade200,
+                        color:
+                            isMe ? AppTheme.primary : AppTheme.muted.shade200,
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Column(
@@ -557,7 +574,8 @@ class _ChatDetailScreenState extends State<_ChatDetailScreen> {
                           Text(
                             text,
                             style: TextStyle(
-                              color: isMe ? Colors.white : Colors.black87,
+                              color:
+                                  isMe ? Colors.white : AppTheme.adaptiveText,
                               fontSize: 14,
                             ),
                           ),
@@ -585,7 +603,7 @@ class _ChatDetailScreenState extends State<_ChatDetailScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppTheme.adaptiveSurface,
                 boxShadow: [
                   BoxShadow(
                     color: AppTheme.muted.withAlpha(25),
@@ -600,9 +618,10 @@ class _ChatDetailScreenState extends State<_ChatDetailScreen> {
                     child: TextField(
                       controller: _messageController,
                       decoration: InputDecoration(
-                        hintText: isArabic ? 'اكتب رسالة...' : 'Type a message...',
+                        hintText:
+                            isArabic ? 'اكتب رسالة...' : 'Type a message...',
                         filled: true,
-                        fillColor: AppTheme.background,
+                        fillColor: AppTheme.adaptiveBackground,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(25),
                           borderSide: BorderSide.none,
@@ -622,7 +641,7 @@ class _ChatDetailScreenState extends State<_ChatDetailScreen> {
                     ),
                     child: IconButton(
                       onPressed: _sendMessage,
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.send_rounded,
                         color: Colors.white,
                       ),

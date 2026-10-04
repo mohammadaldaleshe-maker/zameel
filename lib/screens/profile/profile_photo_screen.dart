@@ -1,3 +1,5 @@
+import 'package:zameel/theme/app_theme.dart';
+import 'package:zameel/widgets/verified_name.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -59,7 +61,8 @@ class _ProfilePhotoScreenState extends State<ProfilePhotoScreen> {
       });
       await _loadComments(reset: true);
     } catch (e) {
-      if (e is PostgrestException && e.message.contains('profile_photo_unavailable')) _photoId = null;
+      if (e is PostgrestException &&
+          e.message.contains('profile_photo_unavailable')) _photoId = null;
       if (mounted)
         setState(() {
           _loading = false;
@@ -162,13 +165,13 @@ class _ProfilePhotoScreenState extends State<ProfilePhotoScreen> {
                             maxScale: 5,
                             child: Center(
                                 child: _photoId == null
-                                    ? const Icon(Icons.image_outlined,
+                                    ? Icon(Icons.image_outlined,
                                         color: Colors.white)
                                     : Image.network(widget.imageUrl,
                                         fit: BoxFit.contain,
-                                        errorBuilder: (_, __, ___) =>
-                                            const Icon(Icons.broken_image,
-                                                color: Colors.white))))))),
+                                        errorBuilder: (_, __, ___) => Icon(
+                                            Icons.broken_image,
+                                            color: Colors.white))))))),
             if (_loading)
               const SliverToBoxAdapter(
                   child: Center(
@@ -197,10 +200,12 @@ class _ProfilePhotoScreenState extends State<ProfilePhotoScreen> {
                     final c = _comments[i];
                     final user = c['users'];
                     return ListTile(
-                        title: Text(user is Map
-                            ? user['name']?.toString() ??
-                                (arabic ? 'زميل' : 'User')
-                            : (arabic ? 'زميل' : 'User')),
+                        title: VerifiedName(
+                            userId: c['user_id']?.toString(),
+                            child: Text(user is Map
+                                ? user['name']?.toString() ??
+                                    (arabic ? 'زميل' : 'User')
+                                : (arabic ? 'زميل' : 'User'))),
                         subtitle: Text(c['content'].toString()));
                   }),
               if (_more)

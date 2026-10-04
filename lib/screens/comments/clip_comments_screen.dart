@@ -1,3 +1,5 @@
+import 'package:zameel/theme/appearance_controller.dart';
+import 'package:zameel/widgets/verified_name.dart';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -68,7 +70,9 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
       if (!mounted) return;
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(FeatureControl.errorMessage(error, 'تعذر تحميل التعليقات'))),
+        SnackBar(
+            content: Text(
+                FeatureControl.errorMessage(error, 'تعذر تحميل التعليقات'))),
       );
     }
   }
@@ -94,7 +98,9 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(FeatureControl.errorMessage(error, 'تعذر إضافة التعليق'))),
+          SnackBar(
+              content: Text(
+                  FeatureControl.errorMessage(error, 'تعذر إضافة التعليق'))),
         );
       }
     } finally {
@@ -113,7 +119,8 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
       } else {
         _likedIds.add(id);
       }
-      comment['likes_count'] = (oldCount + (wasLiked ? -1 : 1)).clamp(0, 999999);
+      comment['likes_count'] =
+          (oldCount + (wasLiked ? -1 : 1)).clamp(0, 999999);
     });
     try {
       await ZameelSocialService.toggleClipCommentLike(id, wasLiked);
@@ -128,14 +135,17 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
         comment['likes_count'] = oldCount;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(FeatureControl.errorMessage(error, 'تعذر تحديث الإعجاب'))),
+        SnackBar(
+            content:
+                Text(FeatureControl.errorMessage(error, 'تعذر تحديث الإعجاب'))),
       );
     }
   }
 
   Future<void> _edit(Map<String, dynamic> comment, bool ar) async {
     if (comment['user_id']?.toString() != uid) return;
-    final editor = TextEditingController(text: comment['text']?.toString() ?? '');
+    final editor =
+        TextEditingController(text: comment['text']?.toString() ?? '');
     final value = await showDialog<String?>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -144,7 +154,7 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
           controller: editor,
           autofocus: true,
           maxLines: 4,
-          style: const TextStyle(color: Colors.black),
+          style: TextStyle(color: AppTheme.adaptiveText),
         ),
         actions: [
           TextButton(
@@ -161,12 +171,15 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
     editor.dispose();
     if (value == null || value.isEmpty) return;
     try {
-      await ZameelSocialService.updateClipComment(comment['id'].toString(), value);
+      await ZameelSocialService.updateClipComment(
+          comment['id'].toString(), value);
       await _load();
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(FeatureControl.errorMessage(error, 'تعذر تعديل التعليق'))),
+          SnackBar(
+              content: Text(
+                  FeatureControl.errorMessage(error, 'تعذر تعديل التعليق'))),
         );
       }
     }
@@ -198,14 +211,17 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
     if (confirmed != true) return;
     try {
       await ZameelSocialService.deleteClipComment(comment['id'].toString());
-      if (_replyingTo?['id']?.toString() == comment['id']?.toString() && mounted) {
+      if (_replyingTo?['id']?.toString() == comment['id']?.toString() &&
+          mounted) {
         setState(() => _replyingTo = null);
       }
       await _load();
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(FeatureControl.errorMessage(error, 'تعذر حذف التعليق'))),
+          SnackBar(
+              content:
+                  Text(FeatureControl.errorMessage(error, 'تعذر حذف التعليق'))),
         );
       }
     }
@@ -241,6 +257,7 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
         append(reply, depth + 1);
       }
     }
+
     for (final root in byParent[null] ?? const <Map<String, dynamic>>[]) {
       append(root, 0);
     }
@@ -263,6 +280,7 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final ar = Provider.of<LanguageProvider>(context).isArabic;
     final threaded = _threaded();
     return Directionality(
@@ -303,7 +321,8 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
             if (_replyingTo != null)
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 color: AppTheme.accentSoft,
                 child: Row(
                   children: [
@@ -336,7 +355,7 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
                         focusNode: _focusNode,
                         minLines: 1,
                         maxLines: 4,
-                        style: const TextStyle(color: Colors.black),
+                        style: TextStyle(color: AppTheme.adaptiveText),
                         decoration: InputDecoration(
                           hintText: _replyingTo == null
                               ? (ar ? 'اكتب تعليقك...' : 'Write a comment...')
@@ -385,10 +404,12 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
     final mine = comment['user_id']?.toString() == uid;
     final liked = _likedIds.contains(id);
     final likes = (comment['likes_count'] as num?)?.toInt() ?? 0;
-    final created = DateTime.tryParse(comment['created_at']?.toString() ?? '')
-        ?.toLocal();
-    final createdRaw = DateTime.tryParse(comment['created_at']?.toString() ?? '');
-    final updatedRaw = DateTime.tryParse(comment['updated_at']?.toString() ?? '');
+    final created =
+        DateTime.tryParse(comment['created_at']?.toString() ?? '')?.toLocal();
+    final createdRaw =
+        DateTime.tryParse(comment['created_at']?.toString() ?? '');
+    final updatedRaw =
+        DateTime.tryParse(comment['updated_at']?.toString() ?? '');
     final edited = createdRaw != null &&
         updatedRaw != null &&
         updatedRaw.difference(createdRaw).inSeconds.abs() > 1;
@@ -427,12 +448,14 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
                             borderRadius: BorderRadius.circular(8),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(vertical: 2),
-                              child: Text(
-                                name,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
+                              child: VerifiedName(
+                                  userId: comment['user_id']?.toString(),
+                                  child: Text(
+                                    name,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  )),
                             ),
                           ),
                         ),

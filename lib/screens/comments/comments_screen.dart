@@ -1,3 +1,5 @@
+import 'package:zameel/theme/appearance_controller.dart';
+import 'package:zameel/widgets/verified_name.dart';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -108,7 +110,9 @@ class _CommentsScreenState extends State<CommentsScreen> {
       if (!mounted) return;
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(FeatureControl.errorMessage(error, 'تعذر تحميل التعليقات'))),
+        SnackBar(
+            content: Text(
+                FeatureControl.errorMessage(error, 'تعذر تحميل التعليقات'))),
       );
     }
   }
@@ -132,7 +136,9 @@ class _CommentsScreenState extends State<CommentsScreen> {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(FeatureControl.errorMessage(error, 'تعذر إضافة التعليق'))),
+          SnackBar(
+              content: Text(
+                  FeatureControl.errorMessage(error, 'تعذر إضافة التعليق'))),
         );
       }
     } finally {
@@ -158,7 +164,8 @@ class _CommentsScreenState extends State<CommentsScreen> {
       } else {
         _likedCommentIds.add(commentId);
       }
-      comment['likes_count'] = (previousCount + (wasLiked ? -1 : 1)).clamp(0, 999999);
+      comment['likes_count'] =
+          (previousCount + (wasLiked ? -1 : 1)).clamp(0, 999999);
     });
 
     try {
@@ -185,7 +192,9 @@ class _CommentsScreenState extends State<CommentsScreen> {
         comment['likes_count'] = previousCount;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(FeatureControl.errorMessage(error, 'تعذر تحديث الإعجاب'))),
+        SnackBar(
+            content:
+                Text(FeatureControl.errorMessage(error, 'تعذر تحديث الإعجاب'))),
       );
     }
   }
@@ -206,7 +215,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
           controller: controller,
           maxLines: 4,
           autofocus: true,
-          style: const TextStyle(color: Colors.black),
+          style: TextStyle(color: AppTheme.adaptiveText),
         ),
         actions: [
           TextButton(
@@ -239,7 +248,9 @@ class _CommentsScreenState extends State<CommentsScreen> {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(FeatureControl.errorMessage(error, 'تعذر تعديل التعليق'))),
+          SnackBar(
+              content: Text(
+                  FeatureControl.errorMessage(error, 'تعذر تعديل التعليق'))),
         );
       }
     }
@@ -279,14 +290,17 @@ class _CommentsScreenState extends State<CommentsScreen> {
           .delete()
           .eq('id', comment['id'])
           .eq('user_id', uid!);
-      if (_replyingTo?['id']?.toString() == comment['id']?.toString() && mounted) {
+      if (_replyingTo?['id']?.toString() == comment['id']?.toString() &&
+          mounted) {
         setState(() => _replyingTo = null);
       }
       await _loadComments();
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(FeatureControl.errorMessage(error, 'تعذر حذف التعليق'))),
+          SnackBar(
+              content:
+                  Text(FeatureControl.errorMessage(error, 'تعذر حذف التعليق'))),
         );
       }
     }
@@ -311,7 +325,9 @@ class _CommentsScreenState extends State<CommentsScreen> {
     for (final comment in _comments) {
       var parentId = comment['parent_comment_id']?.toString();
       if (parentId != null && !ids.contains(parentId)) parentId = null;
-      byParent.putIfAbsent(parentId, () => <Map<String, dynamic>>[]).add(comment);
+      byParent
+          .putIfAbsent(parentId, () => <Map<String, dynamic>>[])
+          .add(comment);
     }
 
     final result = <_ThreadedComment>[];
@@ -337,6 +353,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final isArabic = Provider.of<LanguageProvider>(context).isArabic;
     final ownerName = isArabic
         ? (widget.post['name_ar'] ?? widget.post['users']?['name'] ?? 'مستخدم')
@@ -361,7 +378,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppTheme.background,
+                color: AppTheme.adaptiveBackground,
                 border: Border(
                   bottom: BorderSide(color: AppTheme.muted.shade200),
                 ),
@@ -380,7 +397,8 @@ class _CommentsScreenState extends State<CommentsScreen> {
                       post: widget.post,
                       height: 210,
                     ),
-                  ] else if ((widget.post['image_url']?.toString() ?? '').isNotEmpty) ...[
+                  ] else if ((widget.post['image_url']?.toString() ?? '')
+                      .isNotEmpty) ...[
                     const SizedBox(height: 10),
                     ClipRRect(
                       borderRadius: BorderRadius.circular(14),
@@ -407,10 +425,12 @@ class _CommentsScreenState extends State<CommentsScreen> {
                   ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Text(
-                      ownerName.toString(),
-                      style: const TextStyle(fontWeight: FontWeight.w800),
-                    ),
+                    child: VerifiedName(
+                        userId: widget.post['user_id']?.toString(),
+                        child: Text(
+                          ownerName.toString(),
+                          style: const TextStyle(fontWeight: FontWeight.w800),
+                        )),
                   ),
                   Text('${_comments.length}'),
                 ],
@@ -448,7 +468,8 @@ class _CommentsScreenState extends State<CommentsScreen> {
             if (_replyingTo != null)
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 color: AppTheme.accentSoft,
                 child: Row(
                   children: [
@@ -483,10 +504,12 @@ class _CommentsScreenState extends State<CommentsScreen> {
                         controller: _commentController,
                         minLines: 1,
                         maxLines: 4,
-                        style: const TextStyle(color: Colors.black),
+                        style: TextStyle(color: AppTheme.adaptiveText),
                         decoration: InputDecoration(
                           hintText: _replyingTo == null
-                              ? (isArabic ? 'اكتب تعليقك...' : 'Write a comment...')
+                              ? (isArabic
+                                  ? 'اكتب تعليقك...'
+                                  : 'Write a comment...')
                               : (isArabic ? 'اكتب ردك...' : 'Write a reply...'),
                           filled: true,
                           fillColor: AppTheme.muted.shade100,
@@ -560,10 +583,12 @@ class _CommentsScreenState extends State<CommentsScreen> {
     final commentId = comment['id']?.toString() ?? '';
     final liked = _likedCommentIds.contains(commentId);
     final likesCount = (comment['likes_count'] as num?)?.toInt() ?? 0;
-    final created = DateTime.tryParse(comment['created_at']?.toString() ?? '')
-        ?.toLocal();
-    final createdRaw = DateTime.tryParse(comment['created_at']?.toString() ?? '');
-    final updatedRaw = DateTime.tryParse(comment['updated_at']?.toString() ?? '');
+    final created =
+        DateTime.tryParse(comment['created_at']?.toString() ?? '')?.toLocal();
+    final createdRaw =
+        DateTime.tryParse(comment['created_at']?.toString() ?? '');
+    final updatedRaw =
+        DateTime.tryParse(comment['updated_at']?.toString() ?? '');
     final edited = createdRaw != null &&
         updatedRaw != null &&
         updatedRaw.difference(createdRaw).inSeconds.abs() > 1;
@@ -606,12 +631,14 @@ class _CommentsScreenState extends State<CommentsScreen> {
                             borderRadius: BorderRadius.circular(8),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(vertical: 2),
-                              child: Text(
-                                name,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
+                              child: VerifiedName(
+                                  userId: comment['user_id']?.toString(),
+                                  child: Text(
+                                    name,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  )),
                             ),
                           ),
                         ),

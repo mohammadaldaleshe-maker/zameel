@@ -45,7 +45,8 @@ class _ClipCreateScreenState extends State<ClipCreateScreen> {
 
       final bytes = kIsWeb ? await file.readAsBytes() : null;
       if (kIsWeb && (bytes == null || bytes.isEmpty)) {
-        _message(ar ? 'تعذر قراءة ملف الفيديو.' : 'Could not read the video file.');
+        _message(
+            ar ? 'تعذر قراءة ملف الفيديو.' : 'Could not read the video file.');
         return;
       }
 
@@ -330,7 +331,10 @@ class _ClipPreviewPublishScreenState extends State<_ClipPreviewPublishScreen> {
     }
 
     if (kIsWeb && _cover == null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ar ? 'اختر صورة غلاف للفيديو قبل النشر.' : 'Choose a cover image before publishing.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(ar
+              ? 'اختر صورة غلاف للفيديو قبل النشر.'
+              : 'Choose a cover image before publishing.')));
       return;
     }
     setState(() => _publishing = true);
@@ -351,9 +355,11 @@ class _ClipPreviewPublishScreenState extends State<_ClipPreviewPublishScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(FeatureControl.errorMessage(error,
-                ar ? 'تعذر نشر الشورتس. تحقق من الاتصال وحاول مجددًا.'
-                   : 'Could not publish the clip. Check your connection and try again.')),
+            content: Text(FeatureControl.errorMessage(
+                error,
+                ar
+                    ? 'تعذر نشر الشورتس. تحقق من الاتصال وحاول مجددًا.'
+                    : 'Could not publish the clip. Check your connection and try again.')),
           ),
         );
       }
@@ -388,7 +394,7 @@ class _ClipPreviewPublishScreenState extends State<_ClipPreviewPublishScreen> {
                         ? const Center(child: CircularProgressIndicator())
                         : _previewError != null ||
                                 _video?.value.isInitialized != true
-                            ? const Center(
+                            ? Center(
                                 child: Icon(
                                   Icons.video_library_outlined,
                                   color: Colors.white,
@@ -440,11 +446,33 @@ class _ClipPreviewPublishScreenState extends State<_ClipPreviewPublishScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              TextButton.icon(onPressed: _publishing ? null : () async {
-                final cover = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 720, maxHeight: 1280, imageQuality: 85);
-                if (mounted && cover != null) setState(() => _cover = cover);
-              }, icon: const Icon(Icons.image_outlined), label: Text(ar ? (_cover == null ? (kIsWeb ? 'اختيار غلاف للفيديو' : 'اختيار غلاف اختياري') : 'تم اختيار الغلاف — تغييره') : (_cover == null ? (kIsWeb ? 'Choose a video cover' : 'Choose optional cover') : 'Cover selected — change'))),
-              Text(ar ? 'الشورتس الجديدة متاحة للعامة' : 'New Shorts are public'),
+              TextButton.icon(
+                  onPressed: _publishing
+                      ? null
+                      : () async {
+                          final cover = await ImagePicker().pickImage(
+                              source: ImageSource.gallery,
+                              maxWidth: 720,
+                              maxHeight: 1280,
+                              imageQuality: 85);
+                          if (mounted && cover != null)
+                            setState(() => _cover = cover);
+                        },
+                  icon: const Icon(Icons.image_outlined),
+                  label: Text(ar
+                      ? (_cover == null
+                          ? (kIsWeb
+                              ? 'اختيار غلاف للفيديو'
+                              : 'اختيار غلاف اختياري')
+                          : 'تم اختيار الغلاف — تغييره')
+                      : (_cover == null
+                          ? (kIsWeb
+                              ? 'Choose a video cover'
+                              : 'Choose optional cover')
+                          : 'Cover selected — change'))),
+              Text(ar
+                  ? 'الشورتس الجديدة متاحة للعامة'
+                  : 'New Shorts are public'),
               const SizedBox(height: 20),
               FilledButton.icon(
                 onPressed: _publishing ? null : _publish,
@@ -460,7 +488,9 @@ class _ClipPreviewPublishScreenState extends State<_ClipPreviewPublishScreen> {
               OutlinedButton.icon(
                 onPressed: _publishing ? null : () => Navigator.pop(context),
                 icon: const Icon(Icons.replay_rounded),
-                label: Text(ar ? 'إلغاء واختيار فيديو آخر' : 'Cancel and choose another video'),
+                label: Text(ar
+                    ? 'إلغاء واختيار فيديو آخر'
+                    : 'Cancel and choose another video'),
               ),
             ],
           ),

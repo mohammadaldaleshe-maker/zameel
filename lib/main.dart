@@ -1,3 +1,5 @@
+import 'theme/appearance_controller.dart';
+import 'widgets/verified_name.dart';
 import 'screens/profile/account_verification_screen.dart';
 import 'widgets/verified_badge.dart';
 import 'widgets/compact_post.dart';
@@ -94,8 +96,8 @@ part 'features/arc_menu.dart';
 part 'features/drawer_profile.dart';
 part 'features/posts_media.dart';
 
-
-final GlobalKey<NavigatorState> zameelNavigatorKey = GlobalKey<NavigatorState>();
+final GlobalKey<NavigatorState> zameelNavigatorKey =
+    GlobalKey<NavigatorState>();
 
 Future<NavigatorState?> _waitForZameelNavigator() async {
   // A cold start from an Android overlay/bubble can deliver the deep link a
@@ -116,7 +118,8 @@ Future<void> _openZameelDeepLink(Uri uri) async {
   if (nav == null) return;
 
   if (uri.host == 'graduation') {
-    if (!await FeatureControl.instance.check(nav.context, 'graduation_book')) return;
+    if (!await FeatureControl.instance.check(nav.context, 'graduation_book'))
+      return;
     final parts = uri.pathSegments.where((e) => e.isNotEmpty).toList();
     if (parts.isEmpty) return;
     final token = uri.queryParameters['token'];
@@ -130,7 +133,8 @@ Future<void> _openZameelDeepLink(Uri uri) async {
   }
 
   if (uri.host == 'chat') {
-    if (!await FeatureControl.instance.check(nav.context, 'direct_chat')) return;
+    if (!await FeatureControl.instance.check(nav.context, 'direct_chat'))
+      return;
     final conversationId = uri.queryParameters['conversation_id']?.trim() ?? '';
     var partnerId = uri.queryParameters['partner_id']?.trim() ?? '';
     var partnerName = uri.queryParameters['partner_name']?.trim() ?? '';
@@ -148,7 +152,8 @@ Future<void> _openZameelDeepLink(Uri uri) async {
               .eq('conversation_id', conversationId)
               .neq('user_id', me)
               .limit(1);
-          if (rows.isNotEmpty) partnerId = rows.first['user_id']?.toString() ?? '';
+          if (rows.isNotEmpty)
+            partnerId = rows.first['user_id']?.toString() ?? '';
         } catch (_) {}
       }
     }
@@ -191,16 +196,26 @@ Future<void> _handlePushNavigationData(Map<String, dynamic> data) async {
   final nav = await _waitForZameelNavigator();
   if (nav == null) return;
   if (type == 'account_verification_review') {
-    nav.push(MaterialPageRoute(builder: (_) => const AccountVerificationScreen()));
+    nav.push(
+        MaterialPageRoute(builder: (_) => const AccountVerificationScreen()));
     return;
   }
   if (type == 'post_promotion_approved') {
     final id = data['post_id']?.toString();
-    if (id != null && await FeatureControl.instance.check(nav.context, 'feed_posts') && await FeatureControl.instance.check(nav.context, 'comments')) {
+    if (id != null &&
+        await FeatureControl.instance.check(nav.context, 'feed_posts') &&
+        await FeatureControl.instance.check(nav.context, 'comments')) {
       try {
-        final post = await Supabase.instance.client.from('posts').select('*,users(name,profile_image)').eq('id', id).maybeSingle().timeout(const Duration(seconds: 12));
+        final post = await Supabase.instance.client
+            .from('posts')
+            .select('*,users(name,profile_image)')
+            .eq('id', id)
+            .maybeSingle()
+            .timeout(const Duration(seconds: 12));
         if (post != null) {
-          nav.push(MaterialPageRoute(builder: (_) => CommentsScreen(post: Map<String,dynamic>.from(post))));
+          nav.push(MaterialPageRoute(
+              builder: (_) =>
+                  CommentsScreen(post: Map<String, dynamic>.from(post))));
           return;
         }
       } catch (_) {}
@@ -237,7 +252,8 @@ Future<void> _handlePushNavigationData(Map<String, dynamic> data) async {
         } catch (_) {}
       }
       if (partnerId.isNotEmpty) {
-        if (!await FeatureControl.instance.check(nav.context, 'direct_chat')) return;
+        if (!await FeatureControl.instance.check(nav.context, 'direct_chat'))
+          return;
         nav.push(MaterialPageRoute(
           builder: (_) => ChatDetailScreen(
             conversationId: conversationId,
@@ -251,7 +267,8 @@ Future<void> _handlePushNavigationData(Map<String, dynamic> data) async {
   }
 
   if (type == 'incoming_video_call' || type == 'incoming_voice_call') {
-    if (!await FeatureControl.instance.check(nav.context, 'direct_calls')) return;
+    if (!await FeatureControl.instance.check(nav.context, 'direct_calls'))
+      return;
     final roomId = data['room_id']?.toString() ?? '';
     if (!await CallInvitationGuard.isRinging(roomId)) return;
     final video = data['video'] == true ||
@@ -275,15 +292,24 @@ Future<void> _handlePushNavigationData(Map<String, dynamic> data) async {
     final accepted = await nav.push<bool>(
       MaterialPageRoute(
         fullscreenDialog: true,
-        builder: (_) => IncomingCallScreen(roomId: roomId, callerName: callerName, callerImage: callerImage, video: video),
+        builder: (_) => IncomingCallScreen(
+            roomId: roomId,
+            callerName: callerName,
+            callerId: callerId,
+            callerImage: callerImage,
+            video: video),
       ),
     );
     if (accepted != true) {
       try {
-        await Supabase.instance.client.from('direct_call_sessions').update({
-          'status': 'declined',
-          'ended_at': DateTime.now().toUtc().toIso8601String(),
-        }).eq('room_id', roomId).eq('status', 'ringing');
+        await Supabase.instance.client
+            .from('direct_call_sessions')
+            .update({
+              'status': 'declined',
+              'ended_at': DateTime.now().toUtc().toIso8601String(),
+            })
+            .eq('room_id', roomId)
+            .eq('status', 'ringing');
       } catch (_) {}
       return;
     }
@@ -291,6 +317,7 @@ Future<void> _handlePushNavigationData(Map<String, dynamic> data) async {
     nav.push(
       MaterialPageRoute(
         builder: (_) => MeetScreen(
+          participantId: callerId,
           participantName: callerName,
           roomId: roomId,
           startImmediately: true,
@@ -307,7 +334,7 @@ Future<void> _handlePushNavigationData(Map<String, dynamic> data) async {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+  await AppearanceController.instance.initialize();
 
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: AppTheme.primary,
@@ -327,13 +354,13 @@ Future<void> main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => LanguageProvider()),
         ChangeNotifierProvider(create: (_) => UserProvider()),
-     ],
-     child: const ZameelApp(),
-   ),
+      ],
+      child: const ZameelApp(),
+    ),
   );
   unawaited(_initAppLinks());
   unawaited(_initializeOptionalServices());
- }
+}
 
 Future<void> _initializeOptionalServices() async {
   await WidgetsBinding.instance.endOfFrame;
@@ -344,15 +371,16 @@ Future<void> _initializeOptionalServices() async {
   // instead of attempting an unconfigured Firebase startup there. Adding iOS
   // or web push later only requires provisioning their Firebase options; it does
   // not affect the Android production path.
-  final firebaseSupported = !kIsWeb &&
-      defaultTargetPlatform == TargetPlatform.android;
+  final firebaseSupported =
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
   var firebaseReady = false;
   if (firebaseSupported) {
     try {
       if (Firebase.apps.isEmpty) await Firebase.initializeApp();
       firebaseReady = Firebase.apps.isNotEmpty;
       if (firebaseReady) {
-        FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+        FlutterError.onError =
+            FirebaseCrashlytics.instance.recordFlutterFatalError;
         PlatformDispatcher.instance.onError = (error, stack) {
           FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
           return true;
@@ -367,7 +395,8 @@ Future<void> _initializeOptionalServices() async {
   }
 
   if (firebaseReady) {
-    await PushNotificationService.instance.setTapHandler(_handlePushNavigationData);
+    await PushNotificationService.instance
+        .setTapHandler(_handlePushNavigationData);
   }
 }
 

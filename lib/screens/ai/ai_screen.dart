@@ -1,3 +1,4 @@
+import 'package:zameel/theme/appearance_controller.dart';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -216,6 +217,7 @@ class _AIScreenState extends State<AIScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppearanceScope.observe(context);
     final isArabic = context.watch<LanguageProvider>().isArabic;
     return Directionality(
       textDirection: isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
@@ -403,97 +405,109 @@ class _MessageBubble extends StatelessWidget {
   final _AIMessage message;
 
   @override
-  Widget build(BuildContext context) => Align(
-        alignment:
-            message.isUser ? Alignment.centerRight : Alignment.centerLeft,
-        child: Container(
-          constraints:
-              BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * .84),
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.all(13),
-          decoration: BoxDecoration(
-            color: message.isUser
-                ? AppTheme.primary
-                : message.isError
-                    ? Colors.red.shade50
-                    : Colors.grey.shade100,
-            borderRadius: BorderRadius.circular(18),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (message.verified)
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 6),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(Icons.verified_rounded, size: 17, color: Colors.teal),
-                    SizedBox(width: 4),
-                    Text('إجابة معتمدة من زميل',
-                        style: TextStyle(
-                            fontSize: 12, fontWeight: FontWeight.w700)),
-                  ]),
-                ),
-              SelectableText(
-                message.text,
-                style: TextStyle(
-                    color: message.isUser ? Colors.white : Colors.black87,
-                    height: 1.5),
+  Widget build(BuildContext context) => AppearanceScope.rebuild(
+      context,
+      () => Align(
+            alignment:
+                message.isUser ? Alignment.centerRight : Alignment.centerLeft,
+            child: Container(
+              constraints: BoxConstraints(
+                  maxWidth: MediaQuery.sizeOf(context).width * .84),
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.all(13),
+              decoration: BoxDecoration(
+                color: message.isUser
+                    ? AppTheme.primary
+                    : message.isError
+                        ? Colors.red.shade50
+                        : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(18),
               ),
-              if (message.sources.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Text(
-                  'المصادر: ${message.sources.map((item) => item['title']?.toString() ?? 'مصدر معتمد').join('، ')}',
-                  style: const TextStyle(fontSize: 11, color: Colors.black54),
-                ),
-              ],
-            ],
-          ),
-        ),
-      );
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (message.verified)
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 6),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(Icons.verified_rounded,
+                            size: 17, color: Colors.teal),
+                        SizedBox(width: 4),
+                        Text('إجابة معتمدة من زميل',
+                            style: TextStyle(
+                                fontSize: 12, fontWeight: FontWeight.w700)),
+                      ]),
+                    ),
+                  SelectableText(
+                    message.text,
+                    style: TextStyle(
+                        color: message.isUser
+                            ? Colors.white
+                            : AppTheme.adaptiveText,
+                        height: 1.5),
+                  ),
+                  if (message.sources.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      'المصادر: ${message.sources.map((item) => item['title']?.toString() ?? 'مصدر معتمد').join('، ')}',
+                      style: TextStyle(
+                          fontSize: 11, color: AppTheme.adaptiveSecondary),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ));
 }
 
 class _ThinkingBubble extends StatelessWidget {
   const _ThinkingBubble();
   @override
-  Widget build(BuildContext context) => const Align(
-        alignment: Alignment.centerLeft,
-        child: Padding(
-          padding: EdgeInsets.all(14),
-          child: SizedBox.square(
-              dimension: 22,
-              child: CircularProgressIndicator(strokeWidth: 2.5)),
-        ),
-      );
+  Widget build(BuildContext context) => AppearanceScope.rebuild(
+      context,
+      () => const Align(
+            alignment: Alignment.centerLeft,
+            child: Padding(
+              padding: EdgeInsets.all(14),
+              child: SizedBox.square(
+                  dimension: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2.5)),
+            ),
+          ));
 }
 
 class _QuotaBanner extends StatelessWidget {
   const _QuotaBanner({required this.remaining});
   final int remaining;
   @override
-  Widget build(BuildContext context) => Container(
-        width: double.infinity,
-        color: AppTheme.primary.withValues(alpha: .08),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
-        child: Text(
-          'متبقي اليوم: $remaining من 50 سؤالاً ذكياً',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-              color: AppTheme.primary,
-              fontWeight: FontWeight.w700,
-              fontSize: 12),
-        ),
-      );
+  Widget build(BuildContext context) => AppearanceScope.rebuild(
+      context,
+      () => Container(
+            width: double.infinity,
+            color: AppTheme.primary.withValues(alpha: .08),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+            child: Text(
+              'متبقي اليوم: $remaining من 50 سؤالاً ذكياً',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  color: AppTheme.primary,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12),
+            ),
+          ));
 }
 
 class _PrivacyNote extends StatelessWidget {
   const _PrivacyNote();
   @override
-  Widget build(BuildContext context) => const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-        child: Text(
-          'قد يخطئ زميل AI. لا تشارك كلمات المرور أو البيانات شديدة الحساسية.',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 11, color: Colors.black54),
-        ),
-      );
+  Widget build(BuildContext context) => AppearanceScope.rebuild(
+      context,
+      () => Padding(
+            padding: EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+            child: Text(
+              'قد يخطئ زميل AI. لا تشارك كلمات المرور أو البيانات شديدة الحساسية.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 11, color: AppTheme.adaptiveSecondary),
+            ),
+          ));
 }
