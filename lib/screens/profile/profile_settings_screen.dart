@@ -1,3 +1,4 @@
+import '../promotions/audience_profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -53,14 +54,17 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     try {
       final row = await Supabase.instance.client
           .from('users')
-          .select('name,email,phone,username,headline,bio,university,college,department,account_privacy,default_post_audience,gender,allow_messages,allow_calls,notifications_enabled,show_online_status,call_sounds_enabled,notification_sounds_enabled')
+          .select(
+              'name,email,phone,username,headline,bio,university,college,department,account_privacy,default_post_audience,gender,allow_messages,allow_calls,notifications_enabled,show_online_status,call_sounds_enabled,notification_sounds_enabled')
           .eq('id', widget.userId)
           .maybeSingle();
 
       if (!mounted) return;
       setState(() {
         _name.text = row?['name']?.toString() ?? '';
-        _email.text = row?['email']?.toString() ?? Supabase.instance.client.auth.currentUser?.email ?? '';
+        _email.text = row?['email']?.toString() ??
+            Supabase.instance.client.auth.currentUser?.email ??
+            '';
         _phone.text = row?['phone']?.toString() ?? '';
         _username.text = row?['username']?.toString() ?? '';
         _headline.text = row?['headline']?.toString() ?? '';
@@ -74,10 +78,10 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         _gender = row?['gender']?.toString() ?? '';
         _allowMessages = row?['allow_messages'] as bool? ?? true;
         _allowCalls = row?['allow_calls'] as bool? ?? true;
-        _notificationsEnabled =
-            row?['notifications_enabled'] as bool? ?? true;
+        _notificationsEnabled = row?['notifications_enabled'] as bool? ?? true;
         _callSoundsEnabled = row?['call_sounds_enabled'] as bool? ?? true;
-        _notificationSoundsEnabled = row?['notification_sounds_enabled'] as bool? ?? true;
+        _notificationSoundsEnabled =
+            row?['notification_sounds_enabled'] as bool? ?? true;
         _showOnlineStatus = row?['show_online_status'] as bool? ?? true;
         _loading = false;
       });
@@ -127,7 +131,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         'name': _name.text.trim().isEmpty ? 'مستخدم' : _name.text.trim(),
         'email': _email.text.trim(),
         'phone': _phone.text.trim(),
-        'username': _username.text.trim().isEmpty ? null : _username.text.trim().toLowerCase(),
+        'username': _username.text.trim().isEmpty
+            ? null
+            : _username.text.trim().toLowerCase(),
         'headline': _headline.text.trim(),
         'bio': _bio.text.trim(),
         'university': _university.text.trim(),
@@ -145,7 +151,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
 
       final authEmail = Supabase.instance.client.auth.currentUser?.email ?? '';
       if (_email.text.trim().isNotEmpty && _email.text.trim() != authEmail) {
-        await Supabase.instance.client.auth.updateUser(UserAttributes(email: _email.text.trim()));
+        await Supabase.instance.client.auth
+            .updateUser(UserAttributes(email: _email.text.trim()));
       }
 
       if (!mounted) return;
@@ -166,7 +173,17 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
 
   @override
   void dispose() {
-    for (final controller in [_name,_email,_phone,_username,_headline,_bio,_university,_college,_department]) {
+    for (final controller in [
+      _name,
+      _email,
+      _phone,
+      _username,
+      _headline,
+      _bio,
+      _university,
+      _college,
+      _department
+    ]) {
       controller.dispose();
     }
     super.dispose();
@@ -178,8 +195,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
 
     if (!_isOwner) {
       return Scaffold(
-        appBar:
-            AppBar(title: Text(ar ? 'إعدادات الحساب' : 'Account settings')),
+        appBar: AppBar(title: Text(ar ? 'إعدادات الحساب' : 'Account settings')),
         body: Center(
           child: Text(
             ar
@@ -197,7 +213,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     return Directionality(
       textDirection: ar ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
-        backgroundColor: AppTheme.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
           title: Text(ar ? '⚙️ التحكم بحسابي' : '⚙️ My Account Control'),
           centerTitle: true,
@@ -205,6 +221,22 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         body: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            Card(
+                child: ListTile(
+              leading: const Icon(Icons.location_city_rounded),
+              title: Text(ar
+                  ? 'المدينة والعمر للاستهداف'
+                  : 'City and age for promotions'),
+              subtitle: Text(ar
+                  ? 'بيانات خاصة لا تظهر في ملفك العام'
+                  : 'Private information, hidden from your public profile'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => AudienceProfileScreen(arabic: ar))),
+            )),
+            const SizedBox(height: 12),
             Card(
               child: ListTile(
                 leading: const Icon(Icons.privacy_tip_outlined),
@@ -220,19 +252,37 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(18),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                  Text(ar ? 'المعلومات الشخصية والأكاديمية' : 'Personal & academic information', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
-                  const SizedBox(height: 14),
-                  _field(_name, ar ? 'الاسم الكامل' : 'Full name', Icons.person_rounded),
-                  _field(_username, ar ? 'اسم المستخدم' : 'Username', Icons.alternate_email_rounded),
-                  _field(_email, ar ? 'البريد الإلكتروني' : 'Email', Icons.email_rounded, keyboard: TextInputType.emailAddress),
-                  _field(_phone, ar ? 'رقم الهاتف' : 'Phone number', Icons.phone_rounded, keyboard: TextInputType.phone),
-                  _field(_headline, ar ? 'العنوان المختصر' : 'Headline', Icons.badge_rounded),
-                  _field(_bio, ar ? 'نبذة عني' : 'Bio', Icons.notes_rounded, lines: 3, maxLength: 160),
-                  _field(_university, ar ? 'الجامعة' : 'University', Icons.account_balance_rounded),
-                  _field(_college, ar ? 'الكلية' : 'College', Icons.school_rounded),
-                  _field(_department, ar ? 'التخصص' : 'Major', Icons.menu_book_rounded),
-                ]),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                          ar
+                              ? 'المعلومات الشخصية والأكاديمية'
+                              : 'Personal & academic information',
+                          style: const TextStyle(
+                              fontSize: 20, fontWeight: FontWeight.w800)),
+                      const SizedBox(height: 14),
+                      _field(_name, ar ? 'الاسم الكامل' : 'Full name',
+                          Icons.person_rounded),
+                      _field(_username, ar ? 'اسم المستخدم' : 'Username',
+                          Icons.alternate_email_rounded),
+                      _field(_email, ar ? 'البريد الإلكتروني' : 'Email',
+                          Icons.email_rounded,
+                          keyboard: TextInputType.emailAddress),
+                      _field(_phone, ar ? 'رقم الهاتف' : 'Phone number',
+                          Icons.phone_rounded,
+                          keyboard: TextInputType.phone),
+                      _field(_headline, ar ? 'العنوان المختصر' : 'Headline',
+                          Icons.badge_rounded),
+                      _field(_bio, ar ? 'نبذة عني' : 'Bio', Icons.notes_rounded,
+                          lines: 3, maxLength: 160),
+                      _field(_university, ar ? 'الجامعة' : 'University',
+                          Icons.account_balance_rounded),
+                      _field(_college, ar ? 'الكلية' : 'College',
+                          Icons.school_rounded),
+                      _field(_department, ar ? 'التخصص' : 'Major',
+                          Icons.menu_book_rounded),
+                    ]),
               ),
             ),
             const SizedBox(height: 12),
@@ -309,9 +359,14 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   SwitchListTile(
                     value: _showOnlineStatus,
                     onChanged: (v) => setState(() => _showOnlineStatus = v),
-                    secondary: Icon(_showOnlineStatus ? Icons.visibility_rounded : Icons.visibility_off_rounded),
-                    title: Text(ar ? 'إظهار أنني متصل' : 'Show my online status'),
-                    subtitle: Text(ar ? 'عند إيقافه لن تستطيع رؤية حالة اتصال زملائك.' : 'When disabled, you cannot see colleagues’ online status.'),
+                    secondary: Icon(_showOnlineStatus
+                        ? Icons.visibility_rounded
+                        : Icons.visibility_off_rounded),
+                    title:
+                        Text(ar ? 'إظهار أنني متصل' : 'Show my online status'),
+                    subtitle: Text(ar
+                        ? 'عند إيقافه لن تستطيع رؤية حالة اتصال زملائك.'
+                        : 'When disabled, you cannot see colleagues’ online status.'),
                   ),
                   SwitchListTile(
                     value: _allowMessages,
@@ -327,15 +382,27 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   ),
                   SwitchListTile(
                     value: _notificationsEnabled,
-                    onChanged: (v) =>
-                        setState(() => _notificationsEnabled = v),
-                    secondary:
-                        const Icon(Icons.notifications_active_outlined),
+                    onChanged: (v) => setState(() => _notificationsEnabled = v),
+                    secondary: const Icon(Icons.notifications_active_outlined),
                     title:
                         Text(ar ? 'تفعيل الإشعارات' : 'Enable notifications'),
                   ),
-                  SwitchListTile(value:_callSoundsEnabled,onChanged:(v)=>setState(()=>_callSoundsEnabled=v),secondary:const Icon(Icons.ring_volume_rounded),title:Text(ar?'نغمات المكالمات':'Call sounds'),subtitle:Text(ar?'رنين المكالمة الواردة ونغمة انتظار المتصل':'Incoming ringtone and caller ringback')),
-                  SwitchListTile(value:_notificationSoundsEnabled,onChanged:(v)=>setState(()=>_notificationSoundsEnabled=v),secondary:const Icon(Icons.notifications_active_rounded),title:Text(ar?'صوت إشعارات زميل':'Zameel notification sound')),
+                  SwitchListTile(
+                      value: _callSoundsEnabled,
+                      onChanged: (v) => setState(() => _callSoundsEnabled = v),
+                      secondary: const Icon(Icons.ring_volume_rounded),
+                      title: Text(ar ? 'نغمات المكالمات' : 'Call sounds'),
+                      subtitle: Text(ar
+                          ? 'رنين المكالمة الواردة ونغمة انتظار المتصل'
+                          : 'Incoming ringtone and caller ringback')),
+                  SwitchListTile(
+                      value: _notificationSoundsEnabled,
+                      onChanged: (v) =>
+                          setState(() => _notificationSoundsEnabled = v),
+                      secondary: const Icon(Icons.notifications_active_rounded),
+                      title: Text(ar
+                          ? 'صوت إشعارات زميل'
+                          : 'Zameel notification sound')),
                   ListTile(
                     leading: const Icon(Icons.badge_outlined),
                     title: Text(ar ? 'الجنس' : 'Gender'),
@@ -367,9 +434,14 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
             const SizedBox(height: 28),
             Card(
               child: ListTile(
-                leading: const Icon(Icons.delete_forever_rounded, color: Colors.red),
-                title: Text(ar ? 'حذف الحساب' : 'Delete account', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w800)),
-                subtitle: Text(ar ? 'حذف حسابك وبياناته نهائيًا' : 'Permanently delete your account and data'),
+                leading:
+                    const Icon(Icons.delete_forever_rounded, color: Colors.red),
+                title: Text(ar ? 'حذف الحساب' : 'Delete account',
+                    style: const TextStyle(
+                        color: Colors.red, fontWeight: FontWeight.w800)),
+                subtitle: Text(ar
+                    ? 'حذف حسابك وبياناته نهائيًا'
+                    : 'Permanently delete your account and data'),
                 onTap: () => _deleteAccount(ar),
               ),
             ),
@@ -386,17 +458,24 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       builder: (dialogContext) => AlertDialog(
         title: Text(ar ? 'حذف الحساب نهائيًا؟' : 'Delete account permanently?'),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
-          Text(ar ? 'سيبدأ حذف حسابك ومحتواك وملفاتك. الطلب نهائي وقد يستغرق إكماله عدة دقائق. اكتب «حذف حسابي» للتأكيد.' : 'Deletion of your account, content and files will begin. This cannot be undone and may take several minutes. Type DELETE MY ACCOUNT to confirm.'),
+          Text(ar
+              ? 'سيبدأ حذف حسابك ومحتواك وملفاتك. الطلب نهائي وقد يستغرق إكماله عدة دقائق. اكتب «حذف حسابي» للتأكيد.'
+              : 'Deletion of your account, content and files will begin. This cannot be undone and may take several minutes. Type DELETE MY ACCOUNT to confirm.'),
           const SizedBox(height: 12),
-          TextField(controller: confirmation, decoration: const InputDecoration(border: OutlineInputBorder())),
+          TextField(
+              controller: confirmation,
+              decoration: const InputDecoration(border: OutlineInputBorder())),
         ]),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(ar ? 'إلغاء' : 'Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: Text(ar ? 'إلغاء' : 'Cancel')),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () {
               final expected = ar ? 'حذف حسابي' : 'DELETE MY ACCOUNT';
-              Navigator.pop(dialogContext, confirmation.text.trim() == expected);
+              Navigator.pop(
+                  dialogContext, confirmation.text.trim() == expected);
             },
             child: Text(ar ? 'حذف نهائي' : 'Delete permanently'),
           ),
@@ -409,19 +488,40 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       await Supabase.instance.client.rpc('delete_my_account');
       await AuthSessionService.signOut();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ar ? 'تم استلام طلب الحذف. يجري تنظيف الحساب والملفات.' : 'Deletion requested. Account and file cleanup is in progress.')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(ar
+                ? 'تم استلام طلب الحذف. يجري تنظيف الحساب والملفات.'
+                : 'Deletion requested. Account and file cleanup is in progress.')));
         Navigator.of(context).popUntil((route) => route.isFirst);
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().contains('account_deletion_requires_review')
-          ? (ar ? 'يتطلب حسابك نقل ملكية موارد مشتركة قبل الحذف. تواصل مع zameel.jo@gmail.com.' : 'Shared resources require an ownership handover. Contact zameel.jo@gmail.com.')
-          : (ar ? 'تعذر إرسال طلب الحذف. حاول مجددًا أو تواصل مع zameel.jo@gmail.com.' : 'Could not request deletion. Retry or contact zameel.jo@gmail.com.'))));
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(e
+                    .toString()
+                    .contains('account_deletion_requires_review')
+                ? (ar
+                    ? 'يتطلب حسابك نقل ملكية موارد مشتركة قبل الحذف. تواصل مع zameel.jo@gmail.com.'
+                    : 'Shared resources require an ownership handover. Contact zameel.jo@gmail.com.')
+                : (ar
+                    ? 'تعذر إرسال طلب الحذف. حاول مجددًا أو تواصل مع zameel.jo@gmail.com.'
+                    : 'Could not request deletion. Retry or contact zameel.jo@gmail.com.'))));
     }
   }
 
-  Widget _field(TextEditingController controller, String label, IconData icon, {TextInputType? keyboard, int lines = 1, int? maxLength}) => Padding(
-    padding: const EdgeInsets.only(bottom: 10),
-    child: TextField(controller: controller, keyboardType: keyboard, minLines: lines, maxLines: lines, maxLength: maxLength,
-      decoration: InputDecoration(labelText: label, prefixIcon: Icon(icon), border: const OutlineInputBorder())),
-  );
+  Widget _field(TextEditingController controller, String label, IconData icon,
+          {TextInputType? keyboard, int lines = 1, int? maxLength}) =>
+      Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: TextField(
+            controller: controller,
+            keyboardType: keyboard,
+            minLines: lines,
+            maxLines: lines,
+            maxLength: maxLength,
+            decoration: InputDecoration(
+                labelText: label,
+                prefixIcon: Icon(icon),
+                border: const OutlineInputBorder())),
+      );
 }

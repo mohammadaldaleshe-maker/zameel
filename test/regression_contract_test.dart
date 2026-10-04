@@ -16,7 +16,10 @@ void main() {
       expect(sql, contains('social_profile_self'));
       expect(sql, isNot(contains('social_profile_public')));
       expect(sql, contains("decision in ('like','pass')"));
-      expect(sql, contains('revoke all on function public.get_social_discovery_candidates'));
+      expect(
+          sql,
+          contains(
+              'revoke all on function public.get_social_discovery_candidates'));
       expect(screen, contains("'enabled':true"));
       expect(screen, contains("'enabled':false"));
       expect(screen, contains("matched=await db.rpc('react_social_discovery'"));
@@ -25,7 +28,8 @@ void main() {
 
     test('Lamma and Insijam remain separate experiences', () {
       final screen = _read('lib/screens/social/lamma_screen.dart');
-      expect(screen, contains("FeatureControl.instance.visible('insijam') ? 2 : 1"));
+      expect(screen,
+          contains("FeatureControl.instance.visible('insijam') ? 2 : 1"));
       expect(screen, contains('join_social_lamma'));
       expect(screen, contains('get_social_discovery_candidates'));
       expect(screen, contains('Adults 18+ only'));
@@ -38,11 +42,13 @@ void main() {
 
       expect(
         home,
-        matches(RegExp(r'media\.addAll\(\s*await\s+PostPublishService\.pickMultipleImages\(\s*limit:\s*PostPublishService\.maxSelectableMedia\s*,?\s*\)\s*\)')),
+        matches(RegExp(
+            r'media\.addAll\(\s*await\s+PostPublishService\.pickMultipleImages\(\s*limit:\s*PostPublishService\.maxSelectableMedia\s*,?\s*\)\s*\)')),
       );
       expect(
         home,
-        matches(RegExp(r'media\.addAll\(\s*await\s+PostPublishService\.pickMultipleVideos\(\s*limit:\s*PostPublishService\.maxSelectableMedia\s*,?\s*\)\s*\)')),
+        matches(RegExp(
+            r'media\.addAll\(\s*await\s+PostPublishService\.pickMultipleVideos\(\s*limit:\s*PostPublishService\.maxSelectableMedia\s*,?\s*\)\s*\)')),
       );
       expect(
         home,
@@ -66,7 +72,8 @@ void main() {
       expect(publisher, contains('ImagePicker().pickMultipleMedia('));
       expect(publisher, contains('static const int maxMediaItems = 10;'));
       expect(publisher, contains("'media_items': items"));
-      expect(publisher, contains('final items = uploaded.map((e) => e.dbItem)'));
+      expect(
+          publisher, contains('final items = uploaded.map((e) => e.dbItem)'));
     });
 
     test('post size guard is evaluated before the upload loop', () {
@@ -80,7 +87,10 @@ void main() {
       expect(validationCall, greaterThanOrEqualTo(0));
       expect(uploadLoop, greaterThan(validationCall));
       expect(guard, greaterThanOrEqualTo(0));
-      expect(publisher, contains('static void _validateSelection(List<PickedPostMedia> selected)'));
+      expect(
+          publisher,
+          contains(
+              'static void _validateSelection(List<PickedPostMedia> selected)'));
     });
   });
 
@@ -114,25 +124,33 @@ void main() {
       expect(overlay, contains('TYPE_APPLICATION_OVERLAY'));
       expect(overlay, contains('postFallbackNotification'));
       expect(overlay, contains('.authority("chat")'));
-      expect(overlay, contains('startForeground(SERVICE_NOTIFICATION_ID, messageNotification)'));
+      expect(
+          overlay,
+          contains(
+              'startForeground(SERVICE_NOTIFICATION_ID, messageNotification)'));
       expect(overlay, contains('ACTION_SHOW_BROADCAST'));
       expect(overlay, contains('Context.RECEIVER_NOT_EXPORTED'));
       expect(overlay, contains('return START_NOT_STICKY'));
-      expect(receiver, contains('val deliveredToHost = ZameelOverlayService.showFromPush'));
-      expect(overlay, contains('Could not start message bubble service from push'));
+      expect(receiver,
+          contains('val deliveredToHost = ZameelOverlayService.showFromPush'));
+      expect(overlay,
+          contains('Could not start message bubble service from push'));
       expect(overlay, contains('PREF_OVERLAY_VERIFIED'));
       expect(overlay, contains('R.raw.zameel_bubble_thunder'));
       expect(overlay, isNot(contains('buildHostNotification')));
       expect(overlay, isNot(contains('Chat bubbles are ready')));
       expect(overlay, isNot(contains('ACTION_HOST')));
-      expect(receiver, contains('Notification.BubbleMetadata.Builder(shortcutId)'));
+      expect(receiver,
+          contains('Notification.BubbleMetadata.Builder(shortcutId)'));
       // Android 10 uses the legacy channel bubble opt-in; Android 11+ is user/system controlled.
-      expect(receiver, contains('if (Build.VERSION.SDK_INT == Build.VERSION_CODES.Q)'));
+      expect(receiver,
+          contains('if (Build.VERSION.SDK_INT == Build.VERSION_CODES.Q)'));
       expect(receiver, contains('setAllowBubbles(true)'));
       expect(receiver, isNot(contains('setAutoExpandBubble(true)')));
     });
 
-    test('overlay permission remains recoverable after declining or revocation', () {
+    test('overlay permission remains recoverable after declining or revocation',
+        () {
       final activity = _read(
         'android/app/src/main/kotlin/com/zameel/app/MainActivity.kt',
       );
@@ -144,9 +162,11 @@ void main() {
       expect(activity, contains('override fun onResume()'));
       expect(activity, contains('override fun onStop()'));
       expect(activity, contains('ZameelOverlayService.hideBubbleAndStop(this'));
-      expect(activity, isNot(contains('ZameelOverlayService.ensureHostRunning(this)')));
+      expect(activity,
+          isNot(contains('ZameelOverlayService.ensureHostRunning(this)')));
       expect(activity, isNot(contains('scheduleOverlaySelfTestIfNeeded')));
-      expect(activity, isNot(contains('ZameelOverlayService.runSetupSelfTest(this)')));
+      expect(activity,
+          isNot(contains('ZameelOverlayService.runSetupSelfTest(this)')));
       expect(activity, contains('ACTION_APP_NOTIFICATION_BUBBLE_SETTINGS'));
       expect(activity, contains('bubblePreference'));
     });
@@ -154,14 +174,17 @@ void main() {
     test('cold-start chat deep links wait for the Flutter navigator', () {
       final main = _read('lib/main.dart');
 
-      expect(main, contains('Future<NavigatorState?> _waitForZameelNavigator()'));
+      expect(
+          main, contains('Future<NavigatorState?> _waitForZameelNavigator()'));
       expect(main, contains('final nav = await _waitForZameelNavigator();'));
       expect(main, isNot(contains('const Duration(milliseconds: 900)')));
     });
   });
 
   group('Zameel 072 media-egress regression contracts', () {
-    test('full video playback never streams and prefetches the same URL together', () {
+    test(
+        'full video playback never streams and prefetches the same URL together',
+        () {
       final vertical = _read('lib/widgets/vertical_autoplay_video_player.dart');
       final stories = _read('lib/screens/stories/stories_screen.dart');
       final clips = _read('lib/screens/social/public_clips_strip.dart');
@@ -170,19 +193,25 @@ void main() {
       expect(vertical, contains('VideoSourceService.controller(rawUrl)'));
       expect(source, contains('downloadIfMissing: false'));
       expect(source, isNot(contains('downloadIfMissing: true')));
-      expect(vertical, isNot(contains('MediaCacheService.prefetch(<String>[rawUrl]')));
-      expect(stories, isNot(contains('MediaCacheService.prefetch(<String>[path]')));
-      expect(clips, isNot(contains('MediaCacheService.prefetch(<String>[widget.url]')));
+      expect(vertical,
+          isNot(contains('MediaCacheService.prefetch(<String>[rawUrl]')));
+      expect(stories,
+          isNot(contains('MediaCacheService.prefetch(<String>[path]')));
+      expect(clips,
+          isNot(contains('MediaCacheService.prefetch(<String>[widget.url]')));
     });
 
-    test('story and clip trays do not eagerly download batches of full videos', () {
+    test('story and clip trays do not eagerly download batches of full videos',
+        () {
       final stories = _read('lib/screens/stories/stories_screen.dart');
       final clips = _read('lib/screens/social/public_clips_strip.dart');
 
       expect(stories, isNot(contains('limit: 8')));
       expect(clips, isNot(contains('limit: 6')));
-      expect(stories, contains('MediaCacheService.prefetch(<String>[url], limit: 1)'));
-      expect(clips, isNot(contains('MediaCacheService.prefetch(<String>[url]')));
+      expect(stories,
+          contains('MediaCacheService.prefetch(<String>[url], limit: 1)'));
+      expect(
+          clips, isNot(contains('MediaCacheService.prefetch(<String>[url]')));
       expect(clips, contains('SecureMediaService.resolve(url)'));
     });
   });
@@ -201,7 +230,8 @@ void main() {
       expect(push, contains('.select("id")'));
       expect(push, contains('if (!claimed) continue;'));
       expect(push, contains('stale_processing_recovered'));
-      final recovery = _read('supabase/migrations/069_push_queue_processing_recovery.sql');
+      final recovery =
+          _read('supabase/migrations/069_push_queue_processing_recovery.sql');
       expect(recovery, contains('processing_started_at'));
       expect(recovery, contains('push_queue_processing_timestamp'));
     });
@@ -210,30 +240,41 @@ void main() {
       final ci = _read('codemagic.yaml');
 
       expect(ci, contains('GOOGLE_SERVICES_JSON_BASE64 is required'));
-      expect(ci, isNot(contains('building without Firebase push configuration')));
+      expect(
+          ci, isNot(contains('building without Firebase push configuration')));
       expect(ci, contains('flutter: 3.47.1'));
       expect(ci, contains('flutter analyze --no-pub'));
       expect(ci, contains('flutter test --no-pub'));
-      expect(ci, contains('"project_id"[[:space:]]*:[[:space:]]*"zameel-81ff6"'));
-      expect(ci, contains('"package_name"[[:space:]]*:[[:space:]]*"com.zameel.app"'));
+      expect(
+          ci, contains('"project_id"[[:space:]]*:[[:space:]]*"zameel-81ff6"'));
+      expect(ci,
+          contains('"package_name"[[:space:]]*:[[:space:]]*"com.zameel.app"'));
     });
   });
   group('Zameel 072 schema-order regression contracts', () {
-    test('direct-conversation RPC uses the canonical joined_at membership column', () {
-      final migration = _read('supabase/migrations/012_relationship_controls.sql');
+    test(
+        'direct-conversation RPC uses the canonical joined_at membership column',
+        () {
+      final migration =
+          _read('supabase/migrations/012_relationship_controls.sql');
 
       expect(
         migration,
-        contains('insert into public.conversation_members(id, conversation_id, user_id, joined_at)'),
+        contains(
+            'insert into public.conversation_members(id, conversation_id, user_id, joined_at)'),
       );
       expect(
         migration,
-        isNot(contains('insert into public.conversation_members(id, conversation_id, user_id, created_at)')),
+        isNot(contains(
+            'insert into public.conversation_members(id, conversation_id, user_id, created_at)')),
       );
     });
 
-    test('story-view write policies tolerate viewer_id and legacy user_id schemas', () {
-      final migration = _read('supabase/migrations/061_privacy_search_books_battery_cleanup.sql');
+    test(
+        'story-view write policies tolerate viewer_id and legacy user_id schemas',
+        () {
+      final migration = _read(
+          'supabase/migrations/061_privacy_search_books_battery_cleanup.sql');
 
       expect(migration, contains("column_name='viewer_id'"));
       expect(migration, contains("column_name='user_id'"));
@@ -242,7 +283,6 @@ void main() {
       expect(migration, contains('create policy story_views_self_update'));
     });
   });
-
 
   group('Zameel 074 maintenance contracts', () {
     test('secure media audience classifier executes real production code', () {
@@ -264,7 +304,10 @@ void main() {
         'supabase/migrations/074_private_media_and_push_delivery.sql',
       );
       expect(migration, contains("'zameel_private_media'"));
-      expect(migration, contains("update storage.buckets set public = false where id in ('posts', 'graduation_book')"));
+      expect(
+          migration,
+          contains(
+              "update storage.buckets set public = false where id in ('posts', 'graduation_book')"));
       expect(migration, contains('create policy zameel_private_media_read'));
       expect(migration, contains('create policy zameel_private_media_insert'));
       expect(migration, contains('claim_push_device_token'));
@@ -274,7 +317,8 @@ void main() {
     test('every explicit logout goes through token-safe session service', () {
       final authApp = _read('lib/features/auth_app.dart');
       final home = _read('lib/features/home_feed.dart');
-      final settings = _read('lib/screens/profile/profile_settings_screen.dart');
+      final settings =
+          _read('lib/screens/profile/profile_settings_screen.dart');
       final session = _read('lib/services/auth_session_service.dart');
 
       expect(authApp, contains('AuthSessionService.signOut()'));
@@ -304,9 +348,12 @@ void main() {
 
       expect(receiver, contains('Notification.BubbleMetadata.Builder()'));
       expect(receiver, contains('.setIntent(bubblePendingIntent)'));
-      expect(receiver, contains('Notification.BubbleMetadata.Builder(shortcutId)'));
-      expect(receiver, contains('shortcutManager.pushDynamicShortcut(shortcut)'));
-      expect(receiver, contains('pushDynamicShortcut(shortcut)\n            true'));
+      expect(receiver,
+          contains('Notification.BubbleMetadata.Builder(shortcutId)'));
+      expect(
+          receiver, contains('shortcutManager.pushDynamicShortcut(shortcut)'));
+      expect(receiver,
+          contains('pushDynamicShortcut(shortcut)\n            true'));
       expect(activity, contains('channels.all { it.canBubble() }'));
     });
 
@@ -330,7 +377,8 @@ void main() {
       expect(push, contains('onConflict: "queue_id,token_id"'));
     });
 
-    test('native story and clip video uploads do not load whole video into RAM', () {
+    test('native story and clip video uploads do not load whole video into RAM',
+        () {
       final stories = _read('lib/screens/stories/stories_screen.dart');
       final clips = _read('lib/screens/social/clip_create_screen.dart');
       final social = _read('lib/services_social.dart');
@@ -342,11 +390,14 @@ void main() {
       expect(social, contains('uploadPickedPostMedia'));
     });
 
-    test('foreground special-use declaration matches message-triggered bubble host', () {
+    test(
+        'foreground special-use declaration matches message-triggered bubble host',
+        () {
       final manifest = _read('android/app/src/main/AndroidManifest.xml');
       expect(
         manifest,
-        contains('User-enabled short-lived floating direct-message overlay started only for an incoming Zameel message'),
+        contains(
+            'User-enabled short-lived floating direct-message overlay started only for an incoming Zameel message'),
       );
     });
 
@@ -362,8 +413,10 @@ void main() {
 
       // Shorts compression is native-only; web must retain its IO-free stub.
       final shortsFacade = _read('lib/services/shorts_video_preparer.dart');
-      expect(shortsFacade, contains("export 'shorts_video_preparer_stub.dart'"));
-      expect(shortsFacade, contains("if (dart.library.io) 'shorts_video_preparer_io.dart'"));
+      expect(
+          shortsFacade, contains("export 'shorts_video_preparer_stub.dart'"));
+      expect(shortsFacade,
+          contains("if (dart.library.io) 'shorts_video_preparer_io.dart'"));
       expect(shortsFacade, isNot(contains("import 'dart:io'")));
       expect(_read('lib/services/shorts_video_preparer_stub.dart'),
           isNot(contains("import 'dart:io'")));
@@ -393,10 +446,13 @@ void main() {
       expect(analysis, isNot(contains('control_flow_in_finally: ignore')));
     });
 
-    test('verified registration cannot be skipped and keeps legal data private', () {
-      final migration = _read('supabase/migrations/076_registration_radio_college_challenge.sql');
+    test('verified registration cannot be skipped and keeps legal data private',
+        () {
+      final migration = _read(
+          'supabase/migrations/076_registration_radio_college_challenge.sql');
       final gate = _read('lib/features/auth_app.dart');
-      final verification = _read('lib/screens/auth/contact_verification_screen.dart');
+      final verification =
+          _read('lib/screens/auth/contact_verification_screen.dart');
       expect(migration, contains('zameel_registration_profiles'));
       expect(migration, contains('registration_owner_read'));
       expect(migration, contains('registration_one_verified_channel'));
@@ -410,8 +466,10 @@ void main() {
     test('radio and beautiful college remain independent destinations', () {
       final home = _read('lib/features/home_feed.dart');
       final radio = _read('lib/screens/social/zameel_radio_screen.dart');
-      final challenge = _read('lib/screens/social/beautiful_college_screen.dart');
-      final migration = _read('supabase/migrations/076_registration_radio_college_challenge.sql');
+      final challenge =
+          _read('lib/screens/social/beautiful_college_screen.dart');
+      final migration = _read(
+          'supabase/migrations/076_registration_radio_college_challenge.sql');
       expect(home, contains("case 'radio':"));
       expect(home, contains("case 'beautiful_college':"));
       expect(radio, contains('duration_seconds'));
@@ -423,8 +481,11 @@ void main() {
       expect(migration, contains('zameel_college_two_reports'));
     });
 
-    test('077 social runtime repairs keep moderation and group chat server-side', () {
-      final migration = _read('supabase/migrations/077_social_runtime_media_repairs.sql');
+    test(
+        '077 social runtime repairs keep moderation and group chat server-side',
+        () {
+      final migration =
+          _read('supabase/migrations/077_social_runtime_media_repairs.sql');
       final radio = _read('lib/screens/social/zameel_radio_screen.dart');
       final college = _read('lib/screens/social/beautiful_college_screen.dart');
       final lamma = _read('lib/screens/social/lamma_screen.dart');
@@ -447,5 +508,4 @@ void main() {
       expect(home, contains('const BeautifulCollegeScreen()'));
     });
   });
-
 }

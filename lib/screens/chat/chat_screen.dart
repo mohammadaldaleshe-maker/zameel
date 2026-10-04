@@ -136,14 +136,16 @@ class _ChatScreenState extends State<ChatScreen> {
     return Directionality(
       textDirection: ar ? ui.TextDirection.rtl : ui.TextDirection.ltr,
       child: Scaffold(
-        backgroundColor: AppTheme.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
             title: Text(ar ? '💬 الدردشة' : '💬 Chat'),
             centerTitle: true,
             actions: [
-              if (FeatureControl.instance.visible('anonymous_messages')) IconButton(
-                  onPressed: () => FeatureControl.instance.open(context, 'anonymous_messages', () => const AnonymousScreen()),
-                  icon: const Icon(Icons.visibility_off_rounded)),
+              if (FeatureControl.instance.visible('anonymous_messages'))
+                IconButton(
+                    onPressed: () => FeatureControl.instance.open(context,
+                        'anonymous_messages', () => const AnonymousScreen()),
+                    icon: const Icon(Icons.visibility_off_rounded)),
               IconButton(
                   onPressed: _load, icon: const Icon(Icons.refresh_rounded))
             ]),
@@ -158,16 +160,16 @@ class _ChatScreenState extends State<ChatScreen> {
                   const SizedBox(height: 6),
                   Text(
                       ar
-                          ? 'الدردشة العامة تجمع جميع طلاب Zameel من جميع الجامعات.'
-                          : 'The public chat connects Zameel students from all universities.',
-                      style: const TextStyle(color: Colors.black54)),
+                          ? 'الدردشة العامة تجمع جميع مستخدمي Zameel.'
+                          : 'The public chat connects all Zameel users.',
+                      style: TextStyle(
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant)),
                   const SizedBox(height: 12),
                   _communityCard(
                     icon: Icons.public_rounded,
                     title: ar ? '🌐 العامة' : '🌐 General',
-                    subtitle: ar
-                        ? 'جميع طلاب Zameel من جميع الجامعات'
-                        : 'All Zameel students from all universities',
+                    subtitle: ar ? 'جميع مستخدمي Zameel' : 'All Zameel users',
                     onTap: () => _openCommunity(
                         const CommunityScope.global(),
                         ar ? '🌐 الدردشة العامة' : '🌐 General chat',
@@ -187,7 +189,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         ? () => _openCommunity(
                             CommunityScope.faculty(
                                 university: university, college: college),
-                            ar ? '🏫 كلية $college' : '🏫 $college',
+                            '🏫 $college',
                             university)
                         : null,
                   ),
@@ -269,11 +271,13 @@ class _ChatScreenState extends State<ChatScreen> {
       bool enabled = true}) {
     return Card(
       elevation: 0,
-      color: enabled ? Colors.white : AppTheme.muted.shade100,
+      color: enabled
+          ? Theme.of(context).colorScheme.surface
+          : Theme.of(context).colorScheme.surfaceContainerHighest,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       child: ListTile(
         enabled: enabled,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
         leading: CircleAvatar(
             backgroundColor: AppTheme.primaryLight,
             child: Icon(icon, color: AppTheme.primaryDark)),
@@ -293,6 +297,11 @@ class _ChatScreenState extends State<ChatScreen> {
         child:
             image == null || image.isEmpty ? const Icon(Icons.person) : null);
   }
+}
+
+String _communityTimestamp(dynamic value) {
+  final date = DateTime.tryParse(value?.toString() ?? '')?.toLocal();
+  return date == null ? '' : DateFormat('yyyy/MM/dd • HH:mm').format(date);
 }
 
 class CommunityChatDetailScreen extends StatefulWidget {
@@ -419,7 +428,7 @@ class _CommunityChatDetailScreenState extends State<CommunityChatDetailScreen> {
                 margin: const EdgeInsets.fromLTRB(12, 10, 12, 4),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                    color: AppTheme.primaryLight,
+                    color: Theme.of(context).colorScheme.primaryContainer,
                     borderRadius: BorderRadius.circular(14)),
                 child: Text(widget.subtitle,
                     style: const TextStyle(fontWeight: FontWeight.w700))),
@@ -454,8 +463,12 @@ class _CommunityChatDetailScreenState extends State<CommunityChatDetailScreen> {
                                           const BoxConstraints(maxWidth: 340),
                                       decoration: BoxDecoration(
                                           color: mine
-                                              ? AppTheme.primaryLight
-                                              : Colors.white,
+                                              ? Theme.of(context)
+                                                  .colorScheme
+                                                  .primaryContainer
+                                              : Theme.of(context)
+                                                  .colorScheme
+                                                  .surface,
                                           borderRadius:
                                               BorderRadius.circular(16)),
                                       child: Column(
@@ -473,11 +486,13 @@ class _CommunityChatDetailScreenState extends State<CommunityChatDetailScreen> {
                                                 m['content']?.toString() ?? ''),
                                             const SizedBox(height: 3),
                                             Text(
-                                                m['created_at']?.toString() ??
-                                                    '',
-                                                style: const TextStyle(
-                                                    fontSize: 9,
-                                                    color: Colors.black45))
+                                                _communityTimestamp(
+                                                    m['created_at']),
+                                                style: TextStyle(
+                                                    fontSize: 11,
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .onSurfaceVariant))
                                           ])));
                             })),
             SafeArea(
@@ -495,7 +510,9 @@ class _CommunityChatDetailScreenState extends State<CommunityChatDetailScreen> {
                                       ? 'اكتب رسالة...'
                                       : 'Write a message...',
                                   filled: true,
-                                  fillColor: AppTheme.muted.shade100,
+                                  fillColor: Theme.of(context)
+                                      .colorScheme
+                                      .surfaceContainerHighest,
                                   border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(18),
                                       borderSide: BorderSide.none)))),
@@ -572,7 +589,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   bool _pendingMatchesPersisted(
       Map<String, dynamic> pending, Map<String, dynamic> persisted) {
     if (pending['id']?.toString().startsWith('local-') != true) return false;
-    if (pending['sender_id']?.toString() != persisted['sender_id']?.toString()) {
+    if (pending['sender_id']?.toString() !=
+        persisted['sender_id']?.toString()) {
       return false;
     }
     if (pending['content']?.toString() != persisted['content']?.toString()) {
@@ -582,7 +600,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         (persisted['media_url']?.toString() ?? '')) {
       return false;
     }
-    final pendingAt = DateTime.tryParse(pending['created_at']?.toString() ?? '');
+    final pendingAt =
+        DateTime.tryParse(pending['created_at']?.toString() ?? '');
     final persistedAt =
         DateTime.tryParse(persisted['created_at']?.toString() ?? '');
     if (pendingAt == null || persistedAt == null) return true;
@@ -593,10 +612,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   void _mergePersistedMessage(Map<String, dynamic> row) {
     if (!mounted) return;
     final savedId = row['id']?.toString();
-    final savedIndex = _messages.indexWhere(
-        (message) => message['id']?.toString() == savedId);
-    final pendingIndex = _messages.indexWhere(
-        (message) => _pendingMatchesPersisted(message, row));
+    final savedIndex =
+        _messages.indexWhere((message) => message['id']?.toString() == savedId);
+    final pendingIndex = _messages
+        .indexWhere((message) => _pendingMatchesPersisted(message, row));
     setState(() {
       if (savedIndex >= 0) {
         _messages[savedIndex] = row;
@@ -640,8 +659,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     if (!mounted) return;
     final localPending = _messages.where((message) {
       if (message['id']?.toString().startsWith('local-') != true) return false;
-      return !persisted.any(
-          (saved) => _pendingMatchesPersisted(message, saved));
+      return !persisted
+          .any((saved) => _pendingMatchesPersisted(message, saved));
     }).toList();
     setState(() => _messages = [...persisted, ...localPending]);
   }
@@ -789,8 +808,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _messages.removeWhere(
-            (message) => message['id']?.toString() == localId));
+        setState(() => _messages
+            .removeWhere((message) => message['id']?.toString() == localId));
         if (_controller.text.trim().isEmpty) _controller.text = text;
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('تعذر إرسال الرسالة: $e')));
@@ -802,7 +821,22 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     if (_uploading || uid == null) return;
     final file = await FilePicker.pickFile(
       type: FileType.custom,
-      allowedExtensions: const ['jpg', 'jpeg', 'png', 'webp', 'gif', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'zip'],
+      allowedExtensions: const [
+        'jpg',
+        'jpeg',
+        'png',
+        'webp',
+        'gif',
+        'pdf',
+        'doc',
+        'docx',
+        'xls',
+        'xlsx',
+        'ppt',
+        'pptx',
+        'txt',
+        'zip'
+      ],
     );
     if (file == null) return;
     final bytes = await file.readAsBytes();
@@ -817,23 +851,34 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     setState(() => _uploading = true);
     try {
       final safeName = file.name.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
-      final path = '${uid!}/${widget.conversationId}/${DateTime.now().microsecondsSinceEpoch}_$safeName';
-      final extension = file.name.contains('.') ? file.name.split('.').last.toLowerCase() : '';
-      final image = const {'jpg', 'jpeg', 'png', 'webp', 'gif'}.contains(extension);
+      final path =
+          '${uid!}/${widget.conversationId}/${DateTime.now().microsecondsSinceEpoch}_$safeName';
+      final extension = file.name.contains('.')
+          ? file.name.split('.').last.toLowerCase()
+          : '';
+      final image =
+          const {'jpg', 'jpeg', 'png', 'webp', 'gif'}.contains(extension);
       final imageMime = extension == 'jpg' ? 'jpeg' : extension;
       await db.storage.from('chat_attachments').uploadBinary(
-        path,
-        Uint8List.fromList(bytes),
-        fileOptions: FileOptions(contentType: image ? 'image/$imageMime' : 'application/octet-stream'),
-      );
-      final row = await db.from('messages').insert({
-        'conversation_id': widget.conversationId,
-        'sender_id': uid,
-        'content': file.name,
-        'media_url': path,
-        'media_type': image ? 'image' : 'file',
-        'is_read': false,
-      }).select('id,content,sender_id,created_at,media_url,media_type,is_read,delivered_at,read_at').single();
+            path,
+            Uint8List.fromList(bytes),
+            fileOptions: FileOptions(
+                contentType:
+                    image ? 'image/$imageMime' : 'application/octet-stream'),
+          );
+      final row = await db
+          .from('messages')
+          .insert({
+            'conversation_id': widget.conversationId,
+            'sender_id': uid,
+            'content': file.name,
+            'media_url': path,
+            'media_type': image ? 'image' : 'file',
+            'is_read': false,
+          })
+          .select(
+              'id,content,sender_id,created_at,media_url,media_type,is_read,delivered_at,read_at')
+          .single();
       await db.from('chat_attachments').insert({
         'conversation_id': widget.conversationId,
         'message_id': row['id'],
@@ -855,14 +900,17 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   }
 
   void _notice(String message) {
-    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    if (mounted)
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<String?> _attachmentUrl(String path) async {
     final cached = _signedAttachments[path];
     if (cached != null) return cached;
     try {
-      final url = await db.storage.from('chat_attachments').createSignedUrl(path, 3600);
+      final url =
+          await db.storage.from('chat_attachments').createSignedUrl(path, 3600);
       _signedAttachments[path] = url;
       return url;
     } catch (_) {
@@ -874,25 +922,42 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     final path = message['media_url']?.toString() ?? '';
     final type = message['media_type']?.toString() ?? '';
     if (path.isEmpty) {
-      return Text(message['content']?.toString() ?? '', style: TextStyle(color: mine ? Colors.white : Colors.black87, fontSize: 15));
+      return Text(message['content']?.toString() ?? '',
+          style: TextStyle(
+              color: mine ? Colors.white : Colors.black87, fontSize: 15));
     }
     return FutureBuilder<String?>(
       future: _attachmentUrl(path),
       builder: (context, snapshot) {
         final url = snapshot.data;
-        if (url == null) return const SizedBox(width: 28, height: 28, child: CircularProgressIndicator(strokeWidth: 2));
+        if (url == null)
+          return const SizedBox(
+              width: 28,
+              height: 28,
+              child: CircularProgressIndicator(strokeWidth: 2));
         if (type == 'image') {
           return GestureDetector(
-            onTap: () => showDialog<void>(context: context, builder: (_) => Dialog(child: InteractiveViewer(child: Image.network(url)))),
-            child: ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.network(url, width: 220, height: 180, fit: BoxFit.cover)),
+            onTap: () => showDialog<void>(
+                context: context,
+                builder: (_) => Dialog(
+                    child: InteractiveViewer(child: Image.network(url)))),
+            child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(url,
+                    width: 220, height: 180, fit: BoxFit.cover)),
           );
         }
         return InkWell(
-          onTap: () => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
+          onTap: () =>
+              launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Icon(Icons.insert_drive_file_rounded, color: mine ? Colors.white : AppTheme.primary),
+            Icon(Icons.insert_drive_file_rounded,
+                color: mine ? Colors.white : AppTheme.primary),
             const SizedBox(width: 8),
-            Flexible(child: Text(message['content']?.toString() ?? 'ملف', style: TextStyle(color: mine ? Colors.white : Colors.black87))),
+            Flexible(
+                child: Text(message['content']?.toString() ?? 'ملف',
+                    style: TextStyle(
+                        color: mine ? Colors.white : Colors.black87))),
           ]),
         );
       },
@@ -1269,17 +1334,23 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               : '$completionLabel. The listing will be removed from available books while the conversation remains available.',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(ar ? 'إلغاء' : 'Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text(completionLabel)),
+          TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: Text(ar ? 'إلغاء' : 'Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: Text(completionLabel)),
         ],
       ),
     );
     if (confirmed != true) return;
     try {
-      await db.rpc('complete_book_exchange', params: {'target_request_id': requestId});
+      await db.rpc('complete_book_exchange',
+          params: {'target_request_id': requestId});
       _notice(completionLabel);
     } catch (e) {
-      _notice('${ar ? 'تعذر إتمام العملية' : 'Could not complete handover'}: $e');
+      _notice(
+          '${ar ? 'تعذر إتمام العملية' : 'Could not complete handover'}: $e');
     }
   }
 
@@ -1290,20 +1361,27 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       textDirection: ar ? ui.TextDirection.rtl : ui.TextDirection.ltr,
       child: Scaffold(
         appBar: AppBar(
-          title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(widget.partnerName, style: const TextStyle(fontWeight: FontWeight.bold)),
-            if (widget.contextLabel != null) Text(widget.contextLabel!, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.normal)),
+          title:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(widget.partnerName,
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+            if (widget.contextLabel != null)
+              Text(widget.contextLabel!,
+                  style: const TextStyle(
+                      fontSize: 11, fontWeight: FontWeight.normal)),
           ]),
           actions: [
-            if (widget.bookRequestId != null) IconButton(
-              tooltip: _bookCompletionLabel(ar),
-              onPressed: () => _completeBookHandover(ar),
-              icon: const Icon(Icons.task_alt_rounded),
-            ),
-            if (widget.allowCalls) IconButton(
-                tooltip: ar ? 'سجل المكالمات' : 'Call history',
-                onPressed: () => _showCallHistory(ar),
-                icon: const Icon(Icons.history_rounded)),
+            if (widget.bookRequestId != null)
+              IconButton(
+                tooltip: _bookCompletionLabel(ar),
+                onPressed: () => _completeBookHandover(ar),
+                icon: const Icon(Icons.task_alt_rounded),
+              ),
+            if (widget.allowCalls)
+              IconButton(
+                  tooltip: ar ? 'سجل المكالمات' : 'Call history',
+                  onPressed: () => _showCallHistory(ar),
+                  icon: const Icon(Icons.history_rounded)),
             IconButton(
               tooltip: ar ? 'التقِ بزميل' : 'Meet a colleague',
               onPressed: () => _meetAction(ar),
@@ -1315,16 +1393,18 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                     : Icons.person_pin_circle_rounded),
               ),
             ),
-            if (widget.allowCalls) IconButton(
-              tooltip: ar ? 'مكالمة صوتية' : 'Voice call',
-              onPressed: () => _call(video: false),
-              icon: const Icon(Icons.call_rounded),
-            ),
-            if (widget.allowCalls) IconButton(
-              tooltip: ar ? 'مكالمة فيديو' : 'Video call',
-              onPressed: () => _call(video: true),
-              icon: const Icon(Icons.videocam_rounded),
-            ),
+            if (widget.allowCalls)
+              IconButton(
+                tooltip: ar ? 'مكالمة صوتية' : 'Voice call',
+                onPressed: () => _call(video: false),
+                icon: const Icon(Icons.call_rounded),
+              ),
+            if (widget.allowCalls)
+              IconButton(
+                tooltip: ar ? 'مكالمة فيديو' : 'Video call',
+                onPressed: () => _call(video: true),
+                icon: const Icon(Icons.videocam_rounded),
+              ),
           ],
         ),
         body: Column(
@@ -1332,8 +1412,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             if (widget.contextPhone?.isNotEmpty == true)
               ListTile(
                 dense: true,
-                leading: const Icon(Icons.phone_rounded, color: AppTheme.primary),
-                title: Text(ar ? 'رقم التواصل المضاف للكتاب' : 'Book contact number'),
+                leading:
+                    const Icon(Icons.phone_rounded, color: AppTheme.primary),
+                title: Text(
+                    ar ? 'رقم التواصل المضاف للكتاب' : 'Book contact number'),
                 subtitle: SelectableText(widget.contextPhone!),
               ),
             Expanded(
@@ -1412,7 +1494,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                     tooltip: ar ? 'إرفاق صورة أو ملف' : 'Attach image or file',
                     onPressed: _uploading ? null : _pickAttachment,
                     icon: _uploading
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2))
                         : const Icon(Icons.attach_file_rounded),
                   ),
                   Expanded(
@@ -1450,7 +1535,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   Widget _meetRequestBanner(bool ar) {
     final mine = _activeMeet?['requester_id']?.toString() == uid;
     return Material(
-      color: AppTheme.primaryLight,
+      color: Theme.of(context).colorScheme.primaryContainer,
       child: ListTile(
         leading: const Icon(Icons.person_pin_circle_rounded),
         title: Text(mine
@@ -1679,75 +1764,78 @@ class MeetColleagueMapScreen extends StatelessWidget {
         LatLng((a.latitude + b.latitude) / 2, (a.longitude + b.longitude) / 2);
     return ScreenAwakeScope(
       child: Directionality(
-        textDirection: ar ? ui.TextDirection.rtl : ui.TextDirection.ltr,
-        child: Scaffold(
-          appBar: AppBar(
-              title: Text(ar ? 'خريطة الالتقاء' : 'Meeting map'),
-              actions: [
-                IconButton(
-                    tooltip: ar ? 'إيقاف مشاركة الموقع' : 'Stop sharing',
-                    icon: const Icon(Icons.location_off_rounded),
-                    onPressed: () async {
-                      await Supabase.instance.client.rpc(
-                          'cancel_meet_colleague',
-                          params: {'target_request_id': meet['request_id']});
-                      if (context.mounted) Navigator.pop(context);
-                    }),
-              ]),
-          body: Column(children: [
-            Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(14),
-                color: AppTheme.primaryLight,
-                child: Text(
-                    ar
-                        ? 'المسافة التقريبية بينكما: ${meters.round()} متر\nالتقيا في مكان عام وآمن، واتفقا عبر الدردشة على نقطة واضحة.'
-                        : 'Approximate distance: ${meters.round()} m\nMeet in a safe public place and agree on a clear landmark in chat.',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontWeight: FontWeight.w700))),
-            Expanded(
-                child: FlutterMap(
-                    options:
-                        MapOptions(initialCenter: midpoint, initialZoom: 16),
-                    children: [
-                  TileLayer(
-                      urlTemplate:
-                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                      userAgentPackageName: 'com.zameel.app'),
-                  PolylineLayer(polylines: [
-                    Polyline(
-                        points: [a, b], strokeWidth: 5, color: AppTheme.primary)
-                  ]),
-                  MarkerLayer(markers: [
-                    Marker(
-                        point: a,
-                        width: 70,
-                        height: 70,
-                        child: const Icon(Icons.person_pin_circle_rounded,
-                            size: 48, color: AppTheme.primaryDark)),
-                    Marker(
-                        point: b,
-                        width: 70,
-                        height: 70,
-                        child: const Icon(Icons.location_on_rounded,
-                            size: 48, color: Colors.orange)),
-                  ]),
-                ])),
-            SafeArea(
-                top: false,
-                child: Padding(
-                    padding: const EdgeInsets.all(10),
-                    child: FilledButton.icon(
-                      onPressed: () => launchUrl(
-                          Uri.parse(
-                              'https://www.google.com/maps/dir/?api=1&origin=${a.latitude},${a.longitude}&destination=${b.latitude},${b.longitude}&travelmode=walking'),
-                          mode: LaunchMode.externalApplication),
-                      icon: const Icon(Icons.directions_walk_rounded),
-                      label: Text(
-                          ar ? 'طريقة الالتقاء والمشي' : 'Walking directions'),
-                    ))),
-          ]),
-        )),
+          textDirection: ar ? ui.TextDirection.rtl : ui.TextDirection.ltr,
+          child: Scaffold(
+            appBar: AppBar(
+                title: Text(ar ? 'خريطة الالتقاء' : 'Meeting map'),
+                actions: [
+                  IconButton(
+                      tooltip: ar ? 'إيقاف مشاركة الموقع' : 'Stop sharing',
+                      icon: const Icon(Icons.location_off_rounded),
+                      onPressed: () async {
+                        await Supabase.instance.client.rpc(
+                            'cancel_meet_colleague',
+                            params: {'target_request_id': meet['request_id']});
+                        if (context.mounted) Navigator.pop(context);
+                      }),
+                ]),
+            body: Column(children: [
+              Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  child: Text(
+                      ar
+                          ? 'المسافة التقريبية بينكما: ${meters.round()} متر\nالتقيا في مكان عام وآمن، واتفقا عبر الدردشة على نقطة واضحة.'
+                          : 'Approximate distance: ${meters.round()} m\nMeet in a safe public place and agree on a clear landmark in chat.',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontWeight: FontWeight.w700))),
+              Expanded(
+                  child: FlutterMap(
+                      options:
+                          MapOptions(initialCenter: midpoint, initialZoom: 16),
+                      children: [
+                    TileLayer(
+                        urlTemplate:
+                            'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        userAgentPackageName: 'com.zameel.app'),
+                    PolylineLayer(polylines: [
+                      Polyline(
+                          points: [a, b],
+                          strokeWidth: 5,
+                          color: AppTheme.primary)
+                    ]),
+                    MarkerLayer(markers: [
+                      Marker(
+                          point: a,
+                          width: 70,
+                          height: 70,
+                          child: const Icon(Icons.person_pin_circle_rounded,
+                              size: 48, color: AppTheme.primaryDark)),
+                      Marker(
+                          point: b,
+                          width: 70,
+                          height: 70,
+                          child: const Icon(Icons.location_on_rounded,
+                              size: 48, color: Colors.orange)),
+                    ]),
+                  ])),
+              SafeArea(
+                  top: false,
+                  child: Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: FilledButton.icon(
+                        onPressed: () => launchUrl(
+                            Uri.parse(
+                                'https://www.google.com/maps/dir/?api=1&origin=${a.latitude},${a.longitude}&destination=${b.latitude},${b.longitude}&travelmode=walking'),
+                            mode: LaunchMode.externalApplication),
+                        icon: const Icon(Icons.directions_walk_rounded),
+                        label: Text(ar
+                            ? 'طريقة الالتقاء والمشي'
+                            : 'Walking directions'),
+                      ))),
+            ]),
+          )),
     );
   }
 }

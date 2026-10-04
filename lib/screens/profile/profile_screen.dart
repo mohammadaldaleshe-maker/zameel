@@ -1,3 +1,5 @@
+import '../promotions/promotion_request_screen.dart';
+import '../../widgets/profile_image_cropper.dart';
 import '../social/shorts_profile_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -356,12 +358,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (image == null) return;
 
     try {
-      final bytes = await image.readAsBytes();
-      final rawExt = image.name.contains('.')
-          ? image.name.split('.').last.toLowerCase()
-          : 'jpg';
-      final ext = rawExt == 'jpg' || rawExt == 'jpeg' ? 'jpg' : rawExt;
-      final contentType = ext == 'png' ? 'image/png' : 'image/jpeg';
+      final original = await image.readAsBytes();
+      if (!mounted) return;
+      final bytes = await Navigator.push<Uint8List>(
+          context,
+          MaterialPageRoute(
+              builder: (_) => ProfileImageCropper(
+                  bytes: original,
+                  cover: cover,
+                  arabic: Provider.of<LanguageProvider>(context, listen: false)
+                      .isArabic)));
+      if (bytes == null || !mounted) return;
+      const ext = 'png';
+      const contentType = 'image/png';
       final path =
           '${user.id}/${cover ? 'cover' : 'profile'}_${DateTime.now().millisecondsSinceEpoch}.$ext';
 
@@ -723,7 +732,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Directionality(
       textDirection: ar ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
-        backgroundColor: AppTheme.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: SafeArea(
             child: RefreshIndicator(
           onRefresh: _load,
@@ -823,7 +832,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             borderRadius:
                 const BorderRadius.vertical(bottom: Radius.circular(28)),
             child: Container(
-              height: 220,
+              height: MediaQuery.sizeOf(context).width / 3,
               width: double.infinity,
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
@@ -835,7 +844,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ? DecorationImage(
                         image: NetworkImage(cover),
                         fit: BoxFit.cover,
-                        alignment: Alignment.topCenter,
+                        alignment: Alignment.center,
                       )
                     : null,
               ),
@@ -867,223 +876,233 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
         ]),
-        Transform.translate(
-          offset: const Offset(0, -52),
-          child: Column(
-            children: [
-              GestureDetector(
-                onTap: image != null && image.isNotEmpty
-                    ? () => _openImage(image)
-                    : null,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(
-                      color: Colors.white, shape: BoxShape.circle),
-                  child: CircleAvatar(
-                    radius: 52,
-                    backgroundColor: AppTheme.primaryLight,
-                    backgroundImage: image != null && image.isNotEmpty
-                        ? NetworkImage(image)
-                        : null,
-                    child: image == null || image.isEmpty
-                        ? Image.asset('assets/branding/zameel_mark.png',
-                            width: 70, height: 70)
-                        : null,
-                  ),
+        Column(
+          children: [
+            SizedBox(
+                height: 64,
+                child: OverflowBox(
+                    maxHeight: 112,
+                    alignment: Alignment.bottomCenter,
+                    child: GestureDetector(
+                      onTap: image != null && image.isNotEmpty
+                          ? () => _openImage(image)
+                          : null,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surface,
+                            shape: BoxShape.circle),
+                        child: CircleAvatar(
+                          radius: 52,
+                          backgroundColor: AppTheme.primaryLight,
+                          backgroundImage: image != null && image.isNotEmpty
+                              ? NetworkImage(image)
+                              : null,
+                          child: image == null || image.isEmpty
+                              ? Image.asset('assets/branding/zameel_mark.png',
+                                  width: 70, height: 70)
+                              : null,
+                        ),
+                      ),
+                    ))),
+            const SizedBox(height: 8),
+            if (isMe)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 18),
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: () => _pickImage(cover: false),
+                      style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(0, 40)),
+                      icon: const Icon(Icons.account_circle_outlined, size: 19),
+                      label: Text(ar ? 'تغيير الصورة' : 'Change photo'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () => _pickImage(cover: true),
+                      style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(0, 40)),
+                      icon: const Icon(Icons.photo_camera_rounded, size: 19),
+                      label: Text(ar ? 'تغيير الغلاف' : 'Change cover'),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 8),
-              if (isMe)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 18),
-                  child: Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
+            if (!isMe)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 18),
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    if (_blocked)
                       OutlinedButton.icon(
-                        onPressed: () => _pickImage(cover: false),
-                        icon:
-                            const Icon(Icons.account_circle_outlined, size: 19),
-                        label: Text(ar ? 'تغيير الصورة' : 'Change photo'),
-                      ),
+                          onPressed: () => _setBlocked(false),
+                          icon: const Icon(Icons.block_rounded),
+                          label: Text(ar ? 'إلغاء الحظر' : 'Unblock'))
+                    else if (_friendStatus == 'accepted')
                       OutlinedButton.icon(
-                        onPressed: () => _pickImage(cover: true),
-                        icon: const Icon(Icons.photo_camera_rounded, size: 19),
-                        label: Text(ar ? 'تغيير الغلاف' : 'Change cover'),
+                          onPressed: _removeColleague,
+                          icon: const Icon(Icons.people_alt_rounded),
+                          label: Text(ar ? 'زميلان' : 'Colleagues'))
+                    else if (_friendStatus == 'pending')
+                      OutlinedButton.icon(
+                          onPressed: null,
+                          icon: const Icon(Icons.hourglass_top_rounded),
+                          label: Text(ar
+                              ? 'يتابعه • الطلب قيد الانتظار'
+                              : 'Following • request pending'))
+                    else if (_friendStatus == 'incoming')
+                      OutlinedButton.icon(
+                          onPressed: null,
+                          icon: const Icon(Icons.mark_email_unread_rounded),
+                          label:
+                              Text(ar ? 'لديك طلب زمالة' : 'Incoming request'))
+                    else
+                      FilledButton.icon(
+                          onPressed: _sendFriendRequest,
+                          icon: const Icon(Icons.person_add_alt_1_rounded),
+                          label: Text(ar ? 'إضافة زميل' : 'Add colleague')),
+                    if (!_blocked) ...[
+                      IconButton.filledTonal(
+                        onPressed: _toggleFollow,
+                        tooltip: _following
+                            ? (ar ? 'إلغاء المتابعة' : 'Unfollow')
+                            : (ar ? 'متابعة' : 'Follow'),
+                        icon: Icon(_following
+                            ? Icons.person_rounded
+                            : Icons.person_add_outlined),
                       ),
                     ],
-                  ),
-                ),
-              if (!isMe)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 18),
-                  child: Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      if (_blocked)
-                        OutlinedButton.icon(
-                            onPressed: () => _setBlocked(false),
-                            icon: const Icon(Icons.block_rounded),
-                            label: Text(ar ? 'إلغاء الحظر' : 'Unblock'))
-                      else if (_friendStatus == 'accepted')
-                        OutlinedButton.icon(
-                            onPressed: _removeColleague,
-                            icon: const Icon(Icons.people_alt_rounded),
-                            label: Text(ar ? 'زميلان' : 'Colleagues'))
-                      else if (_friendStatus == 'pending')
-                        OutlinedButton.icon(
-                            onPressed: null,
-                            icon: const Icon(Icons.hourglass_top_rounded),
-                            label: Text(ar
-                                ? 'يتابعه • الطلب قيد الانتظار'
-                                : 'Following • request pending'))
-                      else if (_friendStatus == 'incoming')
-                        OutlinedButton.icon(
-                            onPressed: null,
-                            icon: const Icon(Icons.mark_email_unread_rounded),
-                            label: Text(
-                                ar ? 'لديك طلب زمالة' : 'Incoming request'))
-                      else
-                        FilledButton.icon(
-                            onPressed: _sendFriendRequest,
-                            icon: const Icon(Icons.person_add_alt_1_rounded),
-                            label: Text(ar ? 'إضافة زميل' : 'Add colleague')),
-                      if (!_blocked) ...[
-                        IconButton.filledTonal(
-                          onPressed: _toggleFollow,
-                          tooltip: _following
-                              ? (ar ? 'إلغاء المتابعة' : 'Unfollow')
-                              : (ar ? 'متابعة' : 'Follow'),
-                          icon: Icon(_following
-                              ? Icons.person_rounded
-                              : Icons.person_add_outlined),
-                        ),
-                      ],
-                      if (!_blocked &&
-                          _profile?['allow_messages'] != false) ...[
-                        IconButton.filledTonal(
-                            onPressed: () =>
-                                _openChatWithColleague(name.toString()),
-                            tooltip: ar ? 'دردشة' : 'Chat',
-                            icon: const Icon(Icons.chat_bubble_rounded)),
-                      ],
+                    if (!_blocked && _profile?['allow_messages'] != false) ...[
+                      IconButton.filledTonal(
+                          onPressed: () =>
+                              _openChatWithColleague(name.toString()),
+                          tooltip: ar ? 'دردشة' : 'Chat',
+                          icon: const Icon(Icons.chat_bubble_rounded)),
                     ],
-                  ),
+                  ],
                 ),
-              const SizedBox(height: 10),
-              Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                Flexible(
-                    child: Text('$name',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                            fontSize: 23, fontWeight: FontWeight.w800))),
-                if (role == 'student') ...[
-                  const SizedBox(width: 6),
-                  const Icon(Icons.verified_rounded,
-                      color: AppTheme.primary, size: 20)
-                ],
-              ]),
-              if (!isMe && _targetOnline)
-                Padding(
-                    padding: const EdgeInsets.only(top: 5),
-                    child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const CircleAvatar(
-                              radius: 5, backgroundColor: Colors.green),
-                          const SizedBox(width: 6),
-                          Text(ar ? 'متصل الآن' : 'Online now',
-                              style: const TextStyle(
-                                  color: Colors.green,
-                                  fontWeight: FontWeight.w700))
-                        ])),
-              if (username != null && username.isNotEmpty)
-                Text('@$username',
-                    style: const TextStyle(color: AppTheme.textSecondary)),
-              if (headline.isNotEmpty)
-                Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Text(headline,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.textSecondary))),
-              if (bio.isNotEmpty || isMe)
-                Container(
-                  margin: const EdgeInsets.fromLTRB(18, 12, 18, 0),
-                  padding: const EdgeInsets.all(14),
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppTheme.muted.shade200)),
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              ),
+            const SizedBox(height: 10),
+            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Flexible(
+                  child: Text('$name',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          fontSize: 23, fontWeight: FontWeight.w800))),
+              if (role == 'student') ...[
+                const SizedBox(width: 6),
+                const Icon(Icons.verified_rounded,
+                    color: AppTheme.primary, size: 20)
+              ],
+            ]),
+            if (!isMe && _targetOnline)
+              Padding(
+                  padding: const EdgeInsets.only(top: 5),
+                  child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Row(children: [
-                          const Icon(Icons.notes_rounded,
-                              size: 19, color: AppTheme.primary),
-                          const SizedBox(width: 7),
-                          Text(ar ? 'نبذة عني' : 'About me',
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.w800))
-                        ]),
-                        const SizedBox(height: 7),
-                        Row(children: [
-                          Expanded(
-                              child: Text(
-                                  bio.isEmpty
-                                      ? (ar
-                                          ? 'أضف نبذة قصيرة تعرّف زملاءك بك.'
-                                          : 'Add a short introduction about yourself.')
-                                      : bio,
-                                  style: TextStyle(
-                                      color: bio.isEmpty
-                                          ? AppTheme.textSecondary
-                                          : AppTheme.textPrimary,
-                                      height: 1.45))),
-                          if (isMe)
-                            IconButton(
-                              onPressed: () async {
-                                await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (_) => ProfileSettingsScreen(
-                                            userId: Supabase.instance.client
-                                                .auth.currentUser!.id)));
-                                _load();
-                              },
-                              icon: const Icon(Icons.edit_note_rounded),
-                              tooltip: ar ? 'تعديل النبذة' : 'Edit bio',
-                            ),
-                        ]),
-                      ]),
-                ),
-              if (pString('university').isNotEmpty ||
-                  pString('college').isNotEmpty ||
-                  pString('department').isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 10),
-                  child: Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: 8,
-                    runSpacing: 6,
+                        const CircleAvatar(
+                            radius: 5, backgroundColor: Colors.green),
+                        const SizedBox(width: 6),
+                        Text(ar ? 'متصل الآن' : 'Online now',
+                            style: TextStyle(
+                                color: Colors.green,
+                                fontWeight: FontWeight.w700))
+                      ])),
+            if (username != null && username.isNotEmpty)
+              Text('@$username',
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            if (headline.isNotEmpty)
+              Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(headline,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant))),
+            if (bio.isNotEmpty || isMe)
+              Container(
+                margin: const EdgeInsets.fromLTRB(18, 12, 18, 0),
+                padding: const EdgeInsets.all(14),
+                width: double.infinity,
+                decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppTheme.muted.shade200)),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (pString('university').isNotEmpty)
-                        _chip(Icons.account_balance_rounded,
-                            pString('university')),
-                      if (pString('college').isNotEmpty)
-                        _chip(Icons.school_rounded, pString('college')),
-                      if (pString('department').isNotEmpty)
-                        _chip(Icons.menu_book_rounded, pString('department')),
-                    ],
-                  ),
+                      Row(children: [
+                        const Icon(Icons.notes_rounded,
+                            size: 19, color: AppTheme.primary),
+                        const SizedBox(width: 7),
+                        Text(ar ? 'نبذة عني' : 'About me',
+                            style: TextStyle(fontWeight: FontWeight.w800))
+                      ]),
+                      const SizedBox(height: 7),
+                      Row(children: [
+                        Expanded(
+                            child: Text(
+                                bio.isEmpty
+                                    ? (ar
+                                        ? 'أضف نبذة قصيرة تعرّف زملاءك بك.'
+                                        : 'Add a short introduction about yourself.')
+                                    : bio,
+                                style: TextStyle(
+                                    color: bio.isEmpty
+                                        ? Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant
+                                        : Theme.of(context)
+                                            .colorScheme
+                                            .onSurface,
+                                    height: 1.45))),
+                        if (isMe)
+                          IconButton(
+                            onPressed: () async {
+                              await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) => ProfileSettingsScreen(
+                                          userId: Supabase.instance.client.auth
+                                              .currentUser!.id)));
+                              _load();
+                            },
+                            icon: const Icon(Icons.edit_note_rounded),
+                            tooltip: ar ? 'تعديل النبذة' : 'Edit bio',
+                          ),
+                      ]),
+                    ]),
+              ),
+            if (pString('university').isNotEmpty ||
+                pString('college').isNotEmpty ||
+                pString('department').isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: [
+                    if (pString('university').isNotEmpty)
+                      _chip(
+                          Icons.account_balance_rounded, pString('university')),
+                    if (pString('college').isNotEmpty)
+                      _chip(Icons.school_rounded, pString('college')),
+                    if (pString('department').isNotEmpty)
+                      _chip(Icons.menu_book_rounded, pString('department')),
+                  ],
                 ),
-            ],
-          ),
+              ),
+          ],
         ),
       ],
     );
@@ -1091,7 +1110,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildQuickDashboard(bool ar) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 18, 14, 10),
+      padding: const EdgeInsets.fromLTRB(14, 4, 14, 10),
       child: Card(
         child: Padding(
           padding: const EdgeInsets.all(12),
@@ -1157,9 +1176,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Icon(icon, size: 20, color: AppTheme.primary),
         const SizedBox(height: 3),
         Text(value,
-            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
         Text(label,
-            style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary))
+            style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant))
       ]));
 
   Widget _shortcut(IconData icon, String label, VoidCallback onTap) => Padding(
@@ -1177,7 +1198,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         width: 42,
                         height: 42,
                         decoration: BoxDecoration(
-                            color: AppTheme.primaryLight,
+                            color:
+                                Theme.of(context).colorScheme.primaryContainer,
                             borderRadius: BorderRadius.circular(14)),
                         child: Icon(icon, color: AppTheme.primary)),
                     const SizedBox(height: 5),
@@ -1361,7 +1383,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     onTap: () => _openImage(image),
                     child: Image.network(
                       image,
-                      height: 220,
+                      height: MediaQuery.sizeOf(context).width / 3,
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => const SizedBox(
                         height: 120,
@@ -1486,75 +1508,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _requestPromotion(Map<String, dynamic> post, bool ar) async {
     if (!await FeatureControl.instance.check(context, 'post_promotions') ||
         !mounted) return;
-    var days = 7;
-    final notes = TextEditingController();
-    final send = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => StatefulBuilder(
-            builder: (ctx, setLocal) => AlertDialog(
-                  title: Text(ar
-                      ? 'طلب ترويج منشور عام'
-                      : 'Request public post promotion'),
-                  content: SingleChildScrollView(
-                      child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    Text(ar
-                        ? 'يبدأ الترويج بعد مراجعة الإدارة واعتماد الطلب.'
-                        : 'Promotion starts after the administration approves your request.'),
-                    DropdownButtonFormField<int>(
-                        initialValue: days,
-                        decoration: InputDecoration(
-                            labelText:
-                                ar ? 'المدة بالأيام' : 'Duration in days'),
-                        items: [
-                          for (var d = 1; d <= 30; d++)
-                            DropdownMenuItem(value: d, child: Text('$d'))
-                        ],
-                        onChanged: (v) {
-                          if (v != null) setLocal(() => days = v);
-                        }),
-                    TextField(
-                        controller: notes,
-                        maxLength: 1000,
-                        maxLines: 3,
-                        decoration: InputDecoration(
-                            labelText: ar
-                                ? 'ملاحظات للإدارة (اختياري)'
-                                : 'Notes for administration (optional)')),
-                  ])),
-                  actions: [
-                    TextButton(
-                        onPressed: () => Navigator.pop(ctx, false),
-                        child: Text(ar ? 'إلغاء' : 'Cancel')),
-                    FilledButton(
-                        onPressed: () => Navigator.pop(ctx, true),
-                        child: Text(ar ? 'إرسال الطلب' : 'Send request'))
-                  ],
-                )));
-    final text = notes.text.trim();
-    notes.dispose();
-    if (send != true || !mounted) return;
-    try {
-      final result = await Supabase.instance.client.rpc(
-          'zameel_request_promotion',
-          params: {'p_post': post['id'], 'p_days': days, 'p_notes': text});
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(result is Map && result['status'] == 'approved'
-              ? (ar
-                  ? 'هذا المنشور لديه ترويج نشط بالفعل.'
-                  : 'This post already has an active promotion.')
-              : (ar
-                  ? 'طلب الترويج قيد مراجعة الإدارة.'
-                  : 'Your promotion request is pending review.'))));
-    } catch (e) {
-      if (mounted)
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(FeatureControl.errorMessage(
-                e,
-                ar
-                    ? 'تعذر إرسال طلب الترويج'
-                    : 'Could not send promotion request'))));
-    }
+    await Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (_) => PromotionRequestScreen(
+                postId: post['id'].toString(), arabic: ar)));
   }
 
   void _showPostMenu(Map<String, dynamic> post, bool ar) {
@@ -2271,14 +2229,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: AppTheme.primaryLight,
+        color: Theme.of(context).colorScheme.primaryContainer,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: AppTheme.primary.withValues(alpha: .22)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: AppTheme.primaryDark),
+          Icon(icon,
+              size: 16,
+              color: Theme.of(context).colorScheme.onPrimaryContainer),
           const SizedBox(width: 5),
           Flexible(child: Text(label, overflow: TextOverflow.ellipsis)),
         ],
@@ -2468,7 +2428,7 @@ class ProfileActivityScreen extends StatelessWidget {
       textDirection: ar ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
         appBar: AppBar(title: Text(ar ? 'نشاطي' : 'My Activity')),
-        backgroundColor: AppTheme.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: items.isEmpty
             ? Center(child: Text(ar ? 'لا يوجد نشاط بعد.' : 'No activity yet.'))
             : ListView.separated(
@@ -2542,7 +2502,7 @@ class ProfileAchievementsScreen extends StatelessWidget {
       textDirection: ar ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
         appBar: AppBar(title: Text(ar ? 'إنجازاتي' : 'Achievements')),
-        backgroundColor: AppTheme.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: ListView.separated(
           padding: const EdgeInsets.all(14),
           itemCount: achievements.length,

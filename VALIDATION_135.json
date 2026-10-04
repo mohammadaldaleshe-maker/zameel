@@ -1,0 +1,26 @@
+{
+  "release": 135,
+  "app_version": "2.0.1+10",
+  "admin_version": "1.3.10",
+  "dart_analysis": "No issues found (lib and test)",
+  "admin_tests_passed": 55,
+  "postgres_checks_passed": 104,
+  "admin_browser": "passed with mocked API: payment reference, amount confirmation, wallet configuration and existing trust/account screens",
+  "admin_typescript_syntax": "passed",
+  "admin_web_bundle": "passed (npm ci + npm run bundle:web)",
+  "native_flutter_tests": "blocked by automatic approval review because Flutter may send diagnostic metadata to Google Analytics; not marked passed",
+  "new_flutter_tests_included": [
+    "accessibility text scaling",
+    "avatar crop output and pan bounds",
+    "cover aspect ratio and opaque image bounds"
+  ],
+  "native_builds": "not run",
+  "live_sql_applied": false,
+  "live_function_deployed": false,
+  "github_pushed": false,
+  "locations": 383,
+  "universities": 28,
+  "wallet": "administrator must configure real number and beneficiary before enabling new paid requests",
+  "audience_age": "self-reported private date of birth; unknown ages do not receive adult-targeted campaigns",
+  "manual_device_verification": "required for final typography, crop preview, existing features and real wallet transfer"
+}

@@ -1,3 +1,4 @@
+import '../../widgets/profile_image_cropper.dart';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -101,23 +102,33 @@ class _ProfilePictureScreenState extends State<ProfilePictureScreen> {
     try {
       final XFile? image = await _picker.pickImage(
         source: source,
-        maxWidth: 512,
-        maxHeight: 512,
-        imageQuality: 80,
+        maxWidth: 1200,
+        maxHeight: 1200,
+        imageQuality: 88,
       );
 
       if (image == null) {
         return;
       }
 
-      final bytes = await image.readAsBytes();
+      final original = await image.readAsBytes();
+      if (!mounted) return;
+      final bytes = await Navigator.push<Uint8List>(
+          context,
+          MaterialPageRoute(
+              builder: (_) => ProfileImageCropper(
+                  bytes: original,
+                  arabic: Provider.of<LanguageProvider>(context, listen: false)
+                      .isArabic)));
+      if (bytes == null) return;
 
       if (!mounted) {
         return;
       }
 
       setState(() {
-        _selectedImage = image;
+        _selectedImage =
+            XFile.fromData(bytes, name: 'profile.png', mimeType: 'image/png');
         _selectedImageBytes = bytes;
         _isSkipped = false;
       });

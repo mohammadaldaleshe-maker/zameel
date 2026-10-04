@@ -3,6 +3,15 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Official Zameel design system — Premium University Social Lifestyle Brand.
+class CompactTextScaler extends TextScaler {
+  final TextScaler system;
+  const CompactTextScaler(this.system);
+  @override
+  double scale(double fontSize) => system.scale(fontSize) * .90;
+  @override
+  double get textScaleFactor => scale(14) / 14;
+}
+
 class AppTheme {
   static const Color primary = Color(0xFF3152E8);
   static const Color primaryDark = Color(0xFF4B23B7);
@@ -23,18 +32,28 @@ class AppTheme {
   static const Color nightSurfaceAlt = Color(0xFF262A3D);
 
   static const LinearGradient signatureGradient = LinearGradient(
-    colors: [primaryDark, primary], begin: Alignment.topLeft, end: Alignment.bottomRight);
+      colors: [primaryDark, primary],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight);
   static const LinearGradient signatureGradientRtl = LinearGradient(
-    colors: [primary, primaryDark], begin: Alignment.topRight, end: Alignment.bottomLeft);
+      colors: [primary, primaryDark],
+      begin: Alignment.topRight,
+      end: Alignment.bottomLeft);
   static const double cardRadius = 18;
   static const double controlRadius = 14;
   static const double logoSafeSpaceRatio = .22;
   static const double minimumLogoSize = 28;
 
   static const MaterialColor muted = MaterialColor(0xFF858A9E, <int, Color>{
-    50: Color(0xFFF7F8FC), 100: Color(0xFFEEF0F6), 200: Color(0xFFDDE0EA),
-    300: Color(0xFFC5C9D6), 400: Color(0xFFA4A9BA), 500: Color(0xFF858A9E),
-    600: Color(0xFF696F84), 700: Color(0xFF53586B), 800: Color(0xFF3B4051),
+    50: Color(0xFFF7F8FC),
+    100: Color(0xFFEEF0F6),
+    200: Color(0xFFDDE0EA),
+    300: Color(0xFFC5C9D6),
+    400: Color(0xFFA4A9BA),
+    500: Color(0xFF858A9E),
+    600: Color(0xFF696F84),
+    700: Color(0xFF53586B),
+    800: Color(0xFF3B4051),
     900: Color(0xFF252938),
   });
   static const Color overlaySoft = Color(0x143152E8);
@@ -74,8 +93,10 @@ class AppTheme {
   static const Color glassMid = Color(0x33FFFFFF);
 
   static TextTheme _type(bool arabic, Brightness brightness) {
-    final color = brightness == Brightness.dark ? const Color(0xFFF4F5FA) : textPrimary;
-    final secondaryColor = brightness == Brightness.dark ? const Color(0xFFB9BECE) : textSecondary;
+    final color =
+        brightness == Brightness.dark ? const Color(0xFFF4F5FA) : textPrimary;
+    final secondaryColor =
+        brightness == Brightness.dark ? const Color(0xFFB9BECE) : textSecondary;
     final base = TextTheme(
       headlineLarge: TextStyle(color: color, fontWeight: FontWeight.w800),
       headlineMedium: TextStyle(color: color, fontWeight: FontWeight.w800),
@@ -88,10 +109,13 @@ class AppTheme {
       bodySmall: TextStyle(color: secondaryColor, height: 1.35),
       labelLarge: TextStyle(color: color, fontWeight: FontWeight.w700),
     );
-    return arabic ? GoogleFonts.ibmPlexSansArabicTextTheme(base) : GoogleFonts.interTextTheme(base);
+    return arabic
+        ? GoogleFonts.ibmPlexSansArabicTextTheme(base)
+        : GoogleFonts.interTextTheme(base);
   }
 
-  static ThemeData theme({required bool arabic, required Brightness brightness}) {
+  static ThemeData theme(
+      {required bool arabic, required Brightness brightness}) {
     final dark = brightness == Brightness.dark;
     final bg = dark ? night : background;
     final card = dark ? nightSurface : surface;
@@ -99,62 +123,118 @@ class AppTheme {
     final foreground = dark ? const Color(0xFFF4F5FA) : textPrimary;
     final outline = dark ? const Color(0xFF363B51) : border;
     final scheme = ColorScheme.fromSeed(
-      seedColor: primary, brightness: brightness, primary: primary,
-      secondary: secondary, tertiary: tertiary, surface: card, error: error,
+      seedColor: primary,
+      brightness: brightness,
+      primary: primary,
+      secondary: secondary,
+      tertiary: tertiary,
+      surface: card,
+      error: error,
     ).copyWith(
       primaryContainer: dark ? const Color(0xFF273775) : primaryLight,
       secondaryContainer: dark ? const Color(0xFF352668) : secondaryLight,
-      surfaceContainerHighest: alt, outline: outline,
+      surfaceContainerHighest: alt,
+      outline: outline,
     );
     final type = _type(arabic, brightness);
     return ThemeData(
-      useMaterial3: true, brightness: brightness, colorScheme: scheme,
-      scaffoldBackgroundColor: bg, textTheme: type,
+      useMaterial3: true,
+      brightness: brightness,
+      colorScheme: scheme,
+      scaffoldBackgroundColor: bg,
+      textTheme: type,
       iconTheme: IconThemeData(color: foreground, size: 23),
       appBarTheme: AppBarTheme(
-        backgroundColor: card, foregroundColor: foreground, elevation: 0,
-        scrolledUnderElevation: 1, centerTitle: false, titleTextStyle: type.titleLarge,
-        systemOverlayStyle: dark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+        backgroundColor: card,
+        foregroundColor: foreground,
+        elevation: 0,
+        scrolledUnderElevation: 1,
+        centerTitle: false,
+        titleTextStyle: type.titleLarge,
+        systemOverlayStyle:
+            dark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       ),
       cardTheme: CardThemeData(
-        color: card, elevation: 0, margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(cardRadius), side: BorderSide(color: outline)),
+        color: card,
+        elevation: 0,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(cardRadius),
+            side: BorderSide(color: outline)),
       ),
       inputDecorationTheme: InputDecorationTheme(
-        filled: true, fillColor: alt,
+        filled: true,
+        fillColor: alt,
         hintStyle: TextStyle(color: dark ? Colors.white70 : Colors.black54),
         labelStyle: TextStyle(color: dark ? Colors.white : Colors.black87),
-        floatingLabelStyle: TextStyle(color: dark ? Colors.white : Colors.black),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(controlRadius), borderSide: BorderSide.none),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(controlRadius), borderSide: BorderSide(color: outline)),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(controlRadius), borderSide: const BorderSide(color: primary, width: 1.6)),
-        errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(controlRadius), borderSide: const BorderSide(color: error)),
+        floatingLabelStyle:
+            TextStyle(color: dark ? Colors.white : Colors.black),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(controlRadius),
+            borderSide: BorderSide.none),
+        enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(controlRadius),
+            borderSide: BorderSide(color: outline)),
+        focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(controlRadius),
+            borderSide: const BorderSide(color: primary, width: 1.6)),
+        errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(controlRadius),
+            borderSide: const BorderSide(color: error)),
       ),
-      elevatedButtonTheme: ElevatedButtonThemeData(style: ElevatedButton.styleFrom(
-        backgroundColor: primary, foregroundColor: Colors.white, elevation: 0,
-        minimumSize: const Size(double.infinity, 52),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(controlRadius)))),
-      filledButtonTheme: FilledButtonThemeData(style: FilledButton.styleFrom(
-        backgroundColor: primary, foregroundColor: Colors.white, minimumSize: const Size(48, 48),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(controlRadius)))),
-      outlinedButtonTheme: OutlinedButtonThemeData(style: OutlinedButton.styleFrom(
-        foregroundColor: dark ? Colors.white : primary, minimumSize: const Size(double.infinity, 50),
-        side: BorderSide(color: outline), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(controlRadius)))),
-      floatingActionButtonTheme: const FloatingActionButtonThemeData(backgroundColor: primary, foregroundColor: Colors.white, elevation: 3),
-      navigationBarTheme: NavigationBarThemeData(backgroundColor: card, indicatorColor: dark ? const Color(0xFF273775) : primaryLight),
-      bottomNavigationBarTheme: BottomNavigationBarThemeData(backgroundColor: card, selectedItemColor: primary, unselectedItemColor: muted, elevation: 8),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+              backgroundColor: primary,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              minimumSize: const Size(double.infinity, 52),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(controlRadius)))),
+      filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(
+              backgroundColor: primary,
+              foregroundColor: Colors.white,
+              minimumSize: const Size(48, 48),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(controlRadius)))),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+              foregroundColor: dark ? Colors.white : primary,
+              minimumSize: const Size(double.infinity, 50),
+              side: BorderSide(color: outline),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(controlRadius)))),
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+          backgroundColor: primary,
+          foregroundColor: Colors.white,
+          elevation: 3),
+      navigationBarTheme: NavigationBarThemeData(
+          backgroundColor: card,
+          indicatorColor: dark ? const Color(0xFF273775) : primaryLight),
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+          backgroundColor: card,
+          selectedItemColor: primary,
+          unselectedItemColor: muted,
+          elevation: 8),
       chipTheme: ChipThemeData(
-        backgroundColor: alt, selectedColor: dark ? const Color(0xFF273775) : primaryLight,
-        side: BorderSide(color: outline), labelStyle: TextStyle(color: foreground, fontWeight: FontWeight.w600),
-        secondaryLabelStyle: const TextStyle(color: primary, fontWeight: FontWeight.w700),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+          backgroundColor: alt,
+          selectedColor: dark ? const Color(0xFF273775) : primaryLight,
+          side: BorderSide(color: outline),
+          labelStyle: TextStyle(color: foreground, fontWeight: FontWeight.w600),
+          secondaryLabelStyle:
+              const TextStyle(color: primary, fontWeight: FontWeight.w700),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
       dividerTheme: DividerThemeData(color: outline, thickness: 1, space: 1),
       progressIndicatorTheme: const ProgressIndicatorThemeData(color: primary),
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: dark ? const Color(0xFF30354A) : night,
-        contentTextStyle: const TextStyle(color: Colors.white), behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+          backgroundColor: dark ? const Color(0xFF30354A) : night,
+          contentTextStyle: const TextStyle(color: Colors.white),
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
       textSelectionTheme: TextSelectionThemeData(
         cursorColor: dark ? Colors.white : Colors.black,
         selectionColor: primary.withAlpha(70),
@@ -172,6 +252,8 @@ class AppTheme {
     );
   }
 
-  static ThemeData get lightTheme => theme(arabic: false, brightness: Brightness.light);
-  static ThemeData get darkTheme => theme(arabic: false, brightness: Brightness.dark);
+  static ThemeData get lightTheme =>
+      theme(arabic: false, brightness: Brightness.light);
+  static ThemeData get darkTheme =>
+      theme(arabic: false, brightness: Brightness.dark);
 }

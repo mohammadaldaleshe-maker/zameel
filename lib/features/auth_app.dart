@@ -18,13 +18,15 @@ class _AuthGateState extends State<AuthGate> {
     super.initState();
     _userId = Supabase.instance.client.auth.currentUser?.id;
     _initialScreen = _getInitialScreen();
-    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    _authSubscription =
+        Supabase.instance.client.auth.onAuthStateChange.listen((data) {
       if (!mounted) return;
       final next = data.session?.user.id;
       // Refreshing a token must not dispose the home feed and its players.
-      if (next == _userId && (data.event == AuthChangeEvent.tokenRefreshed ||
-          data.event == AuthChangeEvent.initialSession ||
-          data.event == AuthChangeEvent.signedIn)) return;
+      if (next == _userId &&
+          (data.event == AuthChangeEvent.tokenRefreshed ||
+              data.event == AuthChangeEvent.initialSession ||
+              data.event == AuthChangeEvent.signedIn)) return;
       _userId = next;
       setState(() => _initialScreen = _getInitialScreen());
       if (next != null) {
@@ -41,17 +43,26 @@ class _AuthGateState extends State<AuthGate> {
     final collegeName = (profile['college'] ?? '').toString().trim();
     final departmentName = (profile['department'] ?? '').toString().trim();
     if (profile['account_type'] == 'general' &&
-        (universityName.isEmpty || collegeName.isEmpty || departmentName.isEmpty)) {
-      return const HomeFeedScreen(university: generalCommunity, college: generalCollege, department: '');
+        (universityName.isEmpty ||
+            collegeName.isEmpty ||
+            departmentName.isEmpty)) {
+      return const HomeFeedScreen(
+          university: generalCommunity,
+          college: generalCollege,
+          department: '');
     }
-    if (universityName.isEmpty || collegeName.isEmpty || departmentName.isEmpty) {
+    if (universityName.isEmpty ||
+        collegeName.isEmpty ||
+        departmentName.isEmpty) {
       return const UniversityScreen();
     }
     for (final university in universities) {
       if (university.name != universityName) continue;
       for (final college in university.colleges) {
         if (college.name == collegeName) {
-          return HomeFeedScreen(university: university, college: college,
+          return HomeFeedScreen(
+              university: university,
+              college: college,
               department: departmentName);
         }
       }
@@ -78,34 +89,52 @@ class _AuthGateState extends State<AuthGate> {
       return _profileScreen(profile);
     } catch (error) {
       debugPrint('Initial profile unavailable: $error');
-      return Scaffold(body: Center(child: Column(mainAxisSize: MainAxisSize.min,
+      return Scaffold(
+          body: Center(
+              child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           const Text('تعذر الاتصال. تحقق من الإنترنت وحاول مجددًا.'),
-          TextButton(onPressed: () {
-            if (mounted) setState(() => _initialScreen = _getInitialScreen());
-          }, child: const Text('إعادة المحاولة')),
+          TextButton(
+              onPressed: () {
+                if (mounted)
+                  setState(() => _initialScreen = _getInitialScreen());
+              },
+              child: const Text('إعادة المحاولة')),
         ],
       )));
     }
   }
 
-  Future<Map<String, dynamic>?> _fetchProfile(String userId) =>
-      Supabase.instance.client.from('users')
-          .select('university, college, department, onboarding_complete, account_type')
-          .eq('id', userId).maybeSingle().timeout(const Duration(seconds: 12));
+  Future<Map<String, dynamic>?> _fetchProfile(String userId) => Supabase
+      .instance.client
+      .from('users')
+      .select(
+          'university, college, department, onboarding_complete, account_type')
+      .eq('id', userId)
+      .maybeSingle()
+      .timeout(const Duration(seconds: 12));
 
-  Future<void> _refreshProfile(String userId, int generation,
-      Map<String, dynamic> cached) async {
+  Future<void> _refreshProfile(
+      String userId, int generation, Map<String, dynamic> cached) async {
     try {
       final profile = await _fetchProfile(userId);
-      if (!mounted || generation != _generation ||
+      if (!mounted ||
+          generation != _generation ||
           Supabase.instance.client.auth.currentUser?.id != userId) return;
-      await HomeSnapshotService.save(userId, 'profile', profile == null ? [] : [profile]);
+      await HomeSnapshotService.save(
+          userId, 'profile', profile == null ? [] : [profile]);
       if (!mounted || generation != _generation) return;
-      final changed = profile == null || const [
-        'university', 'college', 'department', 'onboarding_complete', 'account_type',
-      ].any((key) => cached[key] != profile[key]);
-      if (changed) setState(() => _initialScreen = Future.value(_profileScreen(profile)));
+      final changed = profile == null ||
+          const [
+            'university',
+            'college',
+            'department',
+            'onboarding_complete',
+            'account_type',
+          ].any((key) => cached[key] != profile[key]);
+      if (changed)
+        setState(() => _initialScreen = Future.value(_profileScreen(profile)));
     } catch (_) {
       // Keep the local home on a transient connection failure.
     }
@@ -113,12 +142,14 @@ class _AuthGateState extends State<AuthGate> {
 
   @override
   Widget build(BuildContext context) => FutureBuilder<Widget>(
-    key: ValueKey(_userId),
-    future: _initialScreen,
-    builder: (context, snapshot) => snapshot.data ?? const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
-    ),
-  );
+        key: ValueKey(_userId),
+        future: _initialScreen,
+        builder: (context, snapshot) =>
+            snapshot.data ??
+            const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            ),
+      );
 
   @override
   void dispose() {
@@ -147,25 +178,37 @@ class RegistrationRequiredScreen extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.verified_user_outlined, size: 64, color: AppTheme.primary),
+                      const Icon(Icons.verified_user_outlined,
+                          size: 64, color: AppTheme.primary),
                       const SizedBox(height: 16),
-                      const Text('التسجيل غير مكتمل', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+                      const Text('التسجيل غير مكتمل',
+                          style: TextStyle(
+                              fontSize: 22, fontWeight: FontWeight.w900)),
                       const SizedBox(height: 8),
-                      const Text('أكمل بيانات حسابك ووسيلة التحقق للمتابعة.', textAlign: TextAlign.center),
+                      const Text('أكمل بيانات حسابك ووسيلة التحقق للمتابعة.',
+                          textAlign: TextAlign.center),
                       const SizedBox(height: 20),
                       FilledButton(
                         onPressed: () async {
                           try {
-                            await Supabase.instance.client.rpc('delete_my_account');
+                            await Supabase.instance.client
+                                .rpc('delete_my_account');
                             await AuthSessionService.signOut();
                           } catch (_) {
-                            if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('تعذر إرسال طلب حذف الحساب. تواصل مع zameel.jo@gmail.com.')),
-                            );
+                            if (context.mounted)
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text(
+                                        'تعذر إرسال طلب حذف الحساب. تواصل مع zameel.jo@gmail.com.')),
+                              );
                             return;
                           }
                           if (!context.mounted) return;
-                          Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const WelcomeScreen()), (_) => false);
+                          Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const WelcomeScreen()),
+                              (_) => false);
                         },
                         child: const Text('إعادة بدء التسجيل الآمن'),
                       ),
@@ -206,8 +249,8 @@ class ZameelApp extends StatelessWidget {
     return Consumer<LanguageProvider>(
       builder: (context, languageProvider, child) {
         return MaterialApp(
-      navigatorKey: zameelNavigatorKey,
-      debugShowCheckedModeBanner: false,
+          navigatorKey: zameelNavigatorKey,
+          debugShowCheckedModeBanner: false,
           title: 'Zameel',
           locale: languageProvider.currentLocale,
           supportedLocales: const [
@@ -219,14 +262,21 @@ class ZameelApp extends StatelessWidget {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          theme: AppTheme.theme(arabic: languageProvider.isArabic, brightness: Brightness.light),
-          darkTheme: AppTheme.theme(arabic: languageProvider.isArabic, brightness: Brightness.dark),
+          theme: AppTheme.theme(
+              arabic: languageProvider.isArabic, brightness: Brightness.light),
+          darkTheme: AppTheme.theme(
+              arabic: languageProvider.isArabic, brightness: Brightness.dark),
           themeMode: ThemeMode.system,
-          builder: (context, child) => AccountAccessMonitor(
-            child: Listener(
-              behavior: HitTestBehavior.translucent,
-              onPointerDown: (_) => ScreenAwakeService.registerActivity(),
-              child: child ?? const SizedBox.shrink(),
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+                textScaler:
+                    CompactTextScaler(MediaQuery.textScalerOf(context))),
+            child: AccountAccessMonitor(
+              child: Listener(
+                behavior: HitTestBehavior.translucent,
+                onPointerDown: (_) => ScreenAwakeService.registerActivity(),
+                child: child ?? const SizedBox.shrink(),
+              ),
             ),
           ),
           home: const AuthGate(),
@@ -252,25 +302,137 @@ const Color glassBorder = AppTheme.glassBorder;
 const Color gradientStart = AppTheme.primary;
 const Color gradientEnd = AppTheme.secondary;
 
-
 // Demo content remains visible alongside real Supabase content. These entries
 // are local-only and are never written into the user's real database.
 const List<Map<String, dynamic>> _demoUsers = [
-  {'id': '00000000-0000-4000-8000-000000000001', 'name': 'ليان الخطيب', 'gender': 'female', 'role': 'student', 'department': 'علوم الحاسوب'},
-  {'id': '00000000-0000-4000-8000-000000000002', 'name': 'آدم الحوراني', 'gender': 'male', 'role': 'student', 'department': 'هندسة البرمجيات'},
-  {'id': '00000000-0000-4000-8000-000000000003', 'name': 'نور العزام', 'gender': 'female', 'role': 'graduate', 'department': 'إدارة الأعمال'},
-  {'id': '00000000-0000-4000-8000-000000000004', 'name': 'يوسف الشديفات', 'gender': 'male', 'role': 'student', 'department': 'الهندسة المدنية'},
-  {'id': '00000000-0000-4000-8000-000000000005', 'name': 'مؤسسة Zameel للطلاب', 'gender': null, 'role': 'company', 'department': 'نشاط تجاري'},
-  {'id': '00000000-0000-4000-8000-000000000006', 'name': 'رؤى المومني', 'gender': 'female', 'role': 'student', 'department': 'الصيدلة'},
+  {
+    'id': '00000000-0000-4000-8000-000000000001',
+    'name': 'ليان الخطيب',
+    'gender': 'female',
+    'role': 'student',
+    'department': 'علوم الحاسوب'
+  },
+  {
+    'id': '00000000-0000-4000-8000-000000000002',
+    'name': 'آدم الحوراني',
+    'gender': 'male',
+    'role': 'student',
+    'department': 'هندسة البرمجيات'
+  },
+  {
+    'id': '00000000-0000-4000-8000-000000000003',
+    'name': 'نور العزام',
+    'gender': 'female',
+    'role': 'graduate',
+    'department': 'إدارة الأعمال'
+  },
+  {
+    'id': '00000000-0000-4000-8000-000000000004',
+    'name': 'يوسف الشديفات',
+    'gender': 'male',
+    'role': 'student',
+    'department': 'الهندسة المدنية'
+  },
+  {
+    'id': '00000000-0000-4000-8000-000000000005',
+    'name': 'مؤسسة Zameel للطلاب',
+    'gender': null,
+    'role': 'company',
+    'department': 'نشاط تجاري'
+  },
+  {
+    'id': '00000000-0000-4000-8000-000000000006',
+    'name': 'رؤى المومني',
+    'gender': 'female',
+    'role': 'student',
+    'department': 'الصيدلة'
+  },
 ];
 
 final List<Map<String, dynamic>> _demoPosts = [
-  {'id': '00000000-0000-4000-8000-000000000101', 'user_id': _demoUsers[0]['id'], 'type': 'text', 'text_ar': 'خلصت اليوم أول مشروع تخرج جماعي! فخورة جدًا بالفريق 💚', 'text_en': 'Finished our first capstone group project today! Proud of the team 💚', 'likes_count': 34, 'comments_count': 5, 'shares_count': 2, 'created_at': '2026-09-05T12:40:00Z', 'users': _demoUsers[0], 'is_demo': true},
-  {'id': '00000000-0000-4000-8000-000000000102', 'user_id': _demoUsers[1]['id'], 'type': 'text', 'text_ar': 'هل يوجد زملاء مهتمون بدراسة الخوارزميات بعد المحاضرة؟ 📚', 'text_en': 'Anyone interested in studying algorithms after class? 📚', 'likes_count': 19, 'comments_count': 7, 'shares_count': 1, 'created_at': '2026-09-05T12:05:00Z', 'users': _demoUsers[1], 'is_demo': true},
-  {'id': '00000000-0000-4000-8000-000000000103', 'user_id': _demoUsers[2]['id'], 'type': 'text', 'text_ar': 'ذكريات التخرج لا تنتهي… الله يكتب لكل زميل طريقًا جميلًا 🌴', 'text_en': 'Graduation memories never end… wishing every Zameel a beautiful journey 🌴', 'likes_count': 51, 'comments_count': 11, 'shares_count': 4, 'created_at': '2026-09-05T11:25:00Z', 'users': _demoUsers[2], 'is_demo': true},
-  {'id': '00000000-0000-4000-8000-000000000104', 'user_id': _demoUsers[3]['id'], 'type': 'text', 'text_ar': 'رفعت ملخص مادة المنشآت، ومن يحتاجه يكتب لي.', 'text_en': 'I uploaded a structures summary. Message me if you need it.', 'likes_count': 27, 'comments_count': 3, 'shares_count': 3, 'created_at': '2026-09-05T10:50:00Z', 'users': _demoUsers[3], 'is_demo': true},
-  {'id': '00000000-0000-4000-8000-000000000105', 'user_id': _demoUsers[4]['id'], 'type': 'text', 'text_ar': 'إعلان تجاري: خصم خاص لطلاب الجامعات على طباعة مشاريع التخرج هذا الأسبوع 🖨️', 'text_en': 'Business announcement: special university-student discount on graduation printing this week 🖨️', 'likes_count': 72, 'comments_count': 9, 'shares_count': 12, 'created_at': '2026-09-05T10:10:00Z', 'users': _demoUsers[4], 'is_demo': true},
-  {'id': '00000000-0000-4000-8000-000000000106', 'user_id': _demoUsers[5]['id'], 'type': 'text', 'text_ar': 'نصيحة سريعة: خذوا نسخة احتياطية من ملفاتكم قبل أسبوع المشاريع النهائي 💾', 'text_en': 'Quick tip: back up your files before final project week 💾', 'likes_count': 23, 'comments_count': 4, 'shares_count': 2, 'created_at': '2026-09-05T09:35:00Z', 'users': _demoUsers[5], 'is_demo': true},
+  {
+    'id': '00000000-0000-4000-8000-000000000101',
+    'user_id': _demoUsers[0]['id'],
+    'type': 'text',
+    'text_ar': 'خلصت اليوم أول مشروع تخرج جماعي! فخورة جدًا بالفريق 💚',
+    'text_en':
+        'Finished our first capstone group project today! Proud of the team 💚',
+    'likes_count': 34,
+    'comments_count': 5,
+    'shares_count': 2,
+    'created_at': '2026-09-05T12:40:00Z',
+    'users': _demoUsers[0],
+    'is_demo': true
+  },
+  {
+    'id': '00000000-0000-4000-8000-000000000102',
+    'user_id': _demoUsers[1]['id'],
+    'type': 'text',
+    'text_ar': 'هل يوجد زملاء مهتمون بدراسة الخوارزميات بعد المحاضرة؟ 📚',
+    'text_en': 'Anyone interested in studying algorithms after class? 📚',
+    'likes_count': 19,
+    'comments_count': 7,
+    'shares_count': 1,
+    'created_at': '2026-09-05T12:05:00Z',
+    'users': _demoUsers[1],
+    'is_demo': true
+  },
+  {
+    'id': '00000000-0000-4000-8000-000000000103',
+    'user_id': _demoUsers[2]['id'],
+    'type': 'text',
+    'text_ar': 'ذكريات التخرج لا تنتهي… الله يكتب لكل زميل طريقًا جميلًا 🌴',
+    'text_en':
+        'Graduation memories never end… wishing every Zameel a beautiful journey 🌴',
+    'likes_count': 51,
+    'comments_count': 11,
+    'shares_count': 4,
+    'created_at': '2026-09-05T11:25:00Z',
+    'users': _demoUsers[2],
+    'is_demo': true
+  },
+  {
+    'id': '00000000-0000-4000-8000-000000000104',
+    'user_id': _demoUsers[3]['id'],
+    'type': 'text',
+    'text_ar': 'رفعت ملخص مادة المنشآت، ومن يحتاجه يكتب لي.',
+    'text_en': 'I uploaded a structures summary. Message me if you need it.',
+    'likes_count': 27,
+    'comments_count': 3,
+    'shares_count': 3,
+    'created_at': '2026-09-05T10:50:00Z',
+    'users': _demoUsers[3],
+    'is_demo': true
+  },
+  {
+    'id': '00000000-0000-4000-8000-000000000105',
+    'user_id': _demoUsers[4]['id'],
+    'type': 'text',
+    'text_ar':
+        'إعلان تجاري: خصم خاص لطلاب الجامعات على طباعة مشاريع التخرج هذا الأسبوع 🖨️',
+    'text_en':
+        'Business announcement: special university-student discount on graduation printing this week 🖨️',
+    'likes_count': 72,
+    'comments_count': 9,
+    'shares_count': 12,
+    'created_at': '2026-09-05T10:10:00Z',
+    'users': _demoUsers[4],
+    'is_demo': true
+  },
+  {
+    'id': '00000000-0000-4000-8000-000000000106',
+    'user_id': _demoUsers[5]['id'],
+    'type': 'text',
+    'text_ar':
+        'نصيحة سريعة: خذوا نسخة احتياطية من ملفاتكم قبل أسبوع المشاريع النهائي 💾',
+    'text_en': 'Quick tip: back up your files before final project week 💾',
+    'likes_count': 23,
+    'comments_count': 4,
+    'shares_count': 2,
+    'created_at': '2026-09-05T09:35:00Z',
+    'users': _demoUsers[5],
+    'is_demo': true
+  },
 ];
 
 // ============================================================
@@ -352,8 +514,7 @@ String translateText(String arabicText, String lang) {
           'Princess Sumaya University for Technology',
       'جامعة عمان الأهلية': 'Amman Ahliyya University',
       'جامعة الزيتونة الأردنية': 'Al-Zaytoonah University of Jordan',
-      'جامعة العلوم التطبيقية الخاصة':
-          'Applied Science Private University',
+      'جامعة العلوم التطبيقية الخاصة': 'Applied Science Private University',
       'جامعة فيلادلفيا': 'Philadelphia University',
       'جامعة الشرق الأوسط': 'Middle East University',
       'جامعة عمان العربية': 'Amman Arab University',
@@ -399,11 +560,9 @@ String translateText(String arabicText, String lang) {
       'كلية التمويل': 'Faculty of Finance',
       'كلية نظم المعلومات الإدارية':
           'Faculty of Management Information Systems',
-      'كلية إدارة الخدمات اللوجستية':
-          'Faculty of Logistics Management',
+      'كلية إدارة الخدمات اللوجستية': 'Faculty of Logistics Management',
       'كلية اللغات': 'Faculty of Languages',
-      'كلية اللغة العربية وآدابها':
-          'Faculty of Arabic Language and Literature',
+      'كلية اللغة العربية وآدابها': 'Faculty of Arabic Language and Literature',
       'كلية اللغة الإنجليزية': 'Faculty of English Language',
       'كلية اللغات الحديثة': 'Faculty of Modern Languages',
       'كلية التربية': 'Faculty of Education',

@@ -524,6 +524,9 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
     final college = widget.college.name.trim().toLowerCase();
     final department = widget.department.trim().toLowerCase();
     return combined.where((post) {
+      // Sponsored targeting is resolved by the server for the viewer,
+      // independent of the author's college or the local ordinary-feed scope.
+      if (promotedIds.contains(post['id'])) return true;
       final user = post['users'] is Map
           ? post['users'] as Map
           : const <String, dynamic>{};

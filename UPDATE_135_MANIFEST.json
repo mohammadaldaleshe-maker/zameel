@@ -1,0 +1,95 @@
+{
+  "release": 135,
+  "project": "APP",
+  "baseline_release": 134,
+  "files": [
+    {
+      "path": "APPLY_UPDATE_135.ps1",
+      "sha256": "931b7e5c0aeff8b08ba83402ac17d9e0e58a7d7c1d29c05d32aedce16cc021d5"
+    },
+    {
+      "path": "BUILD_AND_DEPLOY_135_AR.md",
+      "sha256": "aaea0593f28562b633c22f438a1dc0c18ca0c8c0df6bdc5c1a9afb9e43ba8908"
+    },
+    {
+      "path": "VALIDATION_135.json",
+      "sha256": "94bd26153f334380df9ecef82e780e5cbc31fc32d177859640274a72d484f748"
+    },
+    {
+      "path": "lib/features/auth_app.dart",
+      "sha256": "9abdb3987b2e4e4c54659559f6a63a2a5ae281f67f3cee9a5db19ddd2bfc073f"
+    },
+    {
+      "path": "lib/features/home_feed.dart",
+      "sha256": "8597a34cfbfca7db10100a5bb85106644d19ccf68fbe8ccca62b037b2672496e"
+    },
+    {
+      "path": "lib/screens/auth/profile_picture_screen.dart",
+      "sha256": "46e56758eef3c766145eab5cb939a2d1c1bad1e586247c15dc2d4b78d5544990"
+    },
+    {
+      "path": "lib/screens/books/books_screen.dart",
+      "sha256": "ae7f1606ce418c5a6b0ae641a6c475bc73597472b32906bedb38a80c14f346bb"
+    },
+    {
+      "path": "lib/screens/chat/chat_screen.dart",
+      "sha256": "30a6b9106d4e1a286b93fe51059e5ba7bcde6bde189b2067823a2bc475d8fa13"
+    },
+    {
+      "path": "lib/screens/profile/profile_screen.dart",
+      "sha256": "9a5f85564afee5c3b3f3eba9d4a421b0c7aa490cbbdf7bb3a6f999e0ce9dfbff"
+    },
+    {
+      "path": "lib/screens/profile/profile_settings_screen.dart",
+      "sha256": "cccbc47fc4a0a76fffc434a4aad82711453a3e27aa8397f700bcab2596cd0da0"
+    },
+    {
+      "path": "lib/screens/promotions/audience_profile_screen.dart",
+      "sha256": "a7f1582a7e989540dcaa612a6d4abcb387429c4b4c335a630e9593149334b904"
+    },
+    {
+      "path": "lib/screens/promotions/promotion_request_screen.dart",
+      "sha256": "86088b9e022186e4298587c426eb3a7ff0ec79c2d5a3bcad44e96fde3a805126"
+    },
+    {
+      "path": "lib/theme/app_theme.dart",
+      "sha256": "a3ec1cb51e0012d60c9ade60196866b057d977e8bd5ff25ddf4d32bb68b1f69c"
+    },
+    {
+      "path": "lib/widgets/profile_image_cropper.dart",
+      "sha256": "d36e8d11669729db592378e303d57be3b01892621e00717283188d3f59075901"
+    },
+    {
+      "path": "pubspec.yaml",
+      "sha256": "1afede2187a30e7a05d214a06d0507c36ffbf27436f5f0bdd8a36ea92ab89f6d"
+    },
+    {
+      "path": "supabase/migrations/20261004100001_135_promotion_targeting_wallet.sql",
+      "sha256": "e0bef34e0d771ab65c71e9698c627bd0af0392c9769a8748f81de29c805dc3aa"
+    },
+    {
+      "path": "test/maintenance_135_test.dart",
+      "sha256": "f0028bee15d3cb3d3824354be3c149b12e38b41584704ac765406fec8e350160"
+    },
+    {
+      "path": "test/regression_contract_test.dart",
+      "sha256": "e403f5519d55328a250ee885587639f13c83a5448e1d5000bba322a7c91ec864"
+    },
+    {
+      "path": "verification/dart_analysis.txt",
+      "sha256": "95a28819c918db92d8f3f7dfadfc18f1248f79ab8313759391ad318fe94cf093"
+    },
+    {
+      "path": "verification/database_results.txt",
+      "sha256": "4ed22e6c8a31e01d3190d7bcdfa1cd30cbf1afcc029c755d5e24c6237f67a04d"
+    },
+    {
+      "path": "verification/package.json",
+      "sha256": "de6f337d7c71d9ec6137d6007269fd9cf05831e84d16ac1bb91d8698d0129cfe"
+    },
+    {
+      "path": "verification/trust_db_test.mjs",
+      "sha256": "298ccfc27fddc2e9327ea885a077487cb0e2b1bd2aea54f0d19764ab2485f439"
+    }
+  ]
+}
