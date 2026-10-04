@@ -146,7 +146,7 @@ class WatermarkedMediaExporter(private val activity: MainActivity) {
                 width = if(rotated) h else w; height = if(rotated) w else h
             } finally { meta.release() }
             val watermark = overlay(width, height, owner)
-            val effects = Effects(emptyList(), listOf(OverlayEffect(ImmutableList.of(BitmapOverlay.createStaticBitmapOverlay(watermark)))))
+            val effects = Effects(emptyList(), listOf(OverlayEffect(ImmutableList.of<androidx.media3.effect.TextureOverlay>(BitmapOverlay.createStaticBitmapOverlay(watermark)))))
             val item = EditedMediaItem.Builder(MediaItem.fromUri(Uri.fromFile(source))).setEffects(effects).build()
             transformer = Transformer.Builder(activity).setVideoMimeType(MimeTypes.VIDEO_H264)
                 .addListener(object : Transformer.Listener {

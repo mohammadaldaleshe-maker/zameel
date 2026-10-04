@@ -24,7 +24,7 @@
                   },
                   {
                       "path":  "android/app/src/main/kotlin/com/zameel/app/WatermarkedMediaExporter.kt",
-                      "sha256":  "5998d1c59193c2f5d3ee9bcd49b21d8fb187dd0ad4480e0683025218d26a0569"
+                      "sha256":  "B3F9ECA155E6D613AE4E73B5790FE0E31DFB7E6350D64225B77C0916128D684F"
                   },
                   {
                       "path":  "lib/features/auth_app.dart",
