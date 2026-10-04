@@ -212,7 +212,7 @@ class _ChatScreenState extends State<ChatScreen> {
           centerTitle: true,
           elevation: 0,
           backgroundColor: AppTheme.adaptiveSurface,
-          foregroundColor: Colors.black,
+          foregroundColor: AppTheme.adaptiveText,
           actions: [
             if (FeatureControl.instance.visible('anonymous_messages'))
               IconButton(

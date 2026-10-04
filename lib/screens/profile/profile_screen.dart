@@ -1,3 +1,4 @@
+import '../../widgets/post_media_frame.dart';
 import 'package:zameel/theme/appearance_controller.dart';
 import 'package:zameel/widgets/verified_name.dart';
 import '../../widgets/cached_media_image.dart';
@@ -168,6 +169,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return;
       }
       final profile = Map<String, dynamic>.from(row);
+      if (id == authUser?.id) {
+        VerificationDirectory.instance
+            .updateOwn(id, profile['verification_expires_at']?.toString());
+      }
       // The users SELECT policy has already checked privacy and blocking.
       // Show the header without waiting for counters, presence or media signing.
       setState(() {
@@ -273,16 +278,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _loadPromotionBadges(String id) async {
     try {
       final db = Supabase.instance.client;
-      final rows = isMe
-          ? await db
-              .from('zameel_post_promotions')
-              .select('post_id,ends_at')
-              .eq('owner_id', id)
-              .eq('status', 'approved')
-              .gt('ends_at', DateTime.now().toUtc().toIso8601String())
-              .timeout(const Duration(seconds: 12))
-          : await db.rpc('zameel_visible_promotion_badges',
-              params: {'p_owner': id}).timeout(const Duration(seconds: 12));
+      final rows = await db.rpc('zameel_visible_promotion_badges',
+          params: {'p_owner': id}).timeout(const Duration(seconds: 12));
       if (!mounted) return;
       setState(() {
         _promotionEnds.clear();
@@ -752,6 +749,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final me = Supabase.instance.client.auth.currentUser;
     final id = post['id'];
     if (me == null || id == null) return;
+    if (post['user_id'] == _profile?['id']) post['users'] ??= _profile;
     final liked = post['liked'] == true;
     final oldCount = ((post['likes_count'] ?? 0) as num).toInt();
     setState(() {
@@ -1459,8 +1457,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final liked = post['liked'] == true;
     final image = post['image_url']?.toString();
     final video = post['video_url']?.toString();
-    final rawMedia = post['media_items'];
-    final hasOrderedMedia = rawMedia is List && rawMedia.isNotEmpty;
+    final hasOrderedMedia = postMediaItems(post).isNotEmpty;
     return CompactPost(
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -1534,7 +1531,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Padding(
                 padding: const EdgeInsets.only(top: 12),
                 child: PostMediaGallery(
-                    post: post, height: postMediaHeight(context)),
+                    post: post,
+                    height: postMediaHeight(context),
+                    onLikeChanged: () {
+                      if (mounted) setState(() {});
+                    }),
               ),
             if (!hasOrderedMedia && image != null && image.isNotEmpty)
               Padding(

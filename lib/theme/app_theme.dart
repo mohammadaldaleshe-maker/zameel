@@ -8,7 +8,7 @@ class CompactTextScaler extends TextScaler {
   final TextScaler system;
   const CompactTextScaler(this.system);
   @override
-  double scale(double fontSize) => system.scale(fontSize) * .90;
+  double scale(double fontSize) => system.scale(fontSize) * .99;
   @override
   double get textScaleFactor => scale(14) / 14;
 }
@@ -49,9 +49,6 @@ class AppTheme {
   static Color get adaptiveSurface => darkAppearance ? nightSurface : surface;
   static Color get adaptiveSecondary =>
       darkAppearance ? const Color(0xFFB9BECE) : const Color(0xFF62677A);
-
-
-
 
   static Color get adaptiveText =>
       darkAppearance ? const Color(0xFFF4F5FA) : const Color(0xFF151725);

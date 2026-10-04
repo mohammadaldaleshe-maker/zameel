@@ -273,4 +273,75 @@ check(radios.rows.length===1&&radios.rows[0].user_id===ids[0],'radio badge ident
 await db.exec('set role anon');await assert.rejects(db.query('select * from zameel_verification_badges($1::uuid[])',[[ids[0]]]),/permission denied/);passed++;
 await db.exec('reset role');await db.exec(migration137);
 check((await db.query('select verification_expires_at from users where id=$1',[ids[0]])).rows[0].verification_expires_at.toISOString()===new Date(renewed.ends_at).toISOString(),'release 137 migration retries preserve paid expiry');
+// Release 138: exercise migrations and economic/version boundaries.
+await db.exec(`create table app_releases(id uuid primary key default gen_random_uuid(),platform text,version_name text,build_number integer,min_supported_version text,force_update boolean default false,release_notes_ar text default '',is_active boolean default true,created_by uuid,created_at timestamptz default now(),unique(platform,version_name));
+alter table posts add column is_deleted_by_admin boolean default false;alter table posts add column media_items jsonb;alter table posts add column image_url text;alter table posts add column video_url text;
+create table zameel_post_reports(post_id uuid,status text,reviewed_by uuid,reviewed_at timestamptz,review_reason text);
+create table clips(id uuid primary key,user_id uuid,audience text,is_hidden boolean,video_url text);
+create function can_view_clip(uuid,uuid) returns boolean language sql as $$select exists(select 1 from clips where id=$2 and audience='public' and not is_hidden)$$;`);
+const sql138=[];for(const name of ['20261004210001_138_feed_releases_admin.sql','20261004210002_138_trust_jordan_bot.sql','20261004210003_138_media_download.sql']){
+ const sql=fs.readFileSync(new URL('../supabase/migrations/'+name,import.meta.url),'utf8');sql138.push(sql);await db.exec(sql);
+}
+check((await db.query('select count(*) n from zameel_trust_questions')).rows[0].n===27,'Jordan pool contains 27 independent easy questions');
+check((await db.query('select count(*) n from zameel_quiz_questions')).rows[0].n===20,'Jordan pool does not modify quiz questions');
+await db.exec("select set_config('test.screen','operations',false)");await as(2);
+let release=(await db.query("select id from app_releases where build_number=12")).rows[0].id;
+await call('zameel_admin_release_policy',[ids[2],release,true,'https://example.com/update.apk','approved release URL']);
+check((await call('zameel_release_policy',['android',12])).allowed===true,'permitted release remains usable');
+let latest=(await db.query("select id from app_releases where build_number=13")).rows[0].id;
+await call('zameel_admin_release_policy',[ids[2],latest,true,'https://example.com/update.apk','newest release URL']);
+await call('zameel_admin_release_policy',[ids[2],release,false,'https://example.com/update.apk','stop previous release']);
+check((await call('zameel_release_policy',['android',12])).allowed===false,'stopped build is blocked');
+check((await call('zameel_release_policy',['android',13])).allowed===true,'approved current build is allowed');
+check((await call('zameel_release_policy',['android',11])).allowed===true,'independent older build can remain allowed');
+await as(0);await assert.rejects(call('zameel_admin_release_policy',[ids[0],latest,false,'https://example.com/update.apk','unauthorized change']),/not_authorized/);passed++;
+await as(2);await assert.rejects(call('zameel_admin_release_policy',[ids[2],latest,false,'http://example.com','invalid URL']),/invalid_release/);passed++;
+await db.exec('set role anon');check((await call('zameel_release_policy',['android',12])).allowed===false,'release policy is available before login');await assert.rejects(call('zameel_trust_start_bot'),/permission denied/);passed++;await db.exec('reset role');
+await reset();await as(0);await call('zameel_trust_join');
+check((await call('zameel_trust_state')).phase==='waiting','bot does not interrupt the initial human search');
+await db.query("update zameel_trust_queue set queued_at=now()-interval '16 seconds' where user_id=$1",[ids[0]]);
+let bot=await call('zameel_trust_state');check(bot.is_bot&&bot.phase==='questions'&&bot.opponent_name==='زميل','bot starts after bounded human search and is disclosed');
+check(await bal(0)===950,'bot stake debited once');let botId=bot.match_id;
+await call('zameel_trust_state',[botId]);check(await bal(0)===950,'bot join/state retry does not debit twice');
+check(!JSON.stringify(bot).includes('correct_index'),'bot does not reveal current correct answer');
+await as(1);await assert.rejects(call('zameel_trust_state',[botId]),/match_access_denied/);passed++;
+await as(0);
+for(let round=1;round<=10;round++){
+ const actual=(await db.query('select correct_index from zameel_trust_rounds where match_id=$1 and round_no=$2',[botId,round])).rows[0].correct_index;
+ await db.query('update zameel_trust_rounds set selected2=$3 where match_id=$1 and round_no=$2',[botId,round,actual]);
+ bot=await call('zameel_trust_answer',[botId,round,actual]);
+}
+check(bot.phase==='decision'&&bot.prize===550,'bot uses the same ten-round reward formula');
+await db.query("update zameel_trust_matches set choice2='trust' where id=$1",[botId]);
+bot=await call('zameel_trust_decide',[botId,'trust']);check(bot.phase==='finished'&&await bal(0)===1275,'bot trust result returns stake plus half the prize');
+await call('zameel_trust_decide',[botId,'betray']);check(await bal(0)===1275,'bot settlement retry cannot mint coins');
+check(bot.opponent.name==='زميل'&&bot.opponent.is_bot,'finished bot keeps disclosed identity');
+await db.exec("select set_config('test.screen','users',false)");await as(2);
+const deletePost=(await db.query('insert into posts(user_id,text_ar) values($1,$2) returning id',[ids[0],'delete test'])).rows[0].id;
+await as(0);await assert.rejects(call('zameel_admin_delete_post',[ids[0],deletePost,'users','unauthorized deletion']),/not_authorized/);passed++;
+await as(2);await call('zameel_admin_delete_post',[ids[2],deletePost,'users','authorized deletion']);
+check((await db.query('select is_hidden,is_deleted_by_admin from posts where id=$1',[deletePost])).rows[0].is_deleted_by_admin,'admin deletion creates permanent moderation tombstone');
+const downloadPost=(await db.query('insert into posts(user_id,image_url) values($1,$2) returning id',[ids[0],'https://example.com/image.jpg'])).rows[0].id;
+await as(1);const media=await call('zameel_download_media',['post',downloadPost,0]);check(media.type==='image'&&media.owner,'download identity is resolved by server');
+await db.query('update posts set is_hidden=true where id=$1',[downloadPost]);await assert.rejects(call('zameel_download_media',['post',downloadPost,0]),/media_unavailable/);passed++;
+await db.exec('set role anon');await assert.rejects(call('zameel_download_media',['post',downloadPost,0]),/permission denied/);passed++;await db.exec('reset role');
+for(const sql of sql138)await db.exec(sql);
+check((await db.query('select count(*) n from zameel_trust_questions')).rows[0].n===27,'migration retry does not duplicate Jordan questions');
+check((await call('zameel_release_policy',['android',12])).allowed===false,'migration retry preserves stopped build');
+
+// Bot settlement shares the existing economics for every decision pair.
+for (const [mine,theirs,expected] of [['betray','trust',1600],['trust','betray',950],['betray','betray',950]]) {
+ await reset(); await as(0); await call('zameel_trust_join');
+ await db.query("update zameel_trust_queue set queued_at=now()-interval '16 seconds' where user_id=$1",[ids[0]]);
+ const started=await call('zameel_trust_state');
+ await db.query("update zameel_trust_matches set phase='decision',prize=550,choice2=$2,deadline=now()+interval '30 seconds' where id=$1",[started.match_id,theirs]);
+ await call('zameel_trust_decide',[started.match_id,mine]);
+ check(await bal(0)===expected,'bot '+mine+'/'+theirs+' economic result');
+ await call('zameel_trust_decide',[started.match_id,mine]);
+ check(await bal(0)===expected,'bot '+mine+'/'+theirs+' replay is idempotent');
+}
+await db.exec(`create or replace function can_view_post(uuid,uuid) returns boolean language sql as $$select exists(select 1 from public.posts where id=$2 and (audience='public' or user_id=$1) and not is_hidden and user_id::text<>coalesce(current_setting('test.blocked_owner',true),''))$$;`);
+await db.query('update posts set is_hidden=false,audience=$2 where id=$1',[downloadPost,'private']);
+await as(1); await assert.rejects(call('zameel_download_media',['post',downloadPost,0]),/media_unavailable/);passed++;
+await as(0);check((await call('zameel_download_media',['post',downloadPost,0])).type==='image','private media downloadable only by its owner');
 console.log('ALL DATABASE TESTS PASSED:',passed);await db.close();

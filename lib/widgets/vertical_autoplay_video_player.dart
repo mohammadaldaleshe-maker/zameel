@@ -1,3 +1,4 @@
+import '../services/video_preload_service.dart';
 import 'package:zameel/theme/app_theme.dart';
 import 'dart:async';
 
@@ -131,14 +132,17 @@ class _VerticalAutoplayVideoPlayerState
 
     VideoPlayerController? created;
     try {
-      final controller = await VideoSourceService.controller(rawUrl);
+      final controller = VideoPreloadService.take(rawUrl) ??
+          await VideoSourceService.controller(rawUrl);
       created = controller;
       if (!mounted || generation != _generation) {
         await controller.dispose();
         return;
       }
       _controller = controller;
-      await controller.initialize();
+      if (!controller.value.isInitialized) {
+        await controller.initialize().timeout(const Duration(seconds: 15));
+      }
       await controller.setLooping(true);
       await controller.setVolume(_muted ? 0 : 1);
       controller.addListener(_refreshProgress);

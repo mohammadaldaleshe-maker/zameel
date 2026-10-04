@@ -1,9 +1,9 @@
+import '../main.dart' show MixedPostMediaViewer;
 import 'package:zameel/theme/appearance_controller.dart';
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 import 'cached_media_image.dart';
-import 'video_player_widget.dart';
 
 class PostMediaItem {
   final String type;
@@ -60,6 +60,7 @@ class PostMediaGallery extends StatefulWidget {
   final Map<String, dynamic> post;
   final double height;
   final BorderRadius borderRadius;
+  final VoidCallback? onLikeChanged;
   final void Function(PostMediaItem item, int index)? onOpen;
 
   const PostMediaGallery({
@@ -68,6 +69,7 @@ class PostMediaGallery extends StatefulWidget {
     this.height = 260,
     this.borderRadius = const BorderRadius.all(Radius.circular(14)),
     this.onOpen,
+    this.onLikeChanged,
   });
 
   @override
@@ -87,7 +89,10 @@ class _PostMediaGalleryState extends State<PostMediaGallery> {
   void _openDefault(List<PostMediaItem> items, int index) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => _FullScreenPostMedia(items: items, initialIndex: index),
+        builder: (_) => MixedPostMediaViewer(
+            post: widget.post,
+            initialIndex: index,
+            onLikeChanged: widget.onLikeChanged),
       ),
     );
   }
@@ -98,8 +103,11 @@ class _PostMediaGalleryState extends State<PostMediaGallery> {
     final items = postMediaItems(widget.post);
     if (items.isEmpty) return const SizedBox.shrink();
 
-    return ClipRRect(
-      borderRadius: widget.borderRadius,
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+          borderRadius: widget.borderRadius,
+          border: Border.all(color: AppTheme.adaptiveGlassBorder, width: 1.5)),
       child: SizedBox(
         height: widget.height,
         child: Stack(
@@ -228,113 +236,6 @@ class _PostMediaGalleryState extends State<PostMediaGallery> {
                         borderRadius: BorderRadius.circular(99),
                       ),
                     ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _FullScreenPostMedia extends StatefulWidget {
-  final List<PostMediaItem> items;
-  final int initialIndex;
-
-  const _FullScreenPostMedia({required this.items, required this.initialIndex});
-
-  @override
-  State<_FullScreenPostMedia> createState() => _FullScreenPostMediaState();
-}
-
-class _FullScreenPostMediaState extends State<_FullScreenPostMedia> {
-  late final PageController _pages;
-  late int _index;
-  bool _controlsVisible = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _index = widget.initialIndex;
-    _pages = PageController(initialPage: _index);
-  }
-
-  @override
-  void dispose() {
-    _pages.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    AppearanceScope.observe(context);
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            PageView.builder(
-              controller: _pages,
-              itemCount: widget.items.length,
-              onPageChanged: (value) => setState(() {
-                _index = value;
-                _controlsVisible = true;
-              }),
-              itemBuilder: (_, index) {
-                final item = widget.items[index];
-                if (item.isVideo) {
-                  return Center(
-                    child: VideoPlayerWidget(
-                      videoUrl: item.url,
-                      onControlsVisibilityChanged: (visible) {
-                        if (mounted && _controlsVisible != visible)
-                          setState(() => _controlsVisible = visible);
-                      },
-                    ),
-                  );
-                }
-                return GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () =>
-                      setState(() => _controlsVisible = !_controlsVisible),
-                  child: Center(
-                    child: InteractiveViewer(
-                      minScale: .8,
-                      maxScale: 5,
-                      child: CachedMediaImage(
-                        url: item.url,
-                        fit: BoxFit.contain,
-                        fallback: const Icon(Icons.broken_image_outlined,
-                            color: Colors.white54, size: 58),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-            if (_controlsVisible)
-              PositionedDirectional(
-                top: 4,
-                start: 4,
-                child: IconButton.filledTonal(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close_rounded)),
-              ),
-            if (_controlsVisible && widget.items.length > 1)
-              PositionedDirectional(
-                top: 12,
-                end: 12,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(18)),
-                  child: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    child: Text('${_index + 1}/${widget.items.length}',
-                        style: TextStyle(color: Colors.white)),
                   ),
                 ),
               ),

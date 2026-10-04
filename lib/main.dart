@@ -1,6 +1,9 @@
+import 'widgets/post_media_frame.dart';
+import 'services/watermarked_download_service.dart';
+import 'services/app_release_gate.dart';
+import 'services/sponsored_feed.dart';
 import 'theme/appearance_controller.dart';
 import 'widgets/verified_name.dart';
-import 'screens/profile/account_verification_screen.dart';
 import 'widgets/verified_badge.dart';
 import 'widgets/compact_post.dart';
 import 'dart:async';
@@ -196,15 +199,13 @@ Future<void> _handlePushNavigationData(Map<String, dynamic> data) async {
   final nav = await _waitForZameelNavigator();
   if (nav == null) return;
   if (type == 'account_verification_review') {
-    nav.push(
-        MaterialPageRoute(builder: (_) => const AccountVerificationScreen()));
+    nav.push(MaterialPageRoute(builder: (_) => const ProfileScreen()));
     return;
   }
   if (type == 'post_promotion_approved') {
     final id = data['post_id']?.toString();
     if (id != null &&
-        await FeatureControl.instance.check(nav.context, 'feed_posts') &&
-        await FeatureControl.instance.check(nav.context, 'comments')) {
+        await FeatureControl.instance.check(nav.context, 'feed_posts')) {
       try {
         final post = await Supabase.instance.client
             .from('posts')
@@ -214,8 +215,10 @@ Future<void> _handlePushNavigationData(Map<String, dynamic> data) async {
             .timeout(const Duration(seconds: 12));
         if (post != null) {
           nav.push(MaterialPageRoute(
-              builder: (_) =>
-                  CommentsScreen(post: Map<String, dynamic>.from(post))));
+              builder: (_) => ZameelMediaViewer(
+                  post: Map<String, dynamic>.from(post),
+                  isVideo: post['type'] == 'video',
+                  enableVerticalPaging: false)));
           return;
         }
       } catch (_) {}

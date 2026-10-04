@@ -1,3 +1,5 @@
+import '../../services/watermarked_download_service.dart';
+import '../../services/video_preload_service.dart';
 import 'package:zameel/theme/appearance_controller.dart';
 import 'package:zameel/widgets/verified_name.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -493,21 +495,23 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
   }
 
   void _prefetchAround(int index) {
-    // Current clip downloads itself. Prefetch only the next clip to avoid
-    // burning egress on several full videos that may never be opened.
     final next = index + 1;
-    if (next < 0 || next >= _clips.length) return;
-    final url = _clips[next]['video_url']?.toString() ?? '';
-    if (url.isNotEmpty) {
-      // Signing is lightweight; prefetching an entire video competes with
-      // the one the user is watching on a weak connection.
-      unawaited(SecureMediaService.resolve(url)
-          .then<void>((_) {}, onError: (Object _) {}));
+    if (next >= _clips.length) {
+      unawaited(VideoPreloadService.clear());
+      return;
     }
+    final url = _clips[next]['video_url']?.toString() ?? '';
+    // Give the current player its initial bandwidth before preparing one neighbour.
+    Future<void>.delayed(const Duration(milliseconds: 1200), () {
+      if (mounted && _currentIndex == index) {
+        unawaited(VideoPreloadService.warm(url));
+      }
+    });
   }
 
   @override
   void dispose() {
+    unawaited(VideoPreloadService.clear());
     _pageController.dispose();
     super.dispose();
   }
@@ -516,6 +520,11 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
       String action, Map<String, dynamic> clip, bool ar) async {
     final db = Supabase.instance.client;
     try {
+      if (action == 'download') {
+        await WatermarkedDownloadService.download(context,
+            type: 'clip', id: '${clip['id']}');
+        return;
+      }
       if (action == 'report') {
         await showContentReportDialog(
             context, clip['id'].toString(), 'clip', ar);
@@ -779,6 +788,10 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
                               onSelected: (action) =>
                                   _shortAction(action, clip, ar),
                               itemBuilder: (_) => [
+                                PopupMenuItem(
+                                    value: 'download',
+                                    child: Text(
+                                        ar ? 'تنزيل إلى الهاتف' : 'Download')),
                                 PopupMenuItem(
                                     value: clip['saved'] == true
                                         ? 'unsave'

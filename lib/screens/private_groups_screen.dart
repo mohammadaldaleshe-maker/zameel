@@ -302,7 +302,7 @@ class _PrivateGroupsScreenState extends State<PrivateGroupsScreen> {
           centerTitle: true,
           elevation: 0,
           backgroundColor: AppTheme.adaptiveSurface,
-          foregroundColor: Colors.black,
+          foregroundColor: AppTheme.adaptiveText,
           actions: [
             IconButton(
               onPressed: _createGroup,

@@ -149,7 +149,7 @@ class _StatsScreenState extends State<StatsScreen> {
           centerTitle: true,
           elevation: 0,
           backgroundColor: AppTheme.adaptiveSurface,
-          foregroundColor: Colors.black,
+          foregroundColor: AppTheme.adaptiveText,
         ),
         body: _loading
             ? const Center(child: CircularProgressIndicator())

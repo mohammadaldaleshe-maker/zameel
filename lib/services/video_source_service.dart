@@ -11,9 +11,19 @@ import 'playback_source.dart';
 class VideoSourceService {
   VideoSourceService._();
   static Future<VideoPlayerController> controller(String value) async {
-    final source = await choosePlaybackSource(value,
-      lookupCached: (url) => kIsWeb ? Future<String?>.value(null) :
-          MediaCacheService.localPathForUrl(url, downloadIfMissing: false),
+    final localUri = Uri.tryParse(value);
+    if (!kIsWeb &&
+        (localUri?.scheme == 'file' ||
+            value.startsWith('/') ||
+            RegExp(r'^[A-Za-z]:[\\/]').hasMatch(value))) {
+      return videoControllerFromLocalPath(
+          localUri?.scheme == 'file' ? localUri!.toFilePath() : value);
+    }
+    final source = await choosePlaybackSource(
+      value,
+      lookupCached: (url) => kIsWeb
+          ? Future<String?>.value(null)
+          : MediaCacheService.localPathForUrl(url, downloadIfMissing: false),
       resolveRemote: SecureMediaService.resolve,
     );
     if (source.isLocal) return videoControllerFromLocalPath(source.value);

@@ -280,14 +280,16 @@ class ZameelApp extends StatelessWidget {
                     data: MediaQuery.of(context).copyWith(
                         textScaler: CompactTextScaler(
                             MediaQuery.textScalerOf(context))),
-                    child: AccountAccessMonitor(
+                    child: AppReleaseGate(
+                        child: SelectionArea(
+                            child: AccountAccessMonitor(
                       child: Listener(
                         behavior: HitTestBehavior.translucent,
                         onPointerDown: (_) =>
                             ScreenAwakeService.registerActivity(),
                         child: child ?? const SizedBox.shrink(),
                       ),
-                    ),
+                    ))),
                   )),
                   home: const AuthGate(),
                 );

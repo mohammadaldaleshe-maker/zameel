@@ -521,10 +521,8 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
             .toList()
         : <Map<String, dynamic>>[];
     final promotedIds = promoted.map((r) => r['id']).toSet();
-    final combined = [
-      ...promoted,
-      ...posts.where((r) => !promotedIds.contains(r['id']))
-    ];
+    final combined = arrangeSponsoredFeed(
+        posts, promoted, Supabase.instance.client.auth.currentUser?.id);
     if (_feedScope == 'global') return combined;
     final university = widget.university.name.trim().toLowerCase();
     final college = widget.college.name.trim().toLowerCase();
@@ -1762,7 +1760,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
           children: [
             DrawerHeader(
               decoration: BoxDecoration(
-                color: Colors.white.withAlpha(25),
+                color: AppTheme.adaptiveGlassSoft,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -2020,8 +2018,8 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                     _showArcShortcutCustomizer);
               },
             ),
-            const Divider(
-              color: Colors.white24,
+            Divider(
+              color: AppTheme.adaptiveGlassBorder,
             ),
             _DrawerItem(
               icon: Icons.logout_rounded,
@@ -2750,7 +2748,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                       vertical: 13,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withAlpha(25),
+                      color: AppTheme.adaptiveGlassSoft,
                       borderRadius: BorderRadius.circular(25),
                     ),
                     child: Text(
@@ -2767,8 +2765,8 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
               ),
             ],
           ),
-          const Divider(
-            color: Colors.white24,
+          Divider(
+            color: AppTheme.adaptiveGlassBorder,
             height: 28,
           ),
           SingleChildScrollView(
@@ -3040,8 +3038,8 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
             );
           },
         ),
-        const Divider(
-          color: Colors.white24,
+        Divider(
+          color: AppTheme.adaptiveGlassBorder,
           height: 30,
         ),
         _ProfileOption(

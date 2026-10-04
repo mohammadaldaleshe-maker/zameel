@@ -16,6 +16,8 @@ if (keystorePropertiesFile.exists()) {
 }
 
 dependencies {
+    implementation("androidx.media3:media3-transformer:1.8.0")
+    implementation("androidx.media3:media3-effect:1.8.0")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
 

@@ -1,6 +1,7 @@
+import '../../main.dart' show ZameelMediaViewer;
 import 'package:zameel/theme/appearance_controller.dart';
 import 'package:zameel/widgets/verified_name.dart';
-import '../profile/account_verification_screen.dart';
+import '../profile/profile_screen.dart';
 import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -198,9 +199,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (type == 'account_verification_review') {
       if (mounted)
         Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (_) => const AccountVerificationScreen()));
+            context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
       return;
     }
     if (type.startsWith('friend_request')) {
@@ -237,7 +236,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         (data['post_id'] ?? data['target_post_id'])?.toString() ?? '';
     if (postId.isNotEmpty) {
       if (!await FeatureControl.instance.check(context, 'feed_posts') ||
-          !await FeatureControl.instance.check(context, 'comments')) return;
+          (type != 'post_promotion_approved' &&
+              !await FeatureControl.instance.check(context, 'comments')))
+        return;
       try {
         final post = await db
             .from('posts')
@@ -252,9 +253,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           Navigator.push(
               context,
               MaterialPageRoute(
-                  builder: (_) => CommentsScreen(
-                      post: resolvedPost,
-                      highlightedCommentId: data['comment_id']?.toString())));
+                  builder: (_) => type == 'post_promotion_approved'
+                      ? ZameelMediaViewer(
+                          post: resolvedPost,
+                          isVideo: resolvedPost['type'] == 'video',
+                          enableVerticalPaging: false)
+                      : CommentsScreen(
+                          post: resolvedPost,
+                          highlightedCommentId:
+                              data['comment_id']?.toString())));
           return;
         }
       } catch (_) {}

@@ -6,49 +6,139 @@ bool _hasOrderedPostMedia(Map<String, dynamic> post) {
 }
 
 void _openOrderedPostMedia(
-  BuildContext context,
-  Map<String, dynamic> post,
-  PostMediaItem item, {
-  VoidCallback? onLikeChanged,
-}) {
-  final selected = Map<String, dynamic>.from(post);
-  if (item.isVideo) {
-    selected['type'] = 'video';
-    selected['video_url'] = item.url;
-    selected['image_url'] = null;
-  } else {
-    selected['type'] = 'image';
-    selected['image_url'] = item.url;
-    selected['video_url'] = null;
-  }
-
-  void syncEngagement() {
-    for (final key in const <String>[
-      'liked',
-      'likes',
-      'likes_count',
-      'comments',
-      'comments_count',
-      'shares',
-      'shares_count',
-      'isSaved',
-    ]) {
-      if (selected.containsKey(key)) post[key] = selected[key];
-    }
-    onLikeChanged?.call();
-  }
-
+    BuildContext context, Map<String, dynamic> post, PostMediaItem item,
+    {VoidCallback? onLikeChanged}) {
+  final items = postMediaItems(post);
+  final index =
+      items.indexWhere((x) => x.url == item.url && x.type == item.type);
   Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => ZameelMediaViewer(
-        post: selected,
-        isVideo: item.isVideo,
-        enableVerticalPaging: false,
-        onLikeChanged: syncEngagement,
-      ),
-    ),
-  ).then((_) => syncEngagement());
+      context,
+      MaterialPageRoute(
+          builder: (_) => MixedPostMediaViewer(
+              post: post,
+              initialIndex: index < 0 ? 0 : index,
+              onLikeChanged: onLikeChanged)));
+}
+
+class MixedPostMediaViewer extends StatefulWidget {
+  const MixedPostMediaViewer(
+      {super.key,
+      required this.post,
+      required this.initialIndex,
+      this.onLikeChanged});
+  final Map<String, dynamic> post;
+  final int initialIndex;
+  final VoidCallback? onLikeChanged;
+  @override
+  State<MixedPostMediaViewer> createState() => _MixedPostMediaViewerState();
+}
+
+class _MixedPostMediaViewerState extends State<MixedPostMediaViewer> {
+  late int _index;
+  Offset? _down;
+  int _pointers = 0;
+  bool _multi = false;
+  bool _zoomed = false;
+  late List<PostMediaItem> _items;
+  @override
+  void initState() {
+    super.initState();
+    _items = postMediaItems(widget.post);
+    _index = widget.initialIndex
+        .clamp(0, (_items.length - 1).clamp(0, _items.length))
+        .toInt();
+  }
+
+  void _move(int delta) {
+    final next = _index + delta;
+    if (next >= 0 && next < _items.length)
+      setState(() {
+        _index = next;
+        _zoomed = false;
+      });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_items.isEmpty)
+      return const Scaffold(body: Center(child: Text('لا توجد وسائط')));
+    final item = _items[_index];
+    final selected = {
+      ...widget.post,
+      'type': item.type,
+      'image_url': item.isVideo ? null : item.url,
+      'video_url': item.isVideo ? item.url : null,
+      'media_index': _index
+    };
+    return Listener(
+      onPointerDown: (event) {
+        _pointers++;
+        if (_pointers == 1) {
+          _down = event.position;
+          _multi = false;
+        } else {
+          _multi = true;
+        }
+      },
+      onPointerCancel: (_) {
+        _pointers = 0;
+        _down = null;
+      },
+      onPointerUp: (event) {
+        _pointers = (_pointers - 1).clamp(0, 10).toInt();
+        if (_pointers != 0 || _multi || _zoomed || _down == null) return;
+        final delta = event.position - _down!;
+        _down = null;
+        if (item.isVideo &&
+            delta.dy.abs() > 80 &&
+            delta.dy.abs() > delta.dx.abs()) _move(delta.dy < 0 ? 1 : -1);
+        if (!item.isVideo &&
+            delta.dx.abs() > 80 &&
+            delta.dx.abs() > delta.dy.abs()) _move(delta.dx > 0 ? 1 : -1);
+      },
+      child: Stack(children: [
+        ZameelMediaViewer(
+            key: ValueKey('media_$_index'),
+            post: selected,
+            isVideo: item.isVideo,
+            enableVerticalPaging: false,
+            autoplayVideo: item.isVideo,
+            onZoomChanged: (zoomed) => _zoomed = zoomed,
+            onLikeChanged: () {
+              for (final key in [
+                'liked',
+                'likes',
+                'likes_count',
+                'comments',
+                'comments_count',
+                'isSaved'
+              ]) {
+                if (selected.containsKey(key)) widget.post[key] = selected[key];
+              }
+              widget.onLikeChanged?.call();
+            }),
+        Positioned(
+            top: MediaQuery.paddingOf(context).top + 58,
+            right: 8,
+            child: Material(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(12),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  IconButton(
+                      onPressed: _index > 0 ? () => _move(-1) : null,
+                      icon:
+                          const Icon(Icons.chevron_left, color: Colors.white)),
+                  Text('${_index + 1}/${_items.length}',
+                      style: const TextStyle(color: Colors.white)),
+                  IconButton(
+                      onPressed:
+                          _index < _items.length - 1 ? () => _move(1) : null,
+                      icon:
+                          const Icon(Icons.chevron_right, color: Colors.white)),
+                ]))),
+      ]),
+    );
+  }
 }
 
 class _PostCard extends StatelessWidget {
@@ -268,8 +358,7 @@ class _ImagePostState extends State<_ImagePost> {
             ),
           )
         else if (imageUrl.isNotEmpty)
-          ClipRRect(
-            borderRadius: BorderRadius.circular(14),
+          PostMediaFrame(
             child: GestureDetector(
               onTap: () {
                 Navigator.push(
@@ -340,8 +429,8 @@ class _ImagePostState extends State<_ImagePost> {
             ),
           ],
         ),
-        const Divider(
-          color: Colors.white24,
+        Divider(
+          color: AppTheme.adaptiveGlassBorder,
           height: 25,
         ),
         // ------------------------------------------------------
@@ -358,7 +447,7 @@ class _ImagePostState extends State<_ImagePost> {
               text: isArabic ? 'إعجاب' : 'Like',
               active: liked,
               onTap: widget.onLike,
-              color: Colors.white70,
+              color: AppTheme.legacySecondary,
             ),
             // COMMENTS
             _PostAction(
@@ -381,7 +470,7 @@ class _ImagePostState extends State<_ImagePost> {
                   ),
                 );
               },
-              color: Colors.white70,
+              color: AppTheme.legacySecondary,
             ),
             // SAVE
             if (FeatureControl.instance.visible('saved_posts'))
@@ -391,7 +480,7 @@ class _ImagePostState extends State<_ImagePost> {
                     : Icons.bookmark_border_rounded,
                 text: isArabic ? 'حفظ' : 'Save',
                 active: isSaved,
-                color: isSaved ? accentColor : Colors.white70,
+                color: isSaved ? accentColor : AppTheme.legacySecondary,
                 onTap: () {
                   setState(() {
                     widget.post['isSaved'] = !isSaved;
@@ -434,7 +523,7 @@ class _ImagePostState extends State<_ImagePost> {
             _PostAction(
               icon: Icons.share_outlined,
               text: isArabic ? 'مشاركة' : 'Share',
-              color: Colors.white70,
+              color: AppTheme.legacySecondary,
               onTap: () async {
                 if (widget.onShareToProfile != null) {
                   await widget.onShareToProfile!(widget.post);
@@ -570,8 +659,7 @@ class _VideoPostState extends State<_VideoPost> {
             ),
           )
         else
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
+          PostMediaFrame(
             child: GestureDetector(
               onTap: () => Navigator.push(
                 context,
@@ -622,7 +710,7 @@ class _VideoPostState extends State<_VideoPost> {
               '${widget.post['comments'] ?? 0} ${Translations.translate('comments_title', languageProvider.currentLanguage)}',
               style: TextStyle(color: AppTheme.legacySecondary)),
         ]),
-        const Divider(color: Colors.white24, height: 22),
+        Divider(color: AppTheme.adaptiveGlassBorder, height: 22),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
@@ -633,7 +721,7 @@ class _VideoPostState extends State<_VideoPost> {
               text: '${widget.post['likes'] ?? 0}',
               active: liked,
               onTap: widget.onLike,
-              color: Colors.white70,
+              color: AppTheme.legacySecondary,
             ),
             _PostAction(
               icon: Icons.comment_rounded,
@@ -652,7 +740,7 @@ class _VideoPostState extends State<_VideoPost> {
                   ),
                 );
               },
-              color: Colors.white70,
+              color: AppTheme.legacySecondary,
             ),
             if (FeatureControl.instance.visible('saved_posts'))
               _PostAction(
@@ -662,7 +750,7 @@ class _VideoPostState extends State<_VideoPost> {
                 text: isArabic ? 'حفظ' : 'Save',
                 color: widget.post['isSaved'] == true
                     ? accentColor
-                    : Colors.white70,
+                    : AppTheme.legacySecondary,
                 onTap: () {
                   setState(() {
                     widget.post['isSaved'] = !(widget.post['isSaved'] == true);
@@ -684,7 +772,7 @@ class _VideoPostState extends State<_VideoPost> {
             _PostAction(
               icon: Icons.share_rounded,
               text: isArabic ? 'مشاركة' : 'Share',
-              color: Colors.white70,
+              color: AppTheme.legacySecondary,
               onTap: () async {
                 if (widget.onShareToProfile != null) {
                   await widget.onShareToProfile!(widget.post);
@@ -782,6 +870,7 @@ class ZameelMediaViewer extends StatefulWidget {
   final bool enableVerticalPaging;
   final bool autoplayVideo;
   final bool videoActive;
+  final ValueChanged<bool>? onZoomChanged;
 
   const ZameelMediaViewer({
     super.key,
@@ -791,6 +880,7 @@ class ZameelMediaViewer extends StatefulWidget {
     this.enableVerticalPaging = true,
     this.autoplayVideo = false,
     this.videoActive = true,
+    this.onZoomChanged,
   });
 
   @override
@@ -803,6 +893,7 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
   bool _controlsVisible = true;
   final TextEditingController _commentController = TextEditingController();
   final FocusNode _commentFocus = FocusNode();
+  final TransformationController _imageTransform = TransformationController();
 
   String get _url =>
       (widget.isVideo
@@ -818,6 +909,7 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
 
   @override
   void dispose() {
+    _imageTransform.dispose();
     _commentController.dispose();
     _commentFocus.dispose();
     super.dispose();
@@ -1061,7 +1153,17 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
             ? AppBar(
                 backgroundColor: Colors.black,
                 foregroundColor: Colors.white,
-                title: Text(title))
+                title: Text(title),
+                actions: [
+                    IconButton(
+                        tooltip: 'تنزيل إلى الهاتف',
+                        icon: const Icon(Icons.download_outlined),
+                        onPressed: () => WatermarkedDownloadService.download(
+                            context,
+                            type: 'post',
+                            id: '${widget.post['id']}',
+                            index: (widget.post['media_index'] as int?) ?? 0)),
+                  ])
             : null,
         body: SafeArea(
           top: false,
@@ -1113,6 +1215,13 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
                                       onTap: () => setState(() =>
                                           _controlsVisible = !_controlsVisible),
                                       child: InteractiveViewer(
+                                        transformationController:
+                                            _imageTransform,
+                                        onInteractionUpdate: (_) => widget
+                                            .onZoomChanged
+                                            ?.call(_imageTransform.value
+                                                    .getMaxScaleOnAxis() >
+                                                1.01),
                                         minScale: 0.5,
                                         maxScale: 5,
                                         child: CachedMediaImage(
@@ -1408,14 +1517,14 @@ class _PostAction extends StatelessWidget {
   final String text;
   final bool active;
   final VoidCallback? onTap;
-  final Color color;
+  final Color? color;
 
   const _PostAction({
     required this.icon,
     required this.text,
     this.active = false,
     this.onTap,
-    this.color = Colors.white70,
+    this.color,
   });
 
   @override
@@ -1427,14 +1536,14 @@ class _PostAction extends StatelessWidget {
         children: [
           Icon(
             icon,
-            color: active ? accentColor : color,
+            color: active ? accentColor : (color ?? AppTheme.legacySecondary),
             size: 22,
           ),
           const SizedBox(width: 4),
           Text(
             text,
             style: TextStyle(
-              color: active ? accentColor : color,
+              color: active ? accentColor : (color ?? AppTheme.legacySecondary),
               fontSize: 12,
             ),
           ),
@@ -1627,8 +1736,8 @@ class _TextPostState extends State<_TextPost> {
             ),
           ],
         ),
-        const Divider(
-          color: Colors.white24,
+        Divider(
+          color: AppTheme.adaptiveGlassBorder,
           height: 25,
         ),
         Row(
@@ -1641,7 +1750,7 @@ class _TextPostState extends State<_TextPost> {
               text: isArabic ? 'إعجاب' : 'Like',
               active: liked,
               onTap: widget.onLike,
-              color: Colors.white70,
+              color: AppTheme.legacySecondary,
             ),
             _PostAction(
               icon: Icons.comment_outlined,
@@ -1663,7 +1772,7 @@ class _TextPostState extends State<_TextPost> {
                   ),
                 );
               },
-              color: Colors.white70,
+              color: AppTheme.legacySecondary,
             ),
             if (FeatureControl.instance.visible('saved_posts'))
               _PostAction(
@@ -1672,7 +1781,7 @@ class _TextPostState extends State<_TextPost> {
                     : Icons.bookmark_border_rounded,
                 text: isArabic ? 'حفظ' : 'Save',
                 active: isSaved,
-                color: isSaved ? accentColor : Colors.white70,
+                color: isSaved ? accentColor : AppTheme.legacySecondary,
                 onTap: () {
                   setState(() {
                     widget.post['isSaved'] = !isSaved;
@@ -1712,7 +1821,7 @@ class _TextPostState extends State<_TextPost> {
             _PostAction(
               icon: Icons.share_outlined,
               text: isArabic ? 'مشاركة' : 'Share',
-              color: Colors.white70,
+              color: AppTheme.legacySecondary,
               onTap: () async {
                 if (widget.onShareToProfile != null) {
                   await widget.onShareToProfile!(widget.post);

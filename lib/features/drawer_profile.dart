@@ -162,14 +162,14 @@ class _CreateAction extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: Colors.white70,
+              color: AppTheme.legacySecondary,
               size: 22,
             ),
             const SizedBox(width: 6),
             Text(
               text,
-              style: const TextStyle(
-                color: Colors.white70,
+              style: TextStyle(
+                color: AppTheme.legacySecondary,
                 fontWeight: FontWeight.w600,
               ),
             ),

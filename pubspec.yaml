@@ -1,7 +1,7 @@
 name: zameel
 description: "Zameel - Social Platform for Students"
 publish_to: 'none'
-version: 2.0.3+12
+version: 2.0.4+13
 
 environment:
   sdk: ^3.6.0

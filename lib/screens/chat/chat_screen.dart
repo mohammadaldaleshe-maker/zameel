@@ -1,3 +1,4 @@
+import '../../widgets/video_player_widget.dart';
 import 'package:zameel/theme/appearance_controller.dart';
 import 'package:zameel/widgets/verified_name.dart';
 import 'dart:ui' as ui;
@@ -854,6 +855,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         'png',
         'webp',
         'gif',
+        'mp4',
+        'mov',
+        'webm',
         'pdf',
         'doc',
         'docx',
@@ -875,6 +879,38 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       _notice('الحد الأقصى للمرفق 15 ميجابايت');
       return;
     }
+    if (!mounted) return;
+    final previewVideo = const {'mp4', 'mov', 'webm'}
+        .contains(file.name.split('.').last.toLowerCase());
+    final previewImage = const {'jpg', 'jpeg', 'png', 'webp', 'gif'}
+        .contains(file.name.split('.').last.toLowerCase());
+    final send = await showDialog<bool>(
+        context: context,
+        builder: (c) => AlertDialog(
+                title: Text(previewVideo
+                    ? 'إرسال الفيديو؟'
+                    : previewImage
+                        ? 'إرسال الصورة؟'
+                        : 'إرسال المرفق؟'),
+                content: Column(mainAxisSize: MainAxisSize.min, children: [
+                  if (previewImage)
+                    Image.memory(bytes, height: 220, fit: BoxFit.contain),
+                  if (previewVideo && file.path != null)
+                    SizedBox(
+                        height: 220,
+                        child: VideoPlayerWidget(videoUrl: file.path!)),
+                  Text(file.name),
+                  Text('${(bytes.length / 1024 / 1024).toStringAsFixed(1)} MB'),
+                ]),
+                actions: [
+                  TextButton(
+                      onPressed: () => Navigator.pop(c, false),
+                      child: const Text('إلغاء')),
+                  FilledButton(
+                      onPressed: () => Navigator.pop(c, true),
+                      child: const Text('إرسال'))
+                ]));
+    if (send != true || !mounted) return;
     setState(() => _uploading = true);
     try {
       final safeName = file.name.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
@@ -885,13 +921,23 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           : '';
       final image =
           const {'jpg', 'jpeg', 'png', 'webp', 'gif'}.contains(extension);
+      final video = const {'mp4', 'mov', 'webm'}.contains(extension);
+      final mediaType = image
+          ? 'image'
+          : video
+              ? 'video'
+              : 'file';
       final imageMime = extension == 'jpg' ? 'jpeg' : extension;
+      final videoMime = extension == 'mov' ? 'quicktime' : extension;
       await db.storage.from('chat_attachments').uploadBinary(
             path,
             Uint8List.fromList(bytes),
             fileOptions: FileOptions(
-                contentType:
-                    image ? 'image/$imageMime' : 'application/octet-stream'),
+                contentType: image
+                    ? 'image/$imageMime'
+                    : video
+                        ? 'video/$videoMime'
+                        : 'application/octet-stream'),
           );
       final row = await db
           .from('messages')
@@ -900,7 +946,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             'sender_id': uid,
             'content': file.name,
             'media_url': path,
-            'media_type': image ? 'image' : 'file',
+            'media_type': mediaType,
             'is_read': false,
           })
           .select(
@@ -913,7 +959,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         'object_path': path,
         'file_name': file.name,
         'file_size': bytes.length,
-        'media_type': image ? 'image' : 'file',
+        'media_type': mediaType,
       });
       if (mounted) {
         _mergePersistedMessage(Map<String, dynamic>.from(row));
@@ -958,11 +1004,24 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       future: _attachmentUrl(path),
       builder: (context, snapshot) {
         final url = snapshot.data;
+        if (url == null && snapshot.connectionState == ConnectionState.done) {
+          return TextButton(
+              onPressed: () => setState(() {}),
+              child: const Text('تعذر فتح المرفق — أعد المحاولة'));
+        }
         if (url == null)
           return const SizedBox(
               width: 28,
               height: 28,
               child: CircularProgressIndicator(strokeWidth: 2));
+        if (type == 'video') {
+          return SizedBox(width: 240, child: VideoPlayerWidget(videoUrl: url));
+        }
+        if (snapshot.connectionState == ConnectionState.done && url == null) {
+          return TextButton(
+              onPressed: () => setState(() {}),
+              child: const Text('تعذر فتح المرفق — أعد المحاولة'));
+        }
         if (type == 'image') {
           return GestureDetector(
             onTap: () => showDialog<void>(
@@ -1523,7 +1582,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               child: Row(
                 children: [
                   IconButton(
-                    tooltip: ar ? 'إرفاق صورة أو ملف' : 'Attach image or file',
+                    tooltip: ar
+                        ? 'إرفاق صورة أو فيديو أو ملف'
+                        : 'Attach image, video or file',
                     onPressed: _uploading ? null : _pickAttachment,
                     icon: _uploading
                         ? const SizedBox(
@@ -1532,11 +1593,52 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2))
                         : const Icon(Icons.attach_file_rounded),
                   ),
+                  IconButton(
+                      tooltip: 'إيموجي',
+                      icon: const Icon(Icons.emoji_emotions_outlined),
+                      onPressed: () async {
+                        final emoji = await showModalBottomSheet<String>(
+                            context: context,
+                            builder: (c) => SafeArea(
+                                    child: Wrap(
+                                        children: [
+                                  '😀',
+                                  '😂',
+                                  '😍',
+                                  '🥰',
+                                  '😎',
+                                  '🤔',
+                                  '😢',
+                                  '❤️',
+                                  '👍',
+                                  '👏',
+                                  '🎉',
+                                  '🇯🇴'
+                                ]
+                                            .map((e) => TextButton(
+                                                onPressed: () =>
+                                                    Navigator.pop(c, e),
+                                                child: Text(e,
+                                                    style: const TextStyle(
+                                                        fontSize: 28))))
+                                            .toList())));
+                        if (emoji == null || !mounted) return;
+                        final selection = _controller.selection;
+                        final start = selection.isValid
+                            ? selection.start
+                            : _controller.text.length;
+                        final end = selection.isValid ? selection.end : start;
+                        _controller.value = TextEditingValue(
+                            text: _controller.text
+                                .replaceRange(start, end, emoji),
+                            selection: TextSelection.collapsed(
+                                offset: start + emoji.length));
+                      }),
                   Expanded(
                     child: TextField(
                       controller: _controller,
                       style: TextStyle(color: AppTheme.adaptiveText),
-                      cursorColor: Colors.black,
+                      cursorColor: AppTheme.primary,
                       onSubmitted: (_) => _send(),
                       decoration: InputDecoration(
                         hintText: ar ? 'اكتب رسالة...' : 'Type a message...',

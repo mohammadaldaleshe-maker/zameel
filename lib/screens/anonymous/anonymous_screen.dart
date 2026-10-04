@@ -99,7 +99,7 @@ class _AnonymousScreenState extends State<AnonymousScreen> {
           centerTitle: true,
           elevation: 0,
           backgroundColor: AppTheme.adaptiveSurface,
-          foregroundColor: Colors.black,
+          foregroundColor: AppTheme.adaptiveText,
         ),
         body: Column(
           children: [

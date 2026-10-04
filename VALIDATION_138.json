@@ -1,0 +1,24 @@
+{
+  "release": 138,
+  "app_version": "2.0.4+13",
+  "admin_version": "1.3.13",
+  "dart_analysis": "No issues found; embedder repaired and negative probe verified",
+  "admin_tests_passed": 58,
+  "postgres_checks_passed": 179,
+  "admin_browser": "Passed mock API flows: user posts, preview, delete, version policy, search, verification payment rejection/approval",
+  "sponsored_feed_pure_dart": "Passed owner-first ordering, five-public-post interval and deduplication",
+  "native_flutter_tests": "Not run locally; Windows Check is required",
+  "android_build": "Not run locally; Windows Check compiles debug APK",
+  "phone_performance": "Not measured; device acceptance required",
+  "live_sql_applied": false,
+  "live_function_deployed": false,
+  "github_pushed": false,
+  "media_height_screen_fraction": 0.65,
+  "font_change_from_137": "+10%",
+  "download_platforms": [
+    "Android"
+  ],
+  "trust_questions": 27,
+  "trust_bot_search_seconds": 15,
+  "legacy_versions_without_release_gate": "Cannot retroactively display forced-update gate"
+}

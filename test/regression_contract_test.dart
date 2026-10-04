@@ -215,7 +215,12 @@ void main() {
           contains('MediaCacheService.prefetch(<String>[url], limit: 1)'));
       expect(
           clips, isNot(contains('MediaCacheService.prefetch(<String>[url]')));
-      expect(clips, contains('SecureMediaService.resolve(url)'));
+      expect(clips, contains('VideoPreloadService.warm(url)'));
+      final preload = _read('lib/services/video_preload_service.dart');
+      final source = _read('lib/services/video_source_service.dart');
+      expect(preload, contains('VideoSourceService.controller(url)'));
+      expect(source, contains('resolveRemote: SecureMediaService.resolve'));
+      expect(preload, isNot(contains('MediaCacheService.prefetch(')));
     });
   });
 

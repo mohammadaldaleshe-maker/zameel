@@ -23,8 +23,8 @@ Future<Uint8List> _image() async {
 
 void main() {
   test('compact typography keeps the system accessibility scale', () {
-    expect(const CompactTextScaler(TextScaler.noScaling).scale(20), 18);
-    expect(const CompactTextScaler(TextScaler.linear(2)).scale(20), 36);
+    expect(const CompactTextScaler(TextScaler.noScaling).scale(20), closeTo(19.8, 0.00001));
+    expect(const CompactTextScaler(TextScaler.linear(2)).scale(20), closeTo(39.6, 0.00001));
   });
   for (final cover in [false, true]) {
     testWidgets('crop saves the displayed ${cover ? 'cover' : 'avatar'} frame',

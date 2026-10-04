@@ -261,7 +261,7 @@ class _PollsScreenState extends State<PollsScreen> {
           centerTitle: true,
           elevation: 0,
           backgroundColor: AppTheme.adaptiveSurface,
-          foregroundColor: Colors.black,
+          foregroundColor: AppTheme.adaptiveText,
           actions: [
             IconButton(
               onPressed: _showCreatePoll,

@@ -1,0 +1,146 @@
+installed 20261003180001_133_open_registration.sql
+installed 20261003180002_133_trust_game.sql
+installed 20261003180003_133_trust_administration.sql
+PASS general registration without university
+PASS general receives no invented academic affiliation
+PASS registration retry preserves completed account
+PASS student academic details accepted
+PASS initial grant exactly once
+PASS first participant queued
+PASS match reserves exactly 50 each
+PASS current answer and opponent identity hidden
+PASS chat retry idempotent
+PASS decision private until both commit
+PASS trust/trust split 550 and return stakes
+PASS settlement retry cannot mint twice
+PASS first participant queued
+PASS match reserves exactly 50 each
+PASS betray/trust balances
+PASS first participant queued
+PASS match reserves exactly 50 each
+PASS trust/betray balances
+PASS first participant queued
+PASS match reserves exactly 50 each
+PASS betray/betray balances
+PASS first participant queued
+PASS match reserves exactly 50 each
+PASS withdrawal forfeits one stake and returns other
+PASS first participant queued
+PASS match reserves exactly 50 each
+PASS 90-second unilateral disconnect loses only own stake
+PASS first participant queued
+PASS match reserves exactly 50 each
+PASS both offline refunded conservatively
+PASS first participant queued
+PASS match reserves exactly 50 each
+PASS missed server schedule refunds both
+PASS first participant queued
+PASS match reserves exactly 50 each
+PASS server deadline expires unanswered round
+PASS stale answer does not answer next round
+PASS admin refund idempotent
+PASS admin adjustment request id prevents replay
+PASS authenticated cannot access ledger helpers or answer tables
+PASS first participant queued
+PASS match reserves exactly 50 each
+PASS shared wrong answer proceeds without reward
+PASS correct answer awarded once after replay
+PASS new settings never change active match stake or awards
+PASS feature suspension refunds active participants
+PASS queue cancellation never debits coins
+PASS first participant queued
+PASS match reserves exactly 50 each
+PASS first secret decision cannot be changed
+PASS first participant queued
+PASS match reserves exactly 50 each
+PASS missing final decision loses stake and grants no question reward
+PASS first participant queued
+PASS match reserves exactly 50 each
+PASS deleted opponent cancels and refunds remaining player
+PASS verified phone normalized with or without Auth plus sign
+PASS repeat migrations preserve question bank and account data
+PASS promotion begins pending review
+PASS promotion request retry creates no duplicate
+PASS approval retry never extends promotion
+PASS approved public promotion visible through existing post RLS
+PASS blocked post owner never bypasses post RLS for promotion
+PASS privacy change cancels promotion immediately
+PASS making a post public again never revives cancelled promotion
+PASS expired promotions absent from feed
+PASS expired promotion permits a new request
+PASS clients cannot publish promotions or forge administration
+PASS promotion migration retry preserves question bank
+Installing maintenance migration
+PASS reference is two letters and four digits, with server-calculated 500 fils per day
+PASS request retry returns the same payment reference
+PASS failed confirmation leaves payment unverified
+PASS paid approval retry preserves original duration
+PASS unknown age never receives adult-targeted promotion
+PASS eligible adult receives promotion
+PASS viewer cannot read another owner payment reference
+PASS viewer can read only own private demographics
+PASS gender filter enforced in database
+PASS city filter excludes other cities
+PASS selected city matches
+PASS minor does not receive funded campaign
+PASS university campaigns exclude general accounts
+PASS student university matches without city restriction
+PASS new targeted feed preserves canonical post privacy check
+Installing maintenance migration
+PASS maintenance migration retry preserves payment reference
+DATABASE TESTS PASSED: 104
+PASS photo interactions have stable identity
+PASS photo like recorded
+PASS photo unlike recorded
+PASS photo comment persists separately from posts
+PASS blocked viewer cannot read photo assets through RLS
+PASS blocked viewer cannot read photo comments
+PASS monthly verification price and code generated server-side
+PASS pending verification retry preserves payment receipt
+PASS verification approval succeeds after exact payment match
+PASS verification lasts one calendar month
+PASS approval retry cannot extend paid subscription
+PASS verification approval emits exactly one notification
+PASS owner reads own verification receipt
+PASS renewal creates a distinct payment receipt
+PASS early renewal extends from existing expiry without losing paid days
+PASS another user cannot read payment receipts
+PASS promotion approval emits one notification despite retry
+PASS visible profile posts show sponsorship regardless of delivery targeting
+PASS migration retry preserves verification expiry
+PASS verification permissions belong to promotions
+PASS promotion-screen reviewer can replay without extra charge or extension
+PASS badge directory respects profile RLS and returns only active verification
+PASS empty badge request returns no rows
+PASS badge batch is bounded to the first 100 identities
+PASS expired verification is hidden by the server
+PASS radio badge identities exclude anonymous and hidden posts
+PASS release 137 migration retries preserve paid expiry
+PASS Jordan pool contains 27 independent easy questions
+PASS Jordan pool does not modify quiz questions
+PASS permitted release remains usable
+PASS stopped build is blocked
+PASS approved current build is allowed
+PASS independent older build can remain allowed
+PASS release policy is available before login
+PASS bot does not interrupt the initial human search
+PASS bot starts after bounded human search and is disclosed
+PASS bot stake debited once
+PASS bot join/state retry does not debit twice
+PASS bot does not reveal current correct answer
+PASS bot uses the same ten-round reward formula
+PASS bot trust result returns stake plus half the prize
+PASS bot settlement retry cannot mint coins
+PASS finished bot keeps disclosed identity
+PASS admin deletion creates permanent moderation tombstone
+PASS download identity is resolved by server
+PASS migration retry does not duplicate Jordan questions
+PASS migration retry preserves stopped build
+PASS bot betray/trust economic result
+PASS bot betray/trust replay is idempotent
+PASS bot trust/betray economic result
+PASS bot trust/betray replay is idempotent
+PASS bot betray/betray economic result
+PASS bot betray/betray replay is idempotent
+PASS private media downloadable only by its owner
+ALL DATABASE TESTS PASSED: 179

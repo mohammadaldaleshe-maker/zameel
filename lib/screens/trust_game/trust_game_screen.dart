@@ -458,6 +458,11 @@ class _TrustGameScreenState extends State<TrustGameScreen>
             child: ListView(
               padding: const EdgeInsets.all(18),
               children: [
+                if (_state['is_bot'] == true)
+                  const ListTile(
+                      leading: Icon(Icons.smart_toy_outlined),
+                      title: Text('زميل — لاعب آلي'),
+                      subtitle: Text('اختيارات اللاعب الآلي عشوائية')),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
