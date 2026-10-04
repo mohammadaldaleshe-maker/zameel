@@ -39,19 +39,41 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     _load();
+    if (widget.partnerId != null)
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted)
+          _openPartner(widget.partnerId!, widget.partnerName ?? 'Colleague');
+      });
+  }
+
+  Future<void> _loadChatProfile() async {
+    try {
+      final profile = await ZameelCommunityChatService.currentProfile()
+          .timeout(const Duration(seconds: 12));
+      if (mounted) setState(() => _profile = profile);
+    } catch (_) {}
+  }
+
+  Future<void> _loadChatPresence() async {
+    try {
+      await db.rpc('touch_my_presence').timeout(const Duration(seconds: 8));
+      final rows = await db
+          .rpc('get_colleague_presence')
+          .timeout(const Duration(seconds: 8));
+      if (mounted)
+        setState(() => _onlineIds = (rows as List)
+            .where((p) => p is Map && p['is_online'] == true)
+            .map((p) => p['user_id'].toString())
+            .toSet());
+    } catch (_) {}
   }
 
   Future<void> _load() async {
     if (uid == null) return;
     try {
       final me = uid!;
-      final profile = await ZameelCommunityChatService.currentProfile();
-      await db.rpc('touch_my_presence');
-      List<dynamic> presence = const [];
-      try {
-        final presenceRows = await db.rpc('get_colleague_presence');
-        presence = List<dynamic>.from(presenceRows as List? ?? const []);
-      } catch (_) {}
+      unawaited(_loadChatProfile());
+      unawaited(_loadChatPresence());
       final req = await db
           .from('friend_requests')
           .select(
@@ -66,11 +88,6 @@ class _ChatScreenState extends State<ChatScreen> {
       if (mounted)
         setState(() {
           _friends = friends;
-          _profile = profile;
-          _onlineIds = presence
-              .where((p) => p is Map && p['is_online'] == true)
-              .map((p) => (p as Map)['user_id'].toString())
-              .toSet();
           _loading = false;
         });
     } catch (e) {
@@ -79,10 +96,6 @@ class _ChatScreenState extends State<ChatScreen> {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('تعذر تحميل الدردشة: $e')));
       }
-    }
-    if (widget.partnerId != null && mounted) {
-      WidgetsBinding.instance.addPostFrameCallback((_) =>
-          _openPartner(widget.partnerId!, widget.partnerName ?? 'Colleague'));
     }
   }
 
@@ -736,6 +749,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   Future<void> _load() async {
     try {
       await _reconcilePersistedMessages();
+      if (mounted) {
+        setState(() => _loading = false);
+        _scrollToEnd(immediate: true);
+      }
       await _markRead();
     } catch (e) {
       if (mounted)

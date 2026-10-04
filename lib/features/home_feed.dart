@@ -453,13 +453,17 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
     if (result != null && result.isNotEmpty) await _saveArcShortcuts(result);
   }
 
+  bool _promotionsLoading = false;
+
   Future<void> _loadPromotions() async {
+    if (_promotionsLoading) return;
     final db = Supabase.instance.client;
     final user = db.auth.currentUser?.id;
     if (user == null || !FeatureControl.instance.enabled('post_promotions')) {
       if (mounted) setState(() => _promotedPosts = []);
       return;
     }
+    _promotionsLoading = true;
     try {
       final result = await db
           .rpc('zameel_promoted_post_ids')
@@ -471,7 +475,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
           : List<Map<String, dynamic>>.from(await db
               .from('posts')
               .select(
-                  '*, users(name, profile_image, gender, role, university, college, department)')
+                  '*, users(name, profile_image, gender, role, university, college, department, verification_expires_at)')
               .inFilter('id', ids)
               .eq('audience', 'public')
               .or('is_hidden.eq.false,is_hidden.is.null')
@@ -502,7 +506,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
     } catch (_) {
       if (mounted && db.auth.currentUser?.id == user)
         setState(() => _promotedPosts = []);
-    }
+    } finally { _promotionsLoading = false; }
   }
 
   List<Map<String, dynamic>> get _visiblePosts {
@@ -851,7 +855,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
       final response = await db
           .from('posts')
           .select(
-              '*, users(name, profile_image, gender, role, university, college, department)')
+              '*, users(name, profile_image, gender, role, university, college, department, verification_expires_at)')
           .order('created_at', ascending: false)
           .limit(30)
           .timeout(const Duration(seconds: 15));
@@ -2406,7 +2410,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
           const SizedBox(width: 8),
           Text(scopeLabel,
               style:
-                  const TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
+                  const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w900)),
         ]),
       ),
     ];
@@ -2450,7 +2454,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
             child: Row(children: [
               const Icon(Icons.campaign_outlined, size: 18),
               const SizedBox(width: 6),
-              Text(isArabic ? 'منشور مروّج' : 'Promoted post')
+              Text(isArabic ? 'إعلان ممول' : 'Sponsored')
             ]),
           ));
         final userData = post['users'] is Map
@@ -2461,7 +2465,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
           Padding(
             key: ValueKey('post_${post['id']}'),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            child: GlassContainer(
+            child: CompactPost(
               child: _PostCard(
                 post: {
                   ...post,
@@ -2475,6 +2479,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                   'comments': post['comments_count'] ?? 0,
                   'shares': post['shares_count'] ?? 0,
                   'profile_image': userData['profile_image'],
+                  'verification_expires_at': userData['verification_expires_at'],
                   'liked': isLiked,
                 },
                 onLike: () =>
@@ -2630,7 +2635,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                         : 'What would you like to share?',
                     style: const TextStyle(
                       color: Colors.black,
-                      fontSize: 19,
+                      fontSize: 16,
                       fontWeight: FontWeight.w800,
                     ),
                   ),

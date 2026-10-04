@@ -71,7 +71,8 @@ class _VerticalAutoplayVideoPlayerState
       _muted = widget.initialMuted;
       _controller?.setVolume(_muted ? 0 : 1);
     }
-    if (MediaCacheService.identity(oldWidget.videoUrl) != MediaCacheService.identity(widget.videoUrl)) {
+    if (MediaCacheService.identity(oldWidget.videoUrl) !=
+        MediaCacheService.identity(widget.videoUrl)) {
       _replaceController();
     }
   }
@@ -122,7 +123,8 @@ class _VerticalAutoplayVideoPlayerState
     final generation = ++_generation;
     final rawUrl = widget.videoUrl.trim();
     if (rawUrl.isEmpty) {
-      if (mounted) setState(() => _error = const FormatException('empty_video_url'));
+      if (mounted)
+        setState(() => _error = const FormatException('empty_video_url'));
       return;
     }
 
@@ -197,13 +199,22 @@ class _VerticalAutoplayVideoPlayerState
     } catch (_) {}
   }
 
+  DateTime? _lastUiRefresh;
+
   void _refreshProgress() {
     final value = _controller?.value;
     final now = DateTime.now();
     if (widget.onWatchedSeconds != null && value != null) {
-      final wall = _lastPlaybackTick == null ? 0 : now.difference(_lastPlaybackTick!).inMilliseconds;
+      final wall = _lastPlaybackTick == null
+          ? 0
+          : now.difference(_lastPlaybackTick!).inMilliseconds;
       final moved = (value.position - _lastPosition).inMilliseconds;
-      if (_shouldPlay && value.isPlaying && !value.isBuffering && moved > 0 && moved < 1500 && wall > 0) {
+      if (_shouldPlay &&
+          value.isPlaying &&
+          !value.isBuffering &&
+          moved > 0 &&
+          moved < 1500 &&
+          wall > 0) {
         _watchedMilliseconds += moved.clamp(0, wall.clamp(0, 1000)).toInt();
         final seconds = _watchedMilliseconds ~/ 1000;
         if (seconds > _reportedSeconds) {
@@ -214,19 +225,28 @@ class _VerticalAutoplayVideoPlayerState
       _lastPlaybackTick = now;
       _lastPosition = value.position;
     }
-    if (mounted) setState(() {});
+    final refreshAt = DateTime.now();
+    if (mounted &&
+        (_lastUiRefresh == null ||
+            refreshAt.difference(_lastUiRefresh!) >=
+                const Duration(milliseconds: 200))) {
+      _lastUiRefresh = refreshAt;
+      setState(() {});
+    }
   }
 
   void _setControlsVisible(bool visible) {
     _controlsTimer?.cancel();
-    if (_controlsVisible != visible && mounted) setState(() => _controlsVisible = visible);
+    if (_controlsVisible != visible && mounted)
+      setState(() => _controlsVisible = visible);
     widget.onControlsVisibilityChanged?.call(visible);
   }
 
   void _scheduleControlsHide() {
     _controlsTimer?.cancel();
     if (_controller?.value.isPlaying != true) return;
-    _controlsTimer = Timer(const Duration(seconds: 2), () => _setControlsVisible(false));
+    _controlsTimer =
+        Timer(const Duration(seconds: 2), () => _setControlsVisible(false));
   }
 
   void _toggleControls() {
@@ -241,7 +261,9 @@ class _VerticalAutoplayVideoPlayerState
   String _time(Duration value) {
     final minutes = value.inMinutes.remainder(60).toString().padLeft(2, '0');
     final seconds = value.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return value.inHours > 0 ? '${value.inHours}:$minutes:$seconds' : '$minutes:$seconds';
+    return value.inHours > 0
+        ? '${value.inHours}:$minutes:$seconds'
+        : '$minutes:$seconds';
   }
 
   Duration _remaining(VideoPlayerController controller) {
@@ -311,39 +333,41 @@ class _VerticalAutoplayVideoPlayerState
               child: IgnorePointer(
                 ignoring: !_controlsVisible,
                 child: Center(
-            child: Material(
-              color: Colors.black45,
-              shape: const CircleBorder(),
-              child: IconButton(
-                tooltip: controller.value.isPlaying ? 'إيقاف' : 'تشغيل',
-                onPressed: _togglePlayback,
-                icon: Icon(
-                  controller.value.isPlaying
-                      ? Icons.pause_rounded
-                      : Icons.play_arrow_rounded,
-                  color: Colors.white,
-                  size: 42,
+                  child: Material(
+                    color: Colors.black45,
+                    shape: const CircleBorder(),
+                    child: IconButton(
+                      tooltip: controller.value.isPlaying ? 'إيقاف' : 'تشغيل',
+                      onPressed: _togglePlayback,
+                      icon: Icon(
+                        controller.value.isPlaying
+                            ? Icons.pause_rounded
+                            : Icons.play_arrow_rounded,
+                        color: Colors.white,
+                        size: 42,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          ),
               ),
             ),
             Positioned(
-            right: 8,
-            bottom: 42,
-            child: AnimatedOpacity(
-              opacity: _controlsVisible ? 1 : 0,
-              duration: const Duration(milliseconds: 180),
-              child: IgnorePointer(
-                ignoring: !_controlsVisible,
-                child: IconButton.filledTonal(
-                  onPressed: _toggleMute,
-                  icon: Icon(_muted ? Icons.volume_off_rounded : Icons.volume_up_rounded),
+              right: 8,
+              bottom: 42,
+              child: AnimatedOpacity(
+                opacity: _controlsVisible ? 1 : 0,
+                duration: const Duration(milliseconds: 180),
+                child: IgnorePointer(
+                  ignoring: !_controlsVisible,
+                  child: IconButton.filledTonal(
+                    onPressed: _toggleMute,
+                    icon: Icon(_muted
+                        ? Icons.volume_off_rounded
+                        : Icons.volume_up_rounded),
+                  ),
                 ),
               ),
             ),
-          ),
             Positioned(
               left: 8,
               right: 8,
@@ -355,16 +379,24 @@ class _VerticalAutoplayVideoPlayerState
                   ignoring: !_controlsVisible,
                   child: Row(
                     children: [
-                      Text(_time(controller.value.position), style: const TextStyle(color: Colors.white, fontSize: 11)),
+                      Text(_time(controller.value.position),
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 11)),
                       Expanded(
                         child: VideoProgressIndicator(
                           controller,
                           allowScrubbing: true,
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-                          colors: const VideoProgressColors(playedColor: Colors.deepPurpleAccent, bufferedColor: Colors.white38, backgroundColor: Colors.white24),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 12),
+                          colors: const VideoProgressColors(
+                              playedColor: Colors.deepPurpleAccent,
+                              bufferedColor: Colors.white38,
+                              backgroundColor: Colors.white24),
                         ),
                       ),
-                      Text('-${_time(_remaining(controller))}', style: const TextStyle(color: Colors.white, fontSize: 11)),
+                      Text('-${_time(_remaining(controller))}',
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 11)),
                     ],
                   ),
                 ),

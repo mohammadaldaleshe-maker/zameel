@@ -72,7 +72,7 @@ class _ProfileImageCropperState extends State<ProfileImageCropper> {
           _frame.width / scale,
           _frame.height / scale);
       final width = widget.cover ? 1500 : 900;
-      final height = widget.cover ? 500 : 900;
+      final height = widget.cover ? 750 : 900;
       final recorder = ui.PictureRecorder();
       Canvas(recorder).drawImageRect(
           _image!,
@@ -118,7 +118,7 @@ class _ProfileImageCropperState extends State<ProfileImageCropper> {
                         child: LayoutBuilder(builder: (context, constraints) {
                       final width = math.min(constraints.maxWidth - 32,
                           widget.cover ? 600.0 : 320.0);
-                      final height = width / (widget.cover ? 3 : 1);
+                      final height = width / (widget.cover ? 2 : 1);
                       final available =
                           math.min(1.0, constraints.maxHeight / height);
                       final next = Size(width * available, height * available);

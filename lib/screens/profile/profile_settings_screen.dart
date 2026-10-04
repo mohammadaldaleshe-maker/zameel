@@ -1,3 +1,4 @@
+import 'account_verification_screen.dart';
 import '../promotions/audience_profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -221,6 +222,20 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         body: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            Card(
+                child: ListTile(
+                    leading:
+                        const Icon(Icons.verified, color: Color(0xFF1877F2)),
+                    title: Text(ar ? 'توثيق الحساب' : 'Account verification'),
+                    subtitle: Text(ar
+                        ? 'دينار واحد شهريًا — الطلب والتجديد'
+                        : 'JOD 1 monthly — request and renew'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) =>
+                                const AccountVerificationScreen())))),
             Card(
                 child: ListTile(
               leading: const Icon(Icons.location_city_rounded),

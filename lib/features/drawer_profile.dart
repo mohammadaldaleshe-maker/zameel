@@ -308,7 +308,7 @@ class _PostOwnerAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final url = imageUrl?.trim();
-    return CircleAvatar(radius: radius, backgroundColor: Colors.white24, backgroundImage: (url != null && url.isNotEmpty) ? NetworkImage(url) : null,
+    return CircleAvatar(radius: radius, backgroundColor: Colors.white24, backgroundImage: (url != null && url.isNotEmpty) ? ResizeImage(NetworkImage(url), width: (radius * 2 * MediaQuery.devicePixelRatioOf(context)).round().clamp(1, 256)) : null,
       child: (url == null || url.isEmpty) ? const Icon(Icons.person, color: Colors.white70) : null);
   }
 }

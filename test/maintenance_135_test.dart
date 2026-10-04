@@ -54,7 +54,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
       final cropFrame = find.byKey(const ValueKey('profileCropFrame'));
-      for (var attempt = 0; attempt < 100 && cropFrame.evaluate().isEmpty; attempt++) {
+      for (var attempt = 0;
+          attempt < 100 && cropFrame.evaluate().isEmpty;
+          attempt++) {
         await tester.runAsync(() async {
           await Future<void>.delayed(const Duration(milliseconds: 50));
         });
@@ -69,13 +71,16 @@ void main() {
       await tester.runAsync(() async {
         await tester.tap(find.text('Save image'));
       });
-      for (var attempt = 0; attempt < 200 && !savedResult.isCompleted; attempt++) {
+      for (var attempt = 0;
+          attempt < 200 && !savedResult.isCompleted;
+          attempt++) {
         await tester.runAsync(() async {
           await Future<void>.delayed(const Duration(milliseconds: 50));
         });
         await tester.pump(const Duration(milliseconds: 100));
       }
-      expect(savedResult.isCompleted, isTrue, reason: 'Save must return the cropped image');
+      expect(savedResult.isCompleted, isTrue,
+          reason: 'Save must return the cropped image');
       await tester.pumpAndSettle();
       expect(result, isNotNull);
       await tester.runAsync(() async {
@@ -83,7 +88,7 @@ void main() {
         final saved = (await codec.getNextFrame()).image;
         codec.dispose();
         expect(saved.width, cover ? 1500 : 900);
-        expect(saved.height, cover ? 500 : 900);
+        expect(saved.height, cover ? 750 : 900);
         final pixels =
             (await saved.toByteData(format: ui.ImageByteFormat.rawRgba))!
                 .buffer

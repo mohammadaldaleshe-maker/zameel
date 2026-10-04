@@ -9,7 +9,6 @@ import '../comments/comments_screen.dart';
 import '../books/books_screen.dart';
 import '../../services_book_exchange.dart';
 import 'package:zameel/theme/app_theme.dart';
-import '../../services/secure_media_service.dart';
 import '../../services/advertising_service.dart';
 import '../../services/feature_control.dart';
 import '../business/advertisement_card.dart';
@@ -21,11 +20,31 @@ import '../business/advertisement_card.dart';
 // مستخدمو زميل التجريبيون
 // ignore: unused_element
 const _demoSearchUsers = [
-  {'name':'ليان الخطيب','department':'علوم الحاسوب','university':'الجامعة الأردنية'},
-  {'name':'آدم الحوراني','department':'هندسة البرمجيات','university':'جامعة العلوم والتكنولوجيا الأردنية'},
-  {'name':'نور العزام','department':'إدارة الأعمال','university':'الجامعة الهاشمية'},
-  {'name':'يوسف الشديفات','department':'الهندسة المدنية','university':'جامعة اليرموك'},
-  {'name':'رؤى المومني','department':'الصيدلة','university':'جامعة العلوم التطبيقية الخاصة'},
+  {
+    'name': 'ليان الخطيب',
+    'department': 'علوم الحاسوب',
+    'university': 'الجامعة الأردنية'
+  },
+  {
+    'name': 'آدم الحوراني',
+    'department': 'هندسة البرمجيات',
+    'university': 'جامعة العلوم والتكنولوجيا الأردنية'
+  },
+  {
+    'name': 'نور العزام',
+    'department': 'إدارة الأعمال',
+    'university': 'الجامعة الهاشمية'
+  },
+  {
+    'name': 'يوسف الشديفات',
+    'department': 'الهندسة المدنية',
+    'university': 'جامعة اليرموك'
+  },
+  {
+    'name': 'رؤى المومني',
+    'department': 'الصيدلة',
+    'university': 'جامعة العلوم التطبيقية الخاصة'
+  },
 ];
 
 class SearchScreen extends StatefulWidget {
@@ -42,25 +61,74 @@ class _SearchScreenState extends State<SearchScreen> {
   // المستخدمون التجريبيون: محفوظون في المصدر لمرجع التطوير ولا يُعرضون في البحث الحي.
   // ignore: unused_field
   final List<Map<String, dynamic>> _users = [
-    {'name': 'ليان الخطيب','department':'علوم الحاسوب','university':'الجامعة الأردنية','isDemo': true},
-    {'name':'آدم الحوراني','department':'هندسة البرمجيات','university':'جامعة العلوم والتكنولوجيا الأردنية','isDemo': true},
-    {'name':'نور العزام','department':'إدارة الأعمال','university':'الجامعة الهاشمية','isDemo': true},
-    {'name':'يوسف الشديفات','department':'الهندسة المدنية','university':'جامعة اليرموك','isDemo': true},
-    {'name':'رؤى المومني','department':'الصيدلة','university':'جامعة العلوم التطبيقية الخاصة','isDemo': true},
+    {
+      'name': 'ليان الخطيب',
+      'department': 'علوم الحاسوب',
+      'university': 'الجامعة الأردنية',
+      'isDemo': true
+    },
+    {
+      'name': 'آدم الحوراني',
+      'department': 'هندسة البرمجيات',
+      'university': 'جامعة العلوم والتكنولوجيا الأردنية',
+      'isDemo': true
+    },
+    {
+      'name': 'نور العزام',
+      'department': 'إدارة الأعمال',
+      'university': 'الجامعة الهاشمية',
+      'isDemo': true
+    },
+    {
+      'name': 'يوسف الشديفات',
+      'department': 'الهندسة المدنية',
+      'university': 'جامعة اليرموك',
+      'isDemo': true
+    },
+    {
+      'name': 'رؤى المومني',
+      'department': 'الصيدلة',
+      'university': 'جامعة العلوم التطبيقية الخاصة',
+      'isDemo': true
+    },
   ];
 
   // ignore: unused_field
   final List<Map<String, dynamic>> _posts = [
-    {'text': 'شرح سريع لفكرة مهمة في قواعد البيانات 📚', 'author': 'محمد أحمد', 'likes': 128},
-    {'text': 'يا جماعة، هل يوجد أحد لديه ملخص مرتب للفصل الرابع؟', 'author': 'سارة علي', 'likes': 44},
-    {'text': 'تم رفع ملخص مادة البرمجة على المجموعة', 'author': 'أحمد خالد', 'likes': 67},
+    {
+      'text': 'شرح سريع لفكرة مهمة في قواعد البيانات 📚',
+      'author': 'محمد أحمد',
+      'likes': 128
+    },
+    {
+      'text': 'يا جماعة، هل يوجد أحد لديه ملخص مرتب للفصل الرابع؟',
+      'author': 'سارة علي',
+      'likes': 44
+    },
+    {
+      'text': 'تم رفع ملخص مادة البرمجة على المجموعة',
+      'author': 'أحمد خالد',
+      'likes': 67
+    },
   ];
 
   // ignore: unused_field
   final List<Map<String, dynamic>> _books = [
-    {'title': 'مقدمة في قواعد البيانات', 'author': 'د. أحمد العلي', 'subject': 'قواعد البيانات'},
-    {'title': 'هندسة البرمجيات', 'author': 'د. محمد سعيد', 'subject': 'هندسة البرمجيات'},
-    {'title': 'الرياضيات المتقدمة', 'author': 'د. خالد الحسين', 'subject': 'الرياضيات'},
+    {
+      'title': 'مقدمة في قواعد البيانات',
+      'author': 'د. أحمد العلي',
+      'subject': 'قواعد البيانات'
+    },
+    {
+      'title': 'هندسة البرمجيات',
+      'author': 'د. محمد سعيد',
+      'subject': 'هندسة البرمجيات'
+    },
+    {
+      'title': 'الرياضيات المتقدمة',
+      'author': 'د. خالد الحسين',
+      'subject': 'الرياضيات'
+    },
   ];
 
   List<Map<String, dynamic>> _filteredUsers = [];
@@ -70,6 +138,7 @@ class _SearchScreenState extends State<SearchScreen> {
   bool _isSearching = false;
   String? _searchError;
   Timer? _searchDebounce;
+  int _searchGeneration = 0;
 
   @override
   void dispose() {
@@ -80,6 +149,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Future<void> _performSearch(String query) async {
     _searchDebounce?.cancel();
+    final generation = ++_searchGeneration;
 
     if (query.trim().isEmpty) {
       if (!mounted) return;
@@ -117,13 +187,15 @@ class _SearchScreenState extends State<SearchScreen> {
               .limit(30),
           db
               .from('posts')
-              .select('*, users(name,profile_image,gender,role,university,college,department)')
+              .select(
+                  '*, users(name,profile_image,gender,role,university,college,department)')
               .or('text_ar.ilike.$pattern,text_en.ilike.$pattern')
               .order('created_at', ascending: false)
               .limit(30),
           ZameelBookExchangeService.searchBooks(safeQuery, limit: 30),
           FeatureControl.instance.enabled('partner_advertising')
-              ? AdvertisingService.liveAds(query: safeQuery, limit: 10).catchError((_) => <Map<String, dynamic>>[])
+              ? AdvertisingService.liveAds(query: safeQuery, limit: 10)
+                  .catchError((_) => <Map<String, dynamic>>[])
               : Future.value(<Map<String, dynamic>>[]),
         ]);
 
@@ -131,11 +203,13 @@ class _SearchScreenState extends State<SearchScreen> {
             .where((u) => currentId == null || u['id']?.toString() != currentId)
             .toList();
         final posts = List<Map<String, dynamic>>.from(results[1] as List);
-        await SecureMediaService.resolvePosts(posts);
         final books = List<Map<String, dynamic>>.from(results[2] as List);
-        final advertisements = List<Map<String, dynamic>>.from(results[3] as List);
+        final advertisements =
+            List<Map<String, dynamic>>.from(results[3] as List);
 
-        if (!mounted || _searchController.text.trim() != rawQuery) return;
+        if (!mounted ||
+            generation != _searchGeneration ||
+            _searchController.text.trim() != rawQuery) return;
         setState(() {
           _filteredUsers = users;
           _filteredPosts = posts;
@@ -145,7 +219,9 @@ class _SearchScreenState extends State<SearchScreen> {
           _searchError = null;
         });
       } catch (e) {
-        if (!mounted || _searchController.text.trim() != rawQuery) return;
+        if (!mounted ||
+            generation != _searchGeneration ||
+            _searchController.text.trim() != rawQuery) return;
         setState(() {
           _filteredUsers = [];
           _filteredPosts = [];
@@ -159,6 +235,7 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   void _clearSearch() {
+    _searchGeneration++;
     _searchDebounce?.cancel();
     setState(() {
       _searchController.clear();
@@ -200,11 +277,13 @@ class _SearchScreenState extends State<SearchScreen> {
                       ? 'ابحث عن مستخدمين، منشورات، كتب...'
                       : 'Search for users, posts, books...',
                   hintStyle: const TextStyle(color: Colors.black54),
-                  prefixIcon: const Icon(Icons.search_rounded, color: Colors.black54),
+                  prefixIcon:
+                      const Icon(Icons.search_rounded, color: Colors.black54),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
                           onPressed: _clearSearch,
-                          icon: const Icon(Icons.clear_rounded, color: Colors.black54),
+                          icon: const Icon(Icons.clear_rounded,
+                              color: Colors.black54),
                         )
                       : null,
                   filled: true,
@@ -225,7 +304,8 @@ class _SearchScreenState extends State<SearchScreen> {
                   // RESULTS COUNT
                   // ==============================================
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Row(
                       children: [
                         Text(
@@ -329,9 +409,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      isArabic
-                          ? '🔍 ابحث عن أي شيء'
-                          : '🔍 Search for anything',
+                      isArabic ? '🔍 ابحث عن أي شيء' : '🔍 Search for anything',
                       style: TextStyle(
                         fontSize: 18,
                         color: AppTheme.muted.shade600,
@@ -361,11 +439,14 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Widget _buildAllResults(bool isArabic) {
     if (_searchError != null) {
-      return _SearchErrorResult(isArabic: isArabic, onRetry: () => _performSearch(_searchController.text));
+      return _SearchErrorResult(
+          isArabic: isArabic,
+          onRetry: () => _performSearch(_searchController.text));
     }
     if (_filteredUsers.isEmpty &&
         _filteredPosts.isEmpty &&
-        _filteredBooks.isEmpty && _filteredAdvertisements.isEmpty) {
+        _filteredBooks.isEmpty &&
+        _filteredAdvertisements.isEmpty) {
       return _EmptyResult(isArabic);
     }
 
@@ -374,8 +455,10 @@ class _SearchScreenState extends State<SearchScreen> {
       children: [
         if (_filteredAdvertisements.isNotEmpty) ...[
           Text(isArabic ? 'إعلانات ذات صلة' : 'Related ads',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          ..._filteredAdvertisements.map((ad) => AdvertisementCard(ad: ad, isArabic: isArabic)),
+              style:
+                  const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          ..._filteredAdvertisements
+              .map((ad) => AdvertisementCard(ad: ad, isArabic: isArabic)),
           const SizedBox(height: 16),
         ],
         if (_filteredUsers.isNotEmpty) ...[
@@ -399,7 +482,8 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          ..._filteredPosts.map((post) => _PostResultCard(post: post, isArabic: isArabic)),
+          ..._filteredPosts
+              .map((post) => _PostResultCard(post: post, isArabic: isArabic)),
           const SizedBox(height: 16),
         ],
         if (_filteredBooks.isNotEmpty) ...[
@@ -411,7 +495,8 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          ..._filteredBooks.map((book) => _BookResultCard(book: book, isArabic: isArabic)),
+          ..._filteredBooks
+              .map((book) => _BookResultCard(book: book, isArabic: isArabic)),
         ],
       ],
     );
@@ -494,9 +579,7 @@ class _SearchTabButton extends StatelessWidget {
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
-                color: isSelected
-                    ? AppTheme.primary
-                    : Colors.transparent,
+                color: isSelected ? AppTheme.primary : Colors.transparent,
                 width: 3,
               ),
             ),
@@ -505,9 +588,7 @@ class _SearchTabButton extends StatelessWidget {
             text,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: isSelected
-                  ? AppTheme.primary
-                  : AppTheme.muted.shade600,
+              color: isSelected ? AppTheme.primary : AppTheme.muted.shade600,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               fontSize: 13,
             ),
@@ -616,9 +697,10 @@ class _PostResultCard extends StatelessWidget {
     final fallback = post[isArabic ? 'text_en' : 'text_ar']?.toString() ?? '';
     final text = primary.trim().isNotEmpty ? primary : fallback;
     final users = post['users'];
-    final author = users is Map && users['name']?.toString().trim().isNotEmpty == true
-        ? users['name'].toString()
-        : (isArabic ? 'زميل' : 'Colleague');
+    final author =
+        users is Map && users['name']?.toString().trim().isNotEmpty == true
+            ? users['name'].toString()
+            : (isArabic ? 'زميل' : 'Colleague');
     final likes = (post['likes_count'] as num?)?.toInt() ?? 0;
     final preview = text.length > 90 ? '${text.substring(0, 90)}…' : text;
 
@@ -632,15 +714,19 @@ class _PostResultCard extends StatelessWidget {
       ),
       child: ListTile(
         leading: const Icon(Icons.description_rounded, color: AppTheme.primary),
-        title: Text(preview, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
+        title: Text(preview,
+            style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
         subtitle: Text(
           '✍️ $author • ❤️ $likes',
           style: TextStyle(fontSize: 12, color: AppTheme.muted.shade600),
         ),
-        trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: AppTheme.muted),
+        trailing: const Icon(Icons.arrow_forward_ios_rounded,
+            size: 16, color: AppTheme.muted),
         onTap: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => CommentsScreen(post: Map<String, dynamic>.from(post))),
+          MaterialPageRoute(
+              builder: (_) =>
+                  CommentsScreen(post: Map<String, dynamic>.from(post))),
         ),
       ),
     );
@@ -659,9 +745,15 @@ class _BookResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = book[isArabic ? 'title_ar' : 'title_en']?.toString() ?? book['title']?.toString() ?? '';
-    final author = book[isArabic ? 'author_ar' : 'author_en']?.toString() ?? book['author']?.toString() ?? '';
-    final subject = book[isArabic ? 'subject_ar' : 'subject_en']?.toString() ?? book['subject']?.toString() ?? '';
+    final title = book[isArabic ? 'title_ar' : 'title_en']?.toString() ??
+        book['title']?.toString() ??
+        '';
+    final author = book[isArabic ? 'author_ar' : 'author_en']?.toString() ??
+        book['author']?.toString() ??
+        '';
+    final subject = book[isArabic ? 'subject_ar' : 'subject_en']?.toString() ??
+        book['subject']?.toString() ??
+        '';
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       elevation: 0,
@@ -672,15 +764,19 @@ class _BookResultCard extends StatelessWidget {
       ),
       child: ListTile(
         leading: const Icon(Icons.menu_book_rounded, color: AppTheme.primary),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+        title: Text(title,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
         subtitle: Text(
           '✍️ $author • 📚 $subject',
           style: TextStyle(fontSize: 12, color: AppTheme.muted.shade600),
         ),
-        trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: AppTheme.muted),
+        trailing: const Icon(Icons.arrow_forward_ios_rounded,
+            size: 16, color: AppTheme.muted),
         onTap: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => BookDetailsScreen(book: Map<String, dynamic>.from(book))),
+          MaterialPageRoute(
+              builder: (_) =>
+                  BookDetailsScreen(book: Map<String, dynamic>.from(book))),
         ),
       ),
     );
@@ -704,11 +800,15 @@ class _SearchErrorResult extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.cloud_off_rounded, size: 58, color: AppTheme.muted),
+              const Icon(Icons.cloud_off_rounded,
+                  size: 58, color: AppTheme.muted),
               const SizedBox(height: 12),
               Text(
-                isArabic ? 'تعذر إكمال البحث الآن' : 'Search is temporarily unavailable',
-                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
+                isArabic
+                    ? 'تعذر إكمال البحث الآن'
+                    : 'Search is temporarily unavailable',
+                style:
+                    const TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
               ),
               const SizedBox(height: 10),
               FilledButton.icon(

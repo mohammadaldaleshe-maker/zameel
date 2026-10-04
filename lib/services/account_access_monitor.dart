@@ -37,7 +37,11 @@ class _AccountAccessMonitorState extends State<AccountAccessMonitor>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _refresh();
+    _timer?.cancel();
+    if (state == AppLifecycleState.resumed) {
+      _refresh();
+      _timer = Timer.periodic(const Duration(seconds: 30), (_) => _refresh());
+    }
   }
 
   Future<void> _refresh() async {
@@ -55,8 +59,8 @@ class _AccountAccessMonitorState extends State<AccountAccessMonitor>
       final row = rows is List && rows.isNotEmpty
           ? Map<String, dynamic>.from(rows.first as Map)
           : <String, dynamic>{};
-      setState(() => _decision = row['allowed'] == false ||
-              row['status'] == 'suspended' ? row : null);
+      setState(() => _decision =
+          row['allowed'] == false || row['status'] == 'suspended' ? row : null);
     } catch (_) {
       // A network interruption must not quietly remove an existing block.
     } finally {
@@ -77,24 +81,28 @@ class _AccountAccessMonitorState extends State<AccountAccessMonitor>
     final decision = _decision;
     if (decision == null) return widget.child;
     final blocked = decision['status'] == 'blocked';
-    final until = DateTime.tryParse(decision['suspended_until']?.toString() ?? '');
+    final until =
+        DateTime.tryParse(decision['suspended_until']?.toString() ?? '');
     final deadline = until == null
         ? 'غير محدد المدة'
         : 'حتى ${MaterialLocalizations.of(context).formatFullDate(until.toLocal())} '
-          '${TimeOfDay.fromDateTime(until.toLocal()).format(context)}';
+            '${TimeOfDay.fromDateTime(until.toLocal()).format(context)}';
     if (!blocked && decision['status'] == 'suspended') {
       return Directionality(
         textDirection: TextDirection.rtl,
         child: Column(children: [
           Material(
             color: const Color(0xFFFFF1CE),
-            child: SafeArea(bottom: false, child: Padding(
-              padding: const EdgeInsets.all(10),
-              child: Text('حسابك معلّق للمشاهدة فقط. السبب: '
-                  '${decision['reason'] ?? ''}. المدة: $deadline',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.black87)),
-            )),
+            child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Text(
+                      'حسابك معلّق للمشاهدة فقط. السبب: '
+                      '${decision['reason'] ?? ''}. المدة: $deadline',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.black87)),
+                )),
           ),
           Expanded(child: widget.child),
         ]),
@@ -114,21 +122,29 @@ class _AccountAccessMonitorState extends State<AccountAccessMonitor>
                   child: Padding(
                     padding: const EdgeInsets.all(28),
                     child: Column(mainAxisSize: MainAxisSize.min, children: [
-                      const Icon(Icons.info_outline_rounded, size: 56,
-                          color: Color(0xFF0F8F87)),
+                      const Icon(Icons.info_outline_rounded,
+                          size: 56, color: Color(0xFF0F8F87)),
                       const SizedBox(height: 16),
-                      Text(blocked ? 'تم حظر حسابك في زميل' : 'تم تعليق حسابك في زميل',
-                          style: const TextStyle(fontSize: 21, fontWeight: FontWeight.bold,
+                      Text(
+                          blocked
+                              ? 'تم حظر حسابك في زميل'
+                              : 'تم تعليق حسابك في زميل',
+                          style: const TextStyle(
+                              fontSize: 21,
+                              fontWeight: FontWeight.bold,
                               color: Colors.black87)),
                       const SizedBox(height: 16),
                       Text('السبب: ${decision['reason'] ?? ''}',
                           textAlign: TextAlign.center,
-                          style: const TextStyle(fontSize: 16, color: Colors.black87)),
+                          style: const TextStyle(
+                              fontSize: 16, color: Colors.black87)),
                       const SizedBox(height: 9),
-                      Text('المدة: $deadline', textAlign: TextAlign.center,
+                      Text('المدة: $deadline',
+                          textAlign: TextAlign.center,
                           style: const TextStyle(color: Colors.black87)),
                       const SizedBox(height: 20),
-                      OutlinedButton(onPressed: _refresh,
+                      OutlinedButton(
+                          onPressed: _refresh,
                           child: const Text('التحقق من الحالة مجددًا')),
                     ]),
                   ),

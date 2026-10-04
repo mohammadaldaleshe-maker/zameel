@@ -14,7 +14,8 @@ class FeatureControl {
   Future<void>? _pending;
 
   String mode(String key) {
-    final primary = _modes[key] ?? ((key == 'quiz' || key == 'trust_game') ? 'hidden' : 'enabled');
+    final primary = _modes[key] ??
+        ((key == 'quiz' || key == 'trust_game') ? 'hidden' : 'enabled');
     if (key != 'books_market') return primary;
 
     final exchange = _modes['book_exchange'] ?? 'enabled';
@@ -24,13 +25,15 @@ class FeatureControl {
     }
     return 'enabled';
   }
+
   bool visible(String key) => mode(key) != 'hidden';
   bool enabled(String key) => mode(key) == 'enabled';
 
   static const suspendedMessage = 'هذه الميزة معلقة حالياً';
 
   static bool isSuspendedError(Object error) {
-    final message = error is PostgrestException ? error.message : error.toString();
+    final message =
+        error is PostgrestException ? error.message : error.toString();
     return RegExp(r'\b[a-z_]+_temporarily_unavailable\b').hasMatch(message);
   }
 
@@ -59,29 +62,38 @@ class FeatureControl {
 
   Future<void> refresh({bool force = false}) {
     if (_pending != null) return _pending!;
-    if (!force && _lastRefresh != null &&
-        DateTime.now().difference(_lastRefresh!) < const Duration(seconds: 30)) {
+    if (!force &&
+        _lastRefresh != null &&
+        DateTime.now().difference(_lastRefresh!) <
+            const Duration(seconds: 30)) {
       return Future<void>.value();
     }
     final completer = Completer<void>();
     _pending = completer.future;
     () async {
       try {
-        final rows = await Supabase.instance.client.rpc('get_client_feature_flags');
+        final rows = await Supabase.instance.client
+            .rpc('get_client_feature_flags')
+            .timeout(const Duration(seconds: 8));
         final next = <String, String>{};
         for (final row in (rows as List)) {
           final data = Map<String, dynamic>.from(row as Map);
-          if (data['scope_type'] != 'global' || data['scope_value'] != '*') continue;
+          if (data['scope_type'] != 'global' || data['scope_value'] != '*')
+            continue;
           final key = data['feature_key']?.toString();
           if (key == null) continue;
           final mode = data['display_mode']?.toString();
           next[key] = mode == 'hidden' || mode == 'suspended'
               ? mode!
-              : data['is_enabled'] == false ? 'suspended' : 'enabled';
+              : data['is_enabled'] == false
+                  ? 'suspended'
+                  : 'enabled';
         }
+        final changed = _modes.length != next.length ||
+            next.entries.any((entry) => _modes[entry.key] != entry.value);
         _modes = next;
         _lastRefresh = DateTime.now();
-        changes.value++;
+        if (changed) changes.value++;
       } catch (_) {
         // Preserve the last verified state during short network outages.
       } finally {
@@ -92,15 +104,17 @@ class FeatureControl {
     return completer.future;
   }
 
-  Future<void> open(BuildContext context, String key, Widget Function() page) async {
+  Future<void> open(
+      BuildContext context, String key, Widget Function() page) async {
     if (!await check(context, key) || !context.mounted) return;
-    await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => this.page(key, page())));
+    await Navigator.of(context)
+        .push(MaterialPageRoute<void>(builder: (_) => this.page(key, page())));
   }
 }
 
 class _FeaturePage extends StatefulWidget {
-  const _FeaturePage({required this.featureKey, required this.child,
-      required this.embedded});
+  const _FeaturePage(
+      {required this.featureKey, required this.child, required this.embedded});
   final String featureKey;
   final Widget child;
   final bool embedded;
@@ -109,31 +123,47 @@ class _FeaturePage extends StatefulWidget {
   State<_FeaturePage> createState() => _FeaturePageState();
 }
 
-class _FeaturePageState extends State<_FeaturePage> {
+class _FeaturePageState extends State<_FeaturePage>
+    with WidgetsBindingObserver {
   Timer? _timer;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     FeatureControl.instance.refresh(force: true);
     _timer = Timer.periodic(const Duration(seconds: 45),
         (_) => FeatureControl.instance.refresh(force: true));
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _timer?.cancel();
+    if (state == AppLifecycleState.resumed) {
+      FeatureControl.instance.refresh(force: true);
+      _timer = Timer.periodic(const Duration(seconds: 45),
+          (_) => FeatureControl.instance.refresh(force: true));
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _timer?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) => ValueListenableBuilder<int>(
-    valueListenable: FeatureControl.instance.changes,
-    builder: (context, _, __) => FeatureControl.instance.enabled(widget.featureKey)
-        ? widget.child
-        : widget.embedded
-            ? const Padding(padding: EdgeInsets.all(16),
-                child: Text(FeatureControl.suspendedMessage))
-            : const Scaffold(body: Center(child: Text(FeatureControl.suspendedMessage))),
-  );
+        valueListenable: FeatureControl.instance.changes,
+        builder: (context, _, __) => FeatureControl.instance
+                .enabled(widget.featureKey)
+            ? widget.child
+            : widget.embedded
+                ? const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Text(FeatureControl.suspendedMessage))
+                : const Scaffold(
+                    body: Center(child: Text(FeatureControl.suspendedMessage))),
+      );
 }

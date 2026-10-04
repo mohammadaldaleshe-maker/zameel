@@ -1,3 +1,8 @@
+import '../../widgets/cached_media_image.dart';
+import '../../widgets/verified_badge.dart';
+import 'dart:async';
+import 'profile_photo_screen.dart';
+import '../../widgets/compact_post.dart';
 import '../promotions/promotion_request_screen.dart';
 import '../../widgets/profile_image_cropper.dart';
 import '../social/shorts_profile_panel.dart';
@@ -88,190 +93,282 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _university.dispose();
     _college.dispose();
     _department.dispose();
+    _promotionBadgeExpiry?.cancel();
     super.dispose();
   }
 
-  Future<void> _load() async {
-    if (mounted) setState(() => _loading = true);
+  String? _profileError;
+  bool _refreshing = false;
+  bool _contentLoading = false;
+  bool _morePosts = false, _moreShared = false;
+  bool _loadingMore = false;
+  int _postOffset = 0, _sharedOffset = 0;
+  final Map<String, DateTime> _promotionEnds = {};
+  Timer? _promotionBadgeExpiry;
+  void _schedulePromotionBadgeExpiry() {
+    _promotionBadgeExpiry?.cancel();
+    final ends = _promotionEnds.values
+        .where((end) => end.isAfter(DateTime.now()))
+        .toList()
+      ..sort();
+    if (ends.isEmpty) return;
+    _promotionBadgeExpiry = Timer(ends.first.difference(DateTime.now()), () {
+      if (!mounted) return;
+      setState(() =>
+          _promotionEnds.removeWhere((_, end) => !end.isAfter(DateTime.now())));
+      _schedulePromotionBadgeExpiry();
+    });
+  }
+
+  Future<T> _optional<T>(Future<T> task, T fallback) async {
+    try {
+      return await task.timeout(const Duration(seconds: 15));
+    } catch (_) {
+      return fallback;
+    }
+  }
+
+  Future<void> _presence(String id) async {
     try {
       final db = Supabase.instance.client;
-      final authUser = db.auth.currentUser;
-      final id = widget.userId ?? authUser?.id;
-      if (id == null) return;
-      try {
-        await db.rpc('touch_my_presence');
-        final presence = await db.rpc('get_colleague_presence');
-        if (presence is List)
-          _targetOnline = presence.any((p) =>
-              p is Map &&
-              p['user_id']?.toString() == id &&
-              p['is_online'] == true);
-      } catch (_) {}
+      await db.rpc('touch_my_presence').timeout(const Duration(seconds: 8));
+      final rows = await db
+          .rpc('get_colleague_presence')
+          .timeout(const Duration(seconds: 8));
+      if (mounted && rows is List)
+        setState(() => _targetOnline = rows.any((p) =>
+            p is Map &&
+            p['user_id']?.toString() == id &&
+            p['is_online'] == true));
+    } catch (_) {}
+  }
 
+  Future<void> _load() async {
+    if (_refreshing) return;
+    _refreshing = true;
+    _profileError = null;
+    if (mounted && _profile == null) setState(() => _loading = true);
+    final db = Supabase.instance.client;
+    final authUser = db.auth.currentUser;
+    final id = widget.userId ?? authUser?.id;
+    try {
+      if (id == null) return;
+      unawaited(_presence(id));
       final row = await db
           .from('users')
           .select(
-              'id,name,username,university,college,department,profile_image,cover_image,headline,bio,account_privacy,default_post_audience,allow_messages,allow_calls,notifications_enabled,gender,role,created_at,updated_at')
+              'id,name,username,university,college,department,profile_image,cover_image,headline,bio,account_privacy,default_post_audience,allow_messages,allow_calls,notifications_enabled,gender,role,verification_expires_at,created_at,updated_at')
           .eq('id', id)
-          .maybeSingle();
+          .maybeSingle()
+          .timeout(const Duration(seconds: 15));
+      if (!mounted || db.auth.currentUser?.id != authUser?.id) return;
       if (row == null) {
-        if (mounted) setState(() => _profile = null);
+        setState(() => _profile = null);
         return;
       }
       final profile = Map<String, dynamic>.from(row);
-
-      try {
-        final book = await db
-            .from('graduation_books')
-            .select('id,is_public')
-            .eq('owner_id', id)
-            .maybeSingle();
-        _bookExists = book != null;
-        _bookVisible = book == null || book['is_public'] != false;
-      } catch (_) {
-        _bookExists = false;
-        _bookVisible = true;
-      }
-
-      final posts = await db
-          .from('posts')
-          .select('*, users(name, profile_image)')
-          .eq('user_id', id)
-          .order('created_at', ascending: false);
-      final resolvedPosts = List<Map<String, dynamic>>.from(posts);
-      await SecureMediaService.resolvePosts(resolvedPosts);
-
-      List<Map<String, dynamic>> sharedPosts = [];
-      try {
-        final sharedRows = await db
-            .from('shared_posts')
-            .select(
-                'id, post_id, shared_by, created_at, posts(*, users(name, profile_image))')
-            .eq('shared_by', id)
-            .order('created_at', ascending: false);
-        sharedPosts = List<Map<String, dynamic>>.from(sharedRows)
-            .map((row) {
-              final original = row['posts'];
-              if (original is Map) {
-                return {
-                  ...Map<String, dynamic>.from(original),
-                  'shared_row_id': row['id'],
-                  'shared_by_me': true,
-                  'shared_at': row['created_at'],
-                };
-              }
-              return <String, dynamic>{};
-            })
-            .where((p) => p.isNotEmpty)
-            .toList();
-        await SecureMediaService.resolvePosts(sharedPosts);
-      } catch (_) {}
-
-      int followers = 0;
-      int following = 0;
-      int saved = 0;
-      int clips = 0;
-      bool followingMe = false;
-      int likes = 0;
-      int comments = 0;
-
-      try {
-        followers = (await db
-                .from('follows')
-                .select('follower_id')
-                .eq('following_id', id))
-            .length;
-        following = (await db
-                .from('follows')
-                .select('following_id')
-                .eq('follower_id', id))
-            .length;
-        if (isMe && authUser != null) {
-          saved = (await db
-                  .from('saved_posts')
-                  .select('post_id')
-                  .eq('user_id', authUser.id))
-              .length;
-        }
-        clips = (await db.from('clips').select('id').eq('user_id', id)).length;
-        likes = (posts as List).fold<int>(
-            0, (sum, p) => sum + ((p['likes_count'] ?? 0) as num).toInt());
-        comments = (posts as List).fold<int>(
-            0, (sum, p) => sum + ((p['comments_count'] ?? 0) as num).toInt());
-        if (!isMe && authUser != null) {
-          followingMe = await db
+      // The users SELECT policy has already checked privacy and blocking.
+      // Show the header without waiting for counters, presence or media signing.
+      setState(() {
+        _profile = profile;
+        _loading = false;
+        _contentLoading = true;
+      });
+      _fillControllers(profile);
+      final stats = Future.wait<dynamic>([
+        _optional(db.from('follows').count().eq('following_id', id), 0),
+        _optional(db.from('follows').count().eq('follower_id', id), 0),
+        isMe
+            ? _optional(db.from('saved_posts').count().eq('user_id', id), 0)
+            : Future.value(0),
+        _optional(db.from('clips').count().eq('user_id', id), 0),
+        _optional(db.from('posts').count().eq('user_id', id), 0),
+        _optional(
+            db
+                .from('graduation_books')
+                .select('id,is_public')
+                .eq('owner_id', id)
+                .maybeSingle(),
+            null),
+        if (!isMe && authUser != null) ...[
+          _optional(
+              db
                   .from('follows')
                   .select('follower_id')
                   .eq('follower_id', authUser.id)
                   .eq('following_id', id)
-                  .maybeSingle() !=
-              null;
-        }
+                  .maybeSingle(),
+              null),
+          _optional(
+              db
+                  .from('friend_requests')
+                  .select('id,sender_id,receiver_id,status')
+                  .or('and(sender_id.eq.${authUser.id},receiver_id.eq.$id),and(sender_id.eq.$id,receiver_id.eq.${authUser.id})')
+                  .order('created_at', ascending: false)
+                  .limit(1),
+              <Map<String, dynamic>>[]),
+          _optional(
+              db
+                  .from('user_blocks')
+                  .select('id')
+                  .eq('blocker_id', authUser.id)
+                  .eq('blocked_id', id)
+                  .maybeSingle(),
+              null),
+        ],
+      ]);
+      final totalsTask = _optional(
+          db.rpc('zameel_profile_post_totals', params: {'p_owner': id}),
+          <String, dynamic>{});
+      final content = _loadPage(id, reset: true);
+      final promotions = _loadPromotionBadges(id);
+      final counters = await stats;
+      if (!mounted || db.auth.currentUser?.id != authUser?.id) return;
+      setState(() {
+        _followers = counters[0];
+        _followingCount = counters[1];
+        _saved = counters[2];
+        _clips = counters[3];
+        profile['posts_count'] = counters[4];
+        profile['followers_count'] = _followers;
+        profile['following_count'] = _followingCount;
+        profile['saved_count'] = _saved;
+        profile['clips_count'] = _clips;
+        final book = counters[5];
+        _bookExists = book != null;
+        _bookVisible = book == null || book['is_public'] != false;
         if (!isMe && authUser != null) {
-          final req = await db
-              .from('friend_requests')
-              .select('id,sender_id,receiver_id,status')
-              .or('and(sender_id.eq.${authUser.id},receiver_id.eq.$id),and(sender_id.eq.$id,receiver_id.eq.${authUser.id})')
-              .order('created_at', ascending: false)
-              .limit(1);
-          if (req.isNotEmpty) {
-            final latest = req.first;
-            final status = latest['status']?.toString() ?? 'none';
-            profile['friend_status'] = status == 'pending' &&
-                    latest['sender_id']?.toString() != authUser.id
-                ? 'incoming'
-                : status;
-          }
-          final block = await db
-              .from('user_blocks')
-              .select('id')
-              .eq('blocker_id', authUser.id)
-              .eq('blocked_id', id)
-              .maybeSingle();
-          final blockedByTarget = await db
-              .from('user_blocks')
-              .select('id')
-              .eq('blocker_id', id)
-              .eq('blocked_id', authUser.id)
-              .maybeSingle();
-          profile['blocked'] = block != null;
-          profile['blocked_by_target'] = blockedByTarget != null;
+          _following = counters[6] != null;
+          final requests = counters[7] as List;
+          _friendStatus = requests.isEmpty
+              ? 'none'
+              : requests.first['status'] == 'pending' &&
+                      requests.first['sender_id'] != authUser.id
+                  ? 'incoming'
+                  : requests.first['status']?.toString() ?? 'none';
+          _blocked = counters[8] != null;
         }
-      } catch (_) {
-        // Optional social tables may not be migrated yet; profile still works.
-      }
-
-      profile['posts_count'] = (posts as List).length;
-      profile['followers_count'] = followers;
-      profile['following_count'] = following;
-      profile['saved_count'] = saved;
-      profile['clips_count'] = clips;
-      profile['likes_received'] = likes;
-      profile['comments_count_total'] = comments;
-
-      if (mounted) {
+      });
+      await Future.wait([content, promotions]);
+      final totals = await totalsTask;
+      if (mounted && totals is Map)
         setState(() {
-          _likedStateLoaded = false;
-          _profile = profile;
-          _posts = resolvedPosts;
-          _sharedPosts = sharedPosts;
-          _followers = followers;
-          _followingCount = following;
-          _saved = saved;
-          _clips = clips;
-          _likesReceived = likes;
-          _comments = comments;
-          _following = followingMe;
-          _friendStatus = profile['friend_status']?.toString() ?? 'none';
-          _blocked = profile['blocked'] == true;
+          _likesReceived = ((totals['likes'] ?? _likesReceived) as num).toInt();
+          _comments = ((totals['comments'] ?? _comments) as num).toInt();
         });
-      }
-      _fillControllers(profile);
     } catch (e) {
+      _profileError = 'Unable to load profile';
       debugPrint('Profile load error: $e');
     } finally {
-      if (mounted) setState(() => _loading = false);
+      _refreshing = false;
+      if (mounted)
+        setState(() {
+          _loading = false;
+          _contentLoading = false;
+        });
     }
+  }
+
+  Future<void> _loadPromotionBadges(String id) async {
+    try {
+      final db = Supabase.instance.client;
+      final rows = isMe
+          ? await db
+              .from('zameel_post_promotions')
+              .select('post_id,ends_at')
+              .eq('owner_id', id)
+              .eq('status', 'approved')
+              .gt('ends_at', DateTime.now().toUtc().toIso8601String())
+              .timeout(const Duration(seconds: 12))
+          : await db.rpc('zameel_visible_promotion_badges',
+              params: {'p_owner': id}).timeout(const Duration(seconds: 12));
+      if (!mounted) return;
+      setState(() {
+        _promotionEnds.clear();
+        for (final row in rows as List) {
+          final end = DateTime.tryParse('${row['ends_at']}');
+          if (end != null) _promotionEnds['${row['post_id']}'] = end;
+        }
+      });
+      _schedulePromotionBadgeExpiry();
+    } catch (_) {}
+  }
+
+  Future<void> _loadPage(String id, {bool reset = false}) async {
+    if (_loadingMore) return;
+    _loadingMore = true;
+    final db = Supabase.instance.client;
+    final sessionId = db.auth.currentUser?.id;
+    try {
+      final po = reset ? 0 : _postOffset, so = reset ? 0 : _sharedOffset;
+      final pages = await Future.wait<dynamic>([
+        if (reset || _morePosts)
+          db
+              .from('posts')
+              .select('*, users(name,profile_image,verification_expires_at)')
+              .eq('user_id', id)
+              .order('created_at', ascending: false)
+              .order('id', ascending: false)
+              .range(po, po + 29)
+              .timeout(const Duration(seconds: 15))
+        else
+          Future.value(<Map<String, dynamic>>[]),
+        if (reset || _moreShared)
+          _optional(
+              db
+                  .from('shared_posts')
+                  .select(
+                      'id,post_id,created_at,posts(*, users(name,profile_image,verification_expires_at))')
+                  .eq('shared_by', id)
+                  .order('created_at', ascending: false)
+                  .order('id', ascending: false)
+                  .range(so, so + 29),
+              <Map<String, dynamic>>[])
+        else
+          Future.value(<Map<String, dynamic>>[]),
+      ]);
+      final posts = List<Map<String, dynamic>>.from(pages[0]);
+      final sharedRows = List<Map<String, dynamic>>.from(pages[1]);
+      final shared = sharedRows
+          .where((r) => r['posts'] is Map)
+          .map((r) => <String, dynamic>{
+                ...Map<String, dynamic>.from(r['posts']),
+                'shared_row_id': r['id'],
+                'shared_by_me': true,
+                'shared_at': r['created_at']
+              })
+          .toList();
+      // Media widgets resolve only visible items; signing is not a page barrier.
+      if (!mounted || db.auth.currentUser?.id != sessionId) return;
+      setState(() {
+        if (reset) {
+          _posts = posts;
+          _sharedPosts = shared;
+        } else {
+          _posts.addAll(posts);
+          _sharedPosts.addAll(shared);
+        }
+        _postOffset = po + posts.length;
+        _sharedOffset = so + sharedRows.length;
+        _morePosts = posts.length == 30;
+        _moreShared = sharedRows.length == 30;
+        _likedStateLoaded = false;
+        _contentLoading = false;
+      });
+    } finally {
+      _loadingMore = false;
+      if (mounted) setState(() {});
+    }
+  }
+
+  Future<void> _openProfilePhoto(String url, String kind) async {
+    final owner = _profile?['id']?.toString();
+    if (owner == null) return;
+    await Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (_) =>
+                ProfilePhotoScreen(ownerId: owner, kind: kind, imageUrl: url)));
   }
 
   void _fillControllers(Map<String, dynamic> p) {
@@ -716,6 +813,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     if (_loading) return const _ProfileLoading();
+    if (_profile == null && _profileError != null)
+      return Scaffold(
+          appBar: AppBar(),
+          body: Center(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text(ar ? 'تعذر تحميل الملف الشخصي' : 'Unable to load profile'),
+            TextButton(
+                onPressed: _load, child: Text(ar ? 'إعادة المحاولة' : 'Retry'))
+          ])));
     if (_profile == null) return _NotFound(ar: ar);
 
     final p = _profile!;
@@ -778,7 +884,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         savedOnly: isMe && _showSavedShorts))
               else ...[
                 SliverToBoxAdapter(child: _buildSectionHeader(ar)),
-                if (_posts.isEmpty && _sharedPosts.isEmpty)
+                if (_contentLoading && _posts.isEmpty && _sharedPosts.isEmpty)
+                  const SliverToBoxAdapter(
+                      child: Padding(
+                          padding: EdgeInsets.all(24),
+                          child: Center(child: CircularProgressIndicator())))
+                else if (_posts.isEmpty && _sharedPosts.isEmpty)
                   SliverToBoxAdapter(child: _emptyPosts(ar))
                 else
                   SliverPadding(
@@ -792,6 +903,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               _sharedPosts[i - _posts.length], ar),
                     ),
                   ),
+                if (_morePosts || _moreShared)
+                  SliverToBoxAdapter(
+                      child: TextButton(
+                          onPressed: _loadingMore
+                              ? null
+                              : () async {
+                                  try {
+                                    await _loadPage(_profile!['id'].toString());
+                                  } catch (_) {
+                                    if (mounted)
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(SnackBar(
+                                              content: Text(ar
+                                                  ? 'تعذر تحميل المزيد. حاول مجددًا.'
+                                                  : 'Unable to load more. Try again.')));
+                                  }
+                                },
+                          child: Text(_loadingMore
+                              ? (ar ? 'جارٍ التحميل…' : 'Loading…')
+                              : (ar ? 'عرض المزيد' : 'Load more')))),
               ],
             ],
           ),
@@ -831,28 +962,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ClipRRect(
             borderRadius:
                 const BorderRadius.vertical(bottom: Radius.circular(28)),
-            child: Container(
-              height: MediaQuery.sizeOf(context).width / 3,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppTheme.primary, AppTheme.primaryDark],
-                  begin: Alignment.topRight,
-                  end: Alignment.bottomLeft,
+            child: GestureDetector(
+              onTap: cover != null && cover.isNotEmpty
+                  ? () => _openProfilePhoto(cover, 'cover')
+                  : null,
+              child: Container(
+                height: MediaQuery.sizeOf(context).width / 2,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [AppTheme.primary, AppTheme.primaryDark],
+                    begin: Alignment.topRight,
+                    end: Alignment.bottomLeft,
+                  ),
+                  image: cover != null && cover.isNotEmpty
+                      ? DecorationImage(
+                          image: ResizeImage(NetworkImage(cover),
+                              width: (MediaQuery.sizeOf(context).width *
+                                      MediaQuery.devicePixelRatioOf(context))
+                                  .round()
+                                  .clamp(1, 1440)),
+                          fit: BoxFit.cover,
+                          alignment: Alignment.center,
+                        )
+                      : null,
                 ),
-                image: cover != null && cover.isNotEmpty
-                    ? DecorationImage(
-                        image: NetworkImage(cover),
-                        fit: BoxFit.cover,
-                        alignment: Alignment.center,
-                      )
+                child: cover == null || cover.isEmpty
+                    ? const Center(
+                        child: Icon(Icons.image_rounded,
+                            size: 52, color: Colors.white54))
                     : null,
               ),
-              child: cover == null || cover.isEmpty
-                  ? const Center(
-                      child: Icon(Icons.image_rounded,
-                          size: 52, color: Colors.white54))
-                  : null,
             ),
           ),
           if (isMe)
@@ -885,7 +1025,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     alignment: Alignment.bottomCenter,
                     child: GestureDetector(
                       onTap: image != null && image.isNotEmpty
-                          ? () => _openImage(image)
+                          ? () => _openProfilePhoto(image, 'avatar')
                           : null,
                       child: Container(
                         padding: const EdgeInsets.all(4),
@@ -896,7 +1036,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           radius: 52,
                           backgroundColor: AppTheme.primaryLight,
                           backgroundImage: image != null && image.isNotEmpty
-                              ? NetworkImage(image)
+                              ? ResizeImage(NetworkImage(image),
+                                  width: (104 *
+                                          MediaQuery.devicePixelRatioOf(
+                                              context))
+                                      .round()
+                                      .clamp(1, 512))
                               : null,
                           child: image == null || image.isEmpty
                               ? Image.asset('assets/branding/zameel_mark.png',
@@ -995,11 +1140,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                           fontSize: 23, fontWeight: FontWeight.w800))),
-              if (role == 'student') ...[
-                const SizedBox(width: 6),
-                const Icon(Icons.verified_rounded,
-                    color: AppTheme.primary, size: 20)
-              ],
+              VerifiedBadge(
+                  expiresAt: _profile?['verification_expires_at']?.toString()),
             ]),
             if (!isMe && _targetOnline)
               Padding(
@@ -1316,12 +1458,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final video = post['video_url']?.toString();
     final rawMedia = post['media_items'];
     final hasOrderedMedia = rawMedia is List && rawMedia.isNotEmpty;
-    return Card(
+    return CompactPost(
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (FeatureControl.instance.enabled('post_promotions') &&
+                (_promotionEnds[post['id'].toString()]
+                        ?.isAfter(DateTime.now()) ??
+                    false))
+              Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Text(ar ? 'إعلان ممول' : 'Sponsored',
+                      style: const TextStyle(
+                          fontSize: 12, fontWeight: FontWeight.w600))),
             Row(
               children: [
                 CircleAvatar(
@@ -1343,10 +1494,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      Row(children: [Flexible(child: Text(
                           _profile?['name']?.toString() ??
                               (ar ? 'طالب Zameel' : 'Zameel Student'),
-                          style: const TextStyle(fontWeight: FontWeight.w800)),
+                          style: const TextStyle(fontWeight: FontWeight.w800))), VerifiedBadge(
+                          expiresAt:
+                              _profile?['verification_expires_at']?.toString())]),
                       Text(_profile?['university']?.toString() ?? '',
                           style: const TextStyle(
                               color: AppTheme.textSecondary, fontSize: 11)),
@@ -1372,7 +1525,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             if (hasOrderedMedia)
               Padding(
                 padding: const EdgeInsets.only(top: 12),
-                child: PostMediaGallery(post: post, height: 240),
+                child: PostMediaGallery(post: post, height: 204),
               ),
             if (!hasOrderedMedia && image != null && image.isNotEmpty)
               Padding(
@@ -1381,14 +1534,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   borderRadius: BorderRadius.circular(14),
                   child: InkWell(
                     onTap: () => _openImage(image),
-                    child: Image.network(
-                      image,
-                      height: MediaQuery.sizeOf(context).width / 3,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const SizedBox(
-                        height: 120,
-                        child: Center(child: Icon(Icons.broken_image_outlined)),
-                      ),
+                    child: SizedBox(
+                      height: 204,
+                      child: CachedMediaImage(
+                          url: image,
+                          fit: BoxFit.cover,
+                          fallback: const Center(
+                              child: Icon(Icons.broken_image_outlined))),
                     ),
                   ),
                 ),
@@ -1498,7 +1650,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: InteractiveViewer(
                 minScale: .8,
                 maxScale: 5,
-                child: Image.network(imageUrl, fit: BoxFit.contain),
+                child: CachedMediaImage(
+                    url: imageUrl,
+                    fit: BoxFit.contain,
+                    fallback: const Icon(Icons.broken_image_outlined,
+                        color: Colors.white)),
               ),
             ),
           ),
@@ -2190,7 +2346,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _sharedPostCard(Map<String, dynamic> post, bool ar) {
-    return Card(
+    return Material(
+      color: Colors.transparent,
       child: Column(children: [
         Container(
           padding: const EdgeInsets.fromLTRB(14, 12, 8, 4),

@@ -171,7 +171,7 @@ class _ImagePostState extends State<_ImagePost> {
                 context,
                 widget.post['user_id']?.toString(),
               ),
-              child: _PostOwnerAvatar(imageUrl: widget.post['profile_image']?.toString(), radius: 22),
+              child: _PostOwnerAvatar(imageUrl: widget.post['profile_image']?.toString(), radius: 18.7),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -184,7 +184,7 @@ class _ImagePostState extends State<_ImagePost> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    Row(children: [Flexible(child: Text(
                       isArabic
                           ? (widget.post['name_ar'] ?? 'مستخدم').toString()
                           : (widget.post['name_en'] ?? 'User').toString(),
@@ -193,7 +193,7 @@ class _ImagePostState extends State<_ImagePost> {
                         fontSize: 16,
                         color: Colors.white,
                       ),
-                    ),
+                    )), VerifiedBadge(expiresAt: widget.post['verification_expires_at']?.toString())]),
                     const SizedBox(height: 3),
                     Text(
                       '${isArabic ? (widget.post['department_ar'] ?? '') : (widget.post['department_en'] ?? '')} • '
@@ -245,7 +245,7 @@ class _ImagePostState extends State<_ImagePost> {
         if (hasOrderedMedia)
           PostMediaGallery(
             post: widget.post,
-            height: 230,
+            height: 195.5,
             onOpen: (item, _) => _openOrderedPostMedia(
               context,
               widget.post,
@@ -273,7 +273,7 @@ class _ImagePostState extends State<_ImagePost> {
               },
               child: SizedBox(
                 width: double.infinity,
-                height: 230,
+                height: 195.5,
                 child: CachedMediaImage(
                   url: imageUrl,
                   fit: BoxFit.contain,
@@ -474,7 +474,7 @@ class _VideoPostState extends State<_VideoPost> {
         context,
         widget.post['user_id']?.toString(),
       ),
-      child: _PostOwnerAvatar(imageUrl: widget.post['profile_image']?.toString(), radius: 22),
+      child: _PostOwnerAvatar(imageUrl: widget.post['profile_image']?.toString(), radius: 18.7),
     ),
     const SizedBox(width: 10),
     Expanded(
@@ -487,14 +487,14 @@ class _VideoPostState extends State<_VideoPost> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            Row(children: [Flexible(child: Text(
               isArabic ? widget.post['name_ar'] : widget.post['name_en'],
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
                 color: Colors.white,
               ),
-            ),
+            )), VerifiedBadge(expiresAt: widget.post['verification_expires_at']?.toString())]),
             const SizedBox(height: 3),
             Text(
               '${isArabic ? widget.post['department_ar'] : widget.post['department_en']} • '
@@ -522,7 +522,7 @@ class _VideoPostState extends State<_VideoPost> {
         if (hasOrderedMedia)
           PostMediaGallery(
             post: widget.post,
-            height: 230,
+            height: 195.5,
             onOpen: (item, _) => _openOrderedPostMedia(
               context,
               widget.post,
@@ -547,7 +547,7 @@ class _VideoPostState extends State<_VideoPost> {
                 ),
               ),
               child: SizedBox(
-                height: 230,
+                height: 195.5,
                 width: double.infinity,
                 child: VideoPlayerWidget(videoUrl: videoUrl),
               ),
@@ -1327,7 +1327,7 @@ class _TextPostState extends State<_TextPost> {
                 context,
                 widget.post['user_id']?.toString(),
               ),
-              child: _PostOwnerAvatar(imageUrl: widget.post['profile_image']?.toString(), radius: 22),
+              child: _PostOwnerAvatar(imageUrl: widget.post['profile_image']?.toString(), radius: 18.7),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -1340,14 +1340,14 @@ class _TextPostState extends State<_TextPost> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    Row(children: [Flexible(child: Text(
                       isArabic ? widget.post['name_ar'] : widget.post['name_en'],
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                         color: Colors.white,
                       ),
-                    ),
+                    )), VerifiedBadge(expiresAt: widget.post['verification_expires_at']?.toString())]),
                     const SizedBox(height: 3),
                     Text(
                       '${isArabic ? widget.post['department_ar'] : widget.post['department_en']} • '
@@ -1403,7 +1403,7 @@ class _TextPostState extends State<_TextPost> {
           const SizedBox(height: 12),
           PostMediaGallery(
             post: widget.post,
-            height: 230,
+            height: 195.5,
             onOpen: (item, _) => _openOrderedPostMedia(
               context,
               widget.post,

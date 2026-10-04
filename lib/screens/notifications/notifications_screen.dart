@@ -1,3 +1,4 @@
+import '../profile/account_verification_screen.dart';
 import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -149,6 +150,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Future<void> _openNotificationSource(Map<String, dynamic> n) async {
     final type = n['type']?.toString() ?? '';
     final data = _notificationData(n);
+    if (type == 'account_verification_review') {
+      if (mounted) Navigator.push(context, MaterialPageRoute(builder: (_) => const AccountVerificationScreen()));
+      return;
+    }
     if (type.startsWith('friend_request')) {
       if (!await FeatureControl.instance.check(context, 'suggested_colleagues')) return;
       Navigator.push(context, MaterialPageRoute(builder: (_) => const FriendsScreen(initialTab: 1)));

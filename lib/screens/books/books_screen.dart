@@ -44,6 +44,7 @@ class _BooksScreenState extends State<BooksScreen> {
   String _myDepartment = '';
   String _bookScope = 'college';
   bool _booksLoading = true;
+  bool _booksFetching = false;
   String? _booksError;
 
   final List<String> filters = ['All', 'Sale', 'Exchange', 'Lend', 'Donate'];
@@ -212,13 +213,16 @@ class _BooksScreenState extends State<BooksScreen> {
   }
 
   Future<void> _loadBooks() async {
+    if (_booksFetching) return;
+    _booksFetching = true;
     if (mounted)
       setState(() {
-        _booksLoading = true;
+        _booksLoading = books.isEmpty;
         _booksError = null;
       });
     try {
-      final loaded = await ZameelBookExchangeService.listBooks();
+      final loaded = await ZameelBookExchangeService.listBooks()
+          .timeout(const Duration(seconds: 15));
       if (!mounted) return;
       setState(() {
         books
@@ -231,10 +235,11 @@ class _BooksScreenState extends State<BooksScreen> {
       debugPrint('Book listings load failed: $e');
       if (!mounted) return;
       setState(() {
-        books.clear();
         _booksLoading = false;
         _booksError = e.toString();
       });
+    } finally {
+      _booksFetching = false;
     }
   }
 

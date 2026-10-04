@@ -1,0 +1,17 @@
+{
+  "release": 136,
+  "app_version": "2.0.2+11",
+  "admin_version": "1.3.11",
+  "dart_analysis": "No issues found: lib and test",
+  "admin_tests_passed": 58,
+  "postgres_checks_passed": 134,
+  "admin_browser": "passed with mocked API: list receipts, reject incorrect amount, approve exact 1000 fils, reload",
+  "native_flutter_tests": "not run in artifact-preparation environment; run Check on Windows",
+  "live_sql_applied": false,
+  "live_function_deployed": false,
+  "github_pushed": false,
+  "phone_performance": "not measured yet",
+  "verification_price_fils": 1000,
+  "verification_term": "one calendar month from approval, early renewal extends from current expiry",
+  "wallet": "reuse configured promotion wallet; manual transfer review; no automatic debit"
+}

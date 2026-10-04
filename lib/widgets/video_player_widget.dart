@@ -1,4 +1,3 @@
-
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -11,7 +10,8 @@ class VideoPlayerWidget extends StatefulWidget {
   final String videoUrl;
   final ValueChanged<bool>? onControlsVisibilityChanged;
 
-  const VideoPlayerWidget({super.key, required this.videoUrl, this.onControlsVisibilityChanged});
+  const VideoPlayerWidget(
+      {super.key, required this.videoUrl, this.onControlsVisibilityChanged});
 
   @override
   State<VideoPlayerWidget> createState() => _VideoPlayerWidgetState();
@@ -45,7 +45,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       await controller.initialize();
       await controller.setLooping(true);
       controller.addListener(_refreshProgress);
-      if (!mounted || generation != _generation || _controller != controller) return;
+      if (!mounted || generation != _generation || _controller != controller)
+        return;
       setState(() => _isInitialized = true);
       _scheduleControlsHide();
     } catch (e) {
@@ -57,7 +58,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   @override
   void didUpdateWidget(covariant VideoPlayerWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (MediaCacheService.identity(oldWidget.videoUrl) == MediaCacheService.identity(widget.videoUrl)) return;
+    if (MediaCacheService.identity(oldWidget.videoUrl) ==
+        MediaCacheService.identity(widget.videoUrl)) return;
     _controlsTimer?.cancel();
     _controller?.removeListener(_refreshProgress);
     _controller?.dispose();
@@ -93,8 +95,17 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     }
   }
 
+  DateTime? _lastUiRefresh;
+
   void _refreshProgress() {
-    if (mounted) setState(() {});
+    final refreshAt = DateTime.now();
+    if (mounted &&
+        (_lastUiRefresh == null ||
+            refreshAt.difference(_lastUiRefresh!) >=
+                const Duration(milliseconds: 200))) {
+      _lastUiRefresh = refreshAt;
+      setState(() {});
+    }
   }
 
   void _showControls({bool permanent = false}) {
@@ -126,7 +137,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   String _time(Duration value) {
     final minutes = value.inMinutes.remainder(60).toString().padLeft(2, '0');
     final seconds = value.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return value.inHours > 0 ? '${value.inHours}:$minutes:$seconds' : '$minutes:$seconds';
+    return value.inHours > 0
+        ? '${value.inHours}:$minutes:$seconds'
+        : '$minutes:$seconds';
   }
 
   Duration _remaining(VideoPlayerController controller) {
@@ -158,7 +171,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
             const SizedBox(height: 8),
             const Text('تعذر تشغيل الفيديو', textAlign: TextAlign.center),
             const SizedBox(height: 4),
-            Text('تحقق من اتصال الإنترنت وحاول مرة أخرى', textAlign: TextAlign.center, style: TextStyle(color: AppTheme.muted, fontSize: 12)),
+            Text('تحقق من اتصال الإنترنت وحاول مرة أخرى',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppTheme.muted, fontSize: 12)),
           ],
         ),
       );
@@ -171,7 +186,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     }
 
     return AspectRatio(
-      aspectRatio: controller.value.aspectRatio == 0 ? 16 / 9 : controller.value.aspectRatio,
+      aspectRatio: controller.value.aspectRatio == 0
+          ? 16 / 9
+          : controller.value.aspectRatio,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: _toggleControls,
@@ -185,37 +202,41 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
               child: IgnorePointer(
                 ignoring: !_controlsVisible,
                 child: Center(
-            child: Material(
-              color: Colors.black45,
-              shape: const CircleBorder(),
-              child: IconButton(
-                tooltip: controller.value.isPlaying ? 'إيقاف' : 'تشغيل',
-                onPressed: _togglePlayback,
-                icon: Icon(
-                  controller.value.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                  color: Colors.white,
-                  size: 42,
+                  child: Material(
+                    color: Colors.black45,
+                    shape: const CircleBorder(),
+                    child: IconButton(
+                      tooltip: controller.value.isPlaying ? 'إيقاف' : 'تشغيل',
+                      onPressed: _togglePlayback,
+                      icon: Icon(
+                        controller.value.isPlaying
+                            ? Icons.pause_rounded
+                            : Icons.play_arrow_rounded,
+                        color: Colors.white,
+                        size: 42,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          ),
               ),
             ),
             Positioned(
-            right: 8,
-            bottom: 42,
-            child: AnimatedOpacity(
-              opacity: _controlsVisible ? 1 : 0,
-              duration: const Duration(milliseconds: 180),
-              child: IgnorePointer(
-                ignoring: !_controlsVisible,
-                child: IconButton.filledTonal(
-                  onPressed: _toggleMute,
-                  icon: Icon(_muted ? Icons.volume_off_rounded : Icons.volume_up_rounded),
+              right: 8,
+              bottom: 42,
+              child: AnimatedOpacity(
+                opacity: _controlsVisible ? 1 : 0,
+                duration: const Duration(milliseconds: 180),
+                child: IgnorePointer(
+                  ignoring: !_controlsVisible,
+                  child: IconButton.filledTonal(
+                    onPressed: _toggleMute,
+                    icon: Icon(_muted
+                        ? Icons.volume_off_rounded
+                        : Icons.volume_up_rounded),
+                  ),
                 ),
               ),
             ),
-          ),
             Positioned(
               left: 8,
               right: 8,
@@ -227,16 +248,24 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                   ignoring: !_controlsVisible,
                   child: Row(
                     children: [
-                      Text(_time(controller.value.position), style: const TextStyle(color: Colors.white, fontSize: 11)),
+                      Text(_time(controller.value.position),
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 11)),
                       Expanded(
                         child: VideoProgressIndicator(
                           controller,
                           allowScrubbing: true,
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-                          colors: const VideoProgressColors(playedColor: AppTheme.primary, bufferedColor: Colors.white38, backgroundColor: Colors.white24),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 12),
+                          colors: const VideoProgressColors(
+                              playedColor: AppTheme.primary,
+                              bufferedColor: Colors.white38,
+                              backgroundColor: Colors.white24),
                         ),
                       ),
-                      Text('-${_time(_remaining(controller))}', style: const TextStyle(color: Colors.white, fontSize: 11)),
+                      Text('-${_time(_remaining(controller))}',
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 11)),
                     ],
                   ),
                 ),

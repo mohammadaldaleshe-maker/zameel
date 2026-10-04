@@ -27,7 +27,8 @@ class UserProvider extends ChangeNotifier {
       // جلب بيانات المستخدم من جدول users
       final response = await Supabase.instance.client
           .from('users')
-          .select('id,name,university,college,department,profile_image,account_privacy,default_post_audience,allow_messages,allow_calls,notifications_enabled,gender,role,created_at,updated_at')
+          .select(
+              'id,name,university,college,department,profile_image,account_privacy,default_post_audience,allow_messages,allow_calls,notifications_enabled,gender,role,verification_expires_at,created_at,updated_at')
           .eq('id', user.id)
           .maybeSingle();
 
@@ -49,8 +50,7 @@ class UserProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
 
-      // جلب منشورات المستخدم
-      await loadUserPosts(user.id);
+      // ProfileScreen pages posts on demand; no unused full-history download at login.
     } catch (e) {
       print('Error loading user: $e');
       _isLoading = false;
@@ -63,7 +63,8 @@ class UserProvider extends ChangeNotifier {
     try {
       final response = await Supabase.instance.client
           .from('posts')
-          .select('*, users(id,name,profile_image,university,college,department,role,gender)')
+          .select(
+              '*, users(id,name,profile_image,university,college,department,role,gender)')
           .eq('user_id', userId)
           .order('created_at', ascending: false);
 
@@ -85,7 +86,8 @@ class UserProvider extends ChangeNotifier {
           .from('users')
           .update(data)
           .eq('id', user.id)
-          .select('id,name,university,college,department,profile_image,account_privacy,default_post_audience,allow_messages,allow_calls,notifications_enabled,gender,role,created_at,updated_at')
+          .select(
+              'id,name,university,college,department,profile_image,account_privacy,default_post_audience,allow_messages,allow_calls,notifications_enabled,gender,role,verification_expires_at,created_at,updated_at')
           .single();
 
       if (response != null) {
@@ -110,7 +112,8 @@ class UserProvider extends ChangeNotifier {
           .from('users')
           .update({'profile_image': imageUrl})
           .eq('id', user.id)
-          .select('id,name,university,college,department,profile_image,account_privacy,default_post_audience,allow_messages,allow_calls,notifications_enabled,gender,role,created_at,updated_at')
+          .select(
+              'id,name,university,college,department,profile_image,account_privacy,default_post_audience,allow_messages,allow_calls,notifications_enabled,gender,role,verification_expires_at,created_at,updated_at')
           .single();
 
       if (response != null) {

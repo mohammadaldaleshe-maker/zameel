@@ -1,0 +1,138 @@
+{
+  "release": 136,
+  "repository": "APP",
+  "files": [
+    {
+      "path": "APPLY_UPDATE_136.ps1",
+      "sha256": "41224deb08b2ae3ab73e3e74a22b1dc5d0e0f264378dddd84dbe92a89ffa63b5"
+    },
+    {
+      "path": "BUILD_AND_DEPLOY_136_AR.md",
+      "sha256": "9c02fc607e5f83a6f6efa214609267757b7935f1d07b69e3f057d865668de70b"
+    },
+    {
+      "path": "PERFORMANCE_REVIEW_136_AR.md",
+      "sha256": "1b9e8ccec90f2541c5f7a47b4b53e9cc3727f079c264ce3a2ccdc23bb93e87a0"
+    },
+    {
+      "path": "VALIDATION_136.json",
+      "sha256": "46ae2f3d6a67c88fe2ef2daa6caf33c52916146d6c377312add0156fe2adb6a5"
+    },
+    {
+      "path": "lib/features/drawer_profile.dart",
+      "sha256": "09e014dc1cfebc5427de4272bbf3e62b7e946e7688be9fcb98af1dfed163ed82"
+    },
+    {
+      "path": "lib/features/home_feed.dart",
+      "sha256": "16ecf24a6a55a16293a3d194e90fb5a1c2da047304421c26df85b49a388d70d3"
+    },
+    {
+      "path": "lib/features/posts_media.dart",
+      "sha256": "0c8d8b3464f1bcdd3fbaf6839ad67e633639ef23cf2ad185d5ea84da4ee75f56"
+    },
+    {
+      "path": "lib/main.dart",
+      "sha256": "d8c2f27b016ffdfe14ea6909509dd6486dea63de6ada7e7ba8ba1f857578f7da"
+    },
+    {
+      "path": "lib/providers/user_provider.dart",
+      "sha256": "4f51e1b4ad7bae136c373a4209df8fe1df78e4e8859630ea0b3a25fcf2cb424c"
+    },
+    {
+      "path": "lib/screens/books/books_screen.dart",
+      "sha256": "d72bc42bedc1f75f8847d12dc8c0e519a6be4258d276a0546e1564ff4976cd61"
+    },
+    {
+      "path": "lib/screens/chat/chat_screen.dart",
+      "sha256": "802995812f1df585b9dd47758ca3efc4a85a8d2420198c7bbb94d29c08a99572"
+    },
+    {
+      "path": "lib/screens/notifications/notifications_screen.dart",
+      "sha256": "b4e2a580ace9768c6c5465a76d4d8b0e44e74bbf8dc2ef530cb00dd150fb42b5"
+    },
+    {
+      "path": "lib/screens/profile/account_verification_screen.dart",
+      "sha256": "391080f7b9d2d8dfbb50942f171cfb999e79385d60a7ab7bf32ea611ef75bfe7"
+    },
+    {
+      "path": "lib/screens/profile/profile_photo_screen.dart",
+      "sha256": "aefc5b6099b133f88d6918441c993bae29991e1e546d51eb6eb5e1e682bd7b64"
+    },
+    {
+      "path": "lib/screens/profile/profile_screen.dart",
+      "sha256": "8d5e7157b039a5a58d94b1259bdc6353e7945e7df9a6d8e4be18aafccbd56879"
+    },
+    {
+      "path": "lib/screens/profile/profile_settings_screen.dart",
+      "sha256": "4829706a5dd5fd25a0de46dfcc75341b5b3213bdf59582859b38015918232f6d"
+    },
+    {
+      "path": "lib/screens/search/search_screen.dart",
+      "sha256": "16750f5058b45933ba5b3d050dd81892d7819346ec4b0c99876cd658503b9c76"
+    },
+    {
+      "path": "lib/services/account_access_monitor.dart",
+      "sha256": "08b91ba879846a4c32b3e098fdffb0ff9d070e9e38c6d68cacfe96f3a3f85bbb"
+    },
+    {
+      "path": "lib/services/feature_control.dart",
+      "sha256": "21213176b5f37e52021604ae7136aa00d285b0471d73ebc3846d7135417d87a0"
+    },
+    {
+      "path": "lib/services/secure_media_service.dart",
+      "sha256": "7763bd6e6a1c8e4ff633d57de5c96520e9096b53675a9207eb8be431c3c4b61e"
+    },
+    {
+      "path": "lib/widgets/compact_post.dart",
+      "sha256": "9efa1e3a01faa6c73333eb0c5cec5fb862062ad309ddba11b6584993a27bfa4e"
+    },
+    {
+      "path": "lib/widgets/profile_image_cropper.dart",
+      "sha256": "d52ea00919d31376fde8e62f6f82498d2f1159211c2b5e2f9c72735516a09e8a"
+    },
+    {
+      "path": "lib/widgets/verified_badge.dart",
+      "sha256": "f4ccad2c732acf7e74b0a160f862b0378f2e6bccf0ad0912071a22b729200efd"
+    },
+    {
+      "path": "lib/widgets/vertical_autoplay_video_player.dart",
+      "sha256": "e46c6cccaa5aff67057b692080ca1e89cdaa7f7ea55d0134a4afbb0dd0a894e2"
+    },
+    {
+      "path": "lib/widgets/video_player_widget.dart",
+      "sha256": "b92cf86544c5783a65c1e7c55ae052f978757ccd668545fb255b5bb182be4dbd"
+    },
+    {
+      "path": "pubspec.yaml",
+      "sha256": "c5915e4d9b3c426f4fddd2e5e420e818ffa7c6496443616d599380c48f5f3551"
+    },
+    {
+      "path": "supabase/migrations/20261004120001_136_profile_performance_photo_reactions.sql",
+      "sha256": "d21e1422b657c84b3c8f40c3539e44e9edc71669ecb6f1635237e7112b94bf94"
+    },
+    {
+      "path": "supabase/migrations/20261004120002_136_monthly_account_verification.sql",
+      "sha256": "667840f4e3cd380b4399ab9355279c30f5c7020b6b4f1550f17ec62e8130793b"
+    },
+    {
+      "path": "test/maintenance_135_test.dart",
+      "sha256": "c17e89a3f9e3133c336b899bfd231376f8e1f0c51fad5a338ff3f45738e0646c"
+    },
+    {
+      "path": "test/maintenance_136_test.dart",
+      "sha256": "9389b859b884bfee0149d18d6fadcc52454d0749ae6ac9d8d2d4f6ea9b3bcdf5"
+    },
+    {
+      "path": "verification/dart_analysis_136.txt",
+      "sha256": "95a28819c918db92d8f3f7dfadfc18f1248f79ab8313759391ad318fe94cf093"
+    },
+    {
+      "path": "verification/database_results_136.txt",
+      "sha256": "87b571450e6ea91bffb01d11defa8db37f2a65abdea038b6d8d6102195a803c5"
+    },
+    {
+      "path": "verification/trust_db_test.mjs",
+      "sha256": "fd4ec45d664d4d4c8a2ea748c1f6ee2d9bfa031e331e3844cf81daede94f965e"
+    }
+  ]
+}

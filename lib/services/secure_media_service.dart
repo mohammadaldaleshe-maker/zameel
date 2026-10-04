@@ -55,7 +55,8 @@ class SecureMediaService {
     if (ref == null) {
       final publicRef = _parseSupabaseStorageUrl(raw);
       if (publicRef != null &&
-          (publicRef.bucket == 'posts' || publicRef.bucket == 'graduation_book')) {
+          (publicRef.bucket == 'posts' ||
+              publicRef.bucket == 'graduation_book')) {
         // 074 turns these legacy buckets private. Existing database rows still
         // contain their old getPublicUrl() strings, so transparently exchange
         // them for signed URLs instead of requiring a destructive data rewrite.
@@ -67,9 +68,11 @@ class SecureMediaService {
     final epoch = _sessionEpoch;
     final now = DateTime.now();
     final userId = _db.auth.currentUser?.id;
-    final key = '$userId:${mediaIdentity(raw, storageOrigin: ZameelConfig.supabaseUrl)}';
+    final key =
+        '$userId:${mediaIdentity(raw, storageOrigin: ZameelConfig.supabaseUrl)}';
     final cached = _signedCache[key];
-    if (cached != null && cached.expiresAt.isAfter(now.add(const Duration(minutes: 3)))) {
+    if (cached != null &&
+        cached.expiresAt.isAfter(now.add(const Duration(minutes: 3)))) {
       return cached.url;
     }
 
@@ -77,14 +80,16 @@ class SecureMediaService {
     if (pending != null) return pending;
     final bucket = ref.bucket;
     final path = ref.path;
-    final task = _db.storage.from(bucket).createSignedUrl(path, signedUrlLifetime.inSeconds)
+    final task = _db.storage
+        .from(bucket)
+        .createSignedUrl(path, signedUrlLifetime.inSeconds)
         .timeout(const Duration(seconds: 12));
     _pending[key] = task;
     try {
       final url = await task;
       if (epoch == _sessionEpoch && _db.auth.currentUser?.id == userId) {
-        _signedCache[key] = _SignedUrlCacheEntry(url: url,
-            expiresAt: now.add(signedUrlLifetime));
+        _signedCache[key] = _SignedUrlCacheEntry(
+            url: url, expiresAt: now.add(signedUrlLifetime));
       }
       return url;
     } finally {
@@ -101,7 +106,8 @@ class SecureMediaService {
     post['video_url'] = mainUrls[1];
     final raw = post['media_items'];
     if (raw is List) {
-      final resolved = await Future.wait(raw.whereType<Map>().map((entry) async {
+      final resolved =
+          await Future.wait(raw.whereType<Map>().map((entry) async {
         final item = Map<String, dynamic>.from(entry);
         item['url'] = await resolve(item['url']?.toString());
         return item;
@@ -111,7 +117,10 @@ class SecureMediaService {
   }
 
   static Future<void> resolvePosts(Iterable<Map<String, dynamic>> posts) async {
-    await Future.wait(posts.map(resolvePost));
+    final rows = posts.toList();
+    for (var start = 0; start < rows.length; start += 8) {
+      await Future.wait(rows.skip(start).take(8).map(resolvePost));
+    }
   }
 
   static Future<void> resolveStory(Map<String, dynamic> story) async {
@@ -123,10 +132,12 @@ class SecureMediaService {
   }
 
   static Future<void> resolveBookImages(Iterable<dynamic> images) async {
-    for (final raw in images) {
-      if (raw is Map && raw['url'] != null) {
+    final rows =
+        images.whereType<Map>().where((raw) => raw['url'] != null).toList();
+    for (var start = 0; start < rows.length; start += 8) {
+      await Future.wait(rows.skip(start).take(8).map((raw) async {
         raw['url'] = await resolve(raw['url']?.toString());
-      }
+      }));
     }
   }
 

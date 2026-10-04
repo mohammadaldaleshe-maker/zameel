@@ -1,3 +1,6 @@
+import 'screens/profile/account_verification_screen.dart';
+import 'widgets/verified_badge.dart';
+import 'widgets/compact_post.dart';
 import 'dart:async';
 import 'dart:ui';
 
@@ -187,6 +190,22 @@ Future<void> _handlePushNavigationData(Map<String, dynamic> data) async {
   final type = (data['notification_type'] ?? data['type'])?.toString() ?? '';
   final nav = await _waitForZameelNavigator();
   if (nav == null) return;
+  if (type == 'account_verification_review') {
+    nav.push(MaterialPageRoute(builder: (_) => const AccountVerificationScreen()));
+    return;
+  }
+  if (type == 'post_promotion_approved') {
+    final id = data['post_id']?.toString();
+    if (id != null && await FeatureControl.instance.check(nav.context, 'feed_posts') && await FeatureControl.instance.check(nav.context, 'comments')) {
+      try {
+        final post = await Supabase.instance.client.from('posts').select('*,users(name,profile_image)').eq('id', id).maybeSingle().timeout(const Duration(seconds: 12));
+        if (post != null) {
+          nav.push(MaterialPageRoute(builder: (_) => CommentsScreen(post: Map<String,dynamic>.from(post))));
+          return;
+        }
+      } catch (_) {}
+    }
+  }
 
   if (type == 'message') {
     final conversationId = data['conversation_id']?.toString() ?? '';
