@@ -684,7 +684,9 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
             final type = row['type']?.toString() ?? '';
             if (type == 'incoming_video_call' ||
                 type == 'incoming_voice_call') {
-              Future.microtask(() => _handleIncomingCallNotification(row));
+              if (!NativeIncomingCallService.supported) {
+                Future.microtask(() => _handleIncomingCallNotification(row));
+              }
             }
           },
         )

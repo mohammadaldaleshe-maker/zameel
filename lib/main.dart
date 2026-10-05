@@ -81,6 +81,7 @@ import 'services/home_snapshot_service.dart';
 import 'services/post_publish_service.dart';
 import 'services/feature_control.dart';
 import 'services/call_invitation_guard.dart';
+import 'services/native_incoming_call_service.dart';
 import 'services/message_notification_grouping.dart';
 import 'services/account_access_monitor.dart';
 import 'services/advertising_service.dart';
@@ -122,6 +123,16 @@ Future<void> _openZameelDeepLink(Uri uri) async {
 
   final nav = await _waitForZameelNavigator();
   if (nav == null) return;
+
+  if (uri.host == 'call') {
+    await _handlePushNavigationData({
+      ...uri.queryParameters,
+      'type': uri.queryParameters['video'] == 'true'
+          ? 'incoming_video_call'
+          : 'incoming_voice_call',
+    });
+    return;
+  }
 
   if (uri.host == 'graduation') {
     if (!await FeatureControl.instance.check(nav.context, 'graduation_book'))
@@ -197,6 +208,8 @@ Future<void> _initAppLinks() async {
   links.uriLinkStream.listen(_openZameelDeepLink, onError: (_) {});
 }
 
+final Set<String> _openingCallRooms = <String>{};
+
 Future<void> _handlePushNavigationData(Map<String, dynamic> data) async {
   final type = (data['notification_type'] ?? data['type'])?.toString() ?? '';
   final nav = await _waitForZameelNavigator();
@@ -205,7 +218,11 @@ Future<void> _handlePushNavigationData(Map<String, dynamic> data) async {
     nav.push(MaterialPageRoute(builder: (_) => const ProfileScreen()));
     return;
   }
-  if (type == 'post_promotion_approved') {
+  if (type == 'post_promotion_approved' ||
+      type == 'post_comment' ||
+      type == 'comment' ||
+      type == 'post_like' ||
+      type == 'like') {
     final id = data['post_id']?.toString();
     if (id != null &&
         await FeatureControl.instance.check(nav.context, 'feed_posts')) {
@@ -273,66 +290,82 @@ Future<void> _handlePushNavigationData(Map<String, dynamic> data) async {
   }
 
   if (type == 'incoming_video_call' || type == 'incoming_voice_call') {
-    if (!await FeatureControl.instance.check(nav.context, 'direct_calls'))
-      return;
     final roomId = data['room_id']?.toString() ?? '';
-    if (!await CallInvitationGuard.isRinging(roomId)) return;
-    final video = data['video'] == true ||
-        data['video']?.toString().toLowerCase() == 'true' ||
-        type == 'incoming_video_call';
-    String callerName = 'Colleague';
-    String? callerImage;
-    final callerId = data['caller_id']?.toString();
-    if (callerId != null && callerId.isNotEmpty) {
-      try {
-        final actor = await Supabase.instance.client
-            .from('users')
-            .select('name,profile_image')
-            .eq('id', callerId)
-            .maybeSingle();
-        final name = actor?['name']?.toString().trim();
-        if (name != null && name.isNotEmpty) callerName = name;
-        callerImage = actor?['profile_image']?.toString();
-      } catch (_) {}
-    }
-    final accepted = await nav.push<bool>(
-      MaterialPageRoute(
-        fullscreenDialog: true,
-        builder: (_) => IncomingCallScreen(
+    if (roomId.isEmpty || !_openingCallRooms.add(roomId)) return;
+    try {
+      if (!await FeatureControl.instance.check(nav.context, 'direct_calls'))
+        return;
+      if (!await CallInvitationGuard.isRinging(roomId)) return;
+      final session = await Supabase.instance.client
+          .from('direct_call_sessions')
+          .select('caller_id,with_video')
+          .eq('room_id', roomId)
+          .maybeSingle();
+      if (session == null) return;
+      final video = session['with_video'] == true;
+      String callerName = 'Colleague';
+      String? callerImage;
+      final callerId = session['caller_id']?.toString();
+      if (callerId != null && callerId.isNotEmpty) {
+        try {
+          final actor = await Supabase.instance.client
+              .from('users')
+              .select('name,profile_image')
+              .eq('id', callerId)
+              .maybeSingle();
+          final name = actor?['name']?.toString().trim();
+          if (name != null && name.isNotEmpty) callerName = name;
+          callerImage = actor?['profile_image']?.toString();
+        } catch (_) {}
+      }
+      final nativeAction = data['action']?.toString();
+      if (nativeAction != null) await NativeIncomingCallService.dismiss(roomId);
+      final accepted = nativeAction == 'accept'
+          ? true
+          : nativeAction == 'decline'
+              ? false
+              : await nav.push<bool>(
+                  MaterialPageRoute(
+                    fullscreenDialog: true,
+                    builder: (_) => IncomingCallScreen(
+                        roomId: roomId,
+                        callerName: callerName,
+                        callerId: callerId,
+                        callerImage: callerImage,
+                        video: video),
+                  ),
+                );
+      if (accepted != true) {
+        try {
+          await Supabase.instance.client
+              .from('direct_call_sessions')
+              .update({
+                'status': 'declined',
+                'ended_at': DateTime.now().toUtc().toIso8601String(),
+              })
+              .eq('room_id', roomId)
+              .eq('status', 'ringing');
+        } catch (_) {}
+        await NativeIncomingCallService.finishDecline();
+        return;
+      }
+      if (!await CallInvitationGuard.isRinging(roomId)) return;
+      await nav.push(
+        MaterialPageRoute(
+          builder: (_) => MeetScreen(
+            participantId: callerId,
+            participantName: callerName,
             roomId: roomId,
-            callerName: callerName,
-            callerId: callerId,
-            callerImage: callerImage,
-            video: video),
-      ),
-    );
-    if (accepted != true) {
-      try {
-        await Supabase.instance.client
-            .from('direct_call_sessions')
-            .update({
-              'status': 'declined',
-              'ended_at': DateTime.now().toUtc().toIso8601String(),
-            })
-            .eq('room_id', roomId)
-            .eq('status', 'ringing');
-      } catch (_) {}
-      return;
-    }
-    if (!await CallInvitationGuard.isRinging(roomId)) return;
-    nav.push(
-      MaterialPageRoute(
-        builder: (_) => MeetScreen(
-          participantId: callerId,
-          participantName: callerName,
-          roomId: roomId,
-          startImmediately: true,
-          startWithVideo: video,
-          isInitiator: false,
+            startImmediately: true,
+            startWithVideo: video,
+            isInitiator: false,
+          ),
         ),
-      ),
-    );
-    return;
+      );
+      return;
+    } finally {
+      _openingCallRooms.remove(roomId);
+    }
   }
 
   nav.push(MaterialPageRoute(builder: (_) => const NotificationsScreen()));

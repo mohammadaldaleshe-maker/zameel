@@ -1,3 +1,4 @@
+import { incomingCallData, isNativeCallDevice, callEndRecipients } from "./call_push.mjs";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const supabase = createClient(
@@ -72,12 +73,40 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const requestBody = await req.json().catch(() => ({}));
     const serviceAccountRaw = Deno.env.get("FCM_SERVICE_ACCOUNT_JSON");
     if (!serviceAccountRaw) throw new Error("FCM_SERVICE_ACCOUNT_JSON is not configured");
 
     const serviceAccount = JSON.parse(serviceAccountRaw) as Record<string, string>;
     const projectId = serviceAccount.project_id;
     const accessToken = await getAccessToken(serviceAccount);
+
+    // Cancellation is an authenticated worker command; participants and state
+    // are read from the database, never trusted from the webhook body.
+    if (requestBody.call_ended_room) {
+      const { data: session, error } = await supabase.from("direct_call_sessions")
+        .select("room_id,status,caller_id,callee_id")
+        .eq("room_id", String(requestBody.call_ended_room)).maybeSingle();
+      if (error) throw error;
+      const recipients = callEndRecipients(session);
+      if (recipients.length === 0) return Response.json({ ok: true, cancelled: 0 });
+      const { data: devices, error: deviceError } = await supabase.from("push_device_tokens")
+        .select("token,platform").in("user_id", recipients);
+      if (deviceError) throw deviceError;
+      let cancelled = 0;
+      let failed = 0;
+      for (const device of devices ?? []) {
+        if (!isNativeCallDevice(device.platform)) continue;
+        const response = await fetch(`https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`, {
+          method: "POST", headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ message: { token: device.token,
+            data: { type: "call_ended", room_id: String(session.room_id) },
+            android: { priority: "HIGH", ttl: "90s" } } }),
+        });
+        if (response.ok) cancelled++; else failed++;
+      }
+      return Response.json({ ok: failed === 0, cancelled, failed }, { status: failed ? 502 : 200 });
+    }
 
     // Recover rows whose previous worker died after claiming them. Migration
     // 069 records processing_started_at at the database layer, so even an
@@ -105,13 +134,15 @@ Deno.serve(async (req) => {
       }
     }
 
-    const { data: queue, error: queueError } = await supabase
+    let queueQuery = supabase
       .from("push_notification_queue")
       .select("id,notification_id,attempts")
       .in("status", ["pending", "failed"])
       .lt("attempts", 5)
       .order("created_at", { ascending: true })
       .limit(50);
+    if (requestBody.notification_id) queueQuery = queueQuery.eq("notification_id", String(requestBody.notification_id));
+    const { data: queue, error: queueError } = await queueQuery;
     if (queueError) throw queueError;
 
     let sent = 0;
@@ -147,18 +178,22 @@ Deno.serve(async (req) => {
         continue;
       }
 
+      let nativeCallData: Record<string, string> | null = null;
       // A queued call invitation can arrive long after the caller hung up.
       if (notification.type === "incoming_video_call" ||
           notification.type === "incoming_voice_call") {
         const roomId = String(notification.data?.room_id ?? "");
         const { data: session, error: sessionError } = await supabase
           .from("direct_call_sessions")
-          .select("status,callee_id,created_at")
+          .select("room_id,status,caller_id,callee_id,created_at")
           .eq("room_id", roomId)
           .maybeSingle();
         if (sessionError) throw sessionError;
+        const { data: caller } = await supabase.from("users").select("name")
+          .eq("id", session?.caller_id ?? notification.actor_id).maybeSingle();
+        nativeCallData = incomingCallData(session, notification, caller?.name);
         const created = Date.parse(String(session?.created_at ?? ""));
-        if (!session || session.status !== "ringing" ||
+        if (!nativeCallData || !session || session.status !== "ringing" ||
             session.callee_id !== notification.user_id ||
             !Number.isFinite(created) || created > Date.now() ||
             Date.now() - created > 90_000) {
@@ -193,6 +228,13 @@ Deno.serve(async (req) => {
         .select("id,token,locale,platform")
         .eq("user_id", notification.user_id);
       if (tokenError) throw tokenError;
+      if (!tokens?.length) {
+        await supabase.from("push_notification_queue").update({
+          status: "failed", last_error: "no_registered_devices", processed_at: null,
+        }).eq("id", item.id);
+        failed++;
+        continue;
+      }
 
       // Enrich direct-message pushes once per notification. Android uses this
       // data to render the official Conversation/Bubble UI without needing a
@@ -266,6 +308,7 @@ Deno.serve(async (req) => {
         const data: Record<string, string> = Object.fromEntries(
           Object.entries(notification.data ?? {}).map(([k, v]) => [k, String(v)]),
         );
+        if (nativeCallData) Object.assign(data, nativeCallData);
         data.notification_id = String(notification.id);
         data.notification_type = String(notification.type);
         data.type = String(notification.type);
@@ -293,13 +336,16 @@ Deno.serve(async (req) => {
         data.play_sound = String(playSound);
 
         const platform = String(device.platform ?? "").toLowerCase();
-        const androidBubbleMessage = directMessage && platform === "android";
+        const androidBubbleMessage = directMessage && platform.startsWith("android");
 
+        const androidNativeCall = incomingCall && isNativeCallDevice(platform);
         const fcmMessage: Record<string, unknown> = {
           token: device.token,
           data,
-          android: androidBubbleMessage
-            ? { priority: "HIGH" }
+          android: androidBubbleMessage || androidNativeCall
+            ? { priority: "HIGH", ...(androidNativeCall ? {
+                ttl: `${Math.max(1, Math.floor((Number(data.expires_at_ms) - Date.now()) / 1000))}s`,
+              } : {}) }
             : {
               priority: "HIGH",
               notification: {
@@ -314,7 +360,7 @@ Deno.serve(async (req) => {
         // Android direct-chat messages are intentionally data-only so the
         // app's native bubble receiver can post one conversation notification
         // instead of FCM also creating a duplicate standard notification.
-        if (!androidBubbleMessage) {
+        if (!androidBubbleMessage && !androidNativeCall) {
           fcmMessage.notification = { title, body };
           const conversationId = directMessage
             ? String(notification.data?.conversation_id ?? "").trim() : "";

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/language_provider.dart';
 import '../../theme/appearance_controller.dart';
 import '../profile/appearance_screen.dart';
+import '../../services/native_incoming_call_service.dart';
 
 /// Device presentation and navigation preferences, separate from account data.
 class AppSettingsScreen extends StatelessWidget {
@@ -53,6 +54,27 @@ class AppSettingsScreen extends StatelessWidget {
               },
             ),
           )),
+          if (NativeIncomingCallService.supported)
+            Card(
+                child: ListTile(
+              leading: const Icon(Icons.call_rounded),
+              title:
+                  Text(ar ? 'عرض المكالمات الواردة' : 'Incoming call display'),
+              subtitle: Text(ar
+                  ? 'السماح بظهور شاشة الرد أثناء قفل الهاتف'
+                  : 'Allow the answer screen on the lock screen'),
+              onTap: () async {
+                final allowed = await NativeIncomingCallService.canFullScreen();
+                if (!allowed) {
+                  await NativeIncomingCallService.requestFullScreen();
+                } else if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text(ar
+                          ? 'عرض المكالمات بملء الشاشة مسموح'
+                          : 'Full-screen incoming calls are allowed')));
+                }
+              },
+            )),
           if (onCustomizeFloatingMenu != null)
             Card(
                 child: ListTile(

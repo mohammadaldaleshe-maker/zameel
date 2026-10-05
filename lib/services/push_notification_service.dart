@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'call_invitation_guard.dart';
+import 'native_incoming_call_service.dart';
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -45,7 +46,7 @@ class PushNotificationService {
   );
   static const AndroidNotificationChannel _chatBubbleChannel =
       AndroidNotificationChannel(
-      'zameel_chat_bubbles_v2',
+    'zameel_chat_bubbles_v2',
     'Zameel chat bubbles',
     description: 'Direct Zameel messages and Android conversation bubbles.',
     importance: Importance.max,
@@ -55,9 +56,10 @@ class PushNotificationService {
   );
   static const AndroidNotificationChannel _chatBubbleSilentChannel =
       AndroidNotificationChannel(
-      'zameel_chat_bubbles_silent_v2',
+    'zameel_chat_bubbles_silent_v2',
     'Zameel chat bubbles (silent)',
-    description: 'Direct Zameel messages when notification sounds are disabled.',
+    description:
+        'Direct Zameel messages when notification sounds are disabled.',
     importance: Importance.max,
     playSound: false,
     enableVibration: true,
@@ -145,6 +147,7 @@ class PushNotificationService {
     if (!_ready && Firebase.apps.isEmpty) return;
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
+    await NativeIncomingCallService.setUser(user.id);
 
     try {
       final enabled = (await Supabase.instance.client
@@ -167,6 +170,7 @@ class PushNotificationService {
   }
 
   Future<void> unregisterCurrentDevice() async {
+    await NativeIncomingCallService.setUser(null);
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
 
@@ -204,7 +208,9 @@ class PushNotificationService {
     if (user == null || token.isEmpty) return;
 
     _lastToken = token;
-    final platform = defaultTargetPlatform.name;
+    final platform = NativeIncomingCallService.supported
+        ? 'android_call_v3'
+        : defaultTargetPlatform.name;
     final locale = ui.PlatformDispatcher.instance.locale.languageCode;
 
     try {
@@ -253,7 +259,10 @@ class PushNotificationService {
     // every non-chat notification path.
     if (!kIsWeb &&
         defaultTargetPlatform == TargetPlatform.android &&
-        type == 'message') {
+        (type == 'message' ||
+            type == 'incoming_video_call' ||
+            type == 'incoming_voice_call' ||
+            type == 'call_ended')) {
       return;
     }
 
@@ -263,8 +272,9 @@ class PushNotificationService {
     final body = notification?.body ?? message.data['body']?.toString() ?? '';
     final incomingCall =
         type == 'incoming_video_call' || type == 'incoming_voice_call';
-    if (incomingCall && !await CallInvitationGuard.isRinging(
-        message.data['room_id']?.toString() ?? '')) return;
+    if (incomingCall &&
+        !await CallInvitationGuard.isRinging(
+            message.data['room_id']?.toString() ?? '')) return;
     var playSound = true;
     final me = Supabase.instance.client.auth.currentUser?.id;
     if (me != null) {
@@ -281,11 +291,12 @@ class PushNotificationService {
     }
 
     final conversationId = type == 'message'
-        ? message.data['conversation_id']?.toString() ?? '' : '';
+        ? message.data['conversation_id']?.toString() ?? ''
+        : '';
     await _local.show(
       id: conversationId.isNotEmpty
-          ? conversationId.codeUnits.fold<int>(5381,
-              (value, unit) => ((value * 33) ^ unit) & 0x7fffffff)
+          ? conversationId.codeUnits.fold<int>(
+              5381, (value, unit) => ((value * 33) ^ unit) & 0x7fffffff)
           : message.hashCode,
       title: title,
       body: body,

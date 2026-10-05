@@ -1,0 +1,17 @@
+{
+  "update": 142,
+  "version": "2.0.7+16",
+  "dart_analysis": "No issues found (lib and test)",
+  "node_call_logic_tests": {
+    "passed": 4,
+    "failed": 0
+  },
+  "sql_test": "PGlite: idempotency, immediate call dispatch, cancellation, ordinary notifications unchanged, RPC permissions, network failure recovery passed",
+  "edge_typescript": "esbuild bundle succeeded; deployment runtime pending",
+  "flutter_full_tests": "Required on user Windows via Check; not run here",
+  "kotlin_apk_build": "Required on GitHub; not run here",
+  "phone_calls": "Not tested after changes; two-phone test required",
+  "platform": "Native incoming calls implemented for Android; iOS CallKit/PushKit not implemented in this patch",
+  "admin_executable_changed": false,
+  "secrets_in_artifacts": false
+}

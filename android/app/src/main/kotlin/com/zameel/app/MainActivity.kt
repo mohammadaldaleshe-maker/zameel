@@ -14,6 +14,33 @@ class MainActivity : FlutterActivity() {
     private var pendingExport: Triple<java.io.File, io.flutter.plugin.common.MethodChannel.Result, () -> Unit>? = null
     override fun configureFlutterEngine(engine: io.flutter.embedding.engine.FlutterEngine) {
         super.configureFlutterEngine(engine)
+        io.flutter.plugin.common.MethodChannel(engine.dartExecutor.binaryMessenger, "zameel/incoming_calls")
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "setUser" -> {
+                        ZameelIncomingCall.setUser(this, call.argument<String>("userId"))
+                        result.success(null)
+                    }
+                    "dismiss" -> {
+                        ZameelIncomingCall.dismiss(this, call.argument<String>("roomId").orEmpty())
+                        result.success(null)
+                    }
+                    "canFullScreen" -> result.success(Build.VERSION.SDK_INT < 34 ||
+                        getSystemService(NotificationManager::class.java)?.canUseFullScreenIntent() == true)
+                    "requestFullScreen" -> {
+                        if (Build.VERSION.SDK_INT >= 34) startActivity(Intent(
+                            Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT,
+                            Uri.parse("package:$packageName")))
+                        result.success(null)
+                    }
+                    "finishDecline" -> {
+                        result.success(null)
+                        if (getSystemService(android.app.KeyguardManager::class.java)?.isKeyguardLocked == true) finish()
+                        else if (Build.VERSION.SDK_INT >= 27) setShowWhenLocked(false)
+                    }
+                    else -> result.notImplemented()
+                }
+            }
         val exporter = WatermarkedMediaExporter(this)
         io.flutter.plugin.common.MethodChannel(engine.dartExecutor.binaryMessenger, "zameel/media_export")
             .setMethodCallHandler { call, result ->
@@ -49,6 +76,19 @@ class MainActivity : FlutterActivity() {
             } catch(e: Exception) { runOnUiThread { pending.second.error("save_failed", e.message, null) } }
             finally { pending.first.delete(); runOnUiThread { pending.third() } }
         }.start()
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        prepareDecline(intent)
+    }
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        prepareDecline(intent)
+    }
+    private fun prepareDecline(intent: Intent?) {
+        if (Build.VERSION.SDK_INT >= 27 && intent?.data?.host == "call" &&
+            intent.data?.getQueryParameter("action") == "decline") setShowWhenLocked(true)
     }
 
     private var overlayPromptedThisProcess = false

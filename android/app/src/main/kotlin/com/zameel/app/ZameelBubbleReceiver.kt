@@ -56,6 +56,7 @@ class ZameelBubbleReceiver : FlutterFirebaseMessagingReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val appContext = context.applicationContext
         val extras = intent.extras
+        if (extras != null) ZameelIncomingCall.receive(appContext, extras)
 
         if (extras != null && isDirectMessage(extras)) {
             val bubbleEnabled = value(extras, "bubble_enabled").lowercase() != "false"

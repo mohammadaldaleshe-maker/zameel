@@ -28,6 +28,7 @@ class _AuthGateState extends State<AuthGate> {
               data.event == AuthChangeEvent.initialSession ||
               data.event == AuthChangeEvent.signedIn)) return;
       _userId = next;
+      if (next == null) unawaited(NativeIncomingCallService.setUser(null));
       setState(() => _initialScreen = _getInitialScreen());
       if (next != null) {
         unawaited(PushNotificationService.instance.registerForCurrentUser());
