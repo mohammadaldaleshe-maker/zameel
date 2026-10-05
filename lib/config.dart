@@ -25,6 +25,6 @@ class ZameelConfig {
   static const appName = 'Zameel';
   static const appVersion = String.fromEnvironment(
     'ZAMEEL_VERSION',
-    defaultValue: '2.0.0+9',
+    defaultValue: '2.0.5+14',
   );
 }

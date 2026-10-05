@@ -140,7 +140,7 @@ class _BusinessTypeScreenState extends State<BusinessTypeScreen> {
                   Text(
                     isArabic ? '🏢 نوع النشاط التجاري' : '🏢 Business Type',
                     style: GoogleFonts.ibmPlexSansArabic(
-                      color: Colors.white,
+                      color: AppTheme.legacyForeground,
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
@@ -191,7 +191,7 @@ class _BusinessTypeScreenState extends State<BusinessTypeScreen> {
                               decoration: BoxDecoration(
                                 border: Border.all(
                                   color: isSelected
-                                      ? Colors.white
+                                      ? AppTheme.legacyForeground
                                       : Colors.transparent,
                                   width: 2,
                                 ),
@@ -217,7 +217,7 @@ class _BusinessTypeScreenState extends State<BusinessTypeScreen> {
                                     const SizedBox(height: 4),
                                     Icon(
                                       Icons.check_circle_rounded,
-                                      color: Colors.white,
+                                      color: AppTheme.legacyForeground,
                                       size: 16,
                                     ),
                                   ],
@@ -244,14 +244,14 @@ class _BusinessTypeScreenState extends State<BusinessTypeScreen> {
                               : '✏️ Enter business type',
                           labelStyle:
                               TextStyle(color: AppTheme.legacySecondary),
-                          prefixIcon: const Icon(Icons.edit_rounded,
-                              color: Colors.white70),
+                          prefixIcon: Icon(Icons.edit_rounded,
+                              color: AppTheme.legacySecondary),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
                             borderSide: BorderSide.none,
                           ),
                           filled: true,
-                          fillColor: Colors.white.withAlpha(25),
+                          fillColor: AppTheme.adaptiveGlassSoft,
                         ),
                       ),
                     ),
@@ -318,7 +318,7 @@ class _BusinessTypeScreenState extends State<BusinessTypeScreen> {
                       ),
                       child: Text(
                         isArabic ? 'التالي →' : 'Next →',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),

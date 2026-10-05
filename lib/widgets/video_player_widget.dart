@@ -17,11 +17,17 @@ class VideoPlayerWidget extends StatefulWidget {
   State<VideoPlayerWidget> createState() => _VideoPlayerWidgetState();
 }
 
-class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
+class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
+    with WidgetsBindingObserver {
   VideoPlayerController? _controller;
   Object? _error;
   bool _isInitialized = false;
-  bool _muted = false;
+  bool _muted = true;
+  bool _pausedByUser = false;
+  bool _visible = false;
+  bool _active = true;
+  bool _starting = false;
+  Timer? _visibilityTimer;
   bool _controlsVisible = true;
   Timer? _controlsTimer;
   int _generation = 0;
@@ -29,29 +35,83 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   @override
   void initState() {
     super.initState();
-    _initialize();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkVisibility());
+    _visibilityTimer = Timer.periodic(
+        const Duration(milliseconds: 300), (_) => _checkVisibility());
+  }
+
+  void _checkVisibility() {
+    if (!mounted) return;
+    final box = context.findRenderObject();
+    var visible = false;
+    if (_active &&
+        (ModalRoute.of(context)?.isCurrent ?? true) &&
+        box is RenderBox &&
+        box.hasSize) {
+      final rect = box.localToGlobal(Offset.zero) & box.size;
+      final viewport = Offset.zero & MediaQuery.sizeOf(context);
+      final overlap = rect.intersect(viewport);
+      visible = rect.height > 0 &&
+          rect.width > 0 &&
+          !overlap.isEmpty &&
+          overlap.height >= rect.height * .55 &&
+          overlap.width >= rect.width * .55;
+    }
+    if (_visible != visible) {
+      _visible = visible;
+      if (!visible) {
+        _controller?.pause().catchError((_) {});
+      } else if (_isInitialized && !_pausedByUser) {
+        _controller?.play().catchError((_) {});
+      }
+    }
+    if (visible && !_starting && !_isInitialized && _error == null)
+      _initialize();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _active = state == AppLifecycleState.resumed;
+    _checkVisibility();
   }
 
   Future<void> _initialize() async {
+    if (_starting) return;
+    _starting = true;
     final generation = ++_generation;
+    VideoPlayerController? created;
     try {
       final rawUrl = widget.videoUrl.trim();
       final controller = await VideoSourceService.controller(rawUrl);
+      created = controller;
       if (!mounted || generation != _generation) {
         await controller.dispose();
         return;
       }
       _controller = controller;
-      await controller.initialize();
+      await controller.initialize().timeout(const Duration(seconds: 15));
+      await controller.setVolume(_muted ? 0 : 1);
       await controller.setLooping(true);
       controller.addListener(_refreshProgress);
       if (!mounted || generation != _generation || _controller != controller)
         return;
       setState(() => _isInitialized = true);
+      if (_visible &&
+          _active &&
+          !_pausedByUser &&
+          (ModalRoute.of(context)?.isCurrent ?? true)) {
+        await controller.play();
+      }
       _scheduleControlsHide();
     } catch (e) {
+      created?.removeListener(_refreshProgress);
+      await created?.dispose();
       if (!mounted || generation != _generation) return;
+      _controller = null;
       setState(() => _error = e);
+    } finally {
+      if (generation == _generation) _starting = false;
     }
   }
 
@@ -60,18 +120,23 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     super.didUpdateWidget(oldWidget);
     if (MediaCacheService.identity(oldWidget.videoUrl) ==
         MediaCacheService.identity(widget.videoUrl)) return;
+    _generation++;
+    _starting = false;
+    _pausedByUser = false;
     _controlsTimer?.cancel();
     _controller?.removeListener(_refreshProgress);
     _controller?.dispose();
     _controller = null;
     _isInitialized = false;
     _error = null;
-    _initialize();
+    _checkVisibility();
   }
 
   @override
   void dispose() {
     _generation++;
+    WidgetsBinding.instance.removeObserver(this);
+    _visibilityTimer?.cancel();
     _controlsTimer?.cancel();
     _controller?.removeListener(_refreshProgress);
     _controller?.dispose();
@@ -83,9 +148,11 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     if (controller == null || !_isInitialized) return;
     try {
       if (controller.value.isPlaying) {
+        _pausedByUser = true;
         await controller.pause();
         _showControls(permanent: true);
       } else {
+        _pausedByUser = false;
         await controller.play();
         _scheduleControlsHide();
       }
@@ -161,7 +228,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
     if (_error != null) {
       return Container(
-        color: Colors.black12,
+        color: AppTheme.adaptiveSurfaceAlt,
         alignment: Alignment.center,
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -170,6 +237,15 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
             const Icon(Icons.error_outline_rounded, size: 42),
             const SizedBox(height: 8),
             const Text('تعذر تشغيل الفيديو', textAlign: TextAlign.center),
+            TextButton(
+                onPressed: () {
+                  setState(() {
+                    _error = null;
+                    _isInitialized = false;
+                  });
+                  _checkVisibility();
+                },
+                child: const Text('إعادة المحاولة')),
             const SizedBox(height: 4),
             Text('تحقق من اتصال الإنترنت وحاول مرة أخرى',
                 textAlign: TextAlign.center,
@@ -201,6 +277,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                     width: controller.value.size.width,
                     height: controller.value.size.height,
                     child: VideoPlayer(controller))),
+            if (controller.value.isBuffering ||
+                controller.value.position == Duration.zero)
+              const Center(child: CircularProgressIndicator()),
             AnimatedOpacity(
               opacity: _controlsVisible ? 1 : 0,
               duration: const Duration(milliseconds: 180),
@@ -251,27 +330,34 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                 duration: const Duration(milliseconds: 180),
                 child: IgnorePointer(
                   ignoring: !_controlsVisible,
-                  child: Row(
-                    children: [
-                      Text(_time(controller.value.position),
-                          style: const TextStyle(
-                              color: Colors.white, fontSize: 11)),
-                      Expanded(
-                        child: VideoProgressIndicator(
-                          controller,
-                          allowScrubbing: true,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 12),
-                          colors: const VideoProgressColors(
-                              playedColor: AppTheme.primary,
-                              bufferedColor: Colors.white38,
-                              backgroundColor: Colors.white24),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withAlpha(190),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Text(_time(controller.value.position),
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 11)),
+                        Expanded(
+                          child: VideoProgressIndicator(
+                            controller,
+                            allowScrubbing: true,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 12),
+                            colors: const VideoProgressColors(
+                                playedColor: AppTheme.primary,
+                                bufferedColor: Colors.white38,
+                                backgroundColor: Colors.white24),
+                          ),
                         ),
-                      ),
-                      Text('-${_time(_remaining(controller))}',
-                          style: const TextStyle(
-                              color: Colors.white, fontSize: 11)),
-                    ],
+                        Text('-${_time(_remaining(controller))}',
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 11)),
+                      ],
+                    ),
                   ),
                 ),
               ),

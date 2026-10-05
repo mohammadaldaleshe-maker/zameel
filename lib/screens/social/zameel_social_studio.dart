@@ -21,6 +21,7 @@ class ZameelSocialStudio extends StatefulWidget {
 class _ZameelSocialStudioState extends State<ZameelSocialStudio> {
   List<Map<String, dynamic>> _clips = <Map<String, dynamic>>[];
   bool _loading = true;
+  String? _loadError;
   bool _autoPublishTriggered = false;
 
   bool get ar => widget.isArabic;
@@ -41,10 +42,18 @@ class _ZameelSocialStudioState extends State<ZameelSocialStudio> {
   Future<void> _load() async {
     if (mounted) setState(() => _loading = true);
     try {
-      final rows = await ZameelSocialService.loadClips();
-      if (mounted) setState(() => _clips = rows);
+      final rows = await ZameelSocialService.loadClips(resolveMedia: false)
+          .timeout(const Duration(seconds: 15));
+      if (mounted)
+        setState(() {
+          _clips = rows;
+          _loadError = null;
+        });
     } catch (_) {
-      _message(ar ? 'تعذر تحميل مقاطع الفيديو' : 'Could not load videos');
+      if (mounted)
+        setState(() => _loadError = ar
+            ? 'تعذر تحميل مقاطع الفيديو. تحقق من الاتصال وحاول مجددًا.'
+            : 'Could not load videos. Check your connection and retry.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -235,22 +244,47 @@ class _ZameelSocialStudioState extends State<ZameelSocialStudio> {
           onRefresh: _load,
           child: _loading
               ? const Center(child: CircularProgressIndicator())
-              : _clips.isEmpty
-                  ? ListView(children: [
-                      SizedBox(height: MediaQuery.sizeOf(context).height * .25),
-                      Icon(Icons.video_library_outlined,
-                          size: 68,
-                          color: Theme.of(context).colorScheme.primary),
-                      const SizedBox(height: 12),
-                      Text(ar ? 'لا توجد مقاطع فيديو بعد' : 'No videos yet',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                              fontSize: 19, fontWeight: FontWeight.w800))
-                    ])
-                  : ListView.builder(
-                      padding: const EdgeInsets.only(bottom: 100),
-                      itemCount: _clips.length,
-                      itemBuilder: (_, index) => _card(_clips[index])),
+              : _clips.isEmpty && _loadError != null
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                          const SizedBox(height: 100),
+                          const Icon(Icons.cloud_off_rounded, size: 56),
+                          Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Text(_loadError!,
+                                  textAlign: TextAlign.center)),
+                          Center(
+                              child: TextButton.icon(
+                                  onPressed: _load,
+                                  icon: const Icon(Icons.refresh),
+                                  label:
+                                      Text(ar ? 'إعادة المحاولة' : 'Retry'))),
+                        ])
+                  : _clips.isEmpty
+                      ? ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          children: [
+                              SizedBox(
+                                  height:
+                                      MediaQuery.sizeOf(context).height * .25),
+                              Icon(Icons.video_library_outlined,
+                                  size: 68,
+                                  color: Theme.of(context).colorScheme.primary),
+                              const SizedBox(height: 12),
+                              Text(
+                                  ar
+                                      ? 'لا توجد مقاطع فيديو بعد'
+                                      : 'No videos yet',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                      fontSize: 19,
+                                      fontWeight: FontWeight.w800))
+                            ])
+                      : ListView.builder(
+                          padding: const EdgeInsets.only(bottom: 100),
+                          itemCount: _clips.length,
+                          itemBuilder: (_, index) => _card(_clips[index])),
         ),
         floatingActionButton: FloatingActionButton.extended(
           onPressed: _publish,

@@ -630,7 +630,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                         ? '📧 تأكيد البريد الإلكتروني'
                         : '📧 Email Verification',
                     style: GoogleFonts.ibmPlexSansArabic(
-                      color: Colors.white,
+                      color: AppTheme.legacyForeground,
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
@@ -653,9 +653,9 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.email_rounded,
-                          color: Colors.white70,
+                          color: AppTheme.legacySecondary,
                           size: 20,
                         ),
                         const SizedBox(width: 10),
@@ -701,7 +701,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                           borderSide: BorderSide.none,
                         ),
                         filled: true,
-                        fillColor: Colors.white.withAlpha(25),
+                        fillColor: AppTheme.adaptiveGlassSoft,
                         counterText: '',
                       ),
                     ),
@@ -732,7 +732,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                             )
                           : Text(
                               isArabic ? '✅ تحقق' : '✅ Verify',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                               ),

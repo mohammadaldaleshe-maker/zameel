@@ -130,7 +130,7 @@ class _SavedPostsScreenState extends State<SavedPostsScreen> {
                           Icon(
                             Icons.bookmark_border_rounded,
                             size: 64,
-                            color: AppTheme.muted.shade400,
+                            color: AppTheme.adaptiveMuted.shade400,
                           ),
                           const SizedBox(height: 12),
                           Center(
@@ -140,7 +140,7 @@ class _SavedPostsScreenState extends State<SavedPostsScreen> {
                                   : '📭 No saved posts',
                               style: TextStyle(
                                 fontSize: 18,
-                                color: AppTheme.muted.shade600,
+                                color: AppTheme.adaptiveMuted.shade600,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -170,8 +170,8 @@ class _SavedPostsScreenState extends State<SavedPostsScreen> {
                               color: AppTheme.adaptiveSurface,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                side:
-                                    BorderSide(color: AppTheme.muted.shade200),
+                                side: BorderSide(
+                                    color: AppTheme.adaptiveMuted.shade200),
                               ),
                               child: Padding(
                                 padding: const EdgeInsets.all(14),

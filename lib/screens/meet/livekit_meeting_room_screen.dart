@@ -679,7 +679,7 @@ class _LiveKitMeetingRoomScreenState extends State<LiveKitMeetingRoomScreen> {
                             decoration: BoxDecoration(
                               color: message.mine
                                   ? AppTheme.primary.withOpacity(0.14)
-                                  : AppTheme.muted.shade100,
+                                  : AppTheme.adaptiveMuted.shade100,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Column(

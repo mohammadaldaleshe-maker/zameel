@@ -274,23 +274,23 @@ class _SearchScreenState extends State<SearchScreen> {
                 autofocus: true,
                 onChanged: _performSearch,
                 style: TextStyle(color: AppTheme.adaptiveText),
-                cursorColor: Colors.black,
+                cursorColor: AppTheme.adaptiveText,
                 decoration: InputDecoration(
                   hintText: isArabic
                       ? 'ابحث عن مستخدمين، منشورات، كتب...'
                       : 'Search for users, posts, books...',
                   hintStyle: TextStyle(color: AppTheme.adaptiveSecondary),
-                  prefixIcon:
-                      const Icon(Icons.search_rounded, color: Colors.black54),
+                  prefixIcon: Icon(Icons.search_rounded,
+                      color: AppTheme.adaptiveSecondary),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
                           onPressed: _clearSearch,
-                          icon: const Icon(Icons.clear_rounded,
-                              color: Colors.black54),
+                          icon: Icon(Icons.clear_rounded,
+                              color: AppTheme.adaptiveSecondary),
                         )
                       : null,
                   filled: true,
-                  fillColor: AppTheme.muted.shade100,
+                  fillColor: AppTheme.adaptiveMuted.shade100,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
                     borderSide: BorderSide.none,
@@ -317,7 +317,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               : 'Results: ${_filteredUsers.length + _filteredPosts.length + _filteredBooks.length + _filteredAdvertisements.length}',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: AppTheme.muted.shade600,
+                            color: AppTheme.adaptiveMuted.shade600,
                             fontSize: 14,
                           ),
                         ),
@@ -408,14 +408,14 @@ class _SearchScreenState extends State<SearchScreen> {
                     Icon(
                       Icons.search_rounded,
                       size: 64,
-                      color: AppTheme.muted.shade400,
+                      color: AppTheme.adaptiveMuted.shade400,
                     ),
                     const SizedBox(height: 12),
                     Text(
                       isArabic ? '🔍 ابحث عن أي شيء' : '🔍 Search for anything',
                       style: TextStyle(
                         fontSize: 18,
-                        color: AppTheme.muted.shade600,
+                        color: AppTheme.adaptiveMuted.shade600,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -425,7 +425,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           ? 'مستخدمين، منشورات، كتب...'
                           : 'Users, posts, books...',
                       style: TextStyle(
-                        color: AppTheme.muted.shade500,
+                        color: AppTheme.adaptiveMuted.shade500,
                         fontSize: 14,
                       ),
                     ),
@@ -592,7 +592,9 @@ class _SearchTabButton extends StatelessWidget {
             text,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: isSelected ? AppTheme.primary : AppTheme.muted.shade600,
+              color: isSelected
+                  ? AppTheme.primary
+                  : AppTheme.adaptiveMuted.shade600,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               fontSize: 13,
             ),
@@ -622,7 +624,7 @@ class _UserResultCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: AppTheme.muted.shade200,
+          color: AppTheme.adaptiveMuted.shade200,
         ),
       ),
       child: ListTile(
@@ -640,7 +642,7 @@ class _UserResultCard extends StatelessWidget {
               .join(' • '),
           style: TextStyle(
             fontSize: 12,
-            color: AppTheme.muted.shade600,
+            color: AppTheme.adaptiveMuted.shade600,
           ),
         ),
         trailing: const Icon(
@@ -719,7 +721,7 @@ class _PostResultCard extends StatelessWidget {
       color: AppTheme.adaptiveSurface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: AppTheme.muted.shade200),
+        side: BorderSide(color: AppTheme.adaptiveMuted.shade200),
       ),
       child: ListTile(
         leading: const Icon(Icons.description_rounded, color: AppTheme.primary),
@@ -727,7 +729,8 @@ class _PostResultCard extends StatelessWidget {
             style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
         subtitle: Text(
           '✍️ $author • ❤️ $likes',
-          style: TextStyle(fontSize: 12, color: AppTheme.muted.shade600),
+          style:
+              TextStyle(fontSize: 12, color: AppTheme.adaptiveMuted.shade600),
         ),
         trailing: const Icon(Icons.arrow_forward_ios_rounded,
             size: 16, color: AppTheme.muted),
@@ -770,7 +773,7 @@ class _BookResultCard extends StatelessWidget {
       color: AppTheme.adaptiveSurface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: AppTheme.muted.shade200),
+        side: BorderSide(color: AppTheme.adaptiveMuted.shade200),
       ),
       child: ListTile(
         leading: const Icon(Icons.menu_book_rounded, color: AppTheme.primary),
@@ -778,7 +781,8 @@ class _BookResultCard extends StatelessWidget {
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
         subtitle: Text(
           '✍️ $author • 📚 $subject',
-          style: TextStyle(fontSize: 12, color: AppTheme.muted.shade600),
+          style:
+              TextStyle(fontSize: 12, color: AppTheme.adaptiveMuted.shade600),
         ),
         trailing: const Icon(Icons.arrow_forward_ios_rounded,
             size: 16, color: AppTheme.muted),
@@ -849,14 +853,14 @@ class _EmptyResult extends StatelessWidget {
           Icon(
             Icons.search_off_rounded,
             size: 64,
-            color: AppTheme.muted.shade400,
+            color: AppTheme.adaptiveMuted.shade400,
           ),
           const SizedBox(height: 12),
           Text(
             isArabic ? '🔍 لا توجد نتائج' : '🔍 No results found',
             style: TextStyle(
               fontSize: 18,
-              color: AppTheme.muted.shade600,
+              color: AppTheme.adaptiveMuted.shade600,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -866,7 +870,7 @@ class _EmptyResult extends StatelessWidget {
                 ? 'حاول تغيير كلمات البحث'
                 : 'Try changing your search terms',
             style: TextStyle(
-              color: AppTheme.muted.shade500,
+              color: AppTheme.adaptiveMuted.shade500,
               fontSize: 14,
             ),
           ),

@@ -7,7 +7,6 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../providers/language_provider.dart';
 import '../../services/feature_control.dart';
-import '../../widgets/cached_media_image.dart';
 import 'public_clips_strip.dart';
 
 class ShortsGateway extends StatelessWidget {
@@ -217,25 +216,21 @@ class _ShortsFanState extends State<_ShortsFan> {
                                                                       blurRadius:
                                                                           12)
                                                                 ]),
-                                                            child: (_clips[_center + offset]['cover_url']
-                                                                            ?.toString() ??
-                                                                        '')
-                                                                    .isEmpty
-                                                                ? const SizedBox
-                                                                    .expand()
-                                                                : CachedMediaImage(
-                                                                    url: _clips[_center +
-                                                                                offset]
-                                                                            [
-                                                                            'cover_url']
-                                                                        .toString(),
-                                                                    fit: BoxFit
-                                                                        .cover,
-                                                                    cacheWidth:
-                                                                        320,
-                                                                    fallback:
-                                                                        const SizedBox
-                                                                            .expand()),
+                                                            child: ClipPreview(
+                                                              url: _clips[_center +
+                                                                              offset]
+                                                                          [
+                                                                          'video_url']
+                                                                      ?.toString() ??
+                                                                  '',
+                                                              coverUrl: _clips[_center +
+                                                                              offset]
+                                                                          [
+                                                                          'cover_url']
+                                                                      ?.toString() ??
+                                                                  '',
+                                                              autoplay: true,
+                                                            ),
                                                           )))),
                                         ]));
                               })),

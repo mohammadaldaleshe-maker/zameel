@@ -236,14 +236,14 @@ class _ChatScreenState extends State<ChatScreen> {
                     Icon(
                       Icons.chat_bubble_outline_rounded,
                       size: 64,
-                      color: AppTheme.muted.shade400,
+                      color: AppTheme.adaptiveMuted.shade400,
                     ),
                     const SizedBox(height: 12),
                     Text(
                       isArabic ? '📭 لا توجد محادثات' : '📭 No chats',
                       style: TextStyle(
                         fontSize: 18,
-                        color: AppTheme.muted.shade600,
+                        color: AppTheme.adaptiveMuted.shade600,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -253,7 +253,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           ? 'ابدأ محادثة جديدة الآن'
                           : 'Start a new chat now',
                       style: TextStyle(
-                        color: AppTheme.muted.shade500,
+                        color: AppTheme.adaptiveMuted.shade500,
                         fontSize: 14,
                       ),
                     ),
@@ -372,7 +372,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                       chat['time'],
                                       style: TextStyle(
                                         fontSize: 11,
-                                        color: AppTheme.muted.shade500,
+                                        color: AppTheme.adaptiveMuted.shade500,
                                       ),
                                     ),
                                   ],
@@ -387,7 +387,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                           fontSize: 14,
                                           color: isUnread
                                               ? AppTheme.adaptiveText
-                                              : AppTheme.muted.shade600,
+                                              : AppTheme.adaptiveMuted.shade600,
                                           fontWeight: isUnread
                                               ? FontWeight.w600
                                               : FontWeight.normal,
@@ -535,7 +535,7 @@ class _ChatDetailScreenState extends State<_ChatDetailScreen> {
           centerTitle: false,
           elevation: 0,
           backgroundColor: AppTheme.adaptiveSurface,
-          foregroundColor: Colors.black,
+          foregroundColor: AppTheme.adaptiveText,
         ),
         body: Column(
           children: [
@@ -562,8 +562,9 @@ class _ChatDetailScreenState extends State<_ChatDetailScreen> {
                         vertical: 10,
                       ),
                       decoration: BoxDecoration(
-                        color:
-                            isMe ? AppTheme.primary : AppTheme.muted.shade200,
+                        color: isMe
+                            ? AppTheme.primary
+                            : AppTheme.adaptiveMuted.shade200,
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Column(
@@ -586,7 +587,7 @@ class _ChatDetailScreenState extends State<_ChatDetailScreen> {
                               fontSize: 10,
                               color: isMe
                                   ? Colors.white70
-                                  : AppTheme.muted.shade600,
+                                  : AppTheme.adaptiveMuted.shade600,
                             ),
                           ),
                         ],

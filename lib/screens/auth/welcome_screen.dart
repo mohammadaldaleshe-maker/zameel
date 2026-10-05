@@ -81,7 +81,7 @@ class WelcomeScreen extends StatelessWidget {
                                 },
                                 icon: Icon(
                                   Icons.language,
-                                  color: Colors.white,
+                                  color: AppTheme.legacyForeground,
                                 ),
                                 tooltip: isArabic
                                     ? 'تغيير اللغة'
@@ -139,7 +139,7 @@ class WelcomeScreen extends StatelessWidget {
                           Text(
                             'Zameel',
                             style: GoogleFonts.ibmPlexSansArabic(
-                              color: Colors.white,
+                              color: AppTheme.legacyForeground,
                               fontSize: 44,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 2,
@@ -203,7 +203,7 @@ class WelcomeScreen extends StatelessWidget {
                                 isArabic
                                     ? '🚀 ابدأ رحلتك'
                                     : '🚀 Start Your Journey',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -283,7 +283,7 @@ class AuthChoiceScreen extends StatelessWidget {
 
                     Icon(
                       Icons.school_rounded,
-                      color: Colors.white,
+                      color: AppTheme.legacyForeground,
                       size: 70,
                     ),
 
@@ -293,7 +293,7 @@ class AuthChoiceScreen extends StatelessWidget {
                       isArabic ? 'مرحبًا بك في Zameel' : 'Welcome to Zameel',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.ibmPlexSansArabic(
-                        color: Colors.white,
+                        color: AppTheme.legacyForeground,
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
                       ),
@@ -340,7 +340,7 @@ class AuthChoiceScreen extends StatelessWidget {
                         ),
                         child: Text(
                           isArabic ? '🔑 تسجيل الدخول' : '🔑 Login',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
@@ -380,7 +380,7 @@ class AuthChoiceScreen extends StatelessWidget {
                           isArabic
                               ? '📝 إنشاء حساب جديد'
                               : '📝 Create New Account',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),

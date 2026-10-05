@@ -499,7 +499,28 @@ class GlassContainer extends StatelessWidget {
           ),
         ],
       ),
-      child: child,
+      child: AppTheme.originalAppearance
+          ? Theme(
+              data: Theme.of(context).copyWith(
+                inputDecorationTheme: Theme.of(context)
+                    .inputDecorationTheme
+                    .copyWith(
+                      hintStyle: TextStyle(color: AppTheme.legacySecondary),
+                      labelStyle: TextStyle(color: AppTheme.legacyForeground),
+                      floatingLabelStyle:
+                          TextStyle(color: AppTheme.legacyForeground),
+                      prefixIconColor: AppTheme.legacyForeground,
+                      suffixIconColor: AppTheme.legacyForeground,
+                    ),
+                textSelectionTheme: TextSelectionThemeData(
+                  cursorColor: AppTheme.legacyForeground,
+                  selectionColor: Colors.white.withAlpha(70),
+                  selectionHandleColor: AppTheme.legacyForeground,
+                ),
+              ),
+              child: child,
+            )
+          : child,
     );
   }
 }

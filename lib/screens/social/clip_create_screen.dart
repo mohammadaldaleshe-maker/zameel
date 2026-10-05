@@ -161,7 +161,7 @@ class _ClipCreateScreenState extends State<ClipCreateScreen> {
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
-                      style: TextStyle(color: AppTheme.muted.shade600),
+                      style: TextStyle(color: AppTheme.adaptiveMuted.shade600),
                     ),
                   ],
                 ),
@@ -193,7 +193,7 @@ class _ClipCreateScreenState extends State<ClipCreateScreen> {
                     ar
                         ? 'أنشئ شورتس جديدًا مباشرة دون فتح الشورتسات الموجودة.'
                         : 'Create a new clip directly without opening existing clips.',
-                    style: TextStyle(color: AppTheme.muted.shade700),
+                    style: TextStyle(color: AppTheme.adaptiveMuted.shade700),
                   ),
                   const SizedBox(height: 18),
                   _actionCard(
@@ -434,7 +434,7 @@ class _ClipPreviewPublishScreenState extends State<_ClipPreviewPublishScreen> {
                 ar
                     ? 'المدة: $_durationSeconds ثانية من 120'
                     : 'Duration: $_durationSeconds of 120 seconds',
-                style: TextStyle(color: AppTheme.muted.shade600),
+                style: TextStyle(color: AppTheme.adaptiveMuted.shade600),
               ),
               const SizedBox(height: 16),
               TextField(

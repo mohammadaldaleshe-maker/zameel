@@ -152,7 +152,7 @@ class _FacultyPositionScreenState extends State<FacultyPositionScreen> {
                   Text(
                     isArabic ? '👨‍🏫 المسمى الوظيفي' : '👨‍🏫 Job Title',
                     style: GoogleFonts.ibmPlexSansArabic(
-                      color: Colors.white,
+                      color: AppTheme.legacyForeground,
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
@@ -204,7 +204,7 @@ class _FacultyPositionScreenState extends State<FacultyPositionScreen> {
                               decoration: BoxDecoration(
                                 border: Border.all(
                                   color: isSelected
-                                      ? Colors.white
+                                      ? AppTheme.legacyForeground
                                       : Colors.transparent,
                                   width: 2,
                                 ),
@@ -216,8 +216,8 @@ class _FacultyPositionScreenState extends State<FacultyPositionScreen> {
                                   Icon(
                                     Icons.work_rounded,
                                     color: isSelected
-                                        ? Colors.white
-                                        : Colors.white70,
+                                        ? AppTheme.legacyForeground
+                                        : AppTheme.legacySecondary,
                                     size: 28,
                                   ),
                                   const SizedBox(height: 8),
@@ -239,7 +239,7 @@ class _FacultyPositionScreenState extends State<FacultyPositionScreen> {
                                     const SizedBox(height: 4),
                                     Icon(
                                       Icons.check_circle_rounded,
-                                      color: Colors.white,
+                                      color: AppTheme.legacyForeground,
                                       size: 16,
                                     ),
                                   ],
@@ -266,14 +266,14 @@ class _FacultyPositionScreenState extends State<FacultyPositionScreen> {
                               : '✏️ Enter job title',
                           labelStyle:
                               TextStyle(color: AppTheme.legacySecondary),
-                          prefixIcon: const Icon(Icons.edit_rounded,
-                              color: Colors.white70),
+                          prefixIcon: Icon(Icons.edit_rounded,
+                              color: AppTheme.legacySecondary),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
                             borderSide: BorderSide.none,
                           ),
                           filled: true,
-                          fillColor: Colors.white.withAlpha(25),
+                          fillColor: AppTheme.adaptiveGlassSoft,
                         ),
                       ),
                     ),
@@ -340,7 +340,7 @@ class _FacultyPositionScreenState extends State<FacultyPositionScreen> {
                       ),
                       child: Text(
                         isArabic ? 'التالي →' : 'Next →',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),

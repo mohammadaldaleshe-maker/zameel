@@ -21,8 +21,8 @@ class AppTheme {
   static Color get adaptiveGlassBorder => originalAppearance
       ? glassBorder
       : darkAppearance
-          ? const Color(0xFF363B51)
-          : border;
+          ? const Color(0xFF596179)
+          : const Color(0xFF8991A5);
   static bool get originalAppearance => AppearanceController.instance.original;
   static bool get darkAppearance =>
       AppearanceController.instance.brightness == Brightness.dark;
@@ -39,16 +39,48 @@ class AppTheme {
   static Color get legacyForeground => originalAppearance || darkAppearance
       ? const Color(0xFFF4F5FA)
       : const Color(0xFF151725);
-  static Color get legacySecondary => originalAppearance || darkAppearance
-      ? const Color(0xFFB9BECE)
-      : const Color(0xFF62677A);
+  static Color get legacySecondary => originalAppearance
+      ? const Color(0xFFF4F5FA)
+      : darkAppearance
+          ? const Color(0xFFB9BECE)
+          : const Color(0xFF62677A);
   static Color get adaptiveBackground =>
       darkAppearance ? night : const Color(0xFFF7F8FC);
   static Color get adaptiveSurfaceAlt =>
       darkAppearance ? nightSurfaceAlt : const Color(0xFFF0F2F8);
   static Color get adaptiveSurface => darkAppearance ? nightSurface : surface;
   static Color get adaptiveSecondary =>
-      darkAppearance ? const Color(0xFFB9BECE) : const Color(0xFF62677A);
+      darkAppearance ? const Color(0xFFB9BECE) : const Color(0xFF53586B);
+
+  static Color get adaptiveHighlightInk =>
+      darkAppearance ? const Color(0xFFB4C0FF) : primaryDark;
+  static Color get adaptiveHighlight =>
+      darkAppearance ? const Color(0xFF203E40) : accentSoft;
+  static MaterialColor get adaptiveMuted => darkAppearance
+      ? const MaterialColor(0xFF9DA4BA, <int, Color>{
+          50: nightSurface,
+          100: nightSurfaceAlt,
+          200: Color(0xFF363B51),
+          300: Color(0xFF596179),
+          400: Color(0xFF858DA4),
+          500: Color(0xFF9DA4BA),
+          600: Color(0xFFB9BECE),
+          700: Color(0xFFF4F5FA),
+          800: Color(0xFFF4F5FA),
+          900: Color(0xFFF4F5FA),
+        })
+      : const MaterialColor(0xFF53586B, <int, Color>{
+          50: Color(0xFFF7F8FC),
+          100: Color(0xFFEEF0F6),
+          200: Color(0xFFDDE0EA),
+          300: Color(0xFFC5C9D6),
+          400: Color(0xFFA4A9BA),
+          500: Color(0xFF53586B),
+          600: Color(0xFF53586B),
+          700: Color(0xFF3B4051),
+          800: Color(0xFF3B4051),
+          900: Color(0xFF252938),
+        });
 
   static Color get adaptiveText =>
       darkAppearance ? const Color(0xFFF4F5FA) : const Color(0xFF151725);
@@ -162,7 +194,7 @@ class AppTheme {
     final card = dark ? nightSurface : surface;
     final alt = dark ? nightSurfaceAlt : surfaceAlt;
     final foreground = dark ? const Color(0xFFF4F5FA) : textPrimary;
-    final outline = dark ? const Color(0xFF363B51) : border;
+    final outline = dark ? const Color(0xFF596179) : const Color(0xFF8991A5);
     final scheme = ColorScheme.fromSeed(
       seedColor: primary,
       brightness: brightness,
@@ -207,6 +239,15 @@ class AppTheme {
         filled: true,
         fillColor: alt,
         hintStyle: TextStyle(color: dark ? Colors.white70 : Colors.black54),
+        prefixIconColor: foreground,
+        suffixIconColor: foreground,
+        helperStyle: TextStyle(color: foreground),
+        disabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(controlRadius),
+            borderSide: BorderSide(color: outline)),
+        focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(controlRadius),
+            borderSide: const BorderSide(color: error, width: 1.6)),
         labelStyle: TextStyle(color: dark ? Colors.white : Colors.black87),
         floatingLabelStyle:
             TextStyle(color: dark ? Colors.white : Colors.black),

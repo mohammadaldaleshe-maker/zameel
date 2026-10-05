@@ -1,0 +1,16 @@
+{
+  "release": 139,
+  "app_version": "2.0.5+14",
+  "admin_version": "1.3.13 (executable unchanged)",
+  "dart_analysis": "No issues found",
+  "contrast_checks": 18,
+  "governorate_checks": "passed 12 names, legacy aliases, labels and unchanged city identities",
+  "release_sql_checks": 12,
+  "native_flutter_tests": "Added 9 tests; not executed here. Run Stage Check and GitHub workflow.",
+  "android_build": "GitHub only; not run here",
+  "device_performance": "Not measured; acceptance required",
+  "live_database_applied": false,
+  "live_github_uploaded": false,
+  "function_changes": false,
+  "admin_ui_changes": false
+}

@@ -1,0 +1,286 @@
+{
+  "release": 139,
+  "repository": "APP",
+  "files": [
+    {
+      "path": ".github/workflows/android-apk-github.yml",
+      "sha256": "ec9660297595f14a0d801e615e7fe4379278dedac2225f54a824999611a71a6c"
+    },
+    {
+      "path": "APPLY_UPDATE_139.ps1",
+      "sha256": "9a9b50ec05621afd40e77fa40ffe0b358c5a86f172d1aa3e6c87319d738e017d"
+    },
+    {
+      "path": "BUILD_AND_DEPLOY_139_AR.md",
+      "sha256": "de523763ac407657b16bae7a4a55159394f1f1d5438f62f6d9e196415821c2d3"
+    },
+    {
+      "path": "VALIDATION_139.json",
+      "sha256": "216c8b4ea6f4ab0796facc7e9bd173ebf04b0fae1fecc9f0e76cce7f7462b881"
+    },
+    {
+      "path": "android/app/src/main/kotlin/com/zameel/app/WatermarkedMediaExporter.kt",
+      "sha256": "b3f9eca155e6d613ae4e73b5790fe0e31dfb7e6350d64225b77c0916128d684f"
+    },
+    {
+      "path": "lib/config.dart",
+      "sha256": "0533853fe43dce94637f2842ba71d10d571b1073b07f6d2658c463b65a9c3de6"
+    },
+    {
+      "path": "lib/features/auth_app.dart",
+      "sha256": "35b8fb8b670849a6bf8a93528dd22bd4e99e42fe0729349efb480d8b4be30970"
+    },
+    {
+      "path": "lib/features/drawer_profile.dart",
+      "sha256": "ff3be59037246741f23d6257d0815365cd9201994ffceb9111bf8618245c8cd0"
+    },
+    {
+      "path": "lib/features/home_feed.dart",
+      "sha256": "b4c55bb69a31c40b20be5c9506fc13d0b5fa1eba7237a1bc04851d56bfac429f"
+    },
+    {
+      "path": "lib/features/posts_media.dart",
+      "sha256": "3540ec936bb8ea6b6eb1101e089084581bc51506107103d03b820297ce37a385"
+    },
+    {
+      "path": "lib/features/university.dart",
+      "sha256": "10a08fba54663d62279516dc5536158d25f869318d9f633bdc4787ebf596fd29"
+    },
+    {
+      "path": "lib/main.dart",
+      "sha256": "fe7371bdb4bb1bb9b79f7fe8c6c0629e50cb89f46917b76d9b9be0739e319423"
+    },
+    {
+      "path": "lib/screens/anonymous/anonymous_screen.dart",
+      "sha256": "a31482d8d9d3c3990143024c5b00e1525e0f8e9f623c64b353e7834601e37070"
+    },
+    {
+      "path": "lib/screens/anonymous/chat_screen.dart",
+      "sha256": "d97f7dfdce7a7c18c528414e6c1fbb7a8f13b24623cdf082163a6ba6a89717d2"
+    },
+    {
+      "path": "lib/screens/auth/academic_year_screen.dart",
+      "sha256": "489b4620b2441eb661e20c40151a3e44d78ce2b1cf608f08e1a7de978cd5b319"
+    },
+    {
+      "path": "lib/screens/auth/business_type_screen.dart",
+      "sha256": "4fde88ca0e7f0c2894ee2e8e963f9f3dcbd0f5d82b4d55669dad3975fcac1188"
+    },
+    {
+      "path": "lib/screens/auth/email_verification_screen.dart",
+      "sha256": "2daee238404f57ab8bcfe7c4408df56cf1323e08af416ad1e100ad14ded580dc"
+    },
+    {
+      "path": "lib/screens/auth/faculty_position_screen.dart",
+      "sha256": "b9b430de695e89d4884a97bd50517ce098f20dc5fd75115115838f527de50654"
+    },
+    {
+      "path": "lib/screens/auth/login_screen.dart",
+      "sha256": "24f752deb8efe214ee8b02ce0d231b23a7e94d8639aa69353402b4d75d8585a1"
+    },
+    {
+      "path": "lib/screens/auth/name_entry_screen.dart",
+      "sha256": "b10925e18b7a2c19bd0bcaff862849c601ece7f4101addbbaef91d9655c742e1"
+    },
+    {
+      "path": "lib/screens/auth/password_screen.dart",
+      "sha256": "c2883ef8329e879b2308f094ed302f8cd5ed474983e1323e5ea8f7f352c2a303"
+    },
+    {
+      "path": "lib/screens/auth/personal_info_screen.dart",
+      "sha256": "cee022d566d629c885fd9048a0b91d44f7df8740ebf5d638c42e45c368178fd8"
+    },
+    {
+      "path": "lib/screens/auth/profile_picture_screen.dart",
+      "sha256": "cfd3ab7e4bb9fa8983ce2da2fa6e579a1440e72206a9994f7492204fd4495adc"
+    },
+    {
+      "path": "lib/screens/auth/register_screen.dart",
+      "sha256": "f9285e7f152611900595baff0855a4116f207d4ec38d57b9aec49b6d996a119c"
+    },
+    {
+      "path": "lib/screens/auth/university_selection_screen.dart",
+      "sha256": "af1a54c198576ded61a9ef998c61425e740f64bcc1e9d3becd0daf8d3bd75fd6"
+    },
+    {
+      "path": "lib/screens/auth/verification_screen.dart",
+      "sha256": "d3e01d179af8c027dc982968ffa5455c9084adda5cfea2bfeac67c82b56905be"
+    },
+    {
+      "path": "lib/screens/auth/welcome_screen.dart",
+      "sha256": "2a36476d1fbc60a827008792221d6bb14b866407a97d373010586762f3fa7950"
+    },
+    {
+      "path": "lib/screens/books/books_screen.dart",
+      "sha256": "236dea0228a47d8aa6fdebe323534afe6b62ed45fae33a43e8ad0ce258950cd4"
+    },
+    {
+      "path": "lib/screens/books/zameel_library_screen.dart",
+      "sha256": "bb2e8dfac2f878fcbcd37ed2a49efff98c428ab6cd29dd9b43e12dd159de598c"
+    },
+    {
+      "path": "lib/screens/business/business_screen.dart",
+      "sha256": "e276eab9b3441fe8b98b3c30cf0dc0d0baf5e992f776dffada7267b6b4296e59"
+    },
+    {
+      "path": "lib/screens/calendar/calendar_screen.dart",
+      "sha256": "48f21f02d9fab741fe4b221c720a82e97105645622273e64842df3aa1a573b55"
+    },
+    {
+      "path": "lib/screens/campus/campus_screen.dart",
+      "sha256": "ee3cc1e35ccdfdc2f8336045387968039df390d4c4f5933aa6a71f86da6377b1"
+    },
+    {
+      "path": "lib/screens/campus/live_map_screen.dart",
+      "sha256": "47a196cf956a888834190e61fba12d10d00d15241868740e76cbd6133cc81def"
+    },
+    {
+      "path": "lib/screens/chat/chat_screen.dart",
+      "sha256": "0fc2b2ce5a8deac627fd444cc62d1b5079ef7034fd45272c712cedafacf336c9"
+    },
+    {
+      "path": "lib/screens/comments/clip_comments_screen.dart",
+      "sha256": "b43c6bc233ee0e80070c0185226c127946d90702dbda100a1fd53074b9a09a96"
+    },
+    {
+      "path": "lib/screens/comments/comments_screen.dart",
+      "sha256": "865173191e8766d82273f0abf712d279a257a935f3b3ea99f197c186448fae00"
+    },
+    {
+      "path": "lib/screens/friends/friends_screen.dart",
+      "sha256": "343f6addf2bed135f419862501ec0a511bfa5cf95c5ad78d494f8c64cd1ccf78"
+    },
+    {
+      "path": "lib/screens/games/zameel_games_screen.dart",
+      "sha256": "27ec2f1c8056374efe5dc364969391480f11bcdb5c87d45ff48e7554ffd14bff"
+    },
+    {
+      "path": "lib/screens/groups/group_chat_screen.dart",
+      "sha256": "fd271a39ffc1abb86a3c80dcfab5e206836b4f003017a96e6c4764e073a8dfc1"
+    },
+    {
+      "path": "lib/screens/groups/groups_screen.dart",
+      "sha256": "cd32834fd2d2e34eb3a21ecc87ee31839eff347da132eac808bde59aebcb1ad3"
+    },
+    {
+      "path": "lib/screens/jobs/jobs_screen.dart",
+      "sha256": "34f7ea4e75ebbc3c3093953a2368f57db385e921fe7446395a2d6d436d961462"
+    },
+    {
+      "path": "lib/screens/meet/livekit_meeting_room_screen.dart",
+      "sha256": "56601349c9afd03d84326b930d699797944470e7081d767d5a68cb3a91c365ef"
+    },
+    {
+      "path": "lib/screens/meet/meet_screen.dart",
+      "sha256": "23dfb08504b10b445c346fa74ce65657d0e34a9ff707f5b6c4dae75acf94fe02"
+    },
+    {
+      "path": "lib/screens/notifications/notifications_screen.dart",
+      "sha256": "d859d23892c8d01c61cfb9d4d3740afc7e4dd9110927fb5f8695ca0b4beefc43"
+    },
+    {
+      "path": "lib/screens/polls_screen.dart",
+      "sha256": "2f95e0735a17c117e7dcc68f76ebf142576b3d9b7e548b48ab18500ca3c0bfca"
+    },
+    {
+      "path": "lib/screens/private_groups_screen.dart",
+      "sha256": "cd3ef6cdb41cff5d7b3c73da2225d84e1dc7ab584ba22e0dc6027ecd5a7a0944"
+    },
+    {
+      "path": "lib/screens/profile/profile_screen.dart",
+      "sha256": "5f5dddc8bac1462c632a35b7e0a96931af44d2ea91d393030aa17bb188dfd297"
+    },
+    {
+      "path": "lib/screens/profile/profile_settings_screen.dart",
+      "sha256": "fb01385922523329bf9623ebcb8fbe9cbbceca334308cc105be819ae4643564f"
+    },
+    {
+      "path": "lib/screens/promotions/promotion_locations.dart",
+      "sha256": "ebd3245e6301e0f38c033665ec41b9dce173001643b1bfaeee43c3cbc5435bc0"
+    },
+    {
+      "path": "lib/screens/promotions/promotion_request_screen.dart",
+      "sha256": "7b3cf91cfde8c7c345cb42da7b9e27da7a90bdd73ca7c42bf0c1c0aac49e475c"
+    },
+    {
+      "path": "lib/screens/quiz/quiz_screen.dart",
+      "sha256": "835d263c000954c86407db4e93e1e94194f4701de8cb6e90247ca073c420b427"
+    },
+    {
+      "path": "lib/screens/saved_posts_screen.dart",
+      "sha256": "4a5abbb315dadf69d013f457b1ef50e4222abed56700d900f19e4e23387970c3"
+    },
+    {
+      "path": "lib/screens/search/search_screen.dart",
+      "sha256": "ca68a16ff111f5cee7847d034104412681e47ccb17ba024ada0a03bcf2138f65"
+    },
+    {
+      "path": "lib/screens/settings/app_settings_screen.dart",
+      "sha256": "7fd2b2662eb5c8ff7069db15a6b6ddf58eda02f8b0bb97915cb717aeafd3efd4"
+    },
+    {
+      "path": "lib/screens/social/clip_create_screen.dart",
+      "sha256": "0383cb8aae23612aa5a31e69e4f9b498e7283dc24fc1221b81f5450a85680c8e"
+    },
+    {
+      "path": "lib/screens/social/public_clips_strip.dart",
+      "sha256": "ebc6898ae5398e2795cf4101f23befc10f3a9354a789e84d3d71bfc2b0f4e4da"
+    },
+    {
+      "path": "lib/screens/social/shorts_gateway.dart",
+      "sha256": "34303b106670488fa0bb7ad44674f6b78ee56baf63fc444aa8a37f4fe521bc3f"
+    },
+    {
+      "path": "lib/screens/social/zameel_social_studio.dart",
+      "sha256": "a378fb798e4b7fca0874bc6589d51c4a1e241395ba0840fa947f40e8d15a5183"
+    },
+    {
+      "path": "lib/screens/stats_screen.dart",
+      "sha256": "84ce2f8d75b73e9d9fce1b7599062165f41b77b749614b851e8f1b6cc570b58e"
+    },
+    {
+      "path": "lib/screens/stories/stories_screen.dart",
+      "sha256": "54645d52e8bca8aad3bce3c77514088acc91bcb7980e65ae266681ef07dc24d7"
+    },
+    {
+      "path": "lib/screens/v2/zameel_v2_hub_screen.dart",
+      "sha256": "f6a5b33c107603389eaa35518d96659f74f021ac5ff1c1a7b33146d20673ff44"
+    },
+    {
+      "path": "lib/services/app_release_gate.dart",
+      "sha256": "a4e7a91cc7243306c3b34e7ba85ce109bf9d052179900c076bfe097b6542956d"
+    },
+    {
+      "path": "lib/services_social.dart",
+      "sha256": "692f15402d1a9060151d8d9bd38f6b46bba756bedd6f2adacdb68056fd39dd5d"
+    },
+    {
+      "path": "lib/theme/app_theme.dart",
+      "sha256": "004842d99fdfa7b81d05120d67b25791ba266d5470fabd7696a104108989d6ce"
+    },
+    {
+      "path": "lib/widgets/verified_name.dart",
+      "sha256": "18dab692765bb5a7b5ebaad5140e5789b77369f2dcd84d5c1ce59b69680e633a"
+    },
+    {
+      "path": "lib/widgets/vertical_autoplay_video_player.dart",
+      "sha256": "74d32534a93a297363b764d7d80d4372e4f7428b9c910c4708063b89936af167"
+    },
+    {
+      "path": "lib/widgets/video_player_widget.dart",
+      "sha256": "c42040ff05c442f1a4dda31cf9f40b6c60aa40e7a4bc91415a8c2285b0554cf7"
+    },
+    {
+      "path": "pubspec.yaml",
+      "sha256": "d098c3a02cfa395a207a1f68aa99917ed6c2c837eacc9abc039cd8d7260ad819"
+    },
+    {
+      "path": "supabase/migrations/20261005050001_139_android_release.sql",
+      "sha256": "00db39f29377b2d1939d404e8d1935a75c5b9bf47c33d61e5c19c37f585c2b71"
+    },
+    {
+      "path": "test/appearance_139_test.dart",
+      "sha256": "8f050589bc2da8132179cf4985dfabe5f99d858685877398820392ff24dec8d5"
+    }
+  ]
+}

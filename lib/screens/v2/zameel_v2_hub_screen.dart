@@ -152,7 +152,7 @@ class ZameelV2HubScreen extends StatelessWidget {
                           Text(module.en,
                               style: TextStyle(
                                   fontSize: 11,
-                                  color: AppTheme.muted.shade600)),
+                                  color: AppTheme.adaptiveMuted.shade600)),
                         ],
                       ),
                     ),
@@ -201,7 +201,8 @@ class _InfoModuleScreen extends StatelessWidget {
                     const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
             const SizedBox(height: 8),
             Text(subtitle,
-                style: TextStyle(color: AppTheme.muted.shade700, height: 1.5)),
+                style: TextStyle(
+                    color: AppTheme.adaptiveMuted.shade700, height: 1.5)),
           ],
         ),
       ),

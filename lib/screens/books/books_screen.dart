@@ -1334,7 +1334,7 @@ class _BooksScreenState extends State<BooksScreen> {
                         selected: isSelected,
                         onSelected: (selected) =>
                             setState(() => selectedFilter = filter),
-                        backgroundColor: AppTheme.muted.shade200,
+                        backgroundColor: AppTheme.adaptiveMuted.shade200,
                         selectedColor: AppTheme.primaryLight,
                         labelStyle: TextStyle(
                           color: isSelected
@@ -1507,7 +1507,8 @@ class _BooksScreenState extends State<BooksScreen> {
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(16),
                                     side: BorderSide(
-                                        color: AppTheme.muted.shade200)),
+                                        color:
+                                            AppTheme.adaptiveMuted.shade200)),
                                 child: ListTile(
                                   leading: CircleAvatar(
                                     backgroundColor: AppTheme.primaryLight,
@@ -1783,7 +1784,7 @@ class _BookCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
-          color: AppTheme.muted.shade200,
+          color: AppTheme.adaptiveMuted.shade200,
         ),
       ),
       child: InkWell(
@@ -1892,7 +1893,7 @@ class _BookCard extends StatelessWidget {
                               ? book['department_ar']
                               : book['department_en'],
                           style: TextStyle(
-                            color: AppTheme.muted.shade500,
+                            color: AppTheme.adaptiveMuted.shade500,
                             fontSize: 11,
                           ),
                         ),
@@ -2192,7 +2193,7 @@ class BookDetailsScreen extends StatelessWidget {
                                       Container(
                                         padding: const EdgeInsets.all(12),
                                         decoration: BoxDecoration(
-                                            color: AppTheme.accentSoft,
+                                            color: AppTheme.adaptiveHighlight,
                                             borderRadius:
                                                 BorderRadius.circular(12)),
                                         child: Text(
@@ -2301,7 +2302,7 @@ class BookDetailsScreen extends StatelessWidget {
                     width: 56,
                     height: 56,
                     decoration: BoxDecoration(
-                      color: AppTheme.muted.shade100,
+                      color: AppTheme.adaptiveMuted.shade100,
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: IconButton(
@@ -2392,7 +2393,7 @@ class BookDetailsScreen extends StatelessWidget {
         vertical: 6,
       ),
       decoration: BoxDecoration(
-        color: AppTheme.muted.shade100,
+        color: AppTheme.adaptiveMuted.shade100,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Text(

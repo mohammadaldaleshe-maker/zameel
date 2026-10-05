@@ -139,7 +139,7 @@ class _UniversitySelectionScreenState extends State<UniversitySelectionScreen> {
                   Text(
                     isArabic ? '🏛️ اختر جامعتك' : '🏛️ Choose Your University',
                     style: GoogleFonts.ibmPlexSansArabic(
-                      color: Colors.white,
+                      color: AppTheme.legacyForeground,
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
@@ -170,10 +170,10 @@ class _UniversitySelectionScreenState extends State<UniversitySelectionScreen> {
                             ? '🔍 ابحث عن الجامعة...'
                             : '🔍 Search for university...',
                         hintStyle: TextStyle(color: AppTheme.legacySecondary),
-                        prefixIcon: const Icon(Icons.search_rounded,
-                            color: Colors.white70),
+                        prefixIcon: Icon(Icons.search_rounded,
+                            color: AppTheme.legacySecondary),
                         filled: true,
-                        fillColor: Colors.white.withAlpha(25),
+                        fillColor: AppTheme.adaptiveGlassSoft,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
                           borderSide: BorderSide.none,
@@ -268,10 +268,10 @@ class _UniversitySelectionScreenState extends State<UniversitySelectionScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: selectedUniversity != null
                             ? Colors.white
-                            : AppTheme.muted.shade400,
+                            : AppTheme.adaptiveMuted.shade400,
                         foregroundColor: selectedUniversity != null
                             ? primaryColor
-                            : AppTheme.muted.shade600,
+                            : AppTheme.adaptiveMuted.shade600,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(30),
@@ -279,7 +279,7 @@ class _UniversitySelectionScreenState extends State<UniversitySelectionScreen> {
                       ),
                       child: Text(
                         isArabic ? 'التالي →' : 'Next →',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -345,7 +345,7 @@ class _UniversityCard extends StatelessWidget {
               ),
               child: Icon(
                 Icons.account_balance_rounded,
-                color: isSelected ? Colors.white : Colors.white70,
+                color: isSelected ? Colors.white : AppTheme.legacySecondary,
                 size: 24,
               ),
             ),
@@ -379,9 +379,9 @@ class _UniversityCard extends StatelessWidget {
               ),
             ),
             if (isSelected)
-              const Icon(
+              Icon(
                 Icons.check_circle_rounded,
-                color: Colors.white,
+                color: AppTheme.legacyForeground,
                 size: 24,
               ),
           ],
@@ -445,7 +445,7 @@ class _CollegeSelectionScreenState extends State<CollegeSelectionScreen> {
                   Text(
                     isArabic ? '📚 اختر الكلية' : '📚 Choose College',
                     style: GoogleFonts.ibmPlexSansArabic(
-                      color: Colors.white,
+                      color: AppTheme.legacyForeground,
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
@@ -484,8 +484,8 @@ class _CollegeSelectionScreenState extends State<CollegeSelectionScreen> {
                                   child: Icon(
                                     Icons.school_rounded,
                                     color: isSelected
-                                        ? Colors.white
-                                        : Colors.white70,
+                                        ? AppTheme.legacyForeground
+                                        : AppTheme.legacySecondary,
                                     size: 24,
                                   ),
                                 ),
@@ -508,7 +508,7 @@ class _CollegeSelectionScreenState extends State<CollegeSelectionScreen> {
                                 if (isSelected)
                                   Icon(
                                     Icons.check_circle_rounded,
-                                    color: Colors.white,
+                                    color: AppTheme.legacyForeground,
                                     size: 24,
                                   ),
                               ],
@@ -543,10 +543,10 @@ class _CollegeSelectionScreenState extends State<CollegeSelectionScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: selectedCollege != null
                             ? Colors.white
-                            : AppTheme.muted.shade400,
+                            : AppTheme.adaptiveMuted.shade400,
                         foregroundColor: selectedCollege != null
                             ? primaryColor
-                            : AppTheme.muted.shade600,
+                            : AppTheme.adaptiveMuted.shade600,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(30),
@@ -554,7 +554,7 @@ class _CollegeSelectionScreenState extends State<CollegeSelectionScreen> {
                       ),
                       child: Text(
                         isArabic ? 'التالي →' : 'Next →',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -641,7 +641,7 @@ class _DepartmentSelectionScreenState extends State<DepartmentSelectionScreen> {
                   Text(
                     isArabic ? '📖 اختر التخصص' : '📖 Choose Major',
                     style: GoogleFonts.ibmPlexSansArabic(
-                      color: Colors.white,
+                      color: AppTheme.legacyForeground,
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
@@ -680,8 +680,8 @@ class _DepartmentSelectionScreenState extends State<DepartmentSelectionScreen> {
                                   child: Icon(
                                     Icons.menu_book_rounded,
                                     color: isSelected
-                                        ? Colors.white
-                                        : Colors.white70,
+                                        ? AppTheme.legacyForeground
+                                        : AppTheme.legacySecondary,
                                     size: 24,
                                   ),
                                 ),
@@ -704,7 +704,7 @@ class _DepartmentSelectionScreenState extends State<DepartmentSelectionScreen> {
                                 if (isSelected)
                                   Icon(
                                     Icons.check_circle_rounded,
-                                    color: Colors.white,
+                                    color: AppTheme.legacyForeground,
                                     size: 24,
                                   ),
                               ],
@@ -738,10 +738,10 @@ class _DepartmentSelectionScreenState extends State<DepartmentSelectionScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: selectedDepartment != null
                             ? Colors.white
-                            : AppTheme.muted.shade400,
+                            : AppTheme.adaptiveMuted.shade400,
                         foregroundColor: selectedDepartment != null
                             ? primaryColor
-                            : AppTheme.muted.shade600,
+                            : AppTheme.adaptiveMuted.shade600,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(30),
@@ -749,7 +749,7 @@ class _DepartmentSelectionScreenState extends State<DepartmentSelectionScreen> {
                       ),
                       child: Text(
                         isArabic ? 'التالي →' : 'Next →',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),

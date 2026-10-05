@@ -168,8 +168,10 @@ class _LiveMapScreenState extends State<LiveMapScreen>
     if (!FeatureControl.instance.enabled('partner_advertising')) return;
     try {
       final ads = await AdvertisingService.liveAds(limit: 50);
-      if (mounted) setState(() => _partnerAdvertisements = ads.where((ad) =>
-          ad['latitude'] is num && ad['longitude'] is num).toList());
+      if (mounted)
+        setState(() => _partnerAdvertisements = ads
+            .where((ad) => ad['latitude'] is num && ad['longitude'] is num)
+            .toList());
     } catch (_) {
       // Existing campus map remains usable if the ad service is unavailable.
     }
@@ -569,7 +571,8 @@ class _LiveMapScreenState extends State<LiveMapScreen>
                         style: const TextStyle(
                             fontSize: 9,
                             fontWeight: FontWeight.w900,
-                            backgroundColor: Colors.white70)),
+                            backgroundColor: Colors.white70,
+                            color: AppTheme.textPrimary)),
                   ]),
                 )),
           Marker(
@@ -624,10 +627,13 @@ class _LiveMapScreenState extends State<LiveMapScreen>
                 width: 130,
                 height: 67,
                 child: GestureDetector(
-                  onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                  onTap: () =>
+                      Navigator.of(context).push(MaterialPageRoute<void>(
                     builder: (_) => AdvertisementDetails(ad: ad, isArabic: ar),
                   )),
-                  child: Card(child: Center(child: Text(
+                  child: Card(
+                      child: Center(
+                          child: Text(
                     '📍 ${ad['business_partners'] is Map ? ad['business_partners']['name'] : ad['title']}',
                     textAlign: TextAlign.center,
                     maxLines: 2,
@@ -657,6 +663,7 @@ class _LiveMapScreenState extends State<LiveMapScreen>
                                         maxLines: 2,
                                         textAlign: TextAlign.center,
                                         style: const TextStyle(
+                                            color: AppTheme.textPrimary,
                                             fontSize: 10,
                                             fontWeight: FontWeight.w900))
                                   ]))))),
@@ -832,7 +839,8 @@ class _LiveMapScreenState extends State<LiveMapScreen>
                                                       fontWeight:
                                                           FontWeight.w800))),
                                           IconButton(
-                                              onPressed: _clearDestinationAndRoute,
+                                              onPressed:
+                                                  _clearDestinationAndRoute,
                                               icon: const Icon(
                                                   Icons.close_rounded))
                                         ]),

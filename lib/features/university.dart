@@ -1574,7 +1574,7 @@ class _UniversityScreenState extends State<UniversityScreen> {
             onPressed: () {
               Navigator.pop(context);
             },
-            icon: const Icon(Icons.arrow_back_rounded),
+            icon: Icon(Icons.arrow_back_rounded),
           ),
         ),
         body: Container(
@@ -1606,9 +1606,9 @@ class _UniversityScreenState extends State<UniversityScreen> {
                     hintStyle: TextStyle(
                       color: AppTheme.legacySecondary,
                     ),
-                    prefixIcon: const Icon(
+                    prefixIcon: Icon(
                       Icons.search,
-                      color: Colors.white70,
+                      color: AppTheme.legacySecondary,
                     ),
                     filled: true,
                     fillColor: AppTheme.adaptiveGlassFill,
@@ -1691,10 +1691,10 @@ class _UniversityCard extends StatelessWidget {
           vertical: 8,
         ),
         leading: CircleAvatar(
-          backgroundColor: Colors.white.withAlpha(51),
+          backgroundColor: AppTheme.adaptiveGlassFill,
           child: Icon(
             Icons.account_balance_rounded,
-            color: Colors.white,
+            color: AppTheme.legacyForeground,
           ),
         ),
         title: Text(
@@ -1716,10 +1716,10 @@ class _UniversityCard extends StatelessWidget {
             fontSize: 12,
           ),
         ),
-        trailing: const Icon(
+        trailing: Icon(
           Icons.arrow_forward_ios_rounded,
           size: 16,
-          color: Colors.white70,
+          color: AppTheme.legacySecondary,
         ),
         onTap: () {
           Navigator.push(
@@ -1777,7 +1777,7 @@ class CollegeScreen extends StatelessWidget {
             onPressed: () {
               Navigator.pop(context);
             },
-            icon: const Icon(Icons.arrow_back_rounded),
+            icon: Icon(Icons.arrow_back_rounded),
           ),
         ),
         body: Container(
@@ -1818,10 +1818,10 @@ class CollegeScreen extends StatelessWidget {
                       vertical: 8,
                     ),
                     leading: CircleAvatar(
-                      backgroundColor: Colors.white.withAlpha(51),
+                      backgroundColor: AppTheme.adaptiveGlassFill,
                       child: Icon(
                         Icons.school_outlined,
-                        color: Colors.white,
+                        color: AppTheme.legacyForeground,
                       ),
                     ),
                     title: Text(
@@ -1834,10 +1834,10 @@ class CollegeScreen extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    trailing: const Icon(
+                    trailing: Icon(
                       Icons.arrow_forward_ios_rounded,
                       size: 16,
-                      color: Colors.white70,
+                      color: AppTheme.legacySecondary,
                     ),
                     onTap: () {
                       Navigator.push(
@@ -1904,7 +1904,7 @@ class DepartmentScreen extends StatelessWidget {
             onPressed: () {
               Navigator.pop(context);
             },
-            icon: const Icon(Icons.arrow_back_rounded),
+            icon: Icon(Icons.arrow_back_rounded),
           ),
         ),
         body: Container(
@@ -1945,10 +1945,10 @@ class DepartmentScreen extends StatelessWidget {
                       vertical: 8,
                     ),
                     leading: CircleAvatar(
-                      backgroundColor: Colors.white.withAlpha(51),
+                      backgroundColor: AppTheme.adaptiveGlassFill,
                       child: Icon(
                         Icons.menu_book_outlined,
-                        color: Colors.white,
+                        color: AppTheme.legacyForeground,
                       ),
                     ),
                     title: Text(
@@ -1961,10 +1961,10 @@ class DepartmentScreen extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    trailing: const Icon(
+                    trailing: Icon(
                       Icons.arrow_forward_ios_rounded,
                       size: 16,
-                      color: Colors.white70,
+                      color: AppTheme.legacySecondary,
                     ),
 
                     // حفظ الجامعة والكلية والتخصص ثم الانتقال للرئيسية

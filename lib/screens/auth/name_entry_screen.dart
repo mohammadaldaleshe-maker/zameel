@@ -215,7 +215,7 @@ class _NameEntryScreenState extends State<NameEntryScreen> {
                   Text(
                     isArabic ? '👤 الاسم الكامل' : '👤 Full Name',
                     style: GoogleFonts.ibmPlexSansArabic(
-                      color: Colors.white,
+                      color: AppTheme.legacyForeground,
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
@@ -310,7 +310,7 @@ class _NameEntryScreenState extends State<NameEntryScreen> {
                       ),
                       child: Text(
                         isArabic ? 'التالي →' : 'Next →',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -370,14 +370,14 @@ class _NameField extends StatelessWidget {
           ),
           prefixIcon: Icon(
             icon,
-            color: Colors.white70,
+            color: AppTheme.legacySecondary,
           ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide.none,
           ),
           filled: true,
-          fillColor: Colors.white.withAlpha(25),
+          fillColor: AppTheme.adaptiveGlassSoft,
         ),
       ),
     );
@@ -408,7 +408,9 @@ class _GenderButton extends StatelessWidget {
           color: isSelected ? Colors.white.withAlpha(25) : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? Colors.white : Colors.white24,
+            color: isSelected
+                ? AppTheme.legacyForeground
+                : AppTheme.adaptiveGlassBorder,
             width: isSelected ? 2 : 1,
           ),
         ),

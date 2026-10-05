@@ -326,12 +326,13 @@ class ZameelSocialService {
     return stories;
   }
 
-  static Future<List<Map<String, dynamic>>> loadClips({bool resolveMedia = true}) async {
+  static Future<List<Map<String, dynamic>>> loadClips(
+      {bool resolveMedia = true}) async {
     if (!signedIn) return [];
     final currentUserId = uid!;
     final rows = await db
         .from('clips')
-        .select('*, users(name,profile_image)')
+        .select('*')
         .order('created_at', ascending: false)
         .limit(20);
     final clips = List<Map<String, dynamic>>.from(rows);
@@ -341,6 +342,25 @@ class ZameelSocialService {
         .where((id) => id.isNotEmpty)
         .toList();
     if (clipIds.isEmpty) return clips;
+    final authors = clips
+        .map((clip) => clip['user_id']?.toString())
+        .whereType<String>()
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList();
+    final profiles = authors.isEmpty
+        ? <Map<String, dynamic>>[]
+        : List<Map<String, dynamic>>.from(await db
+            .from('users')
+            .select('id,name,profile_image')
+            .inFilter('id', authors));
+    final byId = {
+      for (final profile in profiles) profile['id'].toString(): profile
+    };
+    for (final clip in clips) {
+      clip['users'] = byId[clip['user_id']?.toString()] ??
+          <String, dynamic>{'name': 'زميل', 'profile_image': null};
+    }
 
     final likesRequest = db
         .from('clip_likes')

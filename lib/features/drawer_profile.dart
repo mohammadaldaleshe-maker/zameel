@@ -21,12 +21,14 @@ class _DrawerItem extends StatelessWidget {
     return ListTile(
       leading: Icon(
         icon,
-        color: iconColor ?? (isSelected ? Colors.white : Colors.white70),
+        color: iconColor ??
+            (isSelected ? AppTheme.legacyForeground : AppTheme.legacySecondary),
       ),
       title: Text(
         title,
         style: TextStyle(
-          color: isSelected ? Colors.white : Colors.white70,
+          color:
+              isSelected ? AppTheme.legacyForeground : AppTheme.legacySecondary,
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
         ),
       ),
@@ -35,13 +37,15 @@ class _DrawerItem extends StatelessWidget {
               width: 8,
               height: 8,
               decoration: BoxDecoration(
-                color: AppTheme.adaptiveSurface,
+                color: AppTheme.originalAppearance
+                    ? Colors.white
+                    : AppTheme.legacyForeground,
                 shape: BoxShape.circle,
               ),
             )
           : null,
       onTap: onTap,
-      tileColor: isSelected ? Colors.white.withAlpha(25) : null,
+      tileColor: isSelected ? AppTheme.legacyForeground.withAlpha(25) : null,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
@@ -76,7 +80,7 @@ class _ProfileAvatar extends StatelessWidget {
       children: [
         CircleAvatar(
           radius: radius,
-          backgroundColor: Colors.white.withAlpha(51),
+          backgroundColor: AppTheme.adaptiveGlassFill,
           backgroundImage: hasBytes
               ? null
               : (image != null && !kIsWeb
@@ -94,7 +98,7 @@ class _ProfileAvatar extends StatelessWidget {
                     errorBuilder: (_, __, ___) => Icon(
                       Icons.person_rounded,
                       size: radius * 1.05,
-                      color: Colors.white70,
+                      color: AppTheme.legacySecondary,
                     ),
                   ),
                 )
@@ -209,23 +213,23 @@ class _ProfileOption extends StatelessWidget {
       child: ListTile(
         onTap: onTap,
         leading: CircleAvatar(
-          backgroundColor: Colors.white.withAlpha(51),
+          backgroundColor: AppTheme.adaptiveGlassFill,
           child: Icon(
             icon,
-            color: iconColor ?? Colors.white,
+            color: iconColor ?? AppTheme.legacyForeground,
           ),
         ),
         title: Text(
           title,
           style: TextStyle(
-            color: iconColor ?? Colors.white,
+            color: iconColor ?? AppTheme.legacyForeground,
             fontWeight: FontWeight.w600,
           ),
         ),
-        trailing: const Icon(
+        trailing: Icon(
           Icons.arrow_forward_ios_rounded,
           size: 16,
-          color: Colors.white70,
+          color: AppTheme.legacySecondary,
         ),
       ),
     );
@@ -358,7 +362,7 @@ class _PostOwnerAvatar extends StatelessWidget {
     final url = imageUrl?.trim();
     return CircleAvatar(
         radius: radius,
-        backgroundColor: Colors.white24,
+        backgroundColor: AppTheme.adaptiveGlassFill,
         backgroundImage: (url != null && url.isNotEmpty)
             ? ResizeImage(NetworkImage(url),
                 width: (radius * 2 * MediaQuery.devicePixelRatioOf(context))
@@ -366,7 +370,7 @@ class _PostOwnerAvatar extends StatelessWidget {
                     .clamp(1, 256))
             : null,
         child: (url == null || url.isEmpty)
-            ? const Icon(Icons.person, color: Colors.white70)
+            ? Icon(Icons.person, color: AppTheme.legacySecondary)
             : null);
   }
 }

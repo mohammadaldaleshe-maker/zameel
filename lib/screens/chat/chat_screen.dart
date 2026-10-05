@@ -1537,7 +1537,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                                     decoration: BoxDecoration(
                                       color: mine
                                           ? AppTheme.primary
-                                          : AppTheme.muted.shade200,
+                                          : AppTheme.adaptiveMuted.shade200,
                                       borderRadius: BorderRadius.circular(18),
                                     ),
                                     child: Column(

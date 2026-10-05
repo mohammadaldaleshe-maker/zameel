@@ -248,11 +248,11 @@ class _BusinessScreenState extends State<BusinessScreen> {
                   width: 54,
                   height: 54,
                   decoration: BoxDecoration(
-                    color: AppTheme.accentSoft,
+                    color: AppTheme.adaptiveHighlight,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Icon(p['icon'] as IconData,
-                      color: AppTheme.primaryDark, size: 28),
+                      color: AppTheme.adaptiveHighlightInk, size: 28),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -273,15 +273,15 @@ class _BusinessScreenState extends State<BusinessScreen> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 7, vertical: 3),
                               decoration: BoxDecoration(
-                                color: AppTheme.accentSoft,
+                                color: AppTheme.adaptiveHighlight,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
                                 p['tag'].toString(),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
-                                  color: AppTheme.primaryDark,
+                                  color: AppTheme.adaptiveHighlightInk,
                                 ),
                               ),
                             ),

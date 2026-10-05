@@ -1,3 +1,4 @@
+import '../../theme/app_theme.dart';
 import 'package:zameel/widgets/verified_name.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -264,7 +265,11 @@ class _QuizScreenState extends State<QuizScreen> {
                                   : _answer!['selected_index'] == i
                                       ? Colors.red.shade100
                                       : null,
-                          disabledForegroundColor: Colors.black87),
+                          disabledForegroundColor: _answer != null &&
+                                  (_answer!['correct_index'] == i ||
+                                      _answer!['selected_index'] == i)
+                              ? Colors.black87
+                              : AppTheme.adaptiveText),
                       child: Row(children: [
                         Expanded(child: Text('${options[i]}')),
                         if (_answer?['correct_index'] == i)

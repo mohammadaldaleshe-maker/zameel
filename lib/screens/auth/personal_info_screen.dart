@@ -206,7 +206,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                         ? '📋 المعلومات الشخصية'
                         : '📋 Personal Information',
                     style: GoogleFonts.ibmPlexSansArabic(
-                      color: Colors.white,
+                      color: AppTheme.legacyForeground,
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
@@ -256,16 +256,16 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                                 labelStyle: TextStyle(
                                   color: AppTheme.legacySecondary,
                                 ),
-                                prefixIcon: const Icon(
+                                prefixIcon: Icon(
                                   Icons.email_rounded,
-                                  color: Colors.white70,
+                                  color: AppTheme.legacySecondary,
                                 ),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(16),
                                   borderSide: BorderSide.none,
                                 ),
                                 filled: true,
-                                fillColor: Colors.white.withAlpha(25),
+                                fillColor: AppTheme.adaptiveGlassSoft,
                               ),
                             ),
                           ),
@@ -287,7 +287,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                                 RadioListTile<String>(
                                   value: 'email',
                                   groupValue: _verificationMethod,
-                                  activeColor: Colors.white,
+                                  activeColor: AppTheme.legacyForeground,
                                   title: Text(
                                       isArabic
                                           ? 'رمز إلى البريد الإلكتروني'
@@ -300,7 +300,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                                 RadioListTile<String>(
                                   value: 'phone',
                                   groupValue: _verificationMethod,
-                                  activeColor: Colors.white,
+                                  activeColor: AppTheme.legacyForeground,
                                   title: Text(
                                       isArabic
                                           ? 'رمز SMS إلى رقم الهاتف'
@@ -331,7 +331,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                                 RadioListTile<String>(
                                   value: 'first_father',
                                   groupValue: _displayNameFormat,
-                                  activeColor: Colors.white,
+                                  activeColor: AppTheme.legacyForeground,
                                   title: Text(
                                       isArabic
                                           ? 'الاسم + اسم الأب'
@@ -344,7 +344,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                                 RadioListTile<String>(
                                   value: 'first_family',
                                   groupValue: _displayNameFormat,
-                                  activeColor: Colors.white,
+                                  activeColor: AppTheme.legacyForeground,
                                   title: Text(
                                       isArabic
                                           ? 'الاسم + اسم العائلة'
@@ -357,7 +357,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                                 RadioListTile<String>(
                                   value: 'full_three',
                                   groupValue: _displayNameFormat,
-                                  activeColor: Colors.white,
+                                  activeColor: AppTheme.legacyForeground,
                                   title: Text(
                                       isArabic
                                           ? 'الاسم + اسم الأب + اسم العائلة'
@@ -391,16 +391,16 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                                 labelStyle: TextStyle(
                                   color: AppTheme.legacySecondary,
                                 ),
-                                prefixIcon: const Icon(
+                                prefixIcon: Icon(
                                   Icons.phone_rounded,
-                                  color: Colors.white70,
+                                  color: AppTheme.legacySecondary,
                                 ),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(16),
                                   borderSide: BorderSide.none,
                                 ),
                                 filled: true,
-                                fillColor: Colors.white.withAlpha(25),
+                                fillColor: AppTheme.adaptiveGlassSoft,
                               ),
                             ),
                           ),
@@ -424,16 +424,16 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                                 labelStyle: TextStyle(
                                   color: AppTheme.legacySecondary,
                                 ),
-                                prefixIcon: const Icon(
+                                prefixIcon: Icon(
                                   Icons.location_on_rounded,
-                                  color: Colors.white70,
+                                  color: AppTheme.legacySecondary,
                                 ),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(16),
                                   borderSide: BorderSide.none,
                                 ),
                                 filled: true,
-                                fillColor: Colors.white.withAlpha(25),
+                                fillColor: AppTheme.adaptiveGlassSoft,
                               ),
                             ),
                           ),
@@ -573,7 +573,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                       ),
                       child: Text(
                         isArabic ? 'التالي →' : 'Next →',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),

@@ -235,16 +235,16 @@ class _ZameelLibraryScreenState extends State<ZameelLibraryScreen> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 10),
                       decoration: BoxDecoration(
-                        color: AppTheme.accentSoft,
+                        color: AppTheme.adaptiveHighlight,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.bolt_rounded,
                             size: 20,
-                            color: AppTheme.primary,
+                            color: AppTheme.adaptiveHighlightInk,
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -252,7 +252,7 @@ class _ZameelLibraryScreenState extends State<ZameelLibraryScreen> {
                               ar
                                   ? 'تفتح المكتبة الآن من الفهرس الخفيف فقط. يتم تحميل محتوى التخصص وملفات PDF عند الطلب، والكتب المفتوحة الإضافية حتى $targetBooks كتاب تُجلب على دفعات صغيرة دون تجميد الصفحة.'
                                   : 'The library now opens from a lightweight index. Subject content and PDFs load only when requested, while additional open books up to $targetBooks are fetched in small background batches.',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12.2,
                                 height: 1.4,
                                 fontWeight: FontWeight.w700,
@@ -839,8 +839,9 @@ class _ZameelLibraryDetailsScreenState
             Center(
               child: CircleAvatar(
                 radius: 35,
-                backgroundColor:
-                    item.isBook ? AppTheme.primaryLight : AppTheme.accentSoft,
+                backgroundColor: item.isBook
+                    ? AppTheme.primaryLight
+                    : AppTheme.adaptiveHighlight,
                 child: const Icon(
                   Icons.picture_as_pdf_rounded,
                   size: 34,
@@ -991,8 +992,9 @@ class _LibraryItemCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               CircleAvatar(
-                backgroundColor:
-                    item.isBook ? AppTheme.primaryLight : AppTheme.accentSoft,
+                backgroundColor: item.isBook
+                    ? AppTheme.primaryLight
+                    : AppTheme.adaptiveHighlight,
                 child: const Icon(
                   Icons.picture_as_pdf_rounded,
                   color: AppTheme.primaryDark,
@@ -1064,7 +1066,7 @@ class _LibraryItemCard extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: item.isBook
                                 ? AppTheme.primaryLight
-                                : AppTheme.accentSoft,
+                                : AppTheme.adaptiveHighlight,
                             borderRadius: BorderRadius.circular(9),
                           ),
                           child: Text(

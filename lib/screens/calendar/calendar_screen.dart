@@ -298,7 +298,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                               color: isSelected
                                   ? AppTheme.primary
                                   : isToday
-                                      ? AppTheme.muted.shade200
+                                      ? AppTheme.adaptiveMuted.shade200
                                       : Colors.transparent,
                               borderRadius: BorderRadius.circular(12),
                               border: isToday && !isSelected
@@ -318,7 +318,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                         ? (isSelected
                                             ? Colors.white
                                             : AppTheme.adaptiveText)
-                                        : AppTheme.muted.shade400,
+                                        : AppTheme.adaptiveMuted.shade400,
                                     fontWeight: isToday
                                         ? FontWeight.bold
                                         : FontWeight.normal,
@@ -370,7 +370,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
             Icon(
               Icons.event_busy_rounded,
               size: 48,
-              color: AppTheme.muted.shade400,
+              color: AppTheme.adaptiveMuted.shade400,
             ),
             const SizedBox(height: 8),
             Text(
@@ -379,7 +379,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   : '📭 No events on this day',
               style: TextStyle(
                 fontSize: 16,
-                color: AppTheme.muted.shade600,
+                color: AppTheme.adaptiveMuted.shade600,
               ),
             ),
           ],
@@ -437,28 +437,28 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 Icon(
                   Icons.access_time_rounded,
                   size: 14,
-                  color: AppTheme.muted.shade500,
+                  color: AppTheme.adaptiveMuted.shade500,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   event['time'],
                   style: TextStyle(
                     fontSize: 12,
-                    color: AppTheme.muted.shade600,
+                    color: AppTheme.adaptiveMuted.shade600,
                   ),
                 ),
                 const SizedBox(width: 12),
                 Icon(
                   Icons.category_rounded,
                   size: 14,
-                  color: AppTheme.muted.shade500,
+                  color: AppTheme.adaptiveMuted.shade500,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   isArabic ? event['type_ar'] : event['type_en'],
                   style: TextStyle(
                     fontSize: 12,
-                    color: AppTheme.muted.shade600,
+                    color: AppTheme.adaptiveMuted.shade600,
                   ),
                 ),
               ],

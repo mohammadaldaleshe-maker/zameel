@@ -584,7 +584,9 @@ class _GroupTabButton extends StatelessWidget {
             text,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: isSelected ? AppTheme.primary : AppTheme.muted.shade600,
+              color: isSelected
+                  ? AppTheme.primary
+                  : AppTheme.adaptiveMuted.shade600,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               fontSize: 15,
             ),
@@ -633,7 +635,7 @@ class _GroupCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
-          color: AppTheme.muted.shade200,
+          color: AppTheme.adaptiveMuted.shade200,
         ),
       ),
       child: InkWell(
@@ -674,7 +676,7 @@ class _GroupCard extends StatelessWidget {
                     Text(
                       '${isArabic ? group['type_ar'] : group['type_en']} • ${group['members']} ${isArabic ? 'عضو' : 'members'}',
                       style: TextStyle(
-                        color: AppTheme.muted.shade600,
+                        color: AppTheme.adaptiveMuted.shade600,
                         fontSize: 12,
                       ),
                     ),
@@ -929,15 +931,15 @@ class GroupDetailsScreen extends StatelessWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppTheme.accentSoft,
+                    color: AppTheme.adaptiveHighlight,
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Text(
                     isArabic ? '👑 أنت مالك المجموعة' : '👑 You own this group',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.primaryDark),
+                        color: AppTheme.adaptiveHighlightInk),
                   ),
                 ),
 
@@ -1092,10 +1094,10 @@ class _InfoCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: AppTheme.muted.shade50,
+          color: AppTheme.adaptiveMuted.shade50,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: AppTheme.muted.shade200,
+            color: AppTheme.adaptiveMuted.shade200,
           ),
         ),
         child: Column(
@@ -1117,7 +1119,7 @@ class _InfoCard extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                color: AppTheme.muted.shade600,
+                color: AppTheme.adaptiveMuted.shade600,
                 fontSize: 12,
               ),
             ),

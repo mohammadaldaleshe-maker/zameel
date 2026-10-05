@@ -433,7 +433,7 @@ class _FriendsScreenState extends State<FriendsScreen>
           padding: const EdgeInsets.all(30),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             Icon(Icons.people_outline_rounded,
-                size: 64, color: AppTheme.muted.shade400),
+                size: 64, color: AppTheme.adaptiveMuted.shade400),
             const SizedBox(height: 12),
             Text(text,
                 style:

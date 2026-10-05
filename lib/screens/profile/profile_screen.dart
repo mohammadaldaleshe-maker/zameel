@@ -1179,7 +1179,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppTheme.muted.shade200)),
+                    border: Border.all(color: AppTheme.adaptiveMuted.shade200)),
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [

@@ -1,3 +1,4 @@
+import 'cached_media_image.dart';
 import '../services/video_preload_service.dart';
 import 'package:zameel/theme/app_theme.dart';
 import 'dart:async';
@@ -16,6 +17,8 @@ import '../services/video_source_service.dart';
 /// soon as the current vertical page is replaced.
 class VerticalAutoplayVideoPlayer extends StatefulWidget {
   final String videoUrl;
+  final String? posterUrl;
+  final VoidCallback? onCompleted;
   final ValueChanged<int>? onWatchedSeconds;
   final bool initialMuted;
   final bool tapToPause;
@@ -25,6 +28,8 @@ class VerticalAutoplayVideoPlayer extends StatefulWidget {
   const VerticalAutoplayVideoPlayer({
     super.key,
     required this.videoUrl,
+    this.posterUrl,
+    this.onCompleted,
     this.onWatchedSeconds,
     this.initialMuted = false,
     this.tapToPause = false,
@@ -42,6 +47,7 @@ class _VerticalAutoplayVideoPlayerState
   VideoPlayerController? _controller;
   Object? _error;
   bool _initialized = false;
+  bool _completionReported = false;
   bool _muted = false;
   bool _pausedByUser = false;
   bool _appActive = true;
@@ -106,6 +112,7 @@ class _VerticalAutoplayVideoPlayerState
     final previous = _controller;
     _controller = null;
     _initialized = false;
+    _completionReported = false;
     _error = null;
     _pausedByUser = false;
     _lastPlaybackTick = null;
@@ -143,7 +150,7 @@ class _VerticalAutoplayVideoPlayerState
       if (!controller.value.isInitialized) {
         await controller.initialize().timeout(const Duration(seconds: 15));
       }
-      await controller.setLooping(true);
+      await controller.setLooping(widget.onCompleted == null);
       await controller.setVolume(_muted ? 0 : 1);
       controller.addListener(_refreshProgress);
       if (!mounted || generation != _generation || _controller != controller) {
@@ -151,6 +158,7 @@ class _VerticalAutoplayVideoPlayerState
         return;
       }
       _initialized = true;
+      _captureRouteState();
       if (_shouldPlay) await controller.play();
       if (mounted) setState(() {});
       _scheduleControlsHide();
@@ -208,6 +216,15 @@ class _VerticalAutoplayVideoPlayerState
 
   void _refreshProgress() {
     final value = _controller?.value;
+    if (value?.isCompleted == true &&
+        !_completionReported &&
+        _shouldPlay &&
+        widget.onCompleted != null) {
+      _completionReported = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _routeCurrent && _appActive) widget.onCompleted?.call();
+      });
+    }
     final now = DateTime.now();
     if (widget.onWatchedSeconds != null && value != null) {
       final wall = _lastPlaybackTick == null
@@ -317,7 +334,14 @@ class _VerticalAutoplayVideoPlayerState
     }
 
     if (controller == null || !_initialized) {
-      return const Center(child: CircularProgressIndicator());
+      return Stack(fit: StackFit.expand, children: [
+        if ((widget.posterUrl ?? '').isNotEmpty)
+          CachedMediaImage(
+              url: widget.posterUrl!,
+              fit: BoxFit.contain,
+              fallback: const SizedBox()),
+        const Center(child: CircularProgressIndicator(color: Colors.white)),
+      ]);
     }
 
     final ratio = controller.value.aspectRatio == 0
@@ -337,6 +361,19 @@ class _VerticalAutoplayVideoPlayerState
                     width: controller.value.size.width,
                     height: controller.value.size.height,
                     child: VideoPlayer(controller))),
+            if (controller.value.isBuffering ||
+                controller.value.position == Duration.zero)
+              Positioned.fill(
+                  child: Stack(fit: StackFit.expand, children: [
+                if (controller.value.position == Duration.zero &&
+                    (widget.posterUrl ?? '').isNotEmpty)
+                  CachedMediaImage(
+                      url: widget.posterUrl!,
+                      fit: BoxFit.contain,
+                      fallback: const SizedBox()),
+                const Center(
+                    child: CircularProgressIndicator(color: Colors.white)),
+              ])),
             AnimatedOpacity(
               opacity: _controlsVisible ? 1 : 0,
               duration: const Duration(milliseconds: 180),
@@ -387,27 +424,34 @@ class _VerticalAutoplayVideoPlayerState
                 duration: const Duration(milliseconds: 180),
                 child: IgnorePointer(
                   ignoring: !_controlsVisible,
-                  child: Row(
-                    children: [
-                      Text(_time(controller.value.position),
-                          style: const TextStyle(
-                              color: Colors.white, fontSize: 11)),
-                      Expanded(
-                        child: VideoProgressIndicator(
-                          controller,
-                          allowScrubbing: true,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 12),
-                          colors: const VideoProgressColors(
-                              playedColor: Colors.deepPurpleAccent,
-                              bufferedColor: Colors.white38,
-                              backgroundColor: Colors.white24),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withAlpha(190),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Text(_time(controller.value.position),
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 11)),
+                        Expanded(
+                          child: VideoProgressIndicator(
+                            controller,
+                            allowScrubbing: true,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 12),
+                            colors: const VideoProgressColors(
+                                playedColor: Colors.deepPurpleAccent,
+                                bufferedColor: Colors.white38,
+                                backgroundColor: Colors.white24),
+                          ),
                         ),
-                      ),
-                      Text('-${_time(_remaining(controller))}',
-                          style: const TextStyle(
-                              color: Colors.white, fontSize: 11)),
-                    ],
+                        Text('-${_time(_remaining(controller))}',
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 11)),
+                      ],
+                    ),
                   ),
                 ),
               ),

@@ -129,12 +129,14 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                                 vertical: 10,
                               ),
                               decoration: BoxDecoration(
-                                color: isMe ? AppTheme.primary : Colors.white,
+                                color: isMe
+                                    ? AppTheme.primary
+                                    : AppTheme.adaptiveSurface,
                                 borderRadius: BorderRadius.circular(16),
                                 border: isMe
                                     ? null
                                     : Border.all(
-                                        color: AppTheme.muted.shade200),
+                                        color: AppTheme.adaptiveMuted.shade200),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -148,7 +150,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                                           fontWeight: FontWeight.bold,
                                           color: isMe
                                               ? Colors.white
-                                              : AppTheme.primaryDark,
+                                              : AppTheme.adaptiveText,
                                         ),
                                       )),
                                   const SizedBox(height: 3),

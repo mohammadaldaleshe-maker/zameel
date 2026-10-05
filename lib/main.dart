@@ -1,3 +1,6 @@
+import 'screens/social/clip_create_screen.dart';
+import 'screens/settings/app_settings_screen.dart';
+import 'screens/profile/profile_settings_screen.dart';
 import 'widgets/post_media_frame.dart';
 import 'services/watermarked_download_service.dart';
 import 'services/app_release_gate.dart';
@@ -46,7 +49,7 @@ import 'screens/search/search_screen.dart';
 
 import 'screens/auth/welcome_screen.dart';
 import 'screens/auth/open_registration_screen.dart';
-import 'screens/trust_game/trust_game_screen.dart';
+import 'screens/games/zameel_games_screen.dart';
 
 import 'screens/saved_posts_screen.dart';
 import 'screens/stats_screen.dart';

@@ -327,7 +327,7 @@ class _ProfilePictureScreenState extends State<ProfilePictureScreen> {
                         ? '📸 أضف صورتك الشخصية'
                         : '📸 Add Your Profile Picture',
                     style: GoogleFonts.ibmPlexSansArabic(
-                      color: Colors.white,
+                      color: AppTheme.legacyForeground,
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
@@ -373,7 +373,8 @@ class _ProfilePictureScreenState extends State<ProfilePictureScreen> {
                               ? Icon(
                                   Icons.person_rounded,
                                   size: 70,
-                                  color: Colors.white.withAlpha(128),
+                                  color:
+                                      AppTheme.legacyForeground.withAlpha(128),
                                 )
                               : null,
                         ),
@@ -387,7 +388,7 @@ class _ProfilePictureScreenState extends State<ProfilePictureScreen> {
                               color: AppTheme.adaptiveSurface,
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.camera_alt_rounded,
                               color: primaryColor,
                               size: 20,
@@ -440,7 +441,7 @@ class _ProfilePictureScreenState extends State<ProfilePictureScreen> {
                               isArabic
                                   ? '🚀 ابدأ رحلتك'
                                   : '🚀 Start Your Journey',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -507,7 +508,7 @@ class _ProfilePictureScreenState extends State<ProfilePictureScreen> {
               children: [
                 Text(
                   isArabic ? 'اختر مصدر الصورة' : 'Choose image source',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
@@ -570,7 +571,7 @@ class _ImageSourceButton extends StatelessWidget {
         width: 100,
         height: 80,
         decoration: BoxDecoration(
-          color: AppTheme.muted.shade100,
+          color: AppTheme.adaptiveMuted.shade100,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
@@ -580,7 +581,7 @@ class _ImageSourceButton extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               label,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
             ),
           ],
         ),

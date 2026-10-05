@@ -282,7 +282,7 @@ class _PasswordScreenState extends State<PasswordScreen> {
                   Text(
                     isArabic ? '🔐 كلمة المرور' : '🔐 Password',
                     style: GoogleFonts.ibmPlexSansArabic(
-                      color: Colors.white,
+                      color: AppTheme.legacyForeground,
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
@@ -394,9 +394,9 @@ class _PasswordScreenState extends State<PasswordScreen> {
                         labelStyle: TextStyle(
                           color: AppTheme.legacySecondary,
                         ),
-                        prefixIcon: const Icon(
+                        prefixIcon: Icon(
                           Icons.lock_rounded,
-                          color: Colors.white70,
+                          color: AppTheme.legacySecondary,
                         ),
                         suffixIcon: IconButton(
                           onPressed: () {
@@ -410,7 +410,7 @@ class _PasswordScreenState extends State<PasswordScreen> {
                             _obscurePassword
                                 ? Icons.visibility_rounded
                                 : Icons.visibility_off_rounded,
-                            color: Colors.white70,
+                            color: AppTheme.legacySecondary,
                           ),
                         ),
                         border: OutlineInputBorder(
@@ -424,7 +424,7 @@ class _PasswordScreenState extends State<PasswordScreen> {
                           25,
                         ),
                         errorText: _passwordError,
-                        errorStyle: const TextStyle(
+                        errorStyle: TextStyle(
                           color: Colors.redAccent,
                         ),
                       ),
@@ -458,9 +458,9 @@ class _PasswordScreenState extends State<PasswordScreen> {
                         labelStyle: TextStyle(
                           color: AppTheme.legacySecondary,
                         ),
-                        prefixIcon: const Icon(
+                        prefixIcon: Icon(
                           Icons.lock_outline_rounded,
-                          color: Colors.white70,
+                          color: AppTheme.legacySecondary,
                         ),
                         suffixIcon: IconButton(
                           onPressed: () {
@@ -475,7 +475,7 @@ class _PasswordScreenState extends State<PasswordScreen> {
                             _obscureConfirmPassword
                                 ? Icons.visibility_rounded
                                 : Icons.visibility_off_rounded,
-                            color: Colors.white70,
+                            color: AppTheme.legacySecondary,
                           ),
                         ),
                         border: OutlineInputBorder(
@@ -494,7 +494,7 @@ class _PasswordScreenState extends State<PasswordScreen> {
                             : isArabic
                                 ? '❌ كلمة المرور غير متطابقة'
                                 : '❌ Passwords do not match',
-                        errorStyle: const TextStyle(
+                        errorStyle: TextStyle(
                           color: Colors.redAccent,
                         ),
                       ),
@@ -517,10 +517,10 @@ class _PasswordScreenState extends State<PasswordScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: passwordValid && passwordsMatch
                             ? Colors.white
-                            : AppTheme.muted.shade400,
+                            : AppTheme.adaptiveMuted.shade400,
                         foregroundColor: passwordValid && passwordsMatch
                             ? primaryColor
-                            : AppTheme.muted.shade600,
+                            : AppTheme.adaptiveMuted.shade600,
                         padding: const EdgeInsets.symmetric(
                           vertical: 16,
                         ),
@@ -541,7 +541,7 @@ class _PasswordScreenState extends State<PasswordScreen> {
                             )
                           : Text(
                               isArabic ? 'إنشاء الحساب →' : 'Create Account →',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                               ),

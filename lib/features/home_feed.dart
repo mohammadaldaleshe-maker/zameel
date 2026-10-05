@@ -1587,14 +1587,14 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                         maxLines: 5,
                         autofocus: true,
                         style: TextStyle(color: AppTheme.adaptiveText),
-                        cursorColor: Colors.black,
+                        cursorColor: AppTheme.adaptiveText,
                         decoration: InputDecoration(
                           hintText: Translations.translate(
                             'create_post_hint',
                             languageProvider.currentLanguage,
                           ),
                           filled: true,
-                          fillColor: AppTheme.muted.shade100,
+                          fillColor: AppTheme.adaptiveMuted.shade100,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
                             borderSide: BorderSide.none,
@@ -1816,16 +1816,19 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    profileName ??
-                                        (isArabic ? 'مستخدم' : 'User'),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                        color: AppTheme.legacyForeground,
-                                        fontSize: 21,
-                                        fontWeight: FontWeight.w900),
-                                  ),
+                                  VerifiedName(
+                                      userId: Supabase
+                                          .instance.client.auth.currentUser?.id,
+                                      child: Text(
+                                        profileName ??
+                                            (isArabic ? 'مستخدم' : 'User'),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                            color: AppTheme.legacyForeground,
+                                            fontSize: 21,
+                                            fontWeight: FontWeight.w900),
+                                      )),
                                   const SizedBox(height: 4),
                                   Text(isArabic ? 'الصفحة الشخصية' : 'Profile',
                                       style: TextStyle(
@@ -1884,10 +1887,16 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
               ),
             if (FeatureControl.instance.visible('trust_game'))
               _DrawerItem(
-                icon: Icons.handshake_outlined,
-                title: isArabic ? 'ثقة أم غدر؟' : 'Trust or Betray?',
-                onTap: () => FeatureControl.instance.open(context, 'trust_game',
-                    () => TrustGameScreen(isArabic: isArabic)),
+                icon: Icons.sports_esports_rounded,
+                title: isArabic ? 'ألعاب زميل' : 'Zameel games',
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ZameelGamesScreen(),
+                      ));
+                },
               ),
             if (FeatureControl.instance.visible('lamma'))
               _DrawerItem(
@@ -2010,12 +2019,22 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
               isSelected: currentIndex == 11,
             ),
             _DrawerItem(
-              icon: Icons.tune_rounded,
-              title: isArabic ? 'تخصيص الزر العائم' : 'Customize floating menu',
+              icon: Icons.settings_rounded,
+              title: isArabic ? 'إعدادات التطبيق' : 'App settings',
               onTap: () {
                 Navigator.pop(context);
-                Future<void>.delayed(const Duration(milliseconds: 180),
-                    _showArcShortcutCustomizer);
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AppSettingsScreen(
+                        onCustomizeFloatingMenu: () {
+                          Future<void>.delayed(
+                              const Duration(milliseconds: 180), () {
+                            if (mounted) _showArcShortcutCustomizer();
+                          });
+                        },
+                      ),
+                    ));
               },
             ),
             Divider(
@@ -2108,7 +2127,8 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
       textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        drawer: _buildDrawer(context),
+        drawer: isArabic ? _buildDrawer(context) : null,
+        endDrawer: isArabic ? null : _buildDrawer(context),
         drawerEdgeDragWidth: 28,
         drawerEnableOpenDragGesture: true,
         appBar: AppBar(
@@ -2119,7 +2139,14 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
               builder: (scaffoldContext) => IconButton(
                   tooltip: isArabic ? 'القائمة' : 'Menu',
                   icon: const Icon(Icons.menu_rounded),
-                  onPressed: () => Scaffold.of(scaffoldContext).openDrawer())),
+                  onPressed: () {
+                    final scaffold = Scaffold.of(scaffoldContext);
+                    if (isArabic) {
+                      scaffold.openDrawer();
+                    } else {
+                      scaffold.openEndDrawer();
+                    }
+                  })),
           title: const Text(
             'Zameel',
             maxLines: 1,
@@ -2130,6 +2157,20 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
             ),
           ),
           actions: [
+            IconButton(
+              key: const ValueKey('homeAccountSettings'),
+              tooltip: isArabic ? 'إعدادات الحساب' : 'Account settings',
+              icon: const Icon(Icons.manage_accounts_outlined),
+              onPressed: () {
+                final userId = Supabase.instance.client.auth.currentUser?.id;
+                if (userId == null) return;
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ProfileSettingsScreen(userId: userId),
+                    ));
+              },
+            ),
             if (FeatureControl.instance.visible('direct_calls'))
               IconButton(
                 tooltip: isArabic ? 'اتصال' : 'Call',
@@ -2709,12 +2750,8 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
         await _pickVideo();
         break;
       case 'clip':
-        await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ZameelSocialStudio(isArabic: isArabic),
-          ),
-        );
+        await FeatureControl.instance
+            .open(context, 'clips', () => ClipCreateScreen(isArabic: isArabic));
         break;
     }
   }
@@ -2773,18 +2810,6 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                if (FeatureControl.instance.visible('trust_game'))
-                  _CreateAction(
-                    icon: Icons.handshake_outlined,
-                    text: languageProvider.isArabic
-                        ? 'ثقة أم غدر؟'
-                        : 'Trust or Betray?',
-                    onTap: () => FeatureControl.instance.open(
-                        context,
-                        'trust_game',
-                        () => TrustGameScreen(
-                            isArabic: languageProvider.isArabic)),
-                  ),
                 if (FeatureControl.instance.visible('quiz'))
                   _CreateAction(
                     icon: Icons.quiz_outlined,

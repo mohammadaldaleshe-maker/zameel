@@ -177,24 +177,28 @@ class _VerifiedNameState extends State<VerifiedName> {
       listenable: directory,
       builder: (context, child) {
         final child = widget.child;
-        if (id.isEmpty || directory.expiry(id) == null) return child;
-        return Text.rich(
-            TextSpan(children: [
-              TextSpan(text: child.data ?? '', style: child.style),
-              WidgetSpan(
-                  alignment: PlaceholderAlignment.middle,
-                  child: VerifiedBadge(expiresAt: directory.expiry(id)))
-            ]),
-            style: child.style,
-            textAlign: child.textAlign,
-            textDirection: child.textDirection,
-            locale: child.locale,
-            softWrap: child.softWrap,
-            overflow: child.overflow,
-            textScaler: child.textScaler,
-            maxLines: child.maxLines,
-            semanticsLabel: child.semanticsLabel,
-            textWidthBasis: child.textWidthBasis,
-            textHeightBehavior: child.textHeightBehavior);
+        final expiry = directory.expiry(id);
+        final end = DateTime.tryParse(expiry ?? '');
+        if (id.isEmpty || end == null || !end.isAfter(DateTime.now()))
+          return child;
+        return VerifiedNameLabel(expiresAt: expiry, child: child);
       });
+}
+
+/// Reserve badge space without intrinsic-size restrictions in chips or dialogs.
+class VerifiedNameLabel extends StatelessWidget {
+  final Text child;
+  final String? expiresAt;
+  const VerifiedNameLabel(
+      {super.key, required this.child, required this.expiresAt});
+  @override
+  Widget build(BuildContext context) {
+    final end = DateTime.tryParse(expiresAt ?? '');
+    if (end == null || !end.isAfter(DateTime.now())) return child;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      textDirection: child.textDirection ?? Directionality.of(context),
+      children: [Flexible(child: child), VerifiedBadge(expiresAt: expiresAt)],
+    );
+  }
 }

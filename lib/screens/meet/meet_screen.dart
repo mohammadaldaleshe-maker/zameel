@@ -543,14 +543,14 @@ class _MeetScreenState extends State<MeetScreen> {
             Icon(
               Icons.history_rounded,
               size: 64,
-              color: AppTheme.muted.shade400,
+              color: AppTheme.adaptiveMuted.shade400,
             ),
             const SizedBox(height: 12),
             Text(
               isArabic ? 'لا توجد اجتماعات سابقة' : 'No past meetings',
               style: TextStyle(
                 fontSize: 18,
-                color: AppTheme.muted.shade600,
+                color: AppTheme.adaptiveMuted.shade600,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -560,7 +560,7 @@ class _MeetScreenState extends State<MeetScreen> {
                   ? 'اجتماعاتك السابقة ستظهر هنا'
                   : 'Your past meetings will appear here',
               style: TextStyle(
-                color: AppTheme.muted.shade500,
+                color: AppTheme.adaptiveMuted.shade500,
                 fontSize: 14,
               ),
             ),
@@ -581,7 +581,7 @@ class _MeetScreenState extends State<MeetScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
             side: BorderSide(
-              color: AppTheme.muted.shade200,
+              color: AppTheme.adaptiveMuted.shade200,
             ),
           ),
           child: ListTile(
@@ -613,14 +613,14 @@ class _MeetScreenState extends State<MeetScreen> {
                   '📅 ${meeting['date']} • ⏰ ${meeting['time']}',
                   style: TextStyle(
                     fontSize: 13,
-                    color: AppTheme.muted.shade600,
+                    color: AppTheme.adaptiveMuted.shade600,
                   ),
                 ),
                 Text(
                   '👥 ${meeting['participants']} مشارك • ⏱️ ${meeting['duration']}',
                   style: TextStyle(
                     fontSize: 12,
-                    color: AppTheme.muted.shade500,
+                    color: AppTheme.adaptiveMuted.shade500,
                   ),
                 ),
               ],
@@ -885,7 +885,9 @@ class _MeetTabButton extends StatelessWidget {
             text,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: isSelected ? AppTheme.primary : AppTheme.muted.shade600,
+              color: isSelected
+                  ? AppTheme.primary
+                  : AppTheme.adaptiveMuted.shade600,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               fontSize: 14,
             ),

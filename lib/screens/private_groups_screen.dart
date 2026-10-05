@@ -222,8 +222,10 @@ class _PrivateGroupsScreenState extends State<PrivateGroupsScreen> {
                         return ListTile(
                           leading: const CircleAvatar(
                               child: Icon(Icons.person_rounded)),
-                          title: Text(request['user_name']?.toString() ??
-                              (isArabic ? 'زميل' : 'Zameel')),
+                          title: VerifiedName(
+                              userId: request['user_id']?.toString(),
+                              child: Text(request['user_name']?.toString() ??
+                                  (isArabic ? 'زميل' : 'Zameel'))),
                           trailing: Wrap(
                             spacing: 4,
                             children: [
@@ -380,7 +382,7 @@ class _PrivateGroupsScreenState extends State<PrivateGroupsScreen> {
                                     Icon(
                                       Icons.lock_rounded,
                                       size: 14,
-                                      color: AppTheme.muted.shade400,
+                                      color: AppTheme.adaptiveMuted.shade400,
                                     ),
                                 ],
                               ),
@@ -391,7 +393,7 @@ class _PrivateGroupsScreenState extends State<PrivateGroupsScreen> {
                                     : group['description_en'],
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: AppTheme.muted.shade600,
+                                  color: AppTheme.adaptiveMuted.shade600,
                                 ),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
@@ -402,14 +404,14 @@ class _PrivateGroupsScreenState extends State<PrivateGroupsScreen> {
                                   Icon(
                                     Icons.people_rounded,
                                     size: 14,
-                                    color: AppTheme.muted.shade400,
+                                    color: AppTheme.adaptiveMuted.shade400,
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
                                     '${group['members']} ${isArabic ? 'عضو' : 'members'}',
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: AppTheme.muted.shade500,
+                                      color: AppTheme.adaptiveMuted.shade500,
                                     ),
                                   ),
                                 ],
@@ -429,15 +431,15 @@ class _PrivateGroupsScreenState extends State<PrivateGroupsScreen> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 7),
                             decoration: BoxDecoration(
-                              color: AppTheme.accentSoft,
+                              color: AppTheme.adaptiveHighlight,
                               borderRadius: BorderRadius.circular(18),
                             ),
                             child: Text(
                               isArabic ? 'المالك' : 'Owner',
-                              style: const TextStyle(
+                              style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
-                                  color: AppTheme.primaryDark),
+                                  color: AppTheme.adaptiveHighlightInk),
                             ),
                           ),
                         ] else
@@ -446,10 +448,12 @@ class _PrivateGroupsScreenState extends State<PrivateGroupsScreen> {
                                 ? null
                                 : () => _toggleJoin(index),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                                  isJoined ? AppTheme.muted.shade200 : color,
-                              foregroundColor:
-                                  isJoined ? Colors.black : Colors.white,
+                              backgroundColor: isJoined
+                                  ? AppTheme.adaptiveMuted.shade200
+                                  : color,
+                              foregroundColor: isJoined
+                                  ? AppTheme.adaptiveText
+                                  : Colors.white,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(20),
                               ),
@@ -467,8 +471,9 @@ class _PrivateGroupsScreenState extends State<PrivateGroupsScreen> {
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 11,
-                                color:
-                                    isJoined ? AppTheme.muted.shade600 : null,
+                                color: isJoined
+                                    ? AppTheme.adaptiveMuted.shade600
+                                    : null,
                               ),
                             ),
                           ),

@@ -382,7 +382,7 @@ class _PollCard extends StatelessWidget {
                       isArabic ? poll['time_ar'] : poll['time_en'],
                       style: TextStyle(
                         fontSize: 11,
-                        color: AppTheme.muted.shade500,
+                        color: AppTheme.adaptiveMuted.shade500,
                       ),
                     ),
                   ],
@@ -393,14 +393,14 @@ class _PollCard extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppTheme.muted.shade200,
+                    color: AppTheme.adaptiveMuted.shade200,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     isArabic ? '🔒 مغلق' : '🔒 Closed',
                     style: TextStyle(
                       fontSize: 11,
-                      color: AppTheme.muted.shade600,
+                      color: AppTheme.adaptiveMuted.shade600,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -471,14 +471,14 @@ class _PollCard extends StatelessWidget {
                     color: isUserChoice
                         ? AppTheme.primary.withAlpha(25)
                         : (isClosed
-                            ? AppTheme.muted.shade100
+                            ? AppTheme.adaptiveMuted.shade100
                             : AppTheme.adaptiveBackground),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: isUserChoice
                           ? AppTheme.primary
                           : (isClosed
-                              ? AppTheme.muted.shade300
+                              ? AppTheme.adaptiveMuted.shade300
                               : AppTheme.primary.withAlpha(51)),
                     ),
                   ),
@@ -491,7 +491,7 @@ class _PollCard extends StatelessWidget {
                               option,
                               style: TextStyle(
                                 color: isClosed
-                                    ? AppTheme.muted.shade600
+                                    ? AppTheme.adaptiveMuted.shade600
                                     : AppTheme.adaptiveText,
                                 fontWeight: isUserChoice
                                     ? FontWeight.bold
@@ -506,7 +506,7 @@ class _PollCard extends StatelessWidget {
                                 fontWeight: FontWeight.bold,
                                 color: isUserChoice
                                     ? AppTheme.primary
-                                    : AppTheme.muted.shade600,
+                                    : AppTheme.adaptiveMuted.shade600,
                               ),
                             ),
                           ],
@@ -518,7 +518,7 @@ class _PollCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                           child: LinearProgressIndicator(
                             value: percentage / 100,
-                            backgroundColor: AppTheme.muted.shade200,
+                            backgroundColor: AppTheme.adaptiveMuted.shade200,
                             color: isUserChoice
                                 ? AppTheme.primary
                                 : AppTheme.primary.withAlpha(179),
@@ -543,7 +543,7 @@ class _PollCard extends StatelessWidget {
               Icon(
                 Icons.people_rounded,
                 size: 14,
-                color: AppTheme.muted.shade500,
+                color: AppTheme.adaptiveMuted.shade500,
               ),
               const SizedBox(width: 4),
               Text(
@@ -552,7 +552,7 @@ class _PollCard extends StatelessWidget {
                     : '${poll['totalVotes']} votes',
                 style: TextStyle(
                   fontSize: 12,
-                  color: AppTheme.muted.shade500,
+                  color: AppTheme.adaptiveMuted.shade500,
                 ),
               ),
               const Spacer(),

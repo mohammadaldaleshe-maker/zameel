@@ -283,7 +283,8 @@ class _StatsScreenState extends State<StatsScreen> {
                                 Text(day['day'].toString(),
                                     style: TextStyle(
                                         fontSize: 11,
-                                        color: AppTheme.muted.shade600)),
+                                        color:
+                                            AppTheme.adaptiveMuted.shade600)),
                               ],
                             );
                           }).toList(),
@@ -360,21 +361,23 @@ class _AchievementChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: unlocked ? color.withAlpha(25) : AppTheme.muted.shade100,
+        color: unlocked ? color.withAlpha(25) : AppTheme.adaptiveMuted.shade100,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-            color: unlocked ? color : AppTheme.muted.shade300, width: 1.5),
+            color: unlocked ? color : AppTheme.adaptiveMuted.shade300,
+            width: 1.5),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon,
-              color: unlocked ? color : AppTheme.muted.shade400, size: 18),
+              color: unlocked ? color : AppTheme.adaptiveMuted.shade400,
+              size: 18),
           const SizedBox(width: 6),
           Text(
             label,
             style: TextStyle(
-              color: unlocked ? color : AppTheme.muted.shade500,
+              color: unlocked ? color : AppTheme.adaptiveMuted.shade500,
               fontWeight: unlocked ? FontWeight.bold : FontWeight.normal,
               fontSize: 12,
             ),

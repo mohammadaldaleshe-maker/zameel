@@ -165,12 +165,11 @@ class _VerificationScreenState extends State<VerificationScreen> {
             onPressed: () {
               Navigator.pop(context);
             },
-            icon: const Icon(Icons.arrow_back_rounded,
-                color: AppTheme.primaryDark),
+            icon: Icon(Icons.arrow_back_rounded, color: AppTheme.primaryDark),
           ),
           title: Text(
             isArabic ? '🔐 رمز التحقق' : '🔐 Verification Code',
-            style: const TextStyle(
+            style: TextStyle(
               color: AppTheme.primaryDark,
               fontWeight: FontWeight.bold,
             ),
@@ -208,7 +207,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
                         color: AppTheme.primary.withOpacity(0.15),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.mark_email_read_rounded,
                         color: AppTheme.primary,
                         size: 40,
@@ -224,7 +223,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
                       isArabic
                           ? 'تحقق من بريدك الإلكتروني'
                           : 'Check Your Email',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
                         color: AppTheme.primaryDark,
@@ -242,13 +241,13 @@ class _VerificationScreenState extends State<VerificationScreen> {
                           : 'We have sent a 6-digit verification code to:',
                       style: TextStyle(
                         fontSize: 14,
-                        color: AppTheme.muted.shade600,
+                        color: AppTheme.adaptiveMuted.shade600,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       widget.email,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
                         color: AppTheme.primary,
@@ -273,18 +272,18 @@ class _VerificationScreenState extends State<VerificationScreen> {
                             keyboardType: TextInputType.number,
                             textAlign: TextAlign.center,
                             maxLength: 1,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
                             ),
                             decoration: InputDecoration(
                               counterText: '',
                               filled: true,
-                              fillColor: AppTheme.muted.shade50,
+                              fillColor: AppTheme.adaptiveMuted.shade50,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                                 borderSide: BorderSide(
-                                  color: AppTheme.muted.shade300,
+                                  color: AppTheme.adaptiveMuted.shade300,
                                 ),
                               ),
                               focusedBorder: OutlineInputBorder(
@@ -320,7 +319,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
                           : '📝 Code: ${widget.verificationCode} (for testing)',
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppTheme.muted.shade500,
+                        color: AppTheme.adaptiveMuted.shade500,
                       ),
                     ),
 
@@ -341,7 +340,8 @@ class _VerificationScreenState extends State<VerificationScreen> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
-                          disabledBackgroundColor: AppTheme.muted.shade300,
+                          disabledBackgroundColor:
+                              AppTheme.adaptiveMuted.shade300,
                         ),
                         child: _isLoading
                             ? const SizedBox(
@@ -356,7 +356,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
                                 isArabic
                                     ? '🔓 التحقق من الرمز'
                                     : '🔓 Verify Code',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -377,7 +377,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
                               ? 'لم يصلك الرمز؟ '
                               : 'Didn\'t receive code? ',
                           style: TextStyle(
-                            color: AppTheme.muted.shade600,
+                            color: AppTheme.adaptiveMuted.shade600,
                             fontSize: 14,
                           ),
                         ),
@@ -397,7 +397,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
                           Text(
                             '$_timer ثانية',
                             style: TextStyle(
-                              color: AppTheme.muted.shade500,
+                              color: AppTheme.adaptiveMuted.shade500,
                               fontSize: 14,
                             ),
                           ),
@@ -419,7 +419,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
                               ? '⬅️ العودة لتسجيل الدخول'
                               : '⬅️ Back to login',
                           style: TextStyle(
-                            color: AppTheme.muted.shade600,
+                            color: AppTheme.adaptiveMuted.shade600,
                             fontSize: 14,
                           ),
                         ),

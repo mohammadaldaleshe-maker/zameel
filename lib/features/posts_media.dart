@@ -63,6 +63,13 @@ class _MixedPostMediaViewerState extends State<MixedPostMediaViewer> {
     if (_items.isEmpty)
       return const Scaffold(body: Center(child: Text('لا توجد وسائط')));
     final item = _items[_index];
+    if (_items.length == 1 && item.isVideo) {
+      widget.post['video_url'] = item.url;
+      return ZameelMediaViewer(
+          post: widget.post,
+          isVideo: true,
+          onLikeChanged: widget.onLikeChanged);
+    }
     final selected = {
       ...widget.post,
       'type': item.type,
@@ -104,6 +111,7 @@ class _MixedPostMediaViewerState extends State<MixedPostMediaViewer> {
             enableVerticalPaging: false,
             autoplayVideo: item.isVideo,
             onZoomChanged: (zoomed) => _zoomed = zoomed,
+            onVideoCompleted: () => _move(1),
             onLikeChanged: () {
               for (final key in [
                 'liked',
@@ -868,6 +876,7 @@ class ZameelMediaViewer extends StatefulWidget {
   final bool isVideo;
   final VoidCallback? onLikeChanged;
   final bool enableVerticalPaging;
+  final VoidCallback? onVideoCompleted;
   final bool autoplayVideo;
   final bool videoActive;
   final ValueChanged<bool>? onZoomChanged;
@@ -878,6 +887,7 @@ class ZameelMediaViewer extends StatefulWidget {
     required this.isVideo,
     this.onLikeChanged,
     this.enableVerticalPaging = true,
+    this.onVideoCompleted,
     this.autoplayVideo = false,
     this.videoActive = true,
     this.onZoomChanged,
@@ -1113,7 +1123,8 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
   Widget build(BuildContext context) {
     AppearanceScope.observe(context);
     if (widget.isVideo && widget.enableVerticalPaging) {
-      return _VerticalPostVideoViewer(initialPost: widget.post);
+      return _VerticalPostVideoViewer(
+          initialPost: widget.post, onLikeChanged: widget.onLikeChanged);
     }
     final languageProvider = Provider.of<LanguageProvider>(context);
     final isArabic = languageProvider.isArabic;
@@ -1180,6 +1191,8 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
                                       ? (widget.videoActive
                                           ? VerticalAutoplayVideoPlayer(
                                               videoUrl: _url,
+                                              onCompleted:
+                                                  widget.onVideoCompleted,
                                               onControlsVisibilityChanged:
                                                   (visible) {
                                                 if (mounted &&
@@ -1439,7 +1452,9 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
 class _VerticalPostVideoViewer extends StatefulWidget {
   final Map<String, dynamic> initialPost;
 
-  const _VerticalPostVideoViewer({required this.initialPost});
+  final VoidCallback? onLikeChanged;
+  const _VerticalPostVideoViewer(
+      {required this.initialPost, this.onLikeChanged});
 
   @override
   State<_VerticalPostVideoViewer> createState() =>
@@ -1450,6 +1465,20 @@ class _VerticalPostVideoViewerState extends State<_VerticalPostVideoViewer> {
   late final PageController _pageController;
   late List<Map<String, dynamic>> _posts;
   int _currentIndex = 0;
+  int? _completedIndex;
+
+  void _advanceCompleted(int index) {
+    if (!mounted ||
+        index != _currentIndex ||
+        !_pageController.hasClients ||
+        !(ModalRoute.of(context)?.isCurrent ?? true)) return;
+    _completedIndex = index;
+    if (index + 1 < _posts.length) {
+      _completedIndex = null;
+      _pageController.animateToPage(index + 1,
+          duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
+    }
+  }
 
   @override
   void initState() {
@@ -1470,18 +1499,32 @@ class _VerticalPostVideoViewerState extends State<_VerticalPostVideoViewer> {
       final rows = await Supabase.instance.client
           .from('posts')
           .select('*, users(name,profile_image)')
-          .eq('type', 'video')
+          .or('is_hidden.is.null,is_hidden.eq.false')
           .order('created_at', ascending: false)
           .limit(50);
       final resolvedRows = List<Map<String, dynamic>>.from(rows);
       // Players resolve only the visible video, avoiding a batch of 50 signing requests.
       final initialId = widget.initialPost['id']?.toString();
-      final additional = resolvedRows.where((post) {
-        final id = post['id']?.toString();
-        final url = post['video_url']?.toString() ?? '';
-        return id != initialId && url.isNotEmpty;
-      });
-      if (mounted) setState(() => _posts = [widget.initialPost, ...additional]);
+      final additional = <Map<String, dynamic>>[];
+      for (final post in resolvedRows) {
+        if (post['id']?.toString() == initialId) continue;
+        final media = postMediaItems(post);
+        final videoIndex = media.indexWhere((item) => item.isVideo);
+        if (videoIndex < 0) continue;
+        additional.add({
+          ...post,
+          'video_url': media[videoIndex].url,
+          'media_index': videoIndex,
+          'type': 'video'
+        });
+      }
+      if (mounted) {
+        setState(() => _posts = [widget.initialPost, ...additional]);
+        final completed = _completedIndex;
+        if (completed != null)
+          WidgetsBinding.instance
+              .addPostFrameCallback((_) => _advanceCompleted(completed));
+      }
     } catch (_) {
       // The current video remains available if loading the following feed fails.
     }
@@ -1497,7 +1540,11 @@ class _VerticalPostVideoViewerState extends State<_VerticalPostVideoViewer> {
         scrollDirection: Axis.vertical,
         itemCount: _posts.length,
         onPageChanged: (index) {
-          if (mounted) setState(() => _currentIndex = index);
+          if (mounted)
+            setState(() {
+              _currentIndex = index;
+              _completedIndex = null;
+            });
         },
         itemBuilder: (_, index) => ZameelMediaViewer(
           key: ValueKey(_posts[index]['id'] ?? index),
@@ -1506,6 +1553,8 @@ class _VerticalPostVideoViewerState extends State<_VerticalPostVideoViewer> {
           enableVerticalPaging: false,
           autoplayVideo: true,
           videoActive: index == _currentIndex,
+          onLikeChanged: index == 0 ? widget.onLikeChanged : null,
+          onVideoCompleted: () => _advanceCompleted(index),
         ),
       ),
     );

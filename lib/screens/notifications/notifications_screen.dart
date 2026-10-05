@@ -362,7 +362,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         return Card(
                           color: n['is_read'] == true
                               ? Colors.white
-                              : AppTheme.accentSoft,
+                              : AppTheme.adaptiveHighlight,
                           child: ListTile(
                             onTap: () async {
                               await _read(n);

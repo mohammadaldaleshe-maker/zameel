@@ -141,7 +141,7 @@ class _AcademicYearScreenState extends State<AcademicYearScreen> {
                   Text(
                     isArabic ? '📚 السنة الدراسية' : '📚 Academic Year',
                     style: GoogleFonts.ibmPlexSansArabic(
-                      color: Colors.white,
+                      color: AppTheme.legacyForeground,
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
@@ -187,7 +187,7 @@ class _AcademicYearScreenState extends State<AcademicYearScreen> {
                               decoration: BoxDecoration(
                                 border: Border.all(
                                   color: isSelected
-                                      ? Colors.white
+                                      ? AppTheme.legacyForeground
                                       : Colors.transparent,
                                   width: 2,
                                 ),
@@ -213,7 +213,7 @@ class _AcademicYearScreenState extends State<AcademicYearScreen> {
                                     const SizedBox(height: 4),
                                     Icon(
                                       Icons.check_circle_rounded,
-                                      color: Colors.white,
+                                      color: AppTheme.legacyForeground,
                                       size: 20,
                                     ),
                                   ],
@@ -249,10 +249,10 @@ class _AcademicYearScreenState extends State<AcademicYearScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: selectedYear != null
                             ? Colors.white
-                            : AppTheme.muted.shade400,
+                            : AppTheme.adaptiveMuted.shade400,
                         foregroundColor: selectedYear != null
                             ? primaryColor
-                            : AppTheme.muted.shade600,
+                            : AppTheme.adaptiveMuted.shade600,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(30),
@@ -260,7 +260,7 @@ class _AcademicYearScreenState extends State<AcademicYearScreen> {
                       ),
                       child: Text(
                         isArabic ? 'التالي →' : 'Next →',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),

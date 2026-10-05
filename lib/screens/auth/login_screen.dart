@@ -213,7 +213,7 @@ class _LoginScreenState extends State<LoginScreen> {
             onPressed: () {
               Navigator.pop(context);
             },
-            icon: const Icon(Icons.arrow_back_rounded),
+            icon: Icon(Icons.arrow_back_rounded),
           ),
         ),
 
@@ -294,16 +294,16 @@ class _LoginScreenState extends State<LoginScreen> {
                             ? 'البريد الإلكتروني أو رقم الهاتف'
                             : 'Email or phone number',
                         labelStyle: TextStyle(color: AppTheme.legacySecondary),
-                        prefixIcon: const Icon(
+                        prefixIcon: Icon(
                           Icons.alternate_email_rounded,
-                          color: Colors.white70,
+                          color: AppTheme.legacySecondary,
                         ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
                           borderSide: BorderSide.none,
                         ),
                         filled: true,
-                        fillColor: Colors.white.withAlpha(25),
+                        fillColor: AppTheme.adaptiveGlassSoft,
                       ),
                     ),
                   ),
@@ -321,9 +321,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       decoration: InputDecoration(
                         labelText: isArabic ? 'كلمة المرور' : 'Password',
                         labelStyle: TextStyle(color: AppTheme.legacySecondary),
-                        prefixIcon: const Icon(
+                        prefixIcon: Icon(
                           Icons.lock_rounded,
-                          color: Colors.white70,
+                          color: AppTheme.legacySecondary,
                         ),
                         suffixIcon: IconButton(
                           onPressed: () {
@@ -335,7 +335,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             _obscurePassword
                                 ? Icons.visibility_rounded
                                 : Icons.visibility_off_rounded,
-                            color: Colors.white70,
+                            color: AppTheme.legacySecondary,
                           ),
                         ),
                         border: OutlineInputBorder(
@@ -343,7 +343,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           borderSide: BorderSide.none,
                         ),
                         filled: true,
-                        fillColor: Colors.white.withAlpha(25),
+                        fillColor: AppTheme.adaptiveGlassSoft,
                       ),
                     ),
                   ),
@@ -370,7 +370,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           child: Text(
                             isArabic ? '🔑 تسجيل الدخول' : '🔑 Login',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),

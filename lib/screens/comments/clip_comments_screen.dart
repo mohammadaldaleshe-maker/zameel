@@ -302,7 +302,8 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
                                 ? 'لا توجد تعليقات بعد\nكن أول من يعلق!'
                                 : 'No comments yet\nBe the first to comment!',
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: AppTheme.muted.shade600),
+                            style: TextStyle(
+                                color: AppTheme.adaptiveMuted.shade600),
                           ),
                         )
                       : RefreshIndicator(
@@ -323,7 +324,7 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
                 width: double.infinity,
                 padding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                color: AppTheme.accentSoft,
+                color: AppTheme.adaptiveHighlight,
                 child: Row(
                   children: [
                     const Icon(Icons.reply_rounded, size: 18),
@@ -361,7 +362,7 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
                               ? (ar ? 'اكتب تعليقك...' : 'Write a comment...')
                               : (ar ? 'اكتب ردك...' : 'Write a reply...'),
                           filled: true,
-                          fillColor: AppTheme.muted.shade100,
+                          fillColor: AppTheme.adaptiveMuted.shade100,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(24),
                             borderSide: BorderSide.none,
@@ -493,7 +494,7 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
                           '${created == null ? '' : DateFormat(ar ? 'yyyy/MM/dd • HH:mm' : 'MMM d, yyyy • HH:mm', ar ? 'ar' : 'en').format(created)}${edited ? (ar ? ' • تم التعديل' : ' • edited') : ''}',
                           style: TextStyle(
                             fontSize: 10,
-                            color: AppTheme.muted.shade600,
+                            color: AppTheme.adaptiveMuted.shade600,
                           ),
                         ),
                         InkWell(

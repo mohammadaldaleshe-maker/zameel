@@ -224,7 +224,7 @@ class _JobsScreenState extends State<JobsScreen> {
                           Icon(
                             Icons.work_off_rounded,
                             size: 64,
-                            color: AppTheme.muted.shade400,
+                            color: AppTheme.adaptiveMuted.shade400,
                           ),
                           const SizedBox(height: 12),
                           Text(
@@ -233,7 +233,7 @@ class _JobsScreenState extends State<JobsScreen> {
                                 : 'No opportunities available',
                             style: TextStyle(
                               fontSize: 18,
-                              color: AppTheme.muted.shade600,
+                              color: AppTheme.adaptiveMuted.shade600,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -243,7 +243,7 @@ class _JobsScreenState extends State<JobsScreen> {
                                 ? 'ترقب الفرص الجديدة قريباً'
                                 : 'Check back soon for new opportunities',
                             style: TextStyle(
-                              color: AppTheme.muted.shade500,
+                              color: AppTheme.adaptiveMuted.shade500,
                               fontSize: 14,
                             ),
                           ),
@@ -307,13 +307,14 @@ class _FilterChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primary : AppTheme.muted.shade200,
+          color:
+              isSelected ? AppTheme.primary : AppTheme.adaptiveMuted.shade200,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : AppTheme.muted.shade700,
+            color: isSelected ? Colors.white : AppTheme.adaptiveMuted.shade700,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             fontSize: 13,
           ),
@@ -361,7 +362,8 @@ class _JobCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
-          color: isUrgent ? Colors.red.shade200 : AppTheme.muted.shade200,
+          color:
+              isUrgent ? Colors.red.shade200 : AppTheme.adaptiveMuted.shade200,
           width: isUrgent ? 2 : 1,
         ),
       ),
@@ -410,7 +412,7 @@ class _JobCard extends StatelessWidget {
                         Text(
                           job['company'],
                           style: TextStyle(
-                            color: AppTheme.muted.shade600,
+                            color: AppTheme.adaptiveMuted.shade600,
                             fontSize: 13,
                           ),
                         ),
@@ -545,14 +547,14 @@ class _InfoChip extends StatelessWidget {
         Icon(
           icon,
           size: 14,
-          color: AppTheme.muted.shade500,
+          color: AppTheme.adaptiveMuted.shade500,
         ),
         const SizedBox(width: 4),
         Text(
           text,
           style: TextStyle(
             fontSize: 11,
-            color: AppTheme.muted.shade600,
+            color: AppTheme.adaptiveMuted.shade600,
           ),
         ),
       ],
@@ -926,10 +928,10 @@ class _DetailSection extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: AppTheme.muted.shade50,
+            color: AppTheme.adaptiveMuted.shade50,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: AppTheme.muted.shade200,
+              color: AppTheme.adaptiveMuted.shade200,
             ),
           ),
           child: Text(
@@ -966,10 +968,10 @@ class _DetailInfoCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppTheme.muted.shade50,
+        color: AppTheme.adaptiveMuted.shade50,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: AppTheme.muted.shade200,
+          color: AppTheme.adaptiveMuted.shade200,
         ),
       ),
       child: Column(
@@ -984,7 +986,7 @@ class _DetailInfoCard extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 11,
-              color: AppTheme.muted.shade600,
+              color: AppTheme.adaptiveMuted.shade600,
             ),
           ),
           Text(

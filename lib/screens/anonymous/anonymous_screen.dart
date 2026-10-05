@@ -172,7 +172,7 @@ class _AnonymousScreenState extends State<AnonymousScreen> {
                                 Icon(
                                   Icons.visibility_off_rounded,
                                   size: 64,
-                                  color: AppTheme.muted.shade400,
+                                  color: AppTheme.adaptiveMuted.shade400,
                                 ),
                                 const SizedBox(height: 12),
                                 Center(
@@ -182,7 +182,7 @@ class _AnonymousScreenState extends State<AnonymousScreen> {
                                         : '📭 No anonymous messages',
                                     style: TextStyle(
                                       fontSize: 18,
-                                      color: AppTheme.muted.shade600,
+                                      color: AppTheme.adaptiveMuted.shade600,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -250,7 +250,8 @@ class _AnonymousScreenState extends State<AnonymousScreen> {
                                                 isArabic),
                                             style: TextStyle(
                                               fontSize: 11,
-                                              color: AppTheme.muted.shade400,
+                                              color: AppTheme
+                                                  .adaptiveMuted.shade400,
                                             ),
                                           ),
                                         ],

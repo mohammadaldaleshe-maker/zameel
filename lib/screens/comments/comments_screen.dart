@@ -380,7 +380,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
               decoration: BoxDecoration(
                 color: AppTheme.adaptiveBackground,
                 border: Border(
-                  bottom: BorderSide(color: AppTheme.muted.shade200),
+                  bottom: BorderSide(color: AppTheme.adaptiveMuted.shade200),
                 ),
               ),
               child: Column(
@@ -446,7 +446,8 @@ class _CommentsScreenState extends State<CommentsScreen> {
                                 ? 'لا توجد تعليقات بعد\nكن أول من يعلق!'
                                 : 'No comments yet\nBe the first to comment!',
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: AppTheme.muted.shade600),
+                            style: TextStyle(
+                                color: AppTheme.adaptiveMuted.shade600),
                           ),
                         )
                       : RefreshIndicator(
@@ -470,7 +471,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
                 width: double.infinity,
                 padding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                color: AppTheme.accentSoft,
+                color: AppTheme.adaptiveHighlight,
                 child: Row(
                   children: [
                     const Icon(Icons.reply_rounded, size: 18),
@@ -512,7 +513,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
                                   : 'Write a comment...')
                               : (isArabic ? 'اكتب ردك...' : 'Write a reply...'),
                           filled: true,
-                          fillColor: AppTheme.muted.shade100,
+                          fillColor: AppTheme.adaptiveMuted.shade100,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(24),
                             borderSide: BorderSide.none,
@@ -598,7 +599,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
     return Padding(
       padding: EdgeInsetsDirectional.only(start: horizontalIndent),
       child: Card(
-        color: highlighted ? AppTheme.accentSoft : null,
+        color: highlighted ? AppTheme.adaptiveHighlight : null,
         margin: const EdgeInsets.only(bottom: 8),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(10, 10, 8, 8),
@@ -676,7 +677,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
                           '${created == null ? '' : DateFormat(isArabic ? 'yyyy/MM/dd • HH:mm' : 'MMM d, yyyy • HH:mm', isArabic ? 'ar' : 'en').format(created)}${edited ? (isArabic ? ' • تم التعديل' : ' • edited') : ''}',
                           style: TextStyle(
                             fontSize: 10,
-                            color: AppTheme.muted.shade600,
+                            color: AppTheme.adaptiveMuted.shade600,
                           ),
                         ),
                         InkWell(

@@ -1,3 +1,4 @@
+import '../../widgets/cached_media_image.dart';
 import '../../services/watermarked_download_service.dart';
 import '../../services/video_preload_service.dart';
 import 'package:zameel/theme/appearance_controller.dart';
@@ -226,9 +227,10 @@ class _PublicClipsStripState extends State<PublicClipsStrip>
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        _ClipAutoPreview(
+                        ClipPreview(
                           url: clip['video_url']?.toString() ?? '',
-                          autoplay: clipIndex < 4,
+                          coverUrl: clip['cover_url']?.toString() ?? '',
+                          autoplay: true,
                         ),
                         const Center(
                           child: Icon(
@@ -404,6 +406,22 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
   bool _shortMuted = false;
   bool _moreLoading = false;
   bool _reachedEnd = false;
+  int? _completedIndex;
+  void _advanceCompleted(int index, {bool loadIfNeeded = true}) {
+    if (!mounted ||
+        index != _currentIndex ||
+        !_pageController.hasClients ||
+        !(ModalRoute.of(context)?.isCurrent ?? true)) return;
+    _completedIndex = index;
+    if (index + 1 < _clips.length) {
+      _completedIndex = null;
+      _pageController.animateToPage(index + 1,
+          duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
+    } else if (loadIfNeeded && !_reachedEnd) {
+      _loadMore();
+    }
+  }
+
   Future<void> _loadMore() async {
     if (_moreLoading || _reachedEnd) return;
     _moreLoading = true;
@@ -437,6 +455,11 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
     } catch (_) {
     } finally {
       _moreLoading = false;
+      final completed = _completedIndex;
+      if (mounted && completed != null) {
+        WidgetsBinding.instance.addPostFrameCallback(
+            (_) => _advanceCompleted(completed, loadIfNeeded: false));
+      }
     }
   }
 
@@ -687,6 +710,7 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
           if (mounted)
             setState(() {
               _currentIndex = index;
+              _completedIndex = null;
               _controlsVisible = true;
             });
           _prefetchAround(index);
@@ -711,6 +735,8 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
                       ? VerticalAutoplayVideoPlayer(
                           key: ValueKey(clip['id']),
                           videoUrl: clip['video_url']?.toString() ?? '',
+                          posterUrl: clip['cover_url']?.toString(),
+                          onCompleted: () => _advanceCompleted(index),
                           initialMuted: _shortMuted,
                           tapToPause: true,
                           onMuteChanged: _rememberMute,
@@ -874,15 +900,17 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
   }
 }
 
-class _ClipAutoPreview extends StatefulWidget {
+class ClipPreview extends StatefulWidget {
   final String url;
   final bool autoplay;
-  const _ClipAutoPreview({required this.url, required this.autoplay});
+  final String coverUrl;
+  const ClipPreview(
+      {required this.url, required this.autoplay, required this.coverUrl});
   @override
-  State<_ClipAutoPreview> createState() => _ClipAutoPreviewState();
+  State<ClipPreview> createState() => ClipPreviewState();
 }
 
-class _ClipAutoPreviewState extends State<_ClipAutoPreview> {
+class ClipPreviewState extends State<ClipPreview> {
   VideoPlayerController? _controller;
   Timer? _timer;
   int _generation = 0;
@@ -893,11 +921,12 @@ class _ClipAutoPreviewState extends State<_ClipAutoPreview> {
   }
 
   @override
-  void didUpdateWidget(covariant _ClipAutoPreview oldWidget) {
+  void didUpdateWidget(covariant ClipPreview oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (MediaCacheService.identity(oldWidget.url) !=
             MediaCacheService.identity(widget.url) ||
-        oldWidget.autoplay != widget.autoplay) {
+        oldWidget.autoplay != widget.autoplay ||
+        oldWidget.coverUrl != widget.coverUrl) {
       _generation++;
       _timer?.cancel();
       _controller?.dispose();
@@ -906,8 +935,20 @@ class _ClipAutoPreviewState extends State<_ClipAutoPreview> {
     }
   }
 
-  Future<void> _prepare() async {
-    if (widget.url.isEmpty || !widget.autoplay) return;
+  static Future<void> _previewQueue = Future<void>.value();
+  Future<void> _prepare() {
+    if (widget.coverUrl.isNotEmpty || widget.url.isEmpty || !widget.autoplay)
+      return Future<void>.value();
+    final requested = _generation;
+    _previewQueue = _previewQueue.then((_) async {
+      if (mounted &&
+          requested == _generation &&
+          (ModalRoute.of(context)?.isCurrent ?? true)) await _prepareLegacy();
+    }).catchError((_) {});
+    return _previewQueue;
+  }
+
+  Future<void> _prepareLegacy() async {
     final generation = ++_generation;
     try {
       final c = await VideoSourceService.controller(widget.url);
@@ -916,16 +957,22 @@ class _ClipAutoPreviewState extends State<_ClipAutoPreview> {
         return;
       }
       _controller = c;
-      await c.initialize();
+      await c.initialize().timeout(const Duration(seconds: 8));
       if (!mounted || generation != _generation) return;
       await c.setVolume(0);
       await c.play();
       if (!mounted || generation != _generation) return;
-      _timer = Timer(const Duration(milliseconds: 1500), () {
-        if (mounted && generation == _generation) c.pause();
-      });
       setState(() {});
-    } catch (_) {}
+      // Older cover-less clips decode a short first-frame preview, one at a time.
+      await Future<void>.delayed(const Duration(milliseconds: 400));
+      if (mounted && generation == _generation) await c.pause();
+    } catch (_) {
+      if (generation == _generation) {
+        await _controller?.dispose();
+        _controller = null;
+        if (mounted) setState(() {});
+      }
+    }
   }
 
   @override
@@ -939,11 +986,21 @@ class _ClipAutoPreviewState extends State<_ClipAutoPreview> {
   @override
   Widget build(BuildContext context) {
     AppearanceScope.observe(context);
+    if (widget.coverUrl.isNotEmpty) {
+      return CachedMediaImage(
+          url: widget.coverUrl,
+          fit: BoxFit.cover,
+          cacheWidth: 320,
+          fallback: const ColoredBox(
+              color: Color(0xFF193B54),
+              child: Center(child: CircularProgressIndicator())));
+    }
     final c = _controller;
     if (c == null || !c.value.isInitialized) {
       return const ColoredBox(
-          color: Colors.black87,
-          child: Icon(Icons.video_library_outlined, color: Colors.white54));
+          color: Color(0xFF193B54),
+          child:
+              Center(child: CircularProgressIndicator(color: Colors.white70)));
     }
     return FittedBox(
         fit: BoxFit.cover,

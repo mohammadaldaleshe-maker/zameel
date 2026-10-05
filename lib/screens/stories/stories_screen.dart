@@ -307,7 +307,7 @@ class _StoriesWidgetState extends State<StoriesWidget>
                       '${isArabic ? 'الخصوصية' : 'Privacy'}: ${_audienceLabel(isArabic, audience)}',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                          color: AppTheme.muted.shade600, fontSize: 12),
+                          color: AppTheme.adaptiveMuted.shade600, fontSize: 12),
                     ),
                   ],
                 ),
@@ -697,7 +697,8 @@ class _StoryGroupCard extends StatelessWidget {
                         : null,
                     border: !isMine && hasUnviewed
                         ? null
-                        : Border.all(color: AppTheme.muted.shade300, width: 2),
+                        : Border.all(
+                            color: AppTheme.adaptiveMuted.shade300, width: 2),
                   ),
                   padding: const EdgeInsets.all(2),
                   child: ClipOval(
@@ -1146,7 +1147,7 @@ class _StoryImagePreview extends StatelessWidget {
   Widget _fallback() => Container(
         width: width,
         height: height,
-        color: AppTheme.muted.shade900,
+        color: AppTheme.adaptiveMuted.shade900,
         alignment: Alignment.center,
         child: const Icon(
           Icons.image_not_supported_outlined,
@@ -1594,7 +1595,10 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
                     end: Alignment.bottomCenter,
                     colors: (hasImage || hasVideo)
                         ? const [Colors.black, Colors.black]
-                        : [AppTheme.muted.shade800, AppTheme.muted.shade900],
+                        : [
+                            AppTheme.adaptiveMuted.shade800,
+                            AppTheme.adaptiveMuted.shade900
+                          ],
                   ),
                 ),
                 child: SafeArea(

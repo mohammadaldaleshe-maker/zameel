@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/feature_control.dart';
+import 'promotion_locations.dart';
 
 class PromotionRequestScreen extends StatefulWidget {
   final String postId;
@@ -75,6 +76,7 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
             .map((v) => Map<String, dynamic>.from(v as Map)));
     final selected = {...(university ? _universities : _cities)};
     var query = '';
+    var governorate = '';
     final result = await showModalBottomSheet<Set<String>>(
         context: context,
         isScrollControlled: true,
@@ -92,20 +94,53 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
                                   hintText: t('بحث', 'Search')),
                               onChanged: (v) =>
                                   setLocal(() => query = v.trim()))),
+                      if (!university)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: DropdownButtonFormField<String>(
+                            initialValue: governorate,
+                            isExpanded: true,
+                            decoration: InputDecoration(
+                              labelText: t('المحافظة', 'Governorate'),
+                            ),
+                            items: [
+                              DropdownMenuItem(
+                                  value: '',
+                                  child: Text(
+                                      t('جميع المحافظات', 'All governorates'))),
+                              for (final name in promotionGovernorates)
+                                DropdownMenuItem(
+                                    value: name,
+                                    child: Text(t('محافظة $name', name))),
+                            ],
+                            onChanged: (value) =>
+                                setLocal(() => governorate = value ?? ''),
+                          ),
+                        ),
                       Expanded(
                           child: ListView(children: [
-                        for (final entry in entries.where((v) =>
-                            v['name'].toString().contains(query) ||
-                            (v[university ? 'city' : 'governorate']
-                                        ?.toString() ??
-                                    '')
-                                .contains(query)))
+                        for (final entry in entries.where((v) {
+                          final name = v['name']?.toString() ?? '';
+                          final region = university
+                              ? v['city']?.toString() ?? ''
+                              : promotionGovernorateName(v['governorate']);
+                          final search = promotionLocationSearch(query);
+                          return (university ||
+                                  governorate.isEmpty ||
+                                  region == governorate) &&
+                              (promotionLocationSearch(name).contains(search) ||
+                                  promotionLocationSearch(region)
+                                      .contains(search));
+                        }))
                           CheckboxListTile(
                               value: selected.contains(entry['name']),
-                              title: Text(entry['name'].toString()),
-                              subtitle: Text(
-                                  entry[university ? 'city' : 'governorate']
-                                      .toString()),
+                              title: Text(university
+                                  ? entry['name'].toString()
+                                  : promotionCityLabel(entry,
+                                      arabic: widget.arabic)),
+                              subtitle: university
+                                  ? Text(entry['city']?.toString() ?? '')
+                                  : null,
                               onChanged: (v) => setLocal(() {
                                     if (v == true)
                                       selected.add(entry['name'].toString());
@@ -126,6 +161,20 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
         target.clear();
         target.addAll(result);
       });
+  }
+
+  String _citySummary(Iterable<String> names) {
+    final catalog = (_catalog?['cities'] as List?) ?? const [];
+    final cities = {
+      for (final value in catalog)
+        if (value is Map)
+          value['name']?.toString(): Map<String, dynamic>.from(value)
+    };
+    return names
+        .map((name) => cities[name] == null
+            ? name
+            : promotionCityLabel(cities[name]!, arabic: widget.arabic))
+        .join('، ');
   }
 
   Future<void> _send() async {
@@ -258,7 +307,7 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
                                       child: Text(_cities.isEmpty
                                           ? t('اختيار مدينة أو عدة مدن',
                                               'Choose cities')
-                                          : _cities.join('، '))),
+                                          : _citySummary(_cities))),
                               ] else
                                 OutlinedButton(
                                     onPressed:
@@ -401,7 +450,7 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
       const SizedBox(height: 16),
       Text('${t('المدة', 'Duration')}: ${r['days']} ${t('يوم', 'days')}'),
       Text(
-          '${t('الجمهور', 'Audience')}: ${r['audience_type'] == 'students' ? (r['target_universities'] as List).join('، ') : r['countrywide'] == true ? t('الأردن ككل', 'All Jordan') : (r['target_cities'] as List).join('، ')}'),
+          '${t('الجمهور', 'Audience')}: ${r['audience_type'] == 'students' ? (r['target_universities'] as List).join('، ') : r['countrywide'] == true ? t('الأردن ككل', 'All Jordan') : _citySummary((r['target_cities'] as List).map((v) => v.toString()))}'),
       Text('${t('العمر', 'Age')}: ${r['min_age']}–${r['max_age']}'),
       Text('${t('الجنس', 'Gender')}: ${({
         'both': t('كلاهما', 'Both'),
