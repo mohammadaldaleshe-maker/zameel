@@ -1,0 +1,10 @@
+{
+  "update": 141,
+  "app_version": "2.0.6+15 (hotfix within release 140)",
+  "dart_analysis": "No issues found: lib and test",
+  "flutter_tests": "Run full suite via Check on user Windows; not run here",
+  "android_build": "GitHub signed workflow only; not run here",
+  "phone_verified": false,
+  "sql_required": false,
+  "admin_changed": false
+}

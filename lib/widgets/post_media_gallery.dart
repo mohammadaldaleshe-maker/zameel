@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 import 'cached_media_image.dart';
+import 'video_player_widget.dart';
 
 class PostMediaItem {
   final String type;
@@ -132,45 +133,29 @@ class _PostMediaGalleryState extends State<PostMediaGallery> {
                         ? Stack(
                             fit: StackFit.expand,
                             children: [
-                              Container(color: Colors.black),
-                              Center(
-                                child: Icon(
-                                  Icons.play_circle_fill_rounded,
-                                  color: Colors.white,
-                                  size: 70,
-                                ),
+                              VideoPlayerWidget(
+                                key: ValueKey(item.url),
+                                videoUrl: item.url,
                               ),
                               PositionedDirectional(
-                                start: 12,
-                                bottom: 12,
+                                end: 8,
+                                top: 8,
                                 child: DecoratedBox(
-                                  decoration: BoxDecoration(
+                                  decoration: const BoxDecoration(
                                     color: Colors.black54,
-                                    borderRadius: BorderRadius.circular(18),
+                                    shape: BoxShape.circle,
                                   ),
-                                  child: Padding(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 5,
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.videocam_rounded,
-                                          color: Colors.white,
-                                          size: 16,
-                                        ),
-                                        SizedBox(width: 5),
-                                        Text(
-                                          'Video',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                                  child: IconButton(
+                                    tooltip: 'فتح الفيديو بالحجم الكامل',
+                                    icon: const Icon(Icons.fullscreen,
+                                        color: Colors.white),
+                                    onPressed: () {
+                                      if (widget.onOpen != null) {
+                                        widget.onOpen!(item, index);
+                                      } else {
+                                        _openDefault(items, index);
+                                      }
+                                    },
                                   ),
                                 ),
                               ),

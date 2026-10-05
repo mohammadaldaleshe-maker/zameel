@@ -1,0 +1,24 @@
+{
+  "release": 141,
+  "repository": "APP",
+  "base_gallery_sha256": "1a389ee1738e049f0ed9c23db8aa84f87bcc234549b0b22e00f44090ddcb1b1f",
+  "new_gallery_sha256": "28fd60dc91177c66b4b25575d57d6354d11e2ef1d0312aefc99a8293fa89e3d4",
+  "files": [
+    {
+      "path": "lib/widgets/post_media_gallery.dart",
+      "sha256": "28fd60dc91177c66b4b25575d57d6354d11e2ef1d0312aefc99a8293fa89e3d4"
+    },
+    {
+      "path": "APPLY_UPDATE_141.ps1",
+      "sha256": "0dfbc805b6cf5f5fa85e8247a4768bea4a12cc0f90bb88ce47af7f295b6cfa8c"
+    },
+    {
+      "path": "BUILD_AND_DEPLOY_141_AR.md",
+      "sha256": "07b8b483c0f3eb881baefe951b695d79a9de9203a15bb309cd84e5bc718e41fc"
+    },
+    {
+      "path": "VALIDATION_141.json",
+      "sha256": "fa7796279222644dfc4bba9bbee526db380655ef89c17d1d37a592f87c2a80ae"
+    }
+  ]
+}
