@@ -1,0 +1,86 @@
+{
+  "release": 140,
+  "repository": "APP",
+  "files": [
+    {
+      "path": ".github/workflows/android-apk-github.yml",
+      "sha256": "869a206c31da5eb7586398a11dda6a8b4ed6e40957d08939b42fbe0cf12404b2"
+    },
+    {
+      "path": "APPLY_UPDATE_140.ps1",
+      "sha256": "c70fd0d404fefbf9bde73bf4a5c190709e75bba08a163e40f4f45ad6e1cf30d1"
+    },
+    {
+      "path": "BUILD_AND_DEPLOY_140_AR.md",
+      "sha256": "3b87d0e1cd77f20dcc0afd4dc769e78d80d6439a0ad01c817032716e24cbb622"
+    },
+    {
+      "path": "VALIDATION_140.json",
+      "sha256": "f995af359f8a13075e1a22ca197648caed8949f5fe331567008d00413e18d908"
+    },
+    {
+      "path": "lib/config.dart",
+      "sha256": "584f72131279c4f37d585979731bcb07dc5403a0ba20b14af8d15c299f813716"
+    },
+    {
+      "path": "lib/features/home_feed.dart",
+      "sha256": "5137125576e452856358dfad6d276a00a2c99d54dba24c90b47432f378eee45c"
+    },
+    {
+      "path": "lib/screens/friends/suggested_colleagues_section.dart",
+      "sha256": "c3af0ee91fdafa2c0307ed67066924ecff77a82f40e6719742f56cc39642d93e"
+    },
+    {
+      "path": "lib/screens/social/public_clips_strip.dart",
+      "sha256": "5f6ea95df6a7c897a382519b68812c6f1d2c3ca76d15b49f36df8c4ac1f755ed"
+    },
+    {
+      "path": "lib/screens/social/shorts_gateway.dart",
+      "sha256": "aa7ec065767dd80d0e68ac91c4c91db5948de695f663b029e74037f19881395b"
+    },
+    {
+      "path": "lib/services/app_release_gate.dart",
+      "sha256": "3e512ef2327b720acc1f19aea6a73131e86a3d488d5ddf3e9f89490bd55f467e"
+    },
+    {
+      "path": "lib/services/colleague_suggestion_service.dart",
+      "sha256": "85aed6110720734510ca980feb6b7bb999b0345f987de24d47ca51c6eb30e85e"
+    },
+    {
+      "path": "lib/services/media_cache_service_io.dart",
+      "sha256": "90fa52690163c9a2c6fb34157bf35d285f6c81f26a2a6164c7d43609a6964301"
+    },
+    {
+      "path": "lib/services/preview_task_queue.dart",
+      "sha256": "b401aef7fcb44332093a1f94faa7c5a8b2df8abf6cc7ae70a22e35429850c70a"
+    },
+    {
+      "path": "lib/widgets/cached_media_image_io.dart",
+      "sha256": "ba99bb82cfdffdde525607d4cbd4e793e1585ac15eaac798e310f9fe19d9f174"
+    },
+    {
+      "path": "lib/widgets/cached_media_image_stub.dart",
+      "sha256": "9f272ce6cb612d6b7c86ddf8cb3a68eddc89d3b0559b8113ac13317528324a5f"
+    },
+    {
+      "path": "pubspec.yaml",
+      "sha256": "f387ab2f5e83e12854201b72174a93fb77f97d0eaa650c8ea90b0db056f77dc3"
+    },
+    {
+      "path": "supabase/migrations/20261005063001_140_shorts_latest.sql",
+      "sha256": "7322d55e0c3170f01611300cd9d784203c4f24fb724301d11550922088e42c0f"
+    },
+    {
+      "path": "supabase/migrations/20261005063002_140_android_release.sql",
+      "sha256": "7ae356df1e5fbe8f9d36e022da4fc7fa2a86258456857523babf6cafe59a1b0b"
+    },
+    {
+      "path": "test/cache_140_test.dart",
+      "sha256": "a42acdafcda652ec3fe19d7fa8de395219e2250c9d28b355e8f179125e397f14"
+    },
+    {
+      "path": "test/preview_queue_140_test.dart",
+      "sha256": "c2ae3f53938a80d16a7288a315203277a4b709d4b8239f4cdf6a3da4d3ee4c7d"
+    }
+  ]
+}

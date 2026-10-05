@@ -94,14 +94,14 @@ jobs:
             --dart-define="WEBRTC_TURN_URL=$WEBRTC_TURN_URL" \
             --dart-define="WEBRTC_TURN_USERNAME=$WEBRTC_TURN_USERNAME" \
             --dart-define="WEBRTC_TURN_CREDENTIAL=$WEBRTC_TURN_CREDENTIAL" \
-            --dart-define=ZAMEEL_VERSION=2.0.5+14
+            --dart-define=ZAMEEL_VERSION=2.0.6+15
           flutter build apk --release --split-per-abi --build-number="$build_number" \
             --dart-define="SUPABASE_URL=$SUPABASE_URL" \
             --dart-define="SUPABASE_PUBLISHABLE_KEY=$SUPABASE_PUBLISHABLE_KEY" \
             --dart-define="WEBRTC_TURN_URL=$WEBRTC_TURN_URL" \
             --dart-define="WEBRTC_TURN_USERNAME=$WEBRTC_TURN_USERNAME" \
             --dart-define="WEBRTC_TURN_CREDENTIAL=$WEBRTC_TURN_CREDENTIAL" \
-            --dart-define=ZAMEEL_VERSION=2.0.5+14
+            --dart-define=ZAMEEL_VERSION=2.0.6+15
 
       - name: Build Android App Bundle for Google Play
         if: inputs.signing == 'signed'
@@ -115,7 +115,7 @@ jobs:
             --dart-define="WEBRTC_TURN_URL=$WEBRTC_TURN_URL" \
             --dart-define="WEBRTC_TURN_USERNAME=$WEBRTC_TURN_USERNAME" \
             --dart-define="WEBRTC_TURN_CREDENTIAL=$WEBRTC_TURN_CREDENTIAL" \
-            --dart-define=ZAMEEL_VERSION=2.0.5+14
+            --dart-define=ZAMEEL_VERSION=2.0.6+15
 
       - name: Check APK signature
         shell: bash

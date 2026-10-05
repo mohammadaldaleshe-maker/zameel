@@ -12,6 +12,7 @@ import 'package:video_player/video_player.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
+import '../../services/preview_task_queue.dart';
 
 import '../../services_social.dart';
 import '../../services/media_cache_service.dart';
@@ -430,16 +431,8 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
           await Supabase.instance.client.rpc('zameel_shorts_feed', params: {
         'p_author': widget.authorId,
         'p_saved': widget.savedOnly,
-        'p_exclude': widget.authorId != null || widget.savedOnly
-            ? <String>[]
-            : _clips
-                .map((row) => row['id'].toString())
-                .toList()
-                .reversed
-                .take(500)
-                .toList(),
-        'p_offset':
-            widget.authorId != null || widget.savedOnly ? _clips.length : 0,
+        'p_exclude': <String>[],
+        'p_offset': _clips.length,
       });
       if (!mounted) return;
       final known = _clips.map((row) => row['id'].toString()).toSet();
@@ -525,7 +518,7 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
     }
     final url = _clips[next]['video_url']?.toString() ?? '';
     // Give the current player its initial bandwidth before preparing one neighbour.
-    Future<void>.delayed(const Duration(milliseconds: 1200), () {
+    Future<void>.delayed(const Duration(milliseconds: 500), () {
       if (mounted && _currentIndex == index) {
         unawaited(VideoPreloadService.warm(url));
       }
@@ -904,16 +897,20 @@ class ClipPreview extends StatefulWidget {
   final String url;
   final bool autoplay;
   final String coverUrl;
+  final bool priority;
   const ClipPreview(
-      {required this.url, required this.autoplay, required this.coverUrl});
+      {required this.url, required this.autoplay, required this.coverUrl,
+      this.priority = false});
   @override
   State<ClipPreview> createState() => ClipPreviewState();
 }
 
 class ClipPreviewState extends State<ClipPreview> {
   VideoPlayerController? _controller;
-  Timer? _timer;
   int _generation = 0;
+  bool _coverFailed = false;
+  bool _failed = false;
+
   @override
   void initState() {
     super.initState();
@@ -928,30 +925,38 @@ class ClipPreviewState extends State<ClipPreview> {
         oldWidget.autoplay != widget.autoplay ||
         oldWidget.coverUrl != widget.coverUrl) {
       _generation++;
-      _timer?.cancel();
       _controller?.dispose();
       _controller = null;
+      _coverFailed = false;
+      _failed = false;
       _prepare();
     }
   }
 
-  static Future<void> _previewQueue = Future<void>.value();
+  static final _previewQueue = PreviewTaskQueue();
   Future<void> _prepare() {
-    if (widget.coverUrl.isNotEmpty || widget.url.isEmpty || !widget.autoplay)
+    if ((!_coverFailed && widget.coverUrl.isNotEmpty) ||
+        widget.url.isEmpty || !widget.autoplay) {
+      if (widget.url.isEmpty) _failed = true;
       return Future<void>.value();
+    }
     final requested = _generation;
-    _previewQueue = _previewQueue.then((_) async {
-      if (mounted &&
-          requested == _generation &&
-          (ModalRoute.of(context)?.isCurrent ?? true)) await _prepareLegacy();
-    }).catchError((_) {});
-    return _previewQueue;
+    return _previewQueue.add(() async {
+      if (mounted && requested == _generation &&
+          (ModalRoute.of(context)?.isCurrent ?? true)) {
+        await _prepareLegacy();
+      } else if (mounted && requested == _generation) {
+        setState(() => _failed = true);
+      }
+    }, priority: widget.priority).catchError((_) {});
   }
 
   Future<void> _prepareLegacy() async {
     final generation = ++_generation;
+    VideoPlayerController? candidate;
     try {
       final c = await VideoSourceService.controller(widget.url);
+      candidate = c;
       if (!mounted || generation != _generation) {
         await c.dispose();
         return;
@@ -960,25 +965,29 @@ class ClipPreviewState extends State<ClipPreview> {
       await c.initialize().timeout(const Duration(seconds: 8));
       if (!mounted || generation != _generation) return;
       await c.setVolume(0);
-      await c.play();
+      await c.play().timeout(const Duration(seconds: 3));
       if (!mounted || generation != _generation) return;
-      setState(() {});
-      // Older cover-less clips decode a short first-frame preview, one at a time.
+      setState(() => _failed = false);
       await Future<void>.delayed(const Duration(milliseconds: 400));
-      if (mounted && generation == _generation) await c.pause();
+      if (mounted && generation == _generation) await c.pause().timeout(const Duration(seconds: 3));
     } catch (_) {
       if (generation == _generation) {
-        await _controller?.dispose();
         _controller = null;
-        if (mounted) setState(() {});
+        if (mounted) setState(() => _failed = true);
+        await candidate?.dispose();
       }
     }
+  }
+
+  void _coverError() {
+    if (!mounted || _coverFailed) return;
+    setState(() => _coverFailed = true);
+    _prepare();
   }
 
   @override
   void dispose() {
     _generation++;
-    _timer?.cancel();
     _controller?.dispose();
     super.dispose();
   }
@@ -986,21 +995,30 @@ class ClipPreviewState extends State<ClipPreview> {
   @override
   Widget build(BuildContext context) {
     AppearanceScope.observe(context);
-    if (widget.coverUrl.isNotEmpty) {
+    if (!_coverFailed && widget.coverUrl.isNotEmpty) {
       return CachedMediaImage(
           url: widget.coverUrl,
           fit: BoxFit.cover,
           cacheWidth: 320,
+          onError: _coverError,
           fallback: const ColoredBox(
               color: Color(0xFF193B54),
-              child: Center(child: CircularProgressIndicator())));
+              child: Center(child: Icon(Icons.play_circle_outline,
+                  color: Colors.white, size: 38))));
     }
     final c = _controller;
     if (c == null || !c.value.isInitialized) {
-      return const ColoredBox(
-          color: Color(0xFF193B54),
-          child:
-              Center(child: CircularProgressIndicator(color: Colors.white70)));
+      return ColoredBox(
+          color: const Color(0xFF193B54),
+          child: Center(child: _failed
+              ? IconButton(
+                  tooltip: 'إعادة محاولة المعاينة',
+                  onPressed: () {
+                    setState(() => _failed = false);
+                    _prepare();
+                  },
+                  icon: const Icon(Icons.refresh, color: Colors.white))
+              : const CircularProgressIndicator(color: Colors.white70)));
     }
     return FittedBox(
         fit: BoxFit.cover,

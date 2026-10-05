@@ -14,10 +14,10 @@ import 'media_identity.dart';
 // Social media is immutable because every upload gets a unique object path.
 // The app-support directory survives ordinary cache purges and app restarts.
 const Duration _maxAge = Duration(hours: 6);
+const int _maxCacheBytes = 256 * 1024 * 1024;
 
 final Map<String, Future<String?>> _inFlight = <String, Future<String?>>{};
 Future<void>? _cleanupFuture;
-DateTime? _lastCleanup;
 
 Future<Directory> Function()? _testDirectory;
 http.Client Function()? _testClient;
@@ -36,7 +36,6 @@ Future<void> configureMediaCacheForTesting({
   _testClient = clientFactory;
   _testUser = user;
   _inFlight.clear();
-  _lastCleanup = null;
 }
 
 Future<Directory> _cacheDirectory() async {
@@ -244,10 +243,6 @@ Future<void> storeBytes(String url, Uint8List bytes) async {
 }
 
 Future<void> _scheduleCleanup() {
-  if (_lastCleanup != null && DateTime.now().difference(_lastCleanup!) < const Duration(minutes: 15)) {
-    return Future<void>.value();
-  }
-  _lastCleanup = DateTime.now();
   final current = _cleanupFuture;
   if (current != null) return current;
   final future = cleanup();
@@ -279,12 +274,25 @@ Future<void> cleanup() async {
     }
 
     final now = DateTime.now();
+    final retained = <(File, FileStat)>[];
+    var totalBytes = 0;
     for (final file in files) {
       try {
         final stat = await file.stat();
         if (stat.size <= 0 || now.difference(stat.modified) > _maxAge) {
           await file.delete();
+        } else {
+          retained.add((file, stat));
+          totalBytes += stat.size;
         }
+      } catch (_) {}
+    }
+    retained.sort((a, b) => a.$2.modified.compareTo(b.$2.modified));
+    for (final entry in retained) {
+      if (totalBytes <= _maxCacheBytes) break;
+      try {
+        await entry.$1.delete();
+        totalBytes -= entry.$2.size;
       } catch (_) {}
     }
   } catch (_) {}

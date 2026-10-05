@@ -1,5 +1,6 @@
 import 'package:zameel/theme/app_theme.dart';
 import 'dart:async';
+import '../../services/media_cache_service.dart';
 import '../../services/home_snapshot_service.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -99,6 +100,8 @@ class _ShortsFanState extends State<_ShortsFan> {
           .toList();
       if (mounted && actor == Supabase.instance.client.auth.currentUser?.id) {
         _remoteShown = true;
+        unawaited(MediaCacheService.prefetch(rows.take(4).map(
+            (row) => row['cover_url']?.toString() ?? ''), limit: 4));
         setState(() {
           _clips = rows;
           _center = 0;
@@ -230,6 +233,7 @@ class _ShortsFanState extends State<_ShortsFan> {
                                                                       ?.toString() ??
                                                                   '',
                                                               autoplay: true,
+                                                              priority: offset == 0,
                                                             ),
                                                           )))),
                                         ]));
@@ -237,7 +241,7 @@ class _ShortsFanState extends State<_ShortsFan> {
             FilledButton(
                 onPressed: _clips.isEmpty
                     ? null
-                    : () => _open(math.Random().nextInt(_clips.length)),
+                    : () => _open(0),
                 child: Text(widget.ar ? 'فاجئني' : 'Surprise me')),
             const SizedBox(height: 16),
             Text(widget.ar ? 'اسحب و افتح عالمك' : 'Swipe and open your world'),

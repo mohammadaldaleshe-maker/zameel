@@ -880,6 +880,15 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
         posts = _diversifyFeed(loaded);
         _isLoading = false;
       });
+      // Prepare only the next few still images, after the initial frame.
+      Future<void>.delayed(const Duration(milliseconds: 500), () {
+        if (!mounted || requestVersion != _postsRequestVersion ||
+            db.auth.currentUser?.id != userId) return;
+        unawaited(MediaCacheService.prefetch(
+            loaded.take(5).expand((post) => postMediaItems(post)
+                .where((media) => media.type == 'image')
+                .map((media) => media.url)), limit: 3));
+      });
       debugPrint(
           'Zameel home: ${silent ? 'refresh' : 'initial'} posts query + render ${watch.elapsedMilliseconds}ms');
       final snapshot = userId == null
@@ -3146,7 +3155,7 @@ class _ComposerMenuAction extends StatelessWidget {
   Widget build(BuildContext context) {
     AppearanceScope.observe(context);
     return Material(
-      color: const Color(0xFFF3F1FF),
+      color: AppTheme.adaptiveSurfaceAlt,
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
         onTap: onTap,
@@ -3167,7 +3176,7 @@ class _ComposerMenuAction extends StatelessWidget {
                   ),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, color: AppTheme.legacyForeground, size: 25),
+                child: Icon(icon, color: Colors.white, size: 25),
               ),
               const SizedBox(height: 9),
               Text(

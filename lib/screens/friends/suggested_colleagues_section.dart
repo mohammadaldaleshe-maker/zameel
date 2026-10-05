@@ -1,6 +1,8 @@
 import 'package:zameel/theme/appearance_controller.dart';
 import 'package:zameel/widgets/verified_name.dart';
 import 'package:flutter/material.dart';
+import '../../widgets/cached_media_image.dart';
+import '../../services/media_cache_service.dart';
 
 import '../../theme/app_theme.dart';
 import '../../services/colleague_suggestion_service.dart';
@@ -14,8 +16,8 @@ class SuggestedColleaguesSection extends StatefulWidget {
       _SuggestedColleaguesSectionState();
 }
 
-class _SuggestedColleaguesSectionState
-    extends State<SuggestedColleaguesSection> {
+class _SuggestedColleaguesSectionState extends State<SuggestedColleaguesSection>
+    with AutomaticKeepAliveClientMixin {
   final _search = TextEditingController();
   List<Map<String, dynamic>> _items = const [];
   bool _loading = true;
@@ -24,8 +26,11 @@ class _SuggestedColleaguesSectionState
   @override
   void initState() {
     super.initState();
-    _load();
-    _restore();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _load();
+      _restore();
+    });
   }
 
   Future<void> _restore() async {
@@ -52,20 +57,16 @@ class _SuggestedColleaguesSectionState
     if (mounted) setState(() => _loading = true);
     try {
       final rows =
-          await ColleagueSuggestionService.suggestions(searchText: searchText);
-      if (mounted && version == _loadVersion) setState(() => _items = rows);
-      if (searchText.isEmpty &&
-          ColleagueSuggestionService.signalsPending &&
-          mounted &&
-          version == _loadVersion) {
-        // Improve ranking once optional contact/location signals are ready,
-        // without delaying the first visible suggestions.
-        ColleagueSuggestionService.suggestions(refreshSignals: true)
-            .then((fresh) {
-          if (mounted && version == _loadVersion)
-            setState(() => _items = fresh);
-        }).catchError((Object _) {});
+          await ColleagueSuggestionService.suggestions(
+              searchText: searchText, includeDeviceSignals: false);
+      if (mounted && version == _loadVersion) {
+        setState(() => _items = rows);
+        MediaCacheService.prefetch(
+            rows.take(4).map((row) => row['profile_image']?.toString() ?? ''),
+            limit: 4);
       }
+      // The scrolling feed uses backend ranking and already-cached signals.
+      // Native contact reads belong to the explicit colleagues screen.
     } catch (_) {
       // A transient refresh failure should not erase visible suggestions.
       if (mounted && version == _loadVersion && _items.isEmpty) {
@@ -89,7 +90,11 @@ class _SuggestedColleaguesSectionState
   }
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
     AppearanceScope.observe(context);
     return Card(
       margin: const EdgeInsets.fromLTRB(12, 8, 12, 6),
@@ -117,69 +122,74 @@ class _SuggestedColleaguesSectionState
                 border: const OutlineInputBorder()),
           ),
           const SizedBox(height: 10),
-          if (_loading && _items.isEmpty)
-            const Padding(
-                padding: EdgeInsets.all(10), child: LinearProgressIndicator())
-          else if (_items.isEmpty)
-            const Padding(
-                padding: EdgeInsets.all(10),
-                child: Text('لا توجد اقتراحات جديدة حاليًا.'))
-          else
-            SizedBox(
-              height: 158,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: _items.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 10),
-                itemBuilder: (_, i) {
-                  final u = _items[i];
-                  final image = u['profile_image']?.toString();
-                  final pending = u['request_status'] == 'pending';
-                  return SizedBox(
-                      width: 126,
-                      child: InkWell(
-                        onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => ProfileScreen(
-                                    userId: u['user_id']?.toString()))),
-                        child: Column(children: [
-                          CircleAvatar(
-                              radius: 31,
-                              backgroundImage: image != null && image.isNotEmpty
-                                  ? ResizeImage.resizeIfNeeded(
-                                      200, 200, NetworkImage(image))
-                                  : null,
-                              child: image == null || image.isEmpty
-                                  ? const Icon(Icons.person, size: 30)
-                                  : null),
-                          const SizedBox(height: 5),
-                          VerifiedName(
-                              userId: (u['id'] ?? u['user_id'])?.toString(),
-                              child: Text(u['name']?.toString() ?? 'زميل',
+          SizedBox(
+            height: 158,
+            child: _items.isEmpty
+                ? Center(
+                    child: _loading
+                        ? const Padding(
+                            padding: EdgeInsets.all(10),
+                            child: LinearProgressIndicator())
+                        : const Text('لا توجد اقتراحات جديدة حاليًا.'))
+                : ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _items.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 10),
+                    itemBuilder: (_, i) {
+                      final u = _items[i];
+                      final image = u['profile_image']?.toString();
+                      final pending = u['request_status'] == 'pending';
+                      return SizedBox(
+                          width: 126,
+                          child: InkWell(
+                            onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) => ProfileScreen(
+                                        userId: u['user_id']?.toString()))),
+                            child: Column(children: [
+                              ClipOval(
+                                  child: SizedBox(
+                                      width: 62,
+                                      height: 62,
+                                      child: image != null && image.isNotEmpty
+                                          ? CachedMediaImage(
+                                              url: image,
+                                              fit: BoxFit.cover,
+                                              cacheWidth: 200,
+                                              fallback: const Icon(Icons.person,
+                                                  size: 30))
+                                          : const Icon(Icons.person,
+                                              size: 30))),
+                              const SizedBox(height: 5),
+                              VerifiedName(
+                                  userId: (u['id'] ?? u['user_id'])?.toString(),
+                                  child: Text(u['name']?.toString() ?? 'زميل',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.w800))),
+                              Text(u['match_reason']?.toString() ?? '',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.w800))),
-                          Text(u['match_reason']?.toString() ?? '',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                  fontSize: 10,
-                                  color: AppTheme.adaptiveSecondary)),
-                          const SizedBox(height: 5),
-                          SizedBox(
-                              width: double.infinity,
-                              height: 31,
-                              child: FilledButton.tonal(
-                                  onPressed: pending ? null : () => _add(u),
-                                  child: Text(pending ? 'تم الإرسال' : 'إضافة',
-                                      style: const TextStyle(fontSize: 11)))),
-                        ]),
-                      ));
-                },
-              ),
-            ),
+                                  style: TextStyle(
+                                      fontSize: 10,
+                                      color: AppTheme.adaptiveSecondary)),
+                              const SizedBox(height: 5),
+                              SizedBox(
+                                  width: double.infinity,
+                                  height: 31,
+                                  child: FilledButton.tonal(
+                                      onPressed: pending ? null : () => _add(u),
+                                      child: Text(
+                                          pending ? 'تم الإرسال' : 'إضافة',
+                                          style:
+                                              const TextStyle(fontSize: 11)))),
+                            ]),
+                          ));
+                    },
+                  ),
+          ),
         ]),
       ),
     );

@@ -9,6 +9,7 @@ class CachedMediaImage extends StatefulWidget {
   final BoxFit fit;
   final Widget fallback;
   final int? cacheWidth;
+  final VoidCallback? onError;
 
   const CachedMediaImage({
     super.key,
@@ -16,6 +17,7 @@ class CachedMediaImage extends StatefulWidget {
     required this.fit,
     required this.fallback,
     this.cacheWidth,
+    this.onError,
   });
 
   @override
@@ -26,10 +28,12 @@ class _CachedMediaImageState extends State<CachedMediaImage> {
   late Future<String?> _path;
 
   bool _failed = false;
+  bool _errorReported = false;
   String _identity(String url) => MediaCacheService.identity(url);
 
   Future<String?> _load() async {
-    final path = await MediaCacheService.localPathForUrl(widget.url);
+    final path = await MediaCacheService.localPathForUrl(widget.url)
+        .timeout(const Duration(seconds: 12), onTimeout: () => null);
     _failed = path == null;
     return path;
   }
@@ -46,8 +50,20 @@ class _CachedMediaImageState extends State<CachedMediaImage> {
     if (_identity(oldWidget.url) != _identity(widget.url) ||
         (_failed && oldWidget.url != widget.url)) {
       _failed = false;
+      _errorReported = false;
       _path = _load();
     }
+  }
+
+  Widget _errorFallback() {
+    if (!_errorReported && widget.onError != null) {
+      _errorReported = true;
+      final failedUrl = widget.url;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && widget.url == failedUrl) widget.onError?.call();
+      });
+    }
+    return widget.fallback;
   }
 
   @override
@@ -58,14 +74,18 @@ class _CachedMediaImageState extends State<CachedMediaImage> {
             return const Center(child: CircularProgressIndicator());
           }
           final path = snapshot.data;
-          if (path == null || path.isEmpty) return widget.fallback;
+          if (path == null || path.isEmpty) return _errorFallback();
           return Image.file(
             File(path),
             fit: widget.fit,
-            cacheWidth: widget.cacheWidth ?? (MediaQuery.sizeOf(context).width *
-                MediaQuery.devicePixelRatioOf(context)).round().clamp(1, 1440).toInt(),
+            cacheWidth: widget.cacheWidth ??
+                (MediaQuery.sizeOf(context).width *
+                        MediaQuery.devicePixelRatioOf(context))
+                    .round()
+                    .clamp(1, 1440)
+                    .toInt(),
             gaplessPlayback: true,
-            errorBuilder: (_, __, ___) => widget.fallback,
+            errorBuilder: (_, __, ___) => _errorFallback(),
           );
         },
       );

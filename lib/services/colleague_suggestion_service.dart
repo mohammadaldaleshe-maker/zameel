@@ -86,6 +86,7 @@ class ColleagueSuggestionService {
   static Future<List<Map<String, dynamic>>> suggestions({
     String searchText = '',
     bool refreshSignals = false,
+    bool includeDeviceSignals = true,
   }) async {
     final userId = _db.auth.currentUser?.id;
     if (_cacheUserId != userId) {
@@ -105,7 +106,8 @@ class ColleagueSuggestionService {
     }
     final pending = _pending[key];
     if (pending != null) return pending;
-    final request = _fetchSuggestions(key, searchText.trim(), refreshSignals: refreshSignals);
+    final request = _fetchSuggestions(key, searchText.trim(), refreshSignals: refreshSignals,
+        includeDeviceSignals: includeDeviceSignals);
     _pending[key] = request;
     try {
       return await request;
@@ -115,13 +117,13 @@ class ColleagueSuggestionService {
   }
 
   static Future<List<Map<String, dynamic>>> _fetchSuggestions(String key, String searchText,
-      {required bool refreshSignals}) async {
+      {required bool refreshSignals, required bool includeDeviceSignals}) async {
     final now = DateTime.now();
     final cacheFresh = !refreshSignals &&
         _signalsLoadedAt != null &&
         now.difference(_signalsLoadedAt!) < const Duration(minutes: 30);
 
-    if (!cacheFresh) {
+    if (!cacheFresh && includeDeviceSignals) {
       final signalRequest = _signalsPending ??= _loadSignals(_cacheUserId);
       if (refreshSignals) {
         await signalRequest;

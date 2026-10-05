@@ -1,0 +1,14 @@
+{
+  "release": 140,
+  "app_version": "2.0.6+15",
+  "admin_version": "1.3.13 unchanged",
+  "dart_analysis": "No issues found: lib and test",
+  "preview_queue": "Front priority, max two simultaneous jobs, recovery after failed job: passed in Dart",
+  "database": "Latest ordering, three pages, uploading/private/hidden/blocked/anonymous restrictions, repeated application and preserve version decisions: passed in PGlite",
+  "flutter_tests": "Three new tests added; full native suite must run via Stage Check on user Windows",
+  "android_build": "GitHub only; not run here",
+  "device_performance": "Not measured; test on phone",
+  "live_database_applied": false,
+  "live_github_uploaded": false,
+  "function_changes": false
+}
