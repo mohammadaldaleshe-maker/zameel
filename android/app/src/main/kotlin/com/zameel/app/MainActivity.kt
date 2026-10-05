@@ -81,6 +81,7 @@ class MainActivity : FlutterActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prepareDecline(intent)
+        maybeAskForOverlayPermission()
     }
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
@@ -122,10 +123,7 @@ class MainActivity : FlutterActivity() {
         super.onStop()
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        maybeAskForOverlayPermission()
-    }
+
 
     /**
      * A real app-over-app chat head needs Android's explicit overlay permission.
