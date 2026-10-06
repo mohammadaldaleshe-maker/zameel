@@ -1,3 +1,4 @@
+import 'story_media_editor.dart';
 import 'package:zameel/theme/appearance_controller.dart';
 import 'package:zameel/widgets/verified_name.dart';
 import 'package:flutter/material.dart';
@@ -426,110 +427,34 @@ class _StoriesWidgetState extends State<StoriesWidget>
     );
   }
 
-  Future<void> _pickImageStory() async {
-    final source = await _storyMediaSource(video: false);
+  Future<void> _pickImageStory() => _pickStoryMedia(false);
+  Future<void> _pickVideoStory() => _pickStoryMedia(true);
+  Future<void> _pickStoryMedia(bool video) async {
+    final source = await _storyMediaSource(video: video);
     if (source == null) return;
-    final image = await ImagePicker()
-        .pickImage(source: source, imageQuality: 80, maxWidth: 1920);
-    if (image == null) return;
-    final isArabic =
-        Provider.of<LanguageProvider>(context, listen: false).isArabic;
-    final bytes = await image.readAsBytes();
-    if (!mounted) return;
-    final localStory = <String, dynamic>{
-      'id': 'local_${DateTime.now().microsecondsSinceEpoch}',
-      'user_id': ZameelSocialService.uid ?? '__local__',
-      'name': 'User',
-      'time_ar': 'الآن',
-      'time_en': 'Now',
-      'text': '',
-      'media_type': 'image',
-      'audience': _storyAudience,
-      'imagePath': image.path,
-      'imageBytes': bytes,
-      'viewed': false,
-      'isMine': true,
-    };
-    setState(() => _stories.insert(0, localStory));
     try {
-      final remoteId = await ZameelSocialService.createStoryFile(
-        file: image,
-        mediaType: 'image',
-        audience: _storyAudience,
-      );
-      if (remoteId != null) localStory['id'] = remoteId;
-    } catch (error) {
-      if (FeatureControl.isSuspendedError(error)) {
-        if (mounted) setState(() => _stories.remove(localStory));
-        _showMessage(FeatureControl.suspendedMessage);
-        return;
-      }
-      _showMessage(isArabic
-          ? 'نُشرت محليًا، وتعذرت المزامنة حاليًا'
-          : 'Published locally; sync is currently unavailable');
+      final file = video
+          ? await ImagePicker().pickVideo(
+              source: source, maxDuration: const Duration(seconds: 45))
+          : await ImagePicker()
+              .pickImage(source: source, imageQuality: 80, maxWidth: 1920);
+      if (file == null || !mounted) return;
+      final draft = await Navigator.push<StoryMediaDraft>(
+          context,
+          MaterialPageRoute(
+              builder: (_) => StoryMediaEditor(
+                  file: file, video: video, audience: _storyAudience)));
+      if (draft == null || !mounted) return;
+      final id = await ZameelSocialService.createStoryFile(
+          file: draft.file, mediaType: draft.type, audience: draft.audience);
+      if (id == null) throw StateError('story_not_saved');
+      await _loadStories();
+      if (mounted) _showMessage('تم نشر الحالة');
+    } catch (_) {
+      if (mounted)
+        _showMessage(
+            'تعذر نشر الحالة. تحقق من الأذونات والاتصال وحاول مرة أخرى.');
     }
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content:
-            Text(isArabic ? '✅ تم نشر صورتك!' : '✅ Your photo was published!'),
-        backgroundColor: Colors.green,
-      ),
-    );
-  }
-
-  Future<void> _pickVideoStory() async {
-    final source = await _storyMediaSource(video: true);
-    if (source == null) return;
-    final video = await ImagePicker().pickVideo(
-      source: source,
-      maxDuration: const Duration(seconds: 45),
-    );
-    if (video == null || !mounted) return;
-    final isArabic =
-        Provider.of<LanguageProvider>(context, listen: false).isArabic;
-    final videoBytes = kIsWeb ? await video.readAsBytes() : null;
-    if (!mounted) return;
-    final localStory = <String, dynamic>{
-      'id': 'local_${DateTime.now().microsecondsSinceEpoch}',
-      'user_id': ZameelSocialService.uid ?? '__local__',
-      'name': 'User',
-      'time_ar': 'الآن',
-      'time_en': 'Now',
-      'text': '',
-      'media_type': 'video',
-      'audience': _storyAudience,
-      'videoPath': video.path,
-      if (videoBytes != null) 'videoBytes': videoBytes,
-      'viewed': false,
-      'isMine': true,
-    };
-    setState(() => _stories.insert(0, localStory));
-    try {
-      final remoteId = await ZameelSocialService.createStoryFile(
-        file: video,
-        mediaType: 'video',
-        audience: _storyAudience,
-      );
-      if (remoteId != null) localStory['id'] = remoteId;
-    } catch (error) {
-      if (FeatureControl.isSuspendedError(error)) {
-        if (mounted) setState(() => _stories.remove(localStory));
-        _showMessage(FeatureControl.suspendedMessage);
-        return;
-      }
-      _showMessage(isArabic
-          ? 'نُشرت محليًا، وتعذرت المزامنة حاليًا'
-          : 'Published locally; sync is currently unavailable');
-    }
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-            isArabic ? '✅ تم نشر الفيديو!' : '✅ Your video was published!'),
-        backgroundColor: Colors.green,
-      ),
-    );
   }
 
   Future<ImageSource?> _storyMediaSource({required bool video}) =>

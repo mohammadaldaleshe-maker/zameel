@@ -70,11 +70,21 @@ class MainActivity : FlutterActivity() {
                 }
             }
         val exporter = WatermarkedMediaExporter(this)
+        val mediaMaintenance = ZameelMediaMaintenance(this)
         io.flutter.plugin.common.MethodChannel(engine.dartExecutor.binaryMessenger, "zameel/media_export")
             .setMethodCallHandler { call, result ->
                 if (call.method == "export") exporter.export(call.argument<String>("path") ?: "",
                     call.argument<Boolean>("video") == true, call.argument<String>("owner") ?: "زميل", result)
-                else result.notImplemented()
+                else when(call.method) {
+                    "saveOriginal" -> mediaMaintenance.save(call.argument<String>("path") ?: "", call.argument<String>("type") ?: "", result)
+                    "cacheStoryAudio" -> mediaMaintenance.cacheAudio(call.argument<ByteArray>("bytes") ?: byteArrayOf(), result)
+                    "composeStory" -> mediaMaintenance.compose(call.argument<String>("path") ?: "", call.argument<String>("audio") ?: "",
+                        call.argument<Boolean>("image") == true, (call.argument<Number>("startMs") ?: 0).toLong(),
+                        (call.argument<Number>("durationMs") ?: 15000).toLong(),
+                        (call.argument<Number>("audioVolume") ?: 1.0).toFloat(),
+                        (call.argument<Number>("originalVolume") ?: 0.0).toFloat(), result)
+                    else -> result.notImplemented()
+                }
             }
     }
     fun saveExportWithPicker(file: java.io.File, mime: String, name: String,

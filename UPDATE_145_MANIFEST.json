@@ -1,0 +1,149 @@
+{
+    "release":  145,
+    "version":  "2.0.9+18",
+    "files":  [
+                  {
+                      "path":  "APPLY_UPDATE_145.ps1",
+                      "sha256":  "97ec38f248dc35d5fb275e45eb643d0dc7fa7c827c6f6114e2fb9d029374c7ee",
+                      "text_sha256":  "f3b29a7b8df5fd28bee4b8e1a50b640aad8751e01cff6115406e753a9390d0d4"
+                  },
+                  {
+                      "path":  "BUILD_AND_DEPLOY_145_AR.md",
+                      "sha256":  "8fb7afddcb97e04f3af1fbe1f2e8080d38659740926b5c0684e792f9f3eb70bd",
+                      "text_sha256":  "8fb7afddcb97e04f3af1fbe1f2e8080d38659740926b5c0684e792f9f3eb70bd"
+                  },
+                  {
+                      "path":  "VALIDATION_145.json",
+                      "sha256":  "228d239fdd52e6ea69f232ebd30985269a47323f5145aae309e292531c15eadc",
+                      "text_sha256":  "228d239fdd52e6ea69f232ebd30985269a47323f5145aae309e292531c15eadc"
+                  },
+                  {
+                      "path":  "android/app/src/main/kotlin/com/zameel/app/MainActivity.kt",
+                      "sha256":  "898b265c9d761b2213e64681dd676333627c80244a78375ec5be383bf62b68a6",
+                      "text_sha256":  "898b265c9d761b2213e64681dd676333627c80244a78375ec5be383bf62b68a6",
+                      "base_sha256":  "16d96e854f19d7d958f889c51a4caeaafaa6e6db295db92036422b12023e4f47"
+                  },
+                  {
+                      "path":  "android/app/src/main/kotlin/com/zameel/app/ZameelMediaMaintenance.kt",
+                      "sha256":  "9a413bec7ec82e43a1e76bdf0dcb4448334a8f9764f0819c36fa5b1a9981c5b4",
+                      "text_sha256":  "9a413bec7ec82e43a1e76bdf0dcb4448334a8f9764f0819c36fa5b1a9981c5b4"
+                  },
+                  {
+                      "path":  "lib/features/home_feed.dart",
+                      "sha256":  "e38a4005991dbea46c19fa55d5dd1c2581b01b10594c8d0a7e84a666abb5abb9",
+                      "text_sha256":  "e38a4005991dbea46c19fa55d5dd1c2581b01b10594c8d0a7e84a666abb5abb9",
+                      "base_sha256":  "ecd5b78949d8b5dcb93c718c78d4204534c0e2cf31e43088729a4f5b630d7f50"
+                  },
+                  {
+                      "path":  "lib/screens/auth/contact_verification_screen.dart",
+                      "sha256":  "dc79b05cfc658952aa76b0e395747c0c3fa0d4348dcc9eff1a959d41e1c451e0",
+                      "text_sha256":  "dc79b05cfc658952aa76b0e395747c0c3fa0d4348dcc9eff1a959d41e1c451e0",
+                      "base_sha256":  "00dc50a1574359423b18c6b79fbf6aef45a41942702da53eef673ebd793f741e"
+                  },
+                  {
+                      "path":  "lib/screens/auth/login_screen.dart",
+                      "sha256":  "17dd25ac0397e40a394cff6a144ff22f7a9d8474caaf63846fa64bfe9d9ca242",
+                      "text_sha256":  "17dd25ac0397e40a394cff6a144ff22f7a9d8474caaf63846fa64bfe9d9ca242",
+                      "base_sha256":  "8427b72481cb8fea81a0828f6936b1593149b90100aef447f313cebc8d206b6c"
+                  },
+                  {
+                      "path":  "lib/screens/auth/open_registration_screen.dart",
+                      "sha256":  "2c082090c393a51a7efce0d6c4e244638b9f58d87baa6acbfd0a018ff0c2fd2e",
+                      "text_sha256":  "2c082090c393a51a7efce0d6c4e244638b9f58d87baa6acbfd0a018ff0c2fd2e",
+                      "base_sha256":  "a958e69b0fb20b687d569fbb0c2809741ae0a201cb2438ed4231d3c66ef9cae3"
+                  },
+                  {
+                      "path":  "lib/screens/chat/chat_screen.dart",
+                      "sha256":  "ee00f83f6e1fd1d15b49bd078e9c61b39b7e15f3843e873438b06fd8d1747475",
+                      "text_sha256":  "ee00f83f6e1fd1d15b49bd078e9c61b39b7e15f3843e873438b06fd8d1747475",
+                      "base_sha256":  "83c2a7db605bb26d2850423906feea31ed1478624aec90afebb335470aa2246d"
+                  },
+                  {
+                      "path":  "lib/screens/chat/contact_calls_screen.dart",
+                      "sha256":  "e7ee8dad01b2081d0f58abde7f1bd7eb917905cbd420d6baf646b20527ca8540",
+                      "text_sha256":  "e7ee8dad01b2081d0f58abde7f1bd7eb917905cbd420d6baf646b20527ca8540",
+                      "base_sha256":  "86b6c0d1989d22a2c49c411552386e38ab65eb46f15db1c941ca44816c03f11d"
+                  },
+                  {
+                      "path":  "lib/screens/social/zameel_radio_screen.dart",
+                      "sha256":  "be0e406da185c9289d0c634fdafdc0a684c8021c9428d3c88cba0b5b5e35ea95",
+                      "text_sha256":  "be0e406da185c9289d0c634fdafdc0a684c8021c9428d3c88cba0b5b5e35ea95",
+                      "base_sha256":  "bd608805b7d421eb059a7ac7de79d3889463185d3d0d71b8d4de5aeca59e1ee4"
+                  },
+                  {
+                      "path":  "lib/screens/stories/stories_screen.dart",
+                      "sha256":  "c5d742d77bcffff131e5eab3245dbb3cb4217cbf5ebef778169ade9942bf8277",
+                      "text_sha256":  "c5d742d77bcffff131e5eab3245dbb3cb4217cbf5ebef778169ade9942bf8277",
+                      "base_sha256":  "54645d52e8bca8aad3bce3c77514088acc91bcb7980e65ae266681ef07dc24d7"
+                  },
+                  {
+                      "path":  "lib/screens/stories/story_media_editor.dart",
+                      "sha256":  "ce3dbe498d491c871bde553bf4fe45ce6272fcb3c470c29c437ff991f2763886",
+                      "text_sha256":  "ce3dbe498d491c871bde553bf4fe45ce6272fcb3c470c29c437ff991f2763886"
+                  },
+                  {
+                      "path":  "lib/services/app_release_gate.dart",
+                      "sha256":  "941b43c0bacd18d195c02699993f7f8c1eea54e457b5a050207e8f07b60ca4e6",
+                      "text_sha256":  "941b43c0bacd18d195c02699993f7f8c1eea54e457b5a050207e8f07b60ca4e6",
+                      "base_sha256":  "9f571cd91670ceb0666073c36397ea1f9e2e86d4f735dc093452b8331d3b8354"
+                  },
+                  {
+                      "path":  "lib/services/chat_media_save_service.dart",
+                      "sha256":  "abe2d1b9b658bb59ed71c3c781f939f6beb38212b7e513e46213e9bf498123c9",
+                      "text_sha256":  "abe2d1b9b658bb59ed71c3c781f939f6beb38212b7e513e46213e9bf498123c9"
+                  },
+                  {
+                      "path":  "lib/services/jordan_phone.dart",
+                      "sha256":  "9271febfad797e6dc70757c0f5c5bb2574214d762e846546b8062921e2b7cfdb",
+                      "text_sha256":  "9271febfad797e6dc70757c0f5c5bb2574214d762e846546b8062921e2b7cfdb"
+                  },
+                  {
+                      "path":  "lib/services/sponsored_feed.dart",
+                      "sha256":  "21959728f327c888927f29a4b266fe5aa202c85f04a98aad9726a19994bab79f",
+                      "text_sha256":  "21959728f327c888927f29a4b266fe5aa202c85f04a98aad9726a19994bab79f",
+                      "base_sha256":  "779f462ab4f3af1cfc30268c9e7306db9d7a0b7f8cc2465734e9c3908c812dcd"
+                  },
+                  {
+                      "path":  "lib/widgets/chat_media_viewer.dart",
+                      "sha256":  "1634017f2fbb509e0e88a517a6a9a948373f8a89738d9b580ae78b66cdf352cc",
+                      "text_sha256":  "1634017f2fbb509e0e88a517a6a9a948373f8a89738d9b580ae78b66cdf352cc"
+                  },
+                  {
+                      "path":  "pubspec.yaml",
+                      "sha256":  "8022fc5a2f6c11f4ef5bb9f6443740eccd0b54d84fe94f8b5601cc41c8122ab1",
+                      "text_sha256":  "8022fc5a2f6c11f4ef5bb9f6443740eccd0b54d84fe94f8b5601cc41c8122ab1",
+                      "base_sha256":  "21e9bd25b4b160730e102eda68ca24865b17e0f6f63609dc20d458aec6002a4c"
+                  },
+                  {
+                      "path":  "supabase/migrations/20261006090001_145_email_chat_maintenance.sql",
+                      "sha256":  "0c97fb2a6b5ce161d9ac789ba7e0a8749c80a44afa4eb595c7e08c0f7eb4a13b",
+                      "text_sha256":  "0c97fb2a6b5ce161d9ac789ba7e0a8749c80a44afa4eb595c7e08c0f7eb4a13b"
+                  },
+                  {
+                      "path":  "supabase/migrations/20261006090002_145_android_release.sql",
+                      "sha256":  "82e72909a3d2f3293bbe9707ff0e21f4217103a0175030203300f5c694aa6461",
+                      "text_sha256":  "82e72909a3d2f3293bbe9707ff0e21f4217103a0175030203300f5c694aa6461"
+                  },
+                  {
+                      "path":  "test/maintenance_138_test.dart",
+                      "sha256":  "428cc769678dd4900d45fe2305bbeb9eb4b3d56e96604ddba81c9e81c2cdec6d",
+                      "text_sha256":  "428cc769678dd4900d45fe2305bbeb9eb4b3d56e96604ddba81c9e81c2cdec6d",
+                      "base_sha256":  "4b2ddf3aa692e5b399aa8dc1b4d8cebc91af19c8bb797b049aa61b942daeafb1"
+                  },
+                  {
+                      "path":  "test/maintenance_145_test.dart",
+                      "sha256":  "96b7696eb5c5902b9123fab7ff3ae90e90d342856f3e2ac72bd2670f925770a3",
+                      "text_sha256":  "96b7696eb5c5902b9123fab7ff3ae90e90d342856f3e2ac72bd2670f925770a3"
+                  },
+                  {
+                      "path":  "test/regression_contract_test.dart",
+                      "sha256":  "ce18ad44f73d47ea87b4f713ed27b194084a21d2a45b61763fec4edafd865c67",
+                      "text_sha256":  "ce18ad44f73d47ea87b4f713ed27b194084a21d2a45b61763fec4edafd865c67",
+                      "base_sha256":  "555aef56a45a4a537cf5351bf1dc726104416e31883642578649d74d32fbb232",
+                      "alternate_base_sha256":  [
+                                                    "ff88f422b3635d38b0381e0c25758dda131f21213443f013f84250fe15f726f5",
+                                                    "33cd70989cbd69235b64881a62b8235278490e5984b703ce6d6c52ab50dc8a31"
+                                                ]
+                  }
+              ]
+}

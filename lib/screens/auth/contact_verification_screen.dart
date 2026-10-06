@@ -1,3 +1,4 @@
+import '../../services/jordan_phone.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -23,8 +24,7 @@ class _ContactVerificationScreenState extends State<ContactVerificationScreen> {
   int _resendSeconds = 0;
   Timer? _timer;
 
-  String get _method =>
-      (widget.userData['verificationMethod'] ?? 'email').toString();
+  String get _method => 'email';
   String get _email =>
       (widget.userData['email'] ?? '').toString().trim().toLowerCase();
   String get _phone =>
@@ -43,12 +43,7 @@ class _ContactVerificationScreenState extends State<ContactVerificationScreen> {
     super.dispose();
   }
 
-  String _normalizePhone(String input) {
-    var value = input.replaceAll(RegExp(r'[^0-9+]'), '');
-    if (value.startsWith('00962')) value = '+962${value.substring(5)}';
-    if (value.startsWith('07')) value = '+962${value.substring(1)}';
-    return value;
-  }
+  String _normalizePhone(String input) => normalizeJordanMobile(input) ?? '';
 
   void _message(String text, {bool success = false}) {
     if (!mounted) return;

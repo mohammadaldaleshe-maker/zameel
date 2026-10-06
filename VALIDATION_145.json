@@ -1,0 +1,15 @@
+{
+  "release": 145,
+  "version": "2.0.9+18",
+  "dart_analysis": "No issues found",
+  "sql": "PGlite positive/negative/idempotency tests passed",
+  "sponsored_feed": "passed",
+  "call_push_tests": {
+    "passed": 5,
+    "failed": 0
+  },
+  "flutter_tests": "not run here; required by Check on user machine",
+  "android_native_build": "GitHub only; not run here",
+  "device_tests": "not run here",
+  "unchanged": "push edge functions, call signaling, permissions144, admin executable"
+}

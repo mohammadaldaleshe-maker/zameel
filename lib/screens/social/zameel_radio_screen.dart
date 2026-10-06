@@ -1,3 +1,4 @@
+import '../../services/chat_media_save_service.dart';
 import 'package:zameel/widgets/verified_name.dart';
 import 'dart:async';
 
@@ -450,6 +451,29 @@ class _ZameelRadioScreenState extends State<ZameelRadioScreen> {
                           ButtonBar(
                             alignment: MainAxisAlignment.spaceEvenly,
                             children: [
+                              if (!pendingReview)
+                                TextButton.icon(
+                                    onPressed: () async {
+                                      try {
+                                        final url = await Supabase
+                                            .instance.client.storage
+                                            .from('zameel-radio')
+                                            .createSignedUrl(
+                                                post['storage_path'].toString(),
+                                                600);
+                                        if (context.mounted)
+                                          await ChatMediaSaveService.save(
+                                              context, url, 'audio');
+                                      } catch (_) {
+                                        if (context.mounted)
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(const SnackBar(
+                                                  content:
+                                                      Text('تعذر حفظ الصوت')));
+                                      }
+                                    },
+                                    icon: const Icon(Icons.download),
+                                    label: const Text('حفظ الصوت')),
                               TextButton.icon(
                                 onPressed: pendingReview
                                     ? null

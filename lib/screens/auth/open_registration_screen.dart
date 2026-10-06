@@ -1,3 +1,4 @@
+import '../../services/jordan_phone.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -26,7 +27,7 @@ class _OpenRegistrationScreenState extends State<OpenRegistrationScreen> {
   String _kind = 'general';
   String _gender = 'male';
   String _format = 'first_family';
-  String _method = 'email';
+
   String _degree = 'bachelor';
   University? _university;
   College? _college;
@@ -76,10 +77,8 @@ class _OpenRegistrationScreenState extends State<OpenRegistrationScreen> {
     }
     if (user?.email?.isNotEmpty == true) {
       _email.text = user!.email!;
-      _method = 'email';
     } else if (user?.phone?.isNotEmpty == true) {
       _phone.text = '+${user!.phone!.replaceAll('+', '')}';
-      _method = 'phone';
     }
   }
 
@@ -166,7 +165,7 @@ class _OpenRegistrationScreenState extends State<OpenRegistrationScreen> {
             'accountType': _kind,
             'gender': _gender,
             'displayNameFormat': _format,
-            'verificationMethod': _method,
+            'verificationMethod': 'email',
             'phone': _phone.text.trim(),
             'email': _email.text.trim().toLowerCase(),
             'password': _password.text,
@@ -359,27 +358,12 @@ class _OpenRegistrationScreenState extends State<OpenRegistrationScreen> {
                                 Supabase.instance.client.auth.currentUser?.phone
                                         ?.isNotEmpty ==
                                     true,
-                            validator: (v) => RegExp(
-                              r'^(?:07[789]\d{7}|(?:\+962|00962)7[789]\d{7})$',
-                            ).hasMatch(
-                              (v ?? '').replaceAll(RegExp(r'[\s-]'), ''),
-                            )
+                            validator: (v) => normalizeJordanMobile(v ?? '') !=
+                                    null
                                 ? null
                                 : _t('مثال: 0791234567', 'Example: 0791234567'),
                           ),
                           if (!_resume) ...[
-                            _select(
-                              _t(
-                                'طريقة التحقق والدخول',
-                                'Verification and login',
-                              ),
-                              _method,
-                              {
-                                'email': _t('البريد الإلكتروني', 'Email'),
-                                'phone': _t('رسالة SMS للهاتف', 'Phone SMS'),
-                              },
-                              (v) => _method = v,
-                            ),
                             _field(
                               _password,
                               _t('كلمة المرور', 'Password'),
@@ -394,8 +378,8 @@ class _OpenRegistrationScreenState extends State<OpenRegistrationScreen> {
                           ],
                           Text(
                             _t(
-                              'ادخل لاحقًا باستخدام وسيلة التحقق التي اخترتها وكلمة المرور.',
-                              'Sign in using your chosen verified contact and password.',
+                              'التحقق بالبريد الإلكتروني فقط. رقم الهاتف مطلوب دون إرسال رمز إليه.',
+                              'Email verification only. A phone number is required without phone verification.',
                             ),
                           ),
                           const SizedBox(height: 18),

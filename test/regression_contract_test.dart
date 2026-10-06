@@ -391,7 +391,8 @@ void main() {
       final clips = _read('lib/screens/social/clip_create_screen.dart');
       final social = _read('lib/services_social.dart');
 
-      expect(stories, contains('kIsWeb ? await video.readAsBytes() : null'));
+      expect(stories, contains('file: draft.file'));
+      expect(stories, isNot(contains('await video.readAsBytes()')));
       expect(clips, contains('kIsWeb ? await file.readAsBytes() : null'));
       expect(social, contains('createStoryFile'));
       expect(social, contains('createClipFile'));
@@ -427,6 +428,14 @@ void main() {
           contains("if (dart.library.io) 'shorts_video_preparer_io.dart'"));
       expect(shortsFacade, isNot(contains("import 'dart:io'")));
       expect(_read('lib/services/shorts_video_preparer_stub.dart'),
+          isNot(contains("import 'dart:io'")));
+
+      final voiceFacade = _read('lib/services/voice_recording_file.dart');
+      expect(voiceFacade, contains("export 'voice_recording_file_stub.dart'"));
+      expect(voiceFacade,
+          contains("if (dart.library.io) 'voice_recording_file_io.dart'"));
+      expect(voiceFacade, isNot(contains("import 'dart:io'")));
+      expect(_read('lib/services/voice_recording_file_stub.dart'),
           isNot(contains("import 'dart:io'")));
 
       const allowedIoFiles = <String>{

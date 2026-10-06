@@ -1,3 +1,4 @@
+import '../../widgets/chat_media_viewer.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../widgets/chat_voice_widgets.dart';
 import '../../widgets/video_player_widget.dart';
@@ -32,23 +33,48 @@ class ChatScreen extends StatefulWidget {
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> {
+class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   SupabaseClient get db => Supabase.instance.client;
   String? get uid => db.auth.currentUser?.id;
   List<Map<String, dynamic>> _friends = [];
   Map<String, dynamic>? _profile;
   bool _loading = true;
   Set<String> _onlineIds = {};
+  Timer? _onlineTimer;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _onlineTimer = Timer.periodic(const Duration(seconds: 25), (_) {
+      if (mounted && ModalRoute.of(context)?.isCurrent == true)
+        _loadChatPresence();
+    });
     _load();
     if (widget.partnerId != null)
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted)
           _openPartner(widget.partnerId!, widget.partnerName ?? 'Colleague');
       });
+  }
+
+  @override
+  void dispose() {
+    _onlineTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _onlineTimer?.cancel();
+    if (state == AppLifecycleState.resumed) {
+      _loadChatPresence();
+      _onlineTimer = Timer.periodic(const Duration(seconds: 25), (_) {
+        if (mounted && ModalRoute.of(context)?.isCurrent == true)
+          _loadChatPresence();
+      });
+    }
   }
 
   Future<void> _loadChatProfile() async {
@@ -583,7 +609,8 @@ class ChatDetailScreen extends StatefulWidget {
   State<ChatDetailScreen> createState() => _ChatDetailScreenState();
 }
 
-class _ChatDetailScreenState extends State<ChatDetailScreen> {
+class _ChatDetailScreenState extends State<ChatDetailScreen>
+    with WidgetsBindingObserver {
   final _controller = TextEditingController();
   final _scroll = ScrollController();
   SupabaseClient get db => Supabase.instance.client;
@@ -594,6 +621,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   RealtimeChannel? _meetChannel;
   Timer? _meetTimer;
   Timer? _presenceTimer;
+  Timer? _syncTimer;
+  bool _syncing = false, _partnerOnline = false;
+  List<Map<String, dynamic>> _calls = [];
   Map<String, dynamic>? _activeMeet;
   bool _uploading = false;
   final Map<String, String> _signedAttachments = {};
@@ -601,15 +631,171 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _load();
     _subscribe();
     _subscribeMeet();
     _refreshMeet();
+    _syncChat();
     _meetTimer = Timer.periodic(
         const Duration(seconds: 5), (_) => _refreshMeet(silent: true));
-    db.rpc('touch_my_presence');
-    _presenceTimer = Timer.periodic(
-        const Duration(seconds: 60), (_) => db.rpc('touch_my_presence'));
+    _refreshPresence();
+    _presenceTimer =
+        Timer.periodic(const Duration(seconds: 25), (_) => _refreshPresence());
+    _syncTimer = Timer.periodic(const Duration(seconds: 8), (_) => _syncChat());
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshPresence();
+      _syncChat();
+      _presenceTimer ??= Timer.periodic(
+          const Duration(seconds: 25), (_) => _refreshPresence());
+      _syncTimer ??=
+          Timer.periodic(const Duration(seconds: 8), (_) => _syncChat());
+    } else {
+      _presenceTimer?.cancel();
+      _presenceTimer = null;
+      _syncTimer?.cancel();
+      _syncTimer = null;
+    }
+  }
+
+  bool get _nearEnd => !_scroll.hasClients || _scroll.offset < 140;
+  void _settleAtEnd() {
+    if (_nearEnd) _scrollToEnd(immediate: true);
+  }
+
+  List<Map<String, dynamic>> get _timeline => [..._messages, ..._calls]
+    ..sort((a, b) => '${a['created_at']}'.compareTo('${b['created_at']}'));
+  Future<void> _refreshPresence() async {
+    try {
+      await db.rpc('touch_my_presence');
+      final raw = await db.rpc('zameel_chat_presence',
+          params: {'p_conversation': widget.conversationId});
+      if (mounted)
+        setState(() => _partnerOnline = (raw as Map?)?['is_online'] == true);
+    } catch (_) {
+      if (mounted) setState(() => _partnerOnline = false);
+    }
+  }
+
+  Future<void> _syncChat() async {
+    if (_syncing || !mounted) return;
+    _syncing = true;
+    final atEnd = _nearEnd;
+    try {
+      await _reconcilePersistedMessages();
+      final raw = await db.rpc('zameel_chat_calls',
+          params: {'p_conversation': widget.conversationId});
+      if (mounted)
+        setState(() => _calls = [
+              for (final row in raw as List)
+                {...Map<String, dynamic>.from(row as Map), 'call_event': true}
+            ]);
+      await _markRead();
+      if (atEnd) _scrollToEnd(immediate: true);
+    } catch (_) {
+      /* Realtime stays active; reconnect polling retries. */
+    } finally {
+      _syncing = false;
+    }
+  }
+
+  Future<bool> _confirm(String title) async =>
+      await showDialog<bool>(
+          context: context,
+          builder: (c) => AlertDialog(
+                  title: Text(title),
+                  content: const Text('هل تريد المتابعة؟'),
+                  actions: [
+                    TextButton(
+                        onPressed: () => Navigator.pop(c, false),
+                        child: const Text('إلغاء')),
+                    FilledButton(
+                        onPressed: () => Navigator.pop(c, true),
+                        child: const Text('تأكيد')),
+                  ])) ==
+      true;
+  Future<void> _messageAction(
+      String action, Map<String, dynamic> message) async {
+    await db.rpc('zameel_chat_action', params: {
+      'p_action': action,
+      'p_conversation': widget.conversationId,
+      'p_message': message['id']
+    });
+    await _reconcilePersistedMessages();
+  }
+
+  Future<void> _clearChat() async {
+    if (!await _confirm('مسح المحادثة من حسابك فقط')) return;
+    try {
+      await db.rpc('zameel_chat_action', params: {
+        'p_action': 'clear',
+        'p_conversation': widget.conversationId
+      });
+      await _reconcilePersistedMessages();
+      if (mounted) setState(() => _calls = []);
+    } catch (_) {
+      _notice('تعذر مسح المحادثة');
+    }
+  }
+
+  Future<void> _messageMenu(Map<String, dynamic> m) async {
+    if ('${m['id']}'.startsWith('local-')) return;
+    final action = await showModalBottomSheet<String>(
+        context: context,
+        builder: (c) => SafeArea(
+                child: Wrap(children: [
+              ListTile(
+                  title: const Text('حذف لديّ'),
+                  onTap: () => Navigator.pop(c, 'hide')),
+              if (m['sender_id'] == uid && m['deleted'] != true)
+                ListTile(
+                    title: const Text('حذف لدى الجميع'),
+                    onTap: () => Navigator.pop(c, 'delete_everyone')),
+            ])));
+    if (action == null || !mounted) return;
+    if (action == 'delete_everyone' &&
+        !await _confirm('حذف الرسالة لدى الجميع')) return;
+    try {
+      await _messageAction(action, m);
+    } catch (_) {
+      _notice('تعذر حذف الرسالة');
+    }
+  }
+
+  Widget _callEvent(Map<String, dynamic> call) {
+    final status = {
+          'ended': 'مكتملة',
+          'missed': 'لم يتم الرد • مكالمة فائتة',
+          'declined': 'مرفوضة',
+          'cancelled': 'ملغاة',
+          'active': 'جارية',
+          'ringing': 'يرن',
+          'failed': 'تعذر الاتصال'
+        }[call['status']] ??
+        '';
+    final seconds = (call['duration_seconds'] as num?)?.toInt() ?? 0;
+    return ListTile(
+        leading: Icon(call['with_video'] == true ? Icons.videocam : Icons.call),
+        title: Text(
+            '${call['with_video'] == true ? 'مكالمة فيديو' : 'مكالمة صوتية'} • $status'),
+        subtitle: Text(
+            '${call['direction'] == 'incoming' ? 'واردة' : 'صادرة'} • ${seconds ~/ 60}:${(seconds % 60).toString().padLeft(2, '0')} • ${DateTime.tryParse('${call['created_at']}')?.toLocal() ?? ''}'),
+        trailing: IconButton(
+            tooltip: 'حذف من سجلي',
+            icon: const Icon(Icons.delete_outline),
+            onPressed: () async {
+              try {
+                await db.rpc('hide_call_from_my_history',
+                    params: {'target_room_id': call['room_id']});
+                await _syncChat();
+              } catch (_) {
+                _notice('تعذر حذف المكالمة');
+              }
+            }));
   }
 
   bool _pendingMatchesPersisted(
@@ -642,6 +828,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         _messages.indexWhere((message) => message['id']?.toString() == savedId);
     final pendingIndex = _messages
         .indexWhere((message) => _pendingMatchesPersisted(message, row));
+    final preserve = !_nearEnd;
+    final oldExtent =
+        _scroll.hasClients ? _scroll.position.maxScrollExtent : 0.0;
     setState(() {
       if (savedIndex >= 0) {
         _messages[savedIndex] = row;
@@ -654,29 +843,26 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         _messages.add(row);
       }
     });
+    if (preserve) _preserveReadingPosition(oldExtent);
+  }
+
+  void _preserveReadingPosition(double extent) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scroll.hasClients) return;
+      final delta = _scroll.position.maxScrollExtent - extent;
+      if (delta > 0)
+        _scroll.jumpTo((_scroll.offset + delta)
+            .clamp(0.0, _scroll.position.maxScrollExtent));
+    });
   }
 
   Future<List<Map<String, dynamic>>> _fetchPersistedMessages() async {
     try {
-      final result = await db.rpc('get_direct_messages', params: {
-        'target_conversation_id': widget.conversationId,
-        'page_size': 300,
-      });
+      final result = await db.rpc('zameel_chat_messages',
+          params: {'p_conversation': widget.conversationId});
       return List<Map<String, dynamic>>.from(result as List? ?? const []);
-    } on PostgrestException catch (error) {
-      // Compatibility only while migration 053 is being applied. Once the
-      // server RPC exists, all normal reads use its membership-checked path.
-      if (error.code != 'PGRST202' &&
-          !error.message.contains('get_direct_messages')) {
-        rethrow;
-      }
-      final rows = await db
-          .from('messages')
-          .select(
-              'id,content,sender_id,created_at,media_url,media_type,is_read,delivered_at,read_at')
-          .eq('conversation_id', widget.conversationId)
-          .order('created_at');
-      return List<Map<String, dynamic>>.from(rows);
+    } catch (_) {
+      rethrow;
     }
   }
 
@@ -688,7 +874,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       return !persisted
           .any((saved) => _pendingMatchesPersisted(message, saved));
     }).toList();
+    final preserve = !_nearEnd;
+    final oldExtent =
+        _scroll.hasClients ? _scroll.position.maxScrollExtent : 0.0;
     setState(() => _messages = [...persisted, ...localPending]);
+    if (preserve) _preserveReadingPosition(oldExtent);
   }
 
   void _subscribe() {
@@ -709,7 +899,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             final sentByMe = row['sender_id']?.toString() == uid;
             _mergePersistedMessage(row);
             if (!sentByMe) _markRead();
-            _scrollToEnd();
+            if (_nearEnd || sentByMe) _scrollToEnd();
           },
         )
         .onPostgresChanges(
@@ -728,7 +918,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             if (mounted && index >= 0) setState(() => _messages[index] = row);
           },
         )
-        .subscribe();
+        .subscribe((status, error) {
+      if (status == RealtimeSubscribeStatus.subscribed) _syncChat();
+    });
   }
 
   void _subscribeMeet() {
@@ -750,10 +942,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _messagesChannel?.unsubscribe();
     _meetChannel?.unsubscribe();
     _meetTimer?.cancel();
     _presenceTimer?.cancel();
+    _syncTimer?.cancel();
     _controller.dispose();
     _scroll.dispose();
     super.dispose();
@@ -1036,7 +1230,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         _scrollToEnd();
       }
     } catch (e) {
-      _notice('تعذر إرسال المرفق: $e');
+      _notice('تعذر إرسال المرفق. تحقق من الاتصال وحاول مرة أخرى.');
     } finally {
       if (mounted) setState(() => _uploading = false);
     }
@@ -1084,27 +1278,43 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               width: 28,
               height: 28,
               child: CircularProgressIndicator(strokeWidth: 2));
-        if (type == 'audio')
-          return ChatVoicePlayer(key: ValueKey(message['id']), url: url);
-        if (type == 'video') {
-          return SizedBox(width: 240, child: VideoPlayerWidget(videoUrl: url));
-        }
-        if (snapshot.connectionState == ConnectionState.done && url == null) {
-          return TextButton(
-              onPressed: () => setState(() {}),
-              child: const Text('تعذر فتح المرفق — أعد المحاولة'));
-        }
-        if (type == 'image') {
-          return GestureDetector(
-            onTap: () => showDialog<void>(
-                context: context,
-                builder: (_) => Dialog(
-                    child: InteractiveViewer(child: Image.network(url)))),
-            child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(url,
-                    width: 220, height: 180, fit: BoxFit.cover)),
-          );
+        if (const {'audio', 'video', 'image'}.contains(type)) {
+          void open() => Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                  builder: (_) => ChatMediaViewer(
+                        url: url,
+                        type: type,
+                        liked: message['liked'] == true,
+                        likes: (message['likes'] as num?)?.toInt() ?? 0,
+                        onLike: () => _messageAction('like', message),
+                      )));
+          return Column(mainAxisSize: MainAxisSize.min, children: [
+            if (type == 'image')
+              InkWell(
+                  onTap: open,
+                  child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(url,
+                          width: 220, height: 180, fit: BoxFit.cover,
+                          frameBuilder: (context, child, frame, sync) {
+                        if (frame != null) _settleAtEnd();
+                        return child;
+                      }))),
+            if (type == 'video')
+              SizedBox(width: 240, child: VideoPlayerWidget(videoUrl: url)),
+            if (type == 'audio')
+              ChatVoicePlayer(key: ValueKey(message['id']), url: url),
+            TextButton.icon(
+                onPressed: open,
+                icon: const Icon(Icons.open_in_full, size: 18),
+                label: Text(type == 'audio'
+                    ? 'فتح الصوت • حفظ • أعجبني'
+                    : 'فتح كامل • حفظ • أعجبني'),
+                style: TextButton.styleFrom(
+                    foregroundColor:
+                        mine ? Colors.white : AppTheme.adaptiveText)),
+          ]);
         }
         return InkWell(
           onTap: () =>
@@ -1276,7 +1486,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   void _scrollToEnd({bool immediate = false}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scroll.hasClients) return;
-      final target = _scroll.position.maxScrollExtent;
+      const target = 0.0;
       if (immediate) {
         _scroll.jumpTo(target);
       } else {
@@ -1367,6 +1577,17 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                   ),
                 ),
               ),
+              TextButton.icon(
+                  onPressed: () async {
+                    if (!await _confirm('مسح سجل المكالمات لهذه المحادثة'))
+                      return;
+                    await db.rpc('zameel_clear_call_history',
+                        params: {'p_conversation': widget.conversationId});
+                    if (sheetContext.mounted) Navigator.pop(sheetContext);
+                    await _syncChat();
+                  },
+                  icon: const Icon(Icons.delete_sweep),
+                  label: const Text('مسح السجل بالكامل')),
               Expanded(
                 child: rows.isEmpty
                     ? Center(
@@ -1402,7 +1623,24 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                                   ? Icons.videocam_rounded
                                   : Icons.call_rounded,
                             ),
-                            title: Text('$direction • $status'),
+                            trailing: IconButton(
+                                tooltip: 'حذف المكالمة',
+                                icon: const Icon(Icons.delete_outline),
+                                onPressed: () async {
+                                  await db.rpc('hide_call_from_my_history',
+                                      params: {
+                                        'target_room_id': call['room_id']
+                                      });
+                                  if (sheetContext.mounted)
+                                    Navigator.pop(sheetContext);
+                                  await _syncChat();
+                                }),
+                            title: Text('$direction • ${{
+                                  'missed': 'فائتة',
+                                  'ended': 'مكتملة',
+                                  'declined': 'مرفوضة',
+                                  'cancelled': 'ملغاة'
+                                }[status] ?? status}'),
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -1518,6 +1756,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   Widget build(BuildContext context) {
     AppearanceScope.observe(context);
     final ar = Provider.of<LanguageProvider>(context).isArabic;
+    final timeline = _timeline;
     return Directionality(
       textDirection: ar ? ui.TextDirection.rtl : ui.TextDirection.ltr,
       child: Scaffold(
@@ -1528,12 +1767,21 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                 userId: widget.partnerId,
                 child: Text(widget.partnerName,
                     style: const TextStyle(fontWeight: FontWeight.bold))),
+            if (_partnerOnline)
+              const Text('متصل الآن',
+                  style: TextStyle(fontSize: 12, color: Colors.green)),
             if (widget.contextLabel != null)
               Text(widget.contextLabel!,
                   style: const TextStyle(
                       fontSize: 11, fontWeight: FontWeight.normal)),
           ]),
           actions: [
+            PopupMenuButton<String>(
+                onSelected: (_) => _clearChat(),
+                itemBuilder: (_) => [
+                      const PopupMenuItem(
+                          value: 'clear', child: Text('مسح المحادثة لديّ'))
+                    ]),
             if (widget.bookRequestId != null)
               IconButton(
                 tooltip: _bookCompletionLabel(ar),
@@ -1591,47 +1839,55 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                           ? const Center(child: CircularProgressIndicator())
                           : ListView.builder(
                               controller: _scroll,
+                              reverse: true,
                               padding: const EdgeInsets.all(14),
-                              itemCount: _messages.length,
+                              itemCount: timeline.length,
                               itemBuilder: (_, i) {
-                                final m = _messages[i];
+                                final m = timeline[timeline.length - 1 - i];
+                                if (m['call_event'] == true)
+                                  return _callEvent(m);
+
                                 final mine = m['sender_id'] == uid;
                                 return Align(
+                                  key: ValueKey(m['id']),
                                   alignment: mine
                                       ? Alignment.centerRight
                                       : Alignment.centerLeft,
-                                  child: Container(
-                                    margin: const EdgeInsets.only(bottom: 8),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 10,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: mine
-                                          ? AppTheme.primary
-                                          : AppTheme.adaptiveMuted.shade200,
-                                      borderRadius: BorderRadius.circular(18),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.end,
-                                      children: [
-                                        _messageContent(m, mine),
-                                        if (mine) ...[
-                                          const SizedBox(height: 3),
-                                          Icon(
-                                            m['read_at'] != null
-                                                ? Icons.done_all_rounded
-                                                : m['delivered_at'] != null
-                                                    ? Icons.done_all_rounded
-                                                    : Icons.done_rounded,
-                                            size: 15,
-                                            color: m['read_at'] != null
-                                                ? Colors.cyanAccent
-                                                : Colors.white70,
-                                          ),
+                                  child: GestureDetector(
+                                    onLongPress: () => _messageMenu(m),
+                                    child: Container(
+                                      margin: const EdgeInsets.only(bottom: 8),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 10,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: mine
+                                            ? AppTheme.primary
+                                            : AppTheme.adaptiveMuted.shade200,
+                                        borderRadius: BorderRadius.circular(18),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.end,
+                                        children: [
+                                          _messageContent(m, mine),
+                                          if (mine) ...[
+                                            const SizedBox(height: 3),
+                                            Icon(
+                                              m['read_at'] != null
+                                                  ? Icons.done_all_rounded
+                                                  : m['delivered_at'] != null
+                                                      ? Icons.done_all_rounded
+                                                      : Icons.done_rounded,
+                                              size: 15,
+                                              color: m['read_at'] != null
+                                                  ? Colors.cyanAccent
+                                                  : Colors.white70,
+                                            ),
+                                          ],
                                         ],
-                                      ],
+                                      ),
                                     ),
                                   ),
                                 );

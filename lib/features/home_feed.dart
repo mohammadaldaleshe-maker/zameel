@@ -488,6 +488,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
             for (final row in rows)
               {...row, 'promotion_ends_at': expiry[row['id'].toString()]}
           ]);
+      shuffleSponsoredBatch(_promotedPosts);
       _promotionExpiry?.cancel();
       final deadlines = active
           .map((r) => DateTime.tryParse('${r['ends_at']}'))
@@ -884,12 +885,14 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
       });
       // Prepare only the next few still images, after the initial frame.
       Future<void>.delayed(const Duration(milliseconds: 500), () {
-        if (!mounted || requestVersion != _postsRequestVersion ||
+        if (!mounted ||
+            requestVersion != _postsRequestVersion ||
             db.auth.currentUser?.id != userId) return;
         unawaited(MediaCacheService.prefetch(
             loaded.take(5).expand((post) => postMediaItems(post)
                 .where((media) => media.type == 'image')
-                .map((media) => media.url)), limit: 3));
+                .map((media) => media.url)),
+            limit: 3));
       });
       debugPrint(
           'Zameel home: ${silent ? 'refresh' : 'initial'} posts query + render ${watch.elapsedMilliseconds}ms');
@@ -2064,7 +2067,13 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                       textDirection:
                           isArabic ? TextDirection.rtl : TextDirection.ltr,
                       child: AlertDialog(
-                        backgroundColor: Colors.white.withAlpha(230),
+                        backgroundColor: AppTheme.adaptiveSurface,
+                        titleTextStyle: TextStyle(
+                            color: AppTheme.adaptiveText,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold),
+                        contentTextStyle: TextStyle(
+                            color: AppTheme.adaptiveText, fontSize: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
                         ),
@@ -3090,7 +3099,13 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                   textDirection:
                       isArabic ? TextDirection.rtl : TextDirection.ltr,
                   child: AlertDialog(
-                    backgroundColor: Colors.white.withAlpha(230),
+                    backgroundColor: AppTheme.adaptiveSurface,
+                    titleTextStyle: TextStyle(
+                        color: AppTheme.adaptiveText,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold),
+                    contentTextStyle:
+                        TextStyle(color: AppTheme.adaptiveText, fontSize: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),

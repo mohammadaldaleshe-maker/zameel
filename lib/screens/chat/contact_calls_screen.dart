@@ -54,6 +54,30 @@ class _ContactCallsScreenState extends State<ContactCallsScreen> {
                         child: Text('سجل المكالمات',
                             style: TextStyle(
                                 fontSize: 20, fontWeight: FontWeight.w900))),
+                    TextButton.icon(
+                        onPressed: () async {
+                          final yes = await showDialog<bool>(
+                              context: context,
+                              builder: (c) => AlertDialog(
+                                      title: const Text(
+                                          'مسح سجل المكالمات من حسابك؟'),
+                                      actions: [
+                                        TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(c, false),
+                                            child: const Text('إلغاء')),
+                                        FilledButton(
+                                            onPressed: () =>
+                                                Navigator.pop(c, true),
+                                            child: const Text('مسح'))
+                                      ]));
+                          if (yes != true) return;
+                          await Supabase.instance.client
+                              .rpc('zameel_clear_call_history');
+                          if (ctx.mounted) Navigator.pop(ctx);
+                        },
+                        icon: const Icon(Icons.delete_sweep),
+                        label: const Text('مسح السجل بالكامل')),
                     Expanded(
                         child: rows.isEmpty
                             ? const Center(child: Text('لا توجد مكالمات بعد'))
@@ -80,6 +104,18 @@ class _ContactCallsScreenState extends State<ContactCallsScreen> {
                                             });
                                         if (ctx.mounted) Navigator.pop(ctx);
                                       },
+                                      trailing: IconButton(
+                                          tooltip: 'حذف المكالمة',
+                                          icon:
+                                              const Icon(Icons.delete_outline),
+                                          onPressed: () async {
+                                            await Supabase.instance.client.rpc(
+                                                'hide_call_from_my_history',
+                                                params: {
+                                                  'target_room_id': r['room_id']
+                                                });
+                                            if (ctx.mounted) Navigator.pop(ctx);
+                                          }),
                                       leading: CircleAvatar(
                                           backgroundImage: r['other_image']
                                                       ?.toString()
@@ -88,14 +124,13 @@ class _ContactCallsScreenState extends State<ContactCallsScreen> {
                                               ? NetworkImage(
                                                   r['other_image'].toString())
                                               : null,
-                                          child: r['other_image']
-                                                      ?.toString()
-                                                      .isNotEmpty ==
-                                                  true
-                                              ? null
-                                              : Icon(video
-                                                  ? Icons.videocam
-                                                  : Icons.call)),
+                                          child:
+                                              r['other_image']?.toString().isNotEmpty ==
+                                                      true
+                                                  ? null
+                                                  : Icon(video
+                                                      ? Icons.videocam
+                                                      : Icons.call)),
                                       title: VerifiedName(
                                           userId:
                                               r['other_user_id']?.toString(),

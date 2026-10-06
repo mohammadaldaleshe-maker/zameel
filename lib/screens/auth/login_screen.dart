@@ -112,7 +112,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (identifier.isEmpty || password.isEmpty) {
       Fluttertoast.showToast(
-        msg: '❌ أدخل البريد الإلكتروني أو رقم الهاتف وكلمة المرور',
+        msg: '❌ أدخل البريد الإلكتروني وكلمة المرور',
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
         backgroundColor: Colors.red,
@@ -130,14 +130,8 @@ class _LoginScreenState extends State<LoginScreen> {
       // SUPABASE LOGIN
       // ========================================================
 
-      var normalizedPhone = identifier.replaceAll(RegExp(r'[^0-9+]'), '');
-      if (normalizedPhone.startsWith('00962'))
-        normalizedPhone = '+962${normalizedPhone.substring(5)}';
-      if (normalizedPhone.startsWith('07'))
-        normalizedPhone = '+962${normalizedPhone.substring(1)}';
       final response = await Supabase.instance.client.auth.signInWithPassword(
-        email: identifier.contains('@') ? identifier.toLowerCase() : null,
-        phone: identifier.contains('@') ? null : normalizedPhone,
+        email: identifier.toLowerCase(),
         password: password,
       );
 
@@ -163,7 +157,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       Fluttertoast.showToast(
         msg: e is AuthException && e.code == 'invalid_credentials'
-            ? 'البريد الإلكتروني أو رقم الهاتف أو كلمة المرور غير صحيحة'
+            ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة'
             : e is AuthException && e.code == 'email_not_confirmed'
                 ? 'يرجى تأكيد بريدك الإلكتروني أولًا'
                 : e is AuthException &&
@@ -301,9 +295,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         keyboardType: TextInputType.emailAddress,
                         style: TextStyle(color: AppTheme.legacyForeground),
                         decoration: InputDecoration(
-                          labelText: isArabic
-                              ? 'البريد الإلكتروني أو رقم الهاتف'
-                              : 'Email or phone number',
+                          labelText: isArabic ? 'البريد الإلكتروني' : 'Email',
                           labelStyle:
                               TextStyle(color: AppTheme.legacySecondary),
                           prefixIcon: Icon(
