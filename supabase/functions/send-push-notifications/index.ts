@@ -196,7 +196,7 @@ Deno.serve(async (req) => {
         if (!nativeCallData || !session || session.status !== "ringing" ||
             session.callee_id !== notification.user_id ||
             !Number.isFinite(created) || created > Date.now() ||
-            Date.now() - created > 90_000) {
+            Date.now() - created >= 45_000) {
           await supabase.from("push_notification_queue").update({
             status: "sent", processed_at: new Date().toISOString(),
             last_error: "call_invitation_expired",

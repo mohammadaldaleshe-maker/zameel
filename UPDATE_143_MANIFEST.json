@@ -1,0 +1,155 @@
+{
+    "release":  143,
+    "version":  "2.0.8+17",
+    "files":  [
+                  {
+                      "path":  "android/app/src/main/kotlin/com/zameel/app/MainActivity.kt",
+                      "sha256":  "16d96e854f19d7d958f889c51a4caeaafaa6e6db295db92036422b12023e4f47",
+                      "text_sha256":  "16d96e854f19d7d958f889c51a4caeaafaa6e6db295db92036422b12023e4f47",
+                      "base_sha256":  "618c141e3b6cca6aaf81d77db3f610e0d2b840f9f3295e5b4b78b7bb7e35db87"
+                  },
+                  {
+                      "path":  "android/app/src/main/kotlin/com/zameel/app/ZameelIncomingCall.kt",
+                      "sha256":  "63baa899768e8cccecac36702f84ceb49df342aa5814ef30df0ed6d30d563754",
+                      "text_sha256":  "63baa899768e8cccecac36702f84ceb49df342aa5814ef30df0ed6d30d563754",
+                      "base_sha256":  "20d737d2c40d3917d8675fda3d1601ff9bff03de815a1c9a428c9d486ebdcb5f"
+                  },
+                  {
+                      "path":  "lib/screens/meet/meet_screen.dart",
+                      "sha256":  "833e1781e036cd6f2d1d7f83b86e859fc43f313682986076c7dd4d12c63f285a",
+                      "text_sha256":  "833e1781e036cd6f2d1d7f83b86e859fc43f313682986076c7dd4d12c63f285a",
+                      "base_sha256":  "23dfb08504b10b445c346fa74ce65657d0e34a9ff707f5b6c4dae75acf94fe02"
+                  },
+                  {
+                      "path":  "lib/screens/chat/chat_screen.dart",
+                      "sha256":  "83c2a7db605bb26d2850423906feea31ed1478624aec90afebb335470aa2246d",
+                      "text_sha256":  "83c2a7db605bb26d2850423906feea31ed1478624aec90afebb335470aa2246d",
+                      "base_sha256":  "0fc2b2ce5a8deac627fd444cc62d1b5079ef7034fd45272c712cedafacf336c9"
+                  },
+                  {
+                      "path":  "lib/screens/auth/login_screen.dart",
+                      "sha256":  "8427b72481cb8fea81a0828f6936b1593149b90100aef447f313cebc8d206b6c",
+                      "text_sha256":  "8427b72481cb8fea81a0828f6936b1593149b90100aef447f313cebc8d206b6c",
+                      "base_sha256":  "24f752deb8efe214ee8b02ce0d231b23a7e94d8639aa69353402b4d75d8585a1"
+                  },
+                  {
+                      "path":  "lib/screens/auth/password_recovery_screen.dart",
+                      "sha256":  "fef03ee2cc816aa083cdf289cd2c6459d81bc9753d46b4956eefcf2775e43bfe",
+                      "text_sha256":  "fef03ee2cc816aa083cdf289cd2c6459d81bc9753d46b4956eefcf2775e43bfe"
+                  },
+                  {
+                      "path":  "lib/screens/calls/incoming_call_screen.dart",
+                      "sha256":  "bfdec759432a9385517f024b622572bea76b6d2706f8b9bf0f9e6e4d0c1d3f24",
+                      "text_sha256":  "bfdec759432a9385517f024b622572bea76b6d2706f8b9bf0f9e6e4d0c1d3f24",
+                      "base_sha256":  "8c793fbaab5eb320fe49929d1ca7bfd4a8b3f7db789477065dcf6572fbfd5380"
+                  },
+                  {
+                      "path":  "lib/screens/notifications/notifications_screen.dart",
+                      "sha256":  "453948225bb371d29387fa0ef07d90675ac6e700e4f998b9b5a6ce35ffabebc7",
+                      "text_sha256":  "453948225bb371d29387fa0ef07d90675ac6e700e4f998b9b5a6ce35ffabebc7",
+                      "base_sha256":  "d859d23892c8d01c61cfb9d4d3740afc7e4dd9110927fb5f8695ca0b4beefc43"
+                  },
+                  {
+                      "path":  "lib/widgets/chat_voice_widgets.dart",
+                      "sha256":  "f20bf0281d00150ac9413fdd59133218d1e56ba24310a5bcaea44e29808f91a4",
+                      "text_sha256":  "f20bf0281d00150ac9413fdd59133218d1e56ba24310a5bcaea44e29808f91a4"
+                  },
+                  {
+                      "path":  "lib/services/voice_recording_file.dart",
+                      "sha256":  "c12f64619a5cf024c8585f56c405a1700640a80073112706af044261a70c2338",
+                      "text_sha256":  "c12f64619a5cf024c8585f56c405a1700640a80073112706af044261a70c2338"
+                  },
+                  {
+                      "path":  "lib/services/voice_recording_file_io.dart",
+                      "sha256":  "dfbb02807d46e083a3d3713ba5c63550416a498291cbf794f6c81db1b83ae161",
+                      "text_sha256":  "dfbb02807d46e083a3d3713ba5c63550416a498291cbf794f6c81db1b83ae161"
+                  },
+                  {
+                      "path":  "lib/services/voice_recording_file_stub.dart",
+                      "sha256":  "dc06881f0828b98f33e5401b49af6aac02fe2fb86eaa1a576024f4fe9ea3d6f4",
+                      "text_sha256":  "dc06881f0828b98f33e5401b49af6aac02fe2fb86eaa1a576024f4fe9ea3d6f4"
+                  },
+                  {
+                      "path":  "lib/services/call_invitation_guard.dart",
+                      "sha256":  "7cf4169f07c5491e0bc7b827d26d3204f60de9e23a626f12835af01c471a79f2",
+                      "text_sha256":  "7cf4169f07c5491e0bc7b827d26d3204f60de9e23a626f12835af01c471a79f2",
+                      "base_sha256":  "69433a217dfd9a67e1552635b2194f97866cdd7d79107c4d351c7fcdf9407129"
+                  },
+                  {
+                      "path":  "lib/services/app_release_gate.dart",
+                      "sha256":  "9f571cd91670ceb0666073c36397ea1f9e2e86d4f735dc093452b8331d3b8354",
+                      "text_sha256":  "9f571cd91670ceb0666073c36397ea1f9e2e86d4f735dc093452b8331d3b8354",
+                      "base_sha256":  "b2b1a75ed8ddb605b921c92875fd174d07c780bd61c11a4abd18685414cb788b"
+                  },
+                  {
+                      "path":  "pubspec.yaml",
+                      "sha256":  "21e9bd25b4b160730e102eda68ca24865b17e0f6f63609dc20d458aec6002a4c",
+                      "text_sha256":  "21e9bd25b4b160730e102eda68ca24865b17e0f6f63609dc20d458aec6002a4c",
+                      "base_sha256":  "2764338e4744997f04347d40e4cfed127addd3111f1ff0172faf7b528f38958b"
+                  },
+                  {
+                      "path":  "supabase/functions/send-push-notifications/index.ts",
+                      "sha256":  "f44523af52475fdc5192c143a568dc1c783a3b5fcc09ad7faab78f7109bf814a",
+                      "text_sha256":  "f44523af52475fdc5192c143a568dc1c783a3b5fcc09ad7faab78f7109bf814a",
+                      "base_sha256":  "b1e55367483a5e8450fb1cd9ebe37e564b1957b39362c923c9fa3d98c2bc1f52"
+                  },
+                  {
+                      "path":  "supabase/functions/send-push-notifications/call_push.mjs",
+                      "sha256":  "adc09ac78d3ba82da0683fde4a246eb83f1e2db191af77b52382e2ba3918ea88",
+                      "text_sha256":  "adc09ac78d3ba82da0683fde4a246eb83f1e2db191af77b52382e2ba3918ea88",
+                      "base_sha256":  "d7bd7a6bdb760d616e9881324ffd8cd4fbb946b33d5bb9d06e6338a5946384b8"
+                  },
+                  {
+                      "path":  "supabase/migrations/20261006050001_143_chat_audio_call_timeout.sql",
+                      "sha256":  "83132b2239fca839c9f894a36f77a15c417f3e20f5c5f1db2406d99282154b4a",
+                      "text_sha256":  "83132b2239fca839c9f894a36f77a15c417f3e20f5c5f1db2406d99282154b4a"
+                  },
+                  {
+                      "path":  "supabase/migrations/20261006050002_143_android_release.sql",
+                      "sha256":  "346fedba180e922532dcd128bd853df9c5330816600890dfb8d9fa803b5c1fe7",
+                      "text_sha256":  "346fedba180e922532dcd128bd853df9c5330816600890dfb8d9fa803b5c1fe7"
+                  },
+                  {
+                      "path":  "supabase/email_templates/143_password_recovery.html",
+                      "sha256":  "4edb996ca767890aee0e439f02f26b05626a853d030847096da471862c0a7fb8",
+                      "text_sha256":  "4edb996ca767890aee0e439f02f26b05626a853d030847096da471862c0a7fb8"
+                  },
+                  {
+                      "path":  "test/call_invitation_guard_test.dart",
+                      "sha256":  "c3b193e119d9a74d97605bcf41415694dd05d8c98677f1505296a5c563b2c2ba",
+                      "text_sha256":  "c3b193e119d9a74d97605bcf41415694dd05d8c98677f1505296a5c563b2c2ba",
+                      "base_sha256":  "aefa08642a6d944113b2ad021049fffde36fdae506cfb6e742756f366168c52b"
+                  },
+                  {
+                      "path":  "verification/call_push_142_test.mjs",
+                      "sha256":  "4d3d52effa8e31f8e3fad8c19b03c15ea94f19f335c9a50137cfe0e4d77b73ff",
+                      "text_sha256":  "4d3d52effa8e31f8e3fad8c19b03c15ea94f19f335c9a50137cfe0e4d77b73ff",
+                      "base_sha256":  "7e40940a72a846f44af92f504445c283d3f3300ea402deb7be0a5dc463fe56a7"
+                  },
+                  {
+                      "path":  "verification/call_push_143_test.mjs",
+                      "sha256":  "4d3d52effa8e31f8e3fad8c19b03c15ea94f19f335c9a50137cfe0e4d77b73ff",
+                      "text_sha256":  "4d3d52effa8e31f8e3fad8c19b03c15ea94f19f335c9a50137cfe0e4d77b73ff"
+                  },
+                  {
+                      "path":  "APPLY_UPDATE_143.ps1",
+                      "sha256":  "76dd516c0e552af56b5f30363e767d8723646c55888809dda74075467c0d1d04",
+                      "text_sha256":  "6e089ee2f2ef4e2facbf558d32ddac2b502d36b8cfe53e699c0231379e204d8c"
+                  },
+                  {
+                      "path":  "BUILD_AND_DEPLOY_143_AR.md",
+                      "sha256":  "135b37dd3b85f3eb02fd73e30b469685b5ad857946ba7001819716d1c65f8ce5",
+                      "text_sha256":  "135b37dd3b85f3eb02fd73e30b469685b5ad857946ba7001819716d1c65f8ce5"
+                  },
+                  {
+                      "path":  "VALIDATION_143.json",
+                      "sha256":  "6f4960ab395f9c71720bc47c2dff73f9cd0483cf125e201f109a7baebcd01fa1",
+                      "text_sha256":  "6f4960ab395f9c71720bc47c2dff73f9cd0483cf125e201f109a7baebcd01fa1"
+                  },
+                  {
+                      "path":  "test/regression_contract_test.dart",
+                      "sha256":  "33cd70989cbd69235b64881a62b8235278490e5984b703ce6d6c52ab50dc8a31",
+                      "text_sha256":  "33cd70989cbd69235b64881a62b8235278490e5984b703ce6d6c52ab50dc8a31"
+                  }
+              ]
+}

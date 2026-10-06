@@ -41,6 +41,34 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+        io.flutter.plugin.common.MethodChannel(engine.dartExecutor.binaryMessenger, "zameel/call_audio")
+            .setMethodCallHandler { call, result ->
+                if (call.method == "clear") {
+                    val audio = getSystemService(android.media.AudioManager::class.java)
+                    if (Build.VERSION.SDK_INT >= 31) audio?.clearCommunicationDevice()
+                    audio?.mode = android.media.AudioManager.MODE_NORMAL
+                    result.success(null)
+                } else if (call.method != "setSpeaker") { result.notImplemented() }
+                else {
+                    val speaker = call.argument<Boolean>("enabled") == true
+                    try {
+                        val audio = getSystemService(android.media.AudioManager::class.java)
+                            ?: throw IllegalStateException("Audio service unavailable")
+                        audio.mode = android.media.AudioManager.MODE_IN_COMMUNICATION
+                        if (Build.VERSION.SDK_INT >= 31) {
+                            val type = if (speaker) android.media.AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
+                                else android.media.AudioDeviceInfo.TYPE_BUILTIN_EARPIECE
+                            val device = audio.availableCommunicationDevices.firstOrNull { it.type == type }
+                            if (device == null) result.error("route_unavailable", "Audio output unavailable", null)
+                            else result.success(audio.setCommunicationDevice(device))
+                        } else {
+                            @Suppress("DEPRECATION")
+                            audio.isSpeakerphoneOn = speaker
+                            result.success(true)
+                        }
+                    } catch (error: Exception) { result.error("audio_route_failed", error.message, null) }
+                }
+            }
         val exporter = WatermarkedMediaExporter(this)
         io.flutter.plugin.common.MethodChannel(engine.dartExecutor.binaryMessenger, "zameel/media_export")
             .setMethodCallHandler { call, result ->
@@ -122,7 +150,6 @@ class MainActivity : FlutterActivity() {
         isVisible = false
         super.onStop()
     }
-
 
 
     /**

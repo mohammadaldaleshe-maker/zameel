@@ -12,10 +12,33 @@ void main() {
   test('only the recipient can answer a recent ringing call', () {
     expect(CallInvitationGuard.isCurrent(ringing, 'recipient', now), isTrue);
     expect(CallInvitationGuard.isCurrent(ringing, 'other', now), isFalse);
-    expect(CallInvitationGuard.isCurrent({...ringing, 'status': 'ended'},
-        'recipient', now), isFalse);
-    expect(CallInvitationGuard.isCurrent({...ringing,
-      'created_at': now.subtract(const Duration(minutes: 2)).toIso8601String(),
-    }, 'recipient', now), isFalse);
+    expect(
+        CallInvitationGuard.isCurrent(
+            {...ringing, 'status': 'ended'}, 'recipient', now),
+        isFalse);
+    expect(
+        CallInvitationGuard.isCurrent({
+          ...ringing,
+          'created_at':
+              now.subtract(const Duration(minutes: 2)).toIso8601String(),
+        }, 'recipient', now),
+        isFalse);
+  });
+  test('ringing window closes exactly at 45 seconds', () {
+    expect(
+        CallInvitationGuard.isCurrent({
+          ...ringing,
+          'created_at': now
+              .subtract(const Duration(milliseconds: 44999))
+              .toIso8601String()
+        }, 'recipient', now),
+        isTrue);
+    expect(
+        CallInvitationGuard.isCurrent({
+          ...ringing,
+          'created_at':
+              now.subtract(const Duration(seconds: 45)).toIso8601String()
+        }, 'recipient', now),
+        isFalse);
   });
 }

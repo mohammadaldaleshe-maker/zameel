@@ -1,0 +1,17 @@
+{
+  "release": 143,
+  "version": "2.0.8+17",
+  "dart_analysis": "No issues found (lib and test)",
+  "node_call_tests": {
+    "passed": 5,
+    "failed": 0
+  },
+  "sql_tests": "PGlite: audio media, idempotency, server late-answer deadline, existing active calls, permissions, release settings preserved",
+  "edge_typescript": "esbuild bundle passed",
+  "native_lifecycle": "Exactly one MainActivity onCreate; both incoming call and overlay initialization retained",
+  "flutter_full_suite": "Required on user Windows via Check; not executed here",
+  "kotlin_apk": "Build on GitHub required; not executed here",
+  "phone_tests": "Required after install; not performed here",
+  "email_recovery": "Reset password email template must be configured with Token; end-to-end SMTP test pending",
+  "admin_executable_changed": false
+}

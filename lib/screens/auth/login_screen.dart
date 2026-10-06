@@ -1,3 +1,5 @@
+import 'package:url_launcher/url_launcher.dart';
+import 'password_recovery_screen.dart';
 import 'package:zameel/theme/appearance_controller.dart';
 import 'dart:ui' as ui;
 
@@ -160,7 +162,15 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } catch (e) {
       Fluttertoast.showToast(
-        msg: '❌ فشل تسجيل الدخول: ${e.toString()}',
+        msg: e is AuthException && e.code == 'invalid_credentials'
+            ? 'البريد الإلكتروني أو رقم الهاتف أو كلمة المرور غير صحيحة'
+            : e is AuthException && e.code == 'email_not_confirmed'
+                ? 'يرجى تأكيد بريدك الإلكتروني أولًا'
+                : e is AuthException &&
+                        (e.statusCode == '429' ||
+                            e.code == 'over_request_rate_limit')
+                    ? 'محاولات كثيرة. انتظر قليلًا ثم حاول مجددًا'
+                    : 'تعذر تسجيل الدخول. تحقق من اتصال الإنترنت وحاول مجددًا',
         toastLength: Toast.LENGTH_LONG,
         gravity: ToastGravity.BOTTOM,
         backgroundColor: Colors.red,
@@ -231,184 +241,242 @@ class _LoginScreenState extends State<LoginScreen> {
           child: SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 30),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // ==================================================
-                  // ICON
-                  // ==================================================
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // ==================================================
+                    // ICON
+                    // ==================================================
 
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withAlpha(25),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(10),
-                      child: Image.asset(
-                        'assets/branding/zameel_mark.png',
-                        fit: BoxFit.contain,
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withAlpha(25),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(10),
+                        child: Image.asset(
+                          'assets/branding/zameel_mark.png',
+                          fit: BoxFit.contain,
+                        ),
                       ),
                     ),
-                  ),
 
-                  const SizedBox(height: 20),
+                    const SizedBox(height: 20),
 
-                  // ==================================================
-                  // TITLE
-                  // ==================================================
-                  Text(
-                    isArabic ? 'مرحباً بعودتك!' : 'Welcome Back!',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.legacyForeground,
-                    ),
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  // ==================================================
-                  // SUBTITLE
-                  // ==================================================
-                  Text(
-                    isArabic ? 'سجل الدخول للاستمرار' : 'Login to continue',
-                    style: TextStyle(
-                        fontSize: 14, color: AppTheme.legacySecondary),
-                  ),
-
-                  const SizedBox(height: 30),
-
-                  // ==================================================
-                  // EMAIL
-                  // ==================================================
-                  GlassContainer(
-                    child: TextField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      style: TextStyle(color: AppTheme.legacyForeground),
-                      decoration: InputDecoration(
-                        labelText: isArabic
-                            ? 'البريد الإلكتروني أو رقم الهاتف'
-                            : 'Email or phone number',
-                        labelStyle: TextStyle(color: AppTheme.legacySecondary),
-                        prefixIcon: Icon(
-                          Icons.alternate_email_rounded,
-                          color: AppTheme.legacySecondary,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide.none,
-                        ),
-                        filled: true,
-                        fillColor: AppTheme.adaptiveGlassSoft,
+                    // ==================================================
+                    // TITLE
+                    // ==================================================
+                    Text(
+                      isArabic ? 'مرحباً بعودتك!' : 'Welcome Back!',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.legacyForeground,
                       ),
                     ),
-                  ),
 
-                  const SizedBox(height: 16),
+                    const SizedBox(height: 8),
 
-                  // ==================================================
-                  // PASSWORD
-                  // ==================================================
-                  GlassContainer(
-                    child: TextField(
-                      controller: _passwordController,
-                      obscureText: _obscurePassword,
-                      style: TextStyle(color: AppTheme.legacyForeground),
-                      decoration: InputDecoration(
-                        labelText: isArabic ? 'كلمة المرور' : 'Password',
-                        labelStyle: TextStyle(color: AppTheme.legacySecondary),
-                        prefixIcon: Icon(
-                          Icons.lock_rounded,
-                          color: AppTheme.legacySecondary,
-                        ),
-                        suffixIcon: IconButton(
-                          onPressed: () {
-                            setState(() {
-                              _obscurePassword = !_obscurePassword;
-                            });
-                          },
-                          icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility_rounded
-                                : Icons.visibility_off_rounded,
+                    // ==================================================
+                    // SUBTITLE
+                    // ==================================================
+                    Text(
+                      isArabic ? 'سجل الدخول للاستمرار' : 'Login to continue',
+                      style: TextStyle(
+                          fontSize: 14, color: AppTheme.legacySecondary),
+                    ),
+
+                    const SizedBox(height: 30),
+
+                    // ==================================================
+                    // EMAIL
+                    // ==================================================
+                    GlassContainer(
+                      child: TextField(
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        style: TextStyle(color: AppTheme.legacyForeground),
+                        decoration: InputDecoration(
+                          labelText: isArabic
+                              ? 'البريد الإلكتروني أو رقم الهاتف'
+                              : 'Email or phone number',
+                          labelStyle:
+                              TextStyle(color: AppTheme.legacySecondary),
+                          prefixIcon: Icon(
+                            Icons.alternate_email_rounded,
                             color: AppTheme.legacySecondary,
                           ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide.none,
+                          ),
+                          filled: true,
+                          fillColor: AppTheme.adaptiveGlassSoft,
                         ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide.none,
-                        ),
-                        filled: true,
-                        fillColor: AppTheme.adaptiveGlassSoft,
                       ),
                     ),
-                  ),
 
-                  const SizedBox(height: 30),
+                    const SizedBox(height: 16),
 
-                  // ==================================================
-                  // LOGIN BUTTON / LOADING
-                  // ==================================================
-                  _isLoading
-                      ? Center(
-                          child: CircularProgressIndicator(color: Colors.white),
-                        )
-                      : ElevatedButton(
-                          onPressed: _login,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: primaryColor,
-                            foregroundColor: Colors.white,
-                            minimumSize: const Size(double.infinity, 55),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                            elevation: 5,
+                    // ==================================================
+                    // PASSWORD
+                    // ==================================================
+                    GlassContainer(
+                      child: TextField(
+                        controller: _passwordController,
+                        obscureText: _obscurePassword,
+                        style: TextStyle(color: AppTheme.legacyForeground),
+                        decoration: InputDecoration(
+                          labelText: isArabic ? 'كلمة المرور' : 'Password',
+                          labelStyle:
+                              TextStyle(color: AppTheme.legacySecondary),
+                          prefixIcon: Icon(
+                            Icons.lock_rounded,
+                            color: AppTheme.legacySecondary,
                           ),
+                          suffixIcon: IconButton(
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_rounded
+                                  : Icons.visibility_off_rounded,
+                              color: AppTheme.legacySecondary,
+                            ),
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide.none,
+                          ),
+                          filled: true,
+                          fillColor: AppTheme.adaptiveGlassSoft,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 30),
+
+                    // ==================================================
+                    // LOGIN BUTTON / LOADING
+                    // ==================================================
+                    _isLoading
+                        ? Center(
+                            child:
+                                CircularProgressIndicator(color: Colors.white),
+                          )
+                        : ElevatedButton(
+                            onPressed: _login,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: primaryColor,
+                              foregroundColor: Colors.white,
+                              minimumSize: const Size(double.infinity, 55),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              elevation: 5,
+                            ),
+                            child: Text(
+                              isArabic ? '🔑 تسجيل الدخول' : '🔑 Login',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+
+                    const SizedBox(height: 20),
+
+                    // ==================================================
+                    // CREATE ACCOUNT
+                    // ==================================================
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      children: [
+                        TextButton(
+                            onPressed: _isLoading
+                                ? null
+                                : () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute<void>(
+                                        builder: (_) =>
+                                            const PasswordRecoveryScreen())),
+                            child: Text(
+                                isArabic
+                                    ? 'نسيت كلمة المرور؟'
+                                    : 'Forgot password?',
+                                style: const TextStyle(color: Colors.white))),
+                        TextButton(
+                            onPressed: _isLoading
+                                ? null
+                                : () async {
+                                    try {
+                                      final text = Uri.encodeComponent(
+                                          'مرحبًا، أحتاج مساعدة في تطبيق زميل');
+                                      var opened = false;
+                                      try {
+                                        opened = await launchUrl(
+                                            Uri.parse(
+                                                'whatsapp://send?phone=962792009821&text=$text'),
+                                            mode:
+                                                LaunchMode.externalApplication);
+                                      } catch (_) {}
+                                      if (!opened)
+                                        opened = await launchUrl(
+                                            Uri.parse(
+                                                'https://wa.me/962792009821?text=$text'),
+                                            mode:
+                                                LaunchMode.externalApplication);
+                                      if (!opened && mounted)
+                                        Fluttertoast.showToast(
+                                            msg: 'تعذر فتح واتساب');
+                                    } catch (_) {
+                                      if (mounted)
+                                        Fluttertoast.showToast(
+                                            msg: 'تعذر فتح واتساب');
+                                    }
+                                  },
+                            child: Text(
+                                isArabic ? 'تواصل مع الدعم' : 'Contact support',
+                                style: const TextStyle(color: Colors.white))),
+                      ],
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          isArabic
+                              ? 'ليس لديك حساب؟'
+                              : "Don't have an account?",
+                          style: TextStyle(color: AppTheme.legacySecondary),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const RoleSelectionScreen(),
+                              ),
+                            );
+                          },
                           child: Text(
-                            isArabic ? '🔑 تسجيل الدخول' : '🔑 Login',
+                            isArabic ? 'إنشاء حساب' : 'Create Account',
                             style: TextStyle(
-                              fontSize: 18,
+                              color: AppTheme.legacyForeground,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
-
-                  const SizedBox(height: 20),
-
-                  // ==================================================
-                  // CREATE ACCOUNT
-                  // ==================================================
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        isArabic ? 'ليس لديك حساب؟' : "Don't have an account?",
-                        style: TextStyle(color: AppTheme.legacySecondary),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const RoleSelectionScreen(),
-                            ),
-                          );
-                        },
-                        child: Text(
-                          isArabic ? 'إنشاء حساب' : 'Create Account',
-                          style: TextStyle(
-                            color: AppTheme.legacyForeground,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

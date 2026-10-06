@@ -357,11 +357,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                                     type == 'post_comment')
                                                 ? Icons.comment_rounded
                                                 : Icons.notifications_rounded;
-                        final color = AppTheme.primary;
+                        final color = AppTheme.adaptiveHighlightInk;
 
                         return Card(
                           color: n['is_read'] == true
-                              ? Colors.white
+                              ? AppTheme.adaptiveSurface
                               : AppTheme.adaptiveHighlight,
                           child: ListTile(
                             onTap: () async {

@@ -43,7 +43,7 @@ object ZameelIncomingCall {
         val expires = b.getString("expires_at_ms")?.toLongOrNull() ?: return true
         val now = System.currentTimeMillis()
         if (prefs(c).getLong("closed:$room", 0) > now) return true
-        if (expires <= now || expires > now + 95_000) return true
+        if (expires <= now || expires > now + 50_000) return true
         if (isActive(c, room)) return true
         prefs(c).getString("room", null)?.let { dismiss(c, it) }
         prefs(c).edit().putString("room", room).putLong("expires", expires).apply()

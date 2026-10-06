@@ -37,7 +37,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
     ScreenAwakeService.enterPersistent();
     _verifySession();
     _sessionTimer = Timer.periodic(
-      const Duration(seconds: 5),
+      const Duration(seconds: 1),
       (_) => _verifySession(),
     );
   }

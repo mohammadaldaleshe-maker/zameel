@@ -961,6 +961,11 @@ class _MeetingRoomScreenState extends State<MeetingRoomScreen> {
   Timer? _offerRetryTimer;
   Timer? _signalPollTimer;
   Timer? _connectionWatchdog;
+  Timer? _callClock;
+  DateTime? _connectedAt;
+  bool _closingCall = false;
+  bool _routingAudio = false;
+  bool _audioRouteReleased = false;
   Completer<void>? _iceGatheringCompleter;
   int _lastSignalRowId = 0;
   final List<RTCIceCandidate> _pendingRemoteCandidates = <RTCIceCandidate>[];
@@ -1091,8 +1096,13 @@ class _MeetingRoomScreenState extends State<MeetingRoomScreen> {
         }
       }
       try {
-        await Helper.setSpeakerphoneOn(_speakerOn);
-      } catch (_) {}
+        await _applyAudioRoute(_speakerOn);
+      } catch (_) {
+        if (mounted)
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content:
+                  Text('تعذر ضبط مخرج الصوت تلقائيًا. استخدم زر السماعة')));
+      }
       _localRenderer.srcObject = _localStream;
       _remoteStream = await createLocalMediaStream(
           'zameel_remote_${widget.roomId ?? 'room'}');
@@ -1265,9 +1275,7 @@ class _MeetingRoomScreenState extends State<MeetingRoomScreen> {
               ),
               callback: (payload) {
                 final row = Map<String, dynamic>.from(payload.newRecord);
-                if (row['status'] == 'ended' && mounted) {
-                  Navigator.of(context).maybePop();
-                }
+                _handleCallStatus(row);
               },
             );
       }
@@ -1302,7 +1310,7 @@ class _MeetingRoomScreenState extends State<MeetingRoomScreen> {
       if (_initiator) {
         await _sendOffer();
       } else {
-        await _markCallAnswered();
+        if (!await _markCallAnswered()) return;
         await _announceReady();
         _readyTimer = Timer.periodic(const Duration(seconds: 2), (_) {
           if (!_remoteDescriptionSet && !_connected) {
@@ -1325,6 +1333,21 @@ class _MeetingRoomScreenState extends State<MeetingRoomScreen> {
             await _announceReady();
           }
           if (_recoveryAttempts >= 4) {
+            if (!_standaloneMeeting && widget.roomId != null) {
+              final current = await db
+                  .from('direct_call_sessions')
+                  .select('status')
+                  .eq('room_id', widget.roomId!)
+                  .maybeSingle();
+              if (current?['status'] == 'ringing') {
+                await _checkCallStatus();
+                return;
+              }
+              if (current != null && current['status'] != 'active') {
+                _handleCallStatus(current);
+                return;
+              }
+            }
             timer.cancel();
             await AppSoundService.instance.stop();
             final roomId = widget.roomId;
@@ -1378,8 +1401,28 @@ class _MeetingRoomScreenState extends State<MeetingRoomScreen> {
     _signalPollTimer?.cancel();
     _connectionWatchdog?.cancel();
     if (mounted && !_connected) {
+      _connectedAt ??= DateTime.now();
+      _callClock ??= Timer.periodic(const Duration(seconds: 1), (_) {
+        if (mounted) setState(() {});
+      });
+      unawaited(() async {
+        await AppSoundService.instance.stop();
+        try {
+          await _applyAudioRoute(_speakerOn);
+        } catch (_) {}
+      }());
       setState(() => _connected = true);
     }
+  }
+
+  String get _callDuration {
+    final seconds = _connectedAt == null
+        ? 0
+        : DateTime.now().difference(_connectedAt!).inSeconds;
+    final hours = seconds ~/ 3600;
+    final minutes = (seconds ~/ 60) % 60;
+    final rest = seconds % 60;
+    return '${hours > 0 ? '${hours.toString().padLeft(2, '0')}:' : ''}${minutes.toString().padLeft(2, '0')}:${rest.toString().padLeft(2, '0')}';
   }
 
   Future<void> _sendSignal(Map<String, dynamic> payload) async {
@@ -1499,24 +1542,83 @@ class _MeetingRoomScreenState extends State<MeetingRoomScreen> {
       if (!_connected) {
         _replayPersistedSignals();
       }
+      if (!_standaloneMeeting && !_closingCall) _checkCallStatus();
     });
   }
 
-  Future<void> _markCallAnswered() async {
-    if (_standaloneMeeting) return;
-    final roomId = widget.roomId;
-    if (roomId == null || roomId.isEmpty) return;
+  Future<void> _checkCallStatus() async {
+    if (widget.roomId == null || _closingCall) return;
     try {
-      await Supabase.instance.client
+      final row = await Supabase.instance.client
+          .from('direct_call_sessions')
+          .select('status,created_at')
+          .eq('room_id', widget.roomId!)
+          .maybeSingle();
+      if (row == null || !mounted || _closingCall) return;
+      final created = DateTime.tryParse(row['created_at']?.toString() ?? '');
+      if (_initiator &&
+          row['status'] == 'ringing' &&
+          created != null &&
+          DateTime.now().toUtc().difference(created.toUtc()).inSeconds >= 45) {
+        final changed = await Supabase.instance.client
+            .from('direct_call_sessions')
+            .update({
+              'status': 'missed',
+              'ended_at': DateTime.now().toUtc().toIso8601String()
+            })
+            .eq('room_id', widget.roomId!)
+            .eq('status', 'ringing')
+            .select('status');
+        if (changed.isNotEmpty) _handleCallStatus({'status': 'missed'});
+      } else {
+        _handleCallStatus(row);
+      }
+    } catch (_) {}
+  }
+
+  void _handleCallStatus(Map<String, dynamic> row) {
+    if (!mounted || _closingCall) return;
+    final status = row['status'];
+    if (!const ['ended', 'declined', 'missed', 'cancelled', 'failed']
+        .contains(status)) return;
+    _closingCall = true;
+    AppSoundService.instance.stop();
+    final messenger = ScaffoldMessenger.of(context);
+    Navigator.of(context).maybePop();
+    if (_initiator && status == 'missed') {
+      messenger.showSnackBar(const SnackBar(content: Text('لم يتم الرد')));
+    }
+  }
+
+  Future<bool> _markCallAnswered() async {
+    if (_standaloneMeeting) return true;
+    final roomId = widget.roomId;
+    if (roomId == null || roomId.isEmpty) return false;
+    try {
+      final rows = await Supabase.instance.client
           .from('direct_call_sessions')
           .update({
             'status': 'active',
             'answered_at': DateTime.now().toUtc().toIso8601String(),
           })
           .eq('room_id', roomId)
-          .eq('status', 'ringing');
+          .eq('status', 'ringing')
+          .gt(
+              'created_at',
+              DateTime.now()
+                  .toUtc()
+                  .subtract(const Duration(seconds: 45))
+                  .toIso8601String())
+          .select('status');
+      if (rows.isEmpty || rows.first['status'] != 'active') {
+        _handleCallStatus({'status': 'missed'});
+        return false;
+      }
+      return true;
     } catch (e) {
       debugPrint('Zameel WebRTC mark answered error: $e');
+      _handleCallStatus({'status': 'failed'});
+      return false;
     }
   }
 
@@ -1752,11 +1854,45 @@ class _MeetingRoomScreenState extends State<MeetingRoomScreen> {
     } catch (_) {}
   }
 
-  Future<void> _toggleSpeaker() async {
+  Future<void> _applyAudioRoute(bool speaker) async {
+    if (WebRTC.platformIsAndroid) {
+      await Helper.setAndroidAudioConfiguration(
+          AndroidAudioConfiguration.communication);
+      await Helper.setSpeakerphoneOn(speaker);
+      final routed = await const MethodChannel('zameel/call_audio')
+          .invokeMethod<bool>('setSpeaker', {'enabled': speaker});
+      if (routed != true) throw StateError('Audio route unavailable');
+    } else if (WebRTC.platformIsIOS) {
+      await Helper.ensureAudioSession();
+      await Helper.setSpeakerphoneOn(speaker);
+    } else {
+      throw UnsupportedError('Audio routing is unavailable on this platform');
+    }
+  }
+
+  Future<void> _releaseAudioRoute() async {
+    if (_audioRouteReleased || !WebRTC.platformIsAndroid) return;
+    _audioRouteReleased = true;
     try {
-      await Helper.setSpeakerphoneOn(!_speakerOn);
+      await const MethodChannel('zameel/call_audio')
+          .invokeMethod<void>('clear');
     } catch (_) {}
-    if (mounted) setState(() => _speakerOn = !_speakerOn);
+  }
+
+  Future<void> _toggleSpeaker() async {
+    if (_routingAudio) return;
+    _routingAudio = true;
+    final next = !_speakerOn;
+    try {
+      await _applyAudioRoute(next);
+      if (mounted) setState(() => _speakerOn = next);
+    } catch (_) {
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('تعذر تبديل مخرج الصوت. حاول مجددًا.')));
+    } finally {
+      _routingAudio = false;
+    }
   }
 
   Future<void> _toggleScreenShare() async {
@@ -1837,6 +1973,7 @@ class _MeetingRoomScreenState extends State<MeetingRoomScreen> {
       await _localStream?.dispose();
       await _remoteStream?.dispose();
       await _pc?.close();
+      await _releaseAudioRoute();
       _signalSubscribed = false;
       await _signal?.unsubscribe();
     } catch (_) {}
@@ -1850,9 +1987,11 @@ class _MeetingRoomScreenState extends State<MeetingRoomScreen> {
     _offerRetryTimer?.cancel();
     _signalPollTimer?.cancel();
     _connectionWatchdog?.cancel();
+    _callClock?.cancel();
     _signalSubscribed = false;
     _signal?.unsubscribe();
     _pc?.close();
+    unawaited(_releaseAudioRoute());
     _localStream?.dispose();
     _remoteStream?.dispose();
     _localRenderer.dispose();
@@ -1930,6 +2069,10 @@ class _MeetingRoomScreenState extends State<MeetingRoomScreen> {
                       ),
                     ],
                   ),
+                  if (_connectedAt != null)
+                    Text(_callDuration,
+                        style:
+                            const TextStyle(color: Colors.white, fontSize: 18)),
                   if (_starting)
                     Padding(
                       padding: EdgeInsets.only(top: 20),

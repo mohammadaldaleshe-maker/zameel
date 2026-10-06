@@ -438,6 +438,7 @@ void main() {
         'lib/widgets/cached_media_image_io.dart',
         'lib/services/social_daily_file_service_io.dart',
         'lib/services/shorts_video_preparer_io.dart',
+        'lib/services/voice_recording_file_io.dart',
       };
       final directIoImports = Directory('lib')
           .listSync(recursive: true)

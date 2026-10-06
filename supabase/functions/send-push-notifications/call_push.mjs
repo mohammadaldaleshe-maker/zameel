@@ -3,12 +3,12 @@ export function incomingCallData(session, notification, callerName, now = Date.n
   if (!session || session.status !== 'ringing' ||
       session.callee_id !== notification.user_id ||
       String(session.room_id) !== String(notification.data?.room_id) ||
-      !Number.isFinite(created) || created > now || now - created >= 90_000) return null;
+      !Number.isFinite(created) || created > now || now - created >= 45_000) return null;
   return {
     recipient_id: String(session.callee_id),
     caller_id: String(session.caller_id),
     caller_name: String(callerName || 'زميل').slice(0, 80),
-    expires_at_ms: String(created + 90_000),
+    expires_at_ms: String(created + 45_000),
   };
 }
 export function isNativeCallDevice(platform) {

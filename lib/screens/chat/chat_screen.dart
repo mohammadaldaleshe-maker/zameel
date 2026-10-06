@@ -1,3 +1,5 @@
+import 'package:image_picker/image_picker.dart';
+import '../../widgets/chat_voice_widgets.dart';
 import '../../widgets/video_player_widget.dart';
 import 'package:zameel/theme/appearance_controller.dart';
 import 'package:zameel/widgets/verified_name.dart';
@@ -845,32 +847,92 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     }
   }
 
-  Future<void> _pickAttachment() async {
+  Future<void> _chooseAttachment() async {
+    final kind = await showModalBottomSheet<String>(
+        context: context,
+        builder: (c) => SafeArea(
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+              ListTile(
+                  leading: const Icon(Icons.photo),
+                  title: const Text('صورة من الاستديو'),
+                  onTap: () => Navigator.pop(c, 'image')),
+              ListTile(
+                  leading: const Icon(Icons.videocam),
+                  title: const Text('فيديو من الاستديو'),
+                  onTap: () => Navigator.pop(c, 'video')),
+              ListTile(
+                  leading: const Icon(Icons.attach_file),
+                  title: const Text('ملف'),
+                  onTap: () => Navigator.pop(c, 'file')),
+            ])));
+    if (!mounted || kind == null) return;
+    if (kind == 'file') {
+      await _pickAttachment();
+      return;
+    }
+    try {
+      final picker = ImagePicker();
+      final picked = kind == 'image'
+          ? await picker.pickImage(source: ImageSource.gallery)
+          : await picker.pickVideo(source: ImageSource.gallery);
+      if (picked == null || !mounted) return;
+      final bytes = await picked.readAsBytes();
+      await _pickAttachment(
+          selectedName: picked.name,
+          selectedBytes: bytes,
+          selectedPath: picked.path);
+    } catch (_) {
+      _notice('تعذر فتح الاستديو. تحقق من صلاحيات الصور والفيديو');
+    }
+  }
+
+  Future<void> _recordVoice() async {
     if (_uploading || uid == null) return;
-    final file = await FilePicker.pickFile(
-      type: FileType.custom,
-      allowedExtensions: const [
-        'jpg',
-        'jpeg',
-        'png',
-        'webp',
-        'gif',
-        'mp4',
-        'mov',
-        'webm',
-        'pdf',
-        'doc',
-        'docx',
-        'xls',
-        'xlsx',
-        'ppt',
-        'pptx',
-        'txt',
-        'zip'
-      ],
-    );
-    if (file == null) return;
-    final bytes = await file.readAsBytes();
+    final draft = await showDialog<VoiceDraft>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const VoiceRecordingDialog());
+    if (draft == null || !mounted) return;
+    await _pickAttachment(
+        selectedName: 'voice_${DateTime.now().millisecondsSinceEpoch}.m4a',
+        selectedBytes: draft.bytes,
+        confirmed: true);
+  }
+
+  Future<void> _pickAttachment(
+      {String? selectedName,
+      Uint8List? selectedBytes,
+      String? selectedPath,
+      bool confirmed = false}) async {
+    if (_uploading || uid == null) return;
+    final file = selectedBytes != null
+        ? null
+        : await FilePicker.pickFile(
+            type: FileType.custom,
+            allowedExtensions: const [
+              'jpg',
+              'jpeg',
+              'png',
+              'webp',
+              'gif',
+              'mp4',
+              'mov',
+              'webm',
+              'pdf',
+              'doc',
+              'docx',
+              'xls',
+              'xlsx',
+              'ppt',
+              'pptx',
+              'txt',
+              'zip'
+            ],
+          );
+    if (file == null && selectedBytes == null) return;
+    final filename = selectedName ?? file!.name;
+    final localPath = selectedPath ?? file?.path;
+    final bytes = selectedBytes ?? await file!.readAsBytes();
     if (bytes.isEmpty) {
       _notice('تعذر قراءة الملف المختار');
       return;
@@ -881,70 +943,78 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     }
     if (!mounted) return;
     final previewVideo = const {'mp4', 'mov', 'webm'}
-        .contains(file.name.split('.').last.toLowerCase());
+        .contains(filename.split('.').last.toLowerCase());
     final previewImage = const {'jpg', 'jpeg', 'png', 'webp', 'gif'}
-        .contains(file.name.split('.').last.toLowerCase());
-    final send = await showDialog<bool>(
-        context: context,
-        builder: (c) => AlertDialog(
-                title: Text(previewVideo
-                    ? 'إرسال الفيديو؟'
-                    : previewImage
-                        ? 'إرسال الصورة؟'
-                        : 'إرسال المرفق؟'),
-                content: Column(mainAxisSize: MainAxisSize.min, children: [
-                  if (previewImage)
-                    Image.memory(bytes, height: 220, fit: BoxFit.contain),
-                  if (previewVideo && file.path != null)
-                    SizedBox(
-                        height: 220,
-                        child: VideoPlayerWidget(videoUrl: file.path!)),
-                  Text(file.name),
-                  Text('${(bytes.length / 1024 / 1024).toStringAsFixed(1)} MB'),
-                ]),
-                actions: [
-                  TextButton(
-                      onPressed: () => Navigator.pop(c, false),
-                      child: const Text('إلغاء')),
-                  FilledButton(
-                      onPressed: () => Navigator.pop(c, true),
-                      child: const Text('إرسال'))
-                ]));
+        .contains(filename.split('.').last.toLowerCase());
+    final send = confirmed
+        ? true
+        : await showDialog<bool>(
+            context: context,
+            builder: (c) => AlertDialog(
+                    title: Text(previewVideo
+                        ? 'إرسال الفيديو؟'
+                        : previewImage
+                            ? 'إرسال الصورة؟'
+                            : 'إرسال المرفق؟'),
+                    content: Column(mainAxisSize: MainAxisSize.min, children: [
+                      if (previewImage)
+                        Image.memory(bytes, height: 220, fit: BoxFit.contain),
+                      if (previewVideo && localPath != null)
+                        SizedBox(
+                            height: 220,
+                            child: VideoPlayerWidget(videoUrl: localPath!)),
+                      Text(filename),
+                      Text(
+                          '${(bytes.length / 1024 / 1024).toStringAsFixed(1)} MB'),
+                    ]),
+                    actions: [
+                      TextButton(
+                          onPressed: () => Navigator.pop(c, false),
+                          child: const Text('إلغاء')),
+                      FilledButton(
+                          onPressed: () => Navigator.pop(c, true),
+                          child: const Text('إرسال'))
+                    ]));
     if (send != true || !mounted) return;
     setState(() => _uploading = true);
     try {
-      final safeName = file.name.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
+      final safeName = filename.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
       final path =
           '${uid!}/${widget.conversationId}/${DateTime.now().microsecondsSinceEpoch}_$safeName';
-      final extension = file.name.contains('.')
-          ? file.name.split('.').last.toLowerCase()
-          : '';
+      final extension =
+          filename.contains('.') ? filename.split('.').last.toLowerCase() : '';
       final image =
           const {'jpg', 'jpeg', 'png', 'webp', 'gif'}.contains(extension);
       final video = const {'mp4', 'mov', 'webm'}.contains(extension);
-      final mediaType = image
-          ? 'image'
-          : video
-              ? 'video'
-              : 'file';
+      final audio =
+          const {'m4a', 'aac', 'mp3', 'wav', 'ogg'}.contains(extension);
+      final mediaType = audio
+          ? 'audio'
+          : image
+              ? 'image'
+              : video
+                  ? 'video'
+                  : 'file';
       final imageMime = extension == 'jpg' ? 'jpeg' : extension;
       final videoMime = extension == 'mov' ? 'quicktime' : extension;
       await db.storage.from('chat_attachments').uploadBinary(
             path,
             Uint8List.fromList(bytes),
             fileOptions: FileOptions(
-                contentType: image
-                    ? 'image/$imageMime'
-                    : video
-                        ? 'video/$videoMime'
-                        : 'application/octet-stream'),
+                contentType: audio
+                    ? 'audio/mp4'
+                    : image
+                        ? 'image/$imageMime'
+                        : video
+                            ? 'video/$videoMime'
+                            : 'application/octet-stream'),
           );
       final row = await db
           .from('messages')
           .insert({
             'conversation_id': widget.conversationId,
             'sender_id': uid,
-            'content': file.name,
+            'content': audio ? 'رسالة صوتية' : filename,
             'media_url': path,
             'media_type': mediaType,
             'is_read': false,
@@ -957,7 +1027,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         'message_id': row['id'],
         'uploader_id': uid,
         'object_path': path,
-        'file_name': file.name,
+        'file_name': filename,
         'file_size': bytes.length,
         'media_type': mediaType,
       });
@@ -1014,6 +1084,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               width: 28,
               height: 28,
               child: CircularProgressIndicator(strokeWidth: 2));
+        if (type == 'audio')
+          return ChatVoicePlayer(key: ValueKey(message['id']), url: url);
         if (type == 'video') {
           return SizedBox(width: 240, child: VideoPlayerWidget(videoUrl: url));
         }
@@ -1585,7 +1657,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                     tooltip: ar
                         ? 'إرفاق صورة أو فيديو أو ملف'
                         : 'Attach image, video or file',
-                    onPressed: _uploading ? null : _pickAttachment,
+                    onPressed: _uploading ? null : _chooseAttachment,
                     icon: _uploading
                         ? const SizedBox(
                             width: 20,
@@ -1593,6 +1665,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2))
                         : const Icon(Icons.attach_file_rounded),
                   ),
+                  IconButton(
+                      tooltip: 'رسالة صوتية',
+                      onPressed: _uploading ? null : _recordVoice,
+                      icon: const Icon(Icons.mic_rounded)),
                   IconButton(
                       tooltip: 'إيموجي',
                       icon: const Icon(Icons.emoji_emotions_outlined),
