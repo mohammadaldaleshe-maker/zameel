@@ -93,14 +93,11 @@ class UserProvider extends ChangeNotifier {
               'id,name,university,college,department,profile_image,account_privacy,default_post_audience,allow_messages,allow_calls,notifications_enabled,gender,role,verification_expires_at,created_at,updated_at')
           .single();
 
-      if (response != null) {
-        _currentUser = Map<String, dynamic>.from(response);
-        VerificationDirectory.instance.updateOwn(response['id'].toString(),
-            response['verification_expires_at']?.toString());
-        notifyListeners();
-        return true;
-      }
-      return false;
+      _currentUser = Map<String, dynamic>.from(response);
+      VerificationDirectory.instance.updateOwn(response['id'].toString(),
+          response['verification_expires_at']?.toString());
+      notifyListeners();
+      return true;
     } catch (e) {
       print('Error updating profile: $e');
       return false;
@@ -121,14 +118,11 @@ class UserProvider extends ChangeNotifier {
               'id,name,university,college,department,profile_image,account_privacy,default_post_audience,allow_messages,allow_calls,notifications_enabled,gender,role,verification_expires_at,created_at,updated_at')
           .single();
 
-      if (response != null) {
-        _currentUser = Map<String, dynamic>.from(response);
-        VerificationDirectory.instance.updateOwn(response['id'].toString(),
-            response['verification_expires_at']?.toString());
-        notifyListeners();
-        return true;
-      }
-      return false;
+      _currentUser = Map<String, dynamic>.from(response);
+      VerificationDirectory.instance.updateOwn(response['id'].toString(),
+          response['verification_expires_at']?.toString());
+      notifyListeners();
+      return true;
     } catch (e) {
       print('Error updating profile image: $e');
       return false;

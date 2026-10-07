@@ -11,9 +11,17 @@ import io.flutter.embedding.android.FlutterActivity
 
 @androidx.annotation.OptIn(markerClass = [androidx.media3.common.util.UnstableApi::class])
 class MainActivity : FlutterActivity() {
+    private var playBilling: ZameelPlayBilling? = null
     private var pendingExport: Triple<java.io.File, io.flutter.plugin.common.MethodChannel.Result, () -> Unit>? = null
+    override fun cleanUpFlutterEngine(engine: io.flutter.embedding.engine.FlutterEngine) {
+        playBilling?.close()
+        playBilling = null
+        super.cleanUpFlutterEngine(engine)
+    }
     override fun configureFlutterEngine(engine: io.flutter.embedding.engine.FlutterEngine) {
         super.configureFlutterEngine(engine)
+        playBilling?.close()
+        playBilling = ZameelPlayBilling(this, engine)
         io.flutter.plugin.common.MethodChannel(engine.dartExecutor.binaryMessenger, "zameel/incoming_calls")
             .setMethodCallHandler { call, result ->
                 when (call.method) {

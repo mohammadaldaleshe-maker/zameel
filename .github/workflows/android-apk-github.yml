@@ -83,6 +83,15 @@ jobs:
           flutter analyze
           flutter test
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Check Google Play server and database contracts
+        run: |
+          npm ci --prefix verification/play_billing_146 --ignore-scripts
+          npm test --prefix verification/play_billing_146
+          node --test verification/play_provider_146_test.mjs verification/play_purchase_146_test.mjs
+
       - name: Build universal and device-specific APKs
         shell: bash
         run: |
@@ -94,14 +103,14 @@ jobs:
             --dart-define="WEBRTC_TURN_URL=$WEBRTC_TURN_URL" \
             --dart-define="WEBRTC_TURN_USERNAME=$WEBRTC_TURN_USERNAME" \
             --dart-define="WEBRTC_TURN_CREDENTIAL=$WEBRTC_TURN_CREDENTIAL" \
-            --dart-define=ZAMEEL_VERSION=2.0.6+15
+            --dart-define=ZAMEEL_VERSION=2.0.11+20
           flutter build apk --release --split-per-abi --build-number="$build_number" \
             --dart-define="SUPABASE_URL=$SUPABASE_URL" \
             --dart-define="SUPABASE_PUBLISHABLE_KEY=$SUPABASE_PUBLISHABLE_KEY" \
             --dart-define="WEBRTC_TURN_URL=$WEBRTC_TURN_URL" \
             --dart-define="WEBRTC_TURN_USERNAME=$WEBRTC_TURN_USERNAME" \
             --dart-define="WEBRTC_TURN_CREDENTIAL=$WEBRTC_TURN_CREDENTIAL" \
-            --dart-define=ZAMEEL_VERSION=2.0.6+15
+            --dart-define=ZAMEEL_VERSION=2.0.11+20
 
       - name: Build Android App Bundle for Google Play
         if: inputs.signing == 'signed'
@@ -110,12 +119,13 @@ jobs:
           set -euo pipefail
           build_number=$((10000 + GITHUB_RUN_NUMBER))
           flutter build appbundle --release --build-number="$build_number" \
+            --dart-define=ZAMEEL_GOOGLE_PLAY_BILLING=true \
             --dart-define="SUPABASE_URL=$SUPABASE_URL" \
             --dart-define="SUPABASE_PUBLISHABLE_KEY=$SUPABASE_PUBLISHABLE_KEY" \
             --dart-define="WEBRTC_TURN_URL=$WEBRTC_TURN_URL" \
             --dart-define="WEBRTC_TURN_USERNAME=$WEBRTC_TURN_USERNAME" \
             --dart-define="WEBRTC_TURN_CREDENTIAL=$WEBRTC_TURN_CREDENTIAL" \
-            --dart-define=ZAMEEL_VERSION=2.0.6+15
+            --dart-define=ZAMEEL_VERSION=2.0.11+20
 
       - name: Check APK signature
         shell: bash

@@ -1,0 +1,1 @@
+{"name":"zameel-play-billing-146-checks","private":true,"type":"module","scripts":{"test":"node --test endpoint_test.mjs && node database_test.mjs"},"devDependencies":{"@electric-sql/pglite":"0.5.8","esbuild":"0.25.12"}}

@@ -86,3 +86,6 @@ android {
 flutter {
     source = "../.."
 }
+
+// Standard Google Play one-time purchases; no alternative billing.
+dependencies { implementation("com.android.billingclient:billing:8.3.0") }

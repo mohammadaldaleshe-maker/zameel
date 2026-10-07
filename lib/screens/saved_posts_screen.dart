@@ -1,4 +1,4 @@
-import '../../widgets/compact_post.dart';
+import '../widgets/compact_post.dart';
 import 'package:zameel/widgets/verified_name.dart';
 import 'package:zameel/theme/appearance_controller.dart';
 import 'dart:ui' as ui;

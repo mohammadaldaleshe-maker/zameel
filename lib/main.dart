@@ -1,3 +1,4 @@
+import 'services/play_billing_service.dart';
 import 'screens/social/clip_create_screen.dart';
 import 'screens/settings/app_settings_screen.dart';
 import 'screens/profile/profile_settings_screen.dart';
@@ -9,6 +10,7 @@ import 'theme/appearance_controller.dart';
 import 'widgets/verified_name.dart';
 import 'widgets/verified_badge.dart';
 import 'widgets/compact_post.dart';
+
 import 'dart:async';
 import 'dart:ui';
 
@@ -25,6 +27,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:app_links/app_links.dart';
+
 import 'theme/app_theme.dart';
 
 import 'screens/comments/comments_screen.dart';
@@ -140,12 +143,12 @@ Future<void> _openZameelDeepLink(Uri uri) async {
     final parts = uri.pathSegments.where((e) => e.isNotEmpty).toList();
     if (parts.isEmpty) return;
     final token = uri.queryParameters['token'];
-    nav.push(MaterialPageRoute(
-      builder: (_) => GraduationBookScreen(
-        bookId: parts.first,
-        inviteToken: token,
+    nav.push(
+      MaterialPageRoute(
+        builder: (_) =>
+            GraduationBookScreen(bookId: parts.first, inviteToken: token),
       ),
-    ));
+    );
     return;
   }
 
@@ -187,13 +190,15 @@ Future<void> _openZameelDeepLink(Uri uri) async {
       } catch (_) {}
     }
 
-    nav.push(MaterialPageRoute(
-      builder: (_) => ChatDetailScreen(
-        conversationId: conversationId,
-        partnerId: partnerId,
-        partnerName: partnerName.isNotEmpty ? partnerName : 'Colleague',
+    nav.push(
+      MaterialPageRoute(
+        builder: (_) => ChatDetailScreen(
+          conversationId: conversationId,
+          partnerId: partnerId,
+          partnerName: partnerName.isNotEmpty ? partnerName : 'Colleague',
+        ),
       ),
-    ));
+    );
   }
 }
 
@@ -234,11 +239,15 @@ Future<void> _handlePushNavigationData(Map<String, dynamic> data) async {
             .maybeSingle()
             .timeout(const Duration(seconds: 12));
         if (post != null) {
-          nav.push(MaterialPageRoute(
+          nav.push(
+            MaterialPageRoute(
               builder: (_) => ZameelMediaViewer(
-                  post: Map<String, dynamic>.from(post),
-                  isVideo: post['type'] == 'video',
-                  enableVerticalPaging: false)));
+                post: Map<String, dynamic>.from(post),
+                isVideo: post['type'] == 'video',
+                enableVerticalPaging: false,
+              ),
+            ),
+          );
           return;
         }
       } catch (_) {}
@@ -277,13 +286,15 @@ Future<void> _handlePushNavigationData(Map<String, dynamic> data) async {
       if (partnerId.isNotEmpty) {
         if (!await FeatureControl.instance.check(nav.context, 'direct_chat'))
           return;
-        nav.push(MaterialPageRoute(
-          builder: (_) => ChatDetailScreen(
-            conversationId: conversationId,
-            partnerId: partnerId,
-            partnerName: partnerName.isNotEmpty ? partnerName : 'Colleague',
+        nav.push(
+          MaterialPageRoute(
+            builder: (_) => ChatDetailScreen(
+              conversationId: conversationId,
+              partnerId: partnerId,
+              partnerName: partnerName.isNotEmpty ? partnerName : 'Colleague',
+            ),
           ),
-        ));
+        );
         return;
       }
     }
@@ -323,18 +334,19 @@ Future<void> _handlePushNavigationData(Map<String, dynamic> data) async {
       final accepted = nativeAction == 'accept'
           ? true
           : nativeAction == 'decline'
-              ? false
-              : await nav.push<bool>(
-                  MaterialPageRoute(
-                    fullscreenDialog: true,
-                    builder: (_) => IncomingCallScreen(
-                        roomId: roomId,
-                        callerName: callerName,
-                        callerId: callerId,
-                        callerImage: callerImage,
-                        video: video),
-                  ),
-                );
+          ? false
+          : await nav.push<bool>(
+              MaterialPageRoute(
+                fullscreenDialog: true,
+                builder: (_) => IncomingCallScreen(
+                  roomId: roomId,
+                  callerName: callerName,
+                  callerId: callerId,
+                  callerImage: callerImage,
+                  video: video,
+                ),
+              ),
+            );
       if (accepted != true) {
         try {
           await Supabase.instance.client
@@ -375,13 +387,15 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppearanceController.instance.initialize();
 
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: AppTheme.primary,
-    statusBarIconBrightness: Brightness.light,
-    statusBarBrightness: Brightness.dark,
-    systemNavigationBarColor: AppTheme.primaryDark,
-    systemNavigationBarIconBrightness: Brightness.light,
-  ));
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: AppTheme.primary,
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark,
+      systemNavigationBarColor: AppTheme.primaryDark,
+      systemNavigationBarIconBrightness: Brightness.light,
+    ),
+  );
 
   await Supabase.initialize(
     url: ZameelConfig.supabaseUrl,
@@ -402,6 +416,11 @@ Future<void> main() async {
 }
 
 Future<void> _initializeOptionalServices() async {
+  if (PlayBillingService.enabled) {
+    try {
+      await PlayBillingService.instance.initialize();
+    } catch (_) {}
+  }
   await WidgetsBinding.instance.endOfFrame;
   unawaited(MediaCacheService.cleanup());
   unawaited(ScreenAwakeService.initialize());
@@ -434,8 +453,9 @@ Future<void> _initializeOptionalServices() async {
   }
 
   if (firebaseReady) {
-    await PushNotificationService.instance
-        .setTapHandler(_handlePushNavigationData);
+    await PushNotificationService.instance.setTapHandler(
+      _handlePushNavigationData,
+    );
   }
 }
 

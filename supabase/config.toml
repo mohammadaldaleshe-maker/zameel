@@ -6,3 +6,7 @@ verify_jwt = false
 
 [functions.account-deletion]
 verify_jwt = false
+
+# This handler validates user JWTs with Auth and uses a separate private worker secret.
+[functions.play-billing]
+verify_jwt = false
