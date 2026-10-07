@@ -52,7 +52,7 @@ class ZameelPlayBilling(private val activity: MainActivity, engine: FlutterEngin
                         result.error("purchase_unavailable", "Purchase unavailable", null)
                     } else {
                         val params = BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(product)
-                        if(offer.offerToken.isNotEmpty()) params.setOfferToken(offer.offerToken)
+                        offer.offerToken?.takeIf { it.isNotEmpty() }?.let { params.setOfferToken(it) }
                         val r = client.launchBillingFlow(activity, BillingFlowParams.newBuilder()
                             .setProductDetailsParamsList(listOf(params.build()))
                             .setObfuscatedAccountId(account).setObfuscatedProfileId(profile).build())
