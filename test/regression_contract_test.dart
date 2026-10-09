@@ -98,80 +98,32 @@ void main() {
   });
 
   group('Zameel 073 floating bubble regression contracts', () {
-    test('manifest keeps real overlay and foreground-service declarations', () {
+    test('release manifest excludes floating overlay permissions and service', () {
       final manifest = _read('android/app/src/main/AndroidManifest.xml');
-
-      expect(manifest, contains('android.permission.SYSTEM_ALERT_WINDOW'));
-      expect(manifest, contains('android.permission.FOREGROUND_SERVICE'));
-      expect(
-        manifest,
-        contains('android.permission.FOREGROUND_SERVICE_SPECIAL_USE'),
-      );
-      expect(manifest, contains('android:name=".ZameelOverlayService"'));
-      expect(manifest, contains('android:foregroundServiceType="specialUse"'));
+      expect(manifest, isNot(contains('android.permission.SYSTEM_ALERT_WINDOW')));
+      expect(manifest, isNot(contains('android.permission.FOREGROUND_SERVICE_SPECIAL_USE')));
+      expect(manifest, isNot(contains('android:name=".ZameelOverlayService"')));
+      expect(manifest, isNot(contains('android:foregroundServiceType="specialUse"')));
+      expect(manifest, contains('android:name=".ZameelBubbleReceiver"'));
     });
 
-    test('receiver preserves both overlay and notification fallback paths', () {
-      final receiver = _read(
-        'android/app/src/main/kotlin/com/zameel/app/ZameelBubbleReceiver.kt',
-      );
-      final overlay = _read(
-        'android/app/src/main/kotlin/com/zameel/app/ZameelOverlayService.kt',
-      );
-
-      expect(receiver, contains('ZameelOverlayService.showFromPush'));
-      expect(receiver, contains('postConversationFallback'));
+    test('incoming messages and calls retain their notification paths without overlays', () {
+      final receiver = _read('android/app/src/main/kotlin/com/zameel/app/ZameelBubbleReceiver.kt');
+      expect(receiver, contains('ZameelIncomingCall.receive(appContext, extras)'));
+      expect(receiver, contains('postConversationFallback(appContext, extras)'));
       expect(receiver, contains('super.onReceive(context, intent)'));
-      expect(receiver, contains('MainActivity.isVisible'));
-      expect(receiver, isNot(contains('ActivityManager.getMyMemoryState')));
-      expect(overlay, contains('TYPE_APPLICATION_OVERLAY'));
-      expect(overlay, contains('postFallbackNotification'));
-      expect(overlay, contains('.authority("chat")'));
-      expect(
-          overlay,
-          contains(
-              'startForeground(SERVICE_NOTIFICATION_ID, messageNotification)'));
-      expect(overlay, contains('ACTION_SHOW_BROADCAST'));
-      expect(overlay, contains('Context.RECEIVER_NOT_EXPORTED'));
-      expect(overlay, contains('return START_NOT_STICKY'));
-      expect(receiver,
-          contains('val deliveredToHost = ZameelOverlayService.showFromPush'));
-      expect(overlay,
-          contains('Could not start message bubble service from push'));
-      expect(overlay, contains('PREF_OVERLAY_VERIFIED'));
-      expect(overlay, contains('R.raw.zameel_bubble_thunder'));
-      expect(overlay, isNot(contains('buildHostNotification')));
-      expect(overlay, isNot(contains('Chat bubbles are ready')));
-      expect(overlay, isNot(contains('ACTION_HOST')));
-      expect(receiver,
-          contains('Notification.BubbleMetadata.Builder(shortcutId)'));
-      // Android 10 uses the legacy channel bubble opt-in; Android 11+ is user/system controlled.
-      expect(receiver,
-          contains('if (Build.VERSION.SDK_INT == Build.VERSION_CODES.Q)'));
-      expect(receiver, contains('setAllowBubbles(true)'));
-      expect(receiver, isNot(contains('setAutoExpandBubble(true)')));
+      expect(receiver, isNot(contains('ZameelOverlayService.showFromPush')));
+      expect(receiver, contains('notificationManager.notify(notificationId, builder.build())'));
     });
 
-    test('overlay permission remains recoverable after declining or revocation',
-        () {
-      final activity = _read(
-        'android/app/src/main/kotlin/com/zameel/app/MainActivity.kt',
-      );
-
-      expect(activity, contains('ACTION_MANAGE_OVERLAY_PERMISSION'));
-      expect(activity, contains('overlayPromptedThisProcess'));
-      expect(activity, contains('var isVisible: Boolean = false'));
-      expect(activity, contains('override fun onStart()'));
-      expect(activity, contains('override fun onResume()'));
-      expect(activity, contains('override fun onStop()'));
-      expect(activity, contains('ZameelOverlayService.hideBubbleAndStop(this'));
-      expect(activity,
-          isNot(contains('ZameelOverlayService.ensureHostRunning(this)')));
-      expect(activity, isNot(contains('scheduleOverlaySelfTestIfNeeded')));
-      expect(activity,
-          isNot(contains('ZameelOverlayService.runSetupSelfTest(this)')));
-      expect(activity, contains('ACTION_APP_NOTIFICATION_BUBBLE_SETTINGS'));
-      expect(activity, contains('bubblePreference'));
+    test('activity no longer requests overlay access and preserves incoming call handling', () {
+      final activity = _read('android/app/src/main/kotlin/com/zameel/app/MainActivity.kt');
+      expect(activity, isNot(contains('ACTION_MANAGE_OVERLAY_PERMISSION')));
+      expect(activity, isNot(contains('maybeAskForOverlayPermission')));
+      expect(activity, isNot(contains('ACTION_APP_NOTIFICATION_BUBBLE_SETTINGS')));
+      expect(activity, contains('ZameelIncomingCall.setUser'));
+      expect(activity, contains('ZameelIncomingCall.dismiss'));
+      expect(activity, contains('canUseFullScreenIntent()'));
     });
 
     test('cold-start chat deep links wait for the Flutter navigator', () {
@@ -346,23 +298,14 @@ void main() {
       expect(rawSignOutFiles, isEmpty);
     });
 
-    test('Android bubbles cover Android 10 and modern shortcut bubbles', () {
-      final receiver = _read(
-        'android/app/src/main/kotlin/com/zameel/app/ZameelBubbleReceiver.kt',
-      );
-      final activity = _read(
-        'android/app/src/main/kotlin/com/zameel/app/MainActivity.kt',
-      );
-
-      expect(receiver, contains('Notification.BubbleMetadata.Builder()'));
-      expect(receiver, contains('.setIntent(bubblePendingIntent)'));
-      expect(receiver,
-          contains('Notification.BubbleMetadata.Builder(shortcutId)'));
-      expect(
-          receiver, contains('shortcutManager.pushDynamicShortcut(shortcut)'));
-      expect(receiver,
-          contains('pushDynamicShortcut(shortcut)\n            true'));
-      expect(activity, contains('channels.all { it.canBubble() }'));
+    test('message notification opens its conversation without bubble metadata', () {
+      final receiver = _read('android/app/src/main/kotlin/com/zameel/app/ZameelBubbleReceiver.kt');
+      expect(receiver, isNot(contains('Notification.BubbleMetadata')));
+      expect(receiver, isNot(contains('setBubbleMetadata')));
+      expect(receiver, contains('.authority("chat")'));
+      expect(receiver, contains('.appendQueryParameter("conversation_id", conversationId)'));
+      expect(receiver, contains('MainActivity::class.java'));
+      expect(receiver, contains('.setContentIntent(contentPendingIntent)'));
     });
 
     test('content deletion removes backing Storage references', () {
@@ -399,15 +342,13 @@ void main() {
       expect(social, contains('uploadPickedPostMedia'));
     });
 
-    test(
-        'foreground special-use declaration matches message-triggered bubble host',
-        () {
+    test('bubble removal preserves full-screen incoming call declarations', () {
       final manifest = _read('android/app/src/main/AndroidManifest.xml');
-      expect(
-        manifest,
-        contains(
-            'User-enabled short-lived floating direct-message overlay started only for an incoming Zameel message'),
-      );
+      expect(manifest, isNot(contains('PROPERTY_SPECIAL_USE_FGS_SUBTYPE')));
+      expect(manifest, isNot(contains('android:name=".ZameelBubbleActivity"')));
+      expect(manifest, contains('android.permission.USE_FULL_SCREEN_INTENT'));
+      expect(manifest, contains('android:name=".ZameelIncomingCallActivity"'));
+      expect(manifest, contains('android.permission.FOREGROUND_SERVICE"'));
     });
 
     test('main Flutter library stays free of direct dart io dependency', () {
