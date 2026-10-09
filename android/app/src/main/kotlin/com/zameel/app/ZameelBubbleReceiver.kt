@@ -59,27 +59,7 @@ class ZameelBubbleReceiver : FlutterFirebaseMessagingReceiver() {
         if (extras != null) ZameelIncomingCall.receive(appContext, extras)
 
         if (extras != null && isDirectMessage(extras)) {
-            val bubbleEnabled = value(extras, "bubble_enabled").lowercase() != "false"
-            val overlayAllowed = bubbleEnabled && ZameelOverlayService.canDrawOverlays(appContext)
-            val appInForeground = MainActivity.isVisible
-
-            // Prefer a real app-over-app chat head when Zameel is behind another
-            // app and the user granted overlay access. If Android rejects the
-            // foreground-service start for any reason, immediately fall back to
-            // the official Conversation/Bubble notification path.
-            if (overlayAllowed && !appInForeground) {
-                // The host service is started while MainActivity is visible and
-                // remains foreground. The FCM receiver only sends an in-process
-                // bubble command; it never tries to create a foreground service
-                // from the background. This is reliable on Android 12-16 even
-                // when FCM downgrades a nominally high-priority delivery.
-                val deliveredToHost = ZameelOverlayService.showFromPush(appContext, extras)
-                if (!deliveredToHost) {
-                    postConversationFallback(appContext, extras)
-                }
-            } else {
-                postConversationFallback(appContext, extras)
-            }
+            postConversationFallback(appContext, extras)
         }
 
         // Preserve FlutterFire's existing onMessage/background-isolate path for
@@ -132,7 +112,6 @@ class ZameelBubbleReceiver : FlutterFirebaseMessagingReceiver() {
             .ifBlank { value(extras, "body") }
             .ifBlank { "New message" }
         val playSound = value(extras, "play_sound").lowercase() != "false"
-        val bubbleEnabled = value(extras, "bubble_enabled").lowercase() != "false"
 
         ensureChannels(context)
 
@@ -214,46 +193,7 @@ class ZameelBubbleReceiver : FlutterFirebaseMessagingReceiver() {
                 if (shortcutReady) builder.setShortcutId(shortcutId)
             }
 
-            // Android 11+ requires the valid long-lived conversation shortcut.
-            // Android 10 can bubble without that Android-11 requirement.
-            if (bubbleEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
-                (Build.VERSION.SDK_INT < Build.VERSION_CODES.R || shortcutReady)
-            ) {
-                val bubbleBuilder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    // Android 11+ bubbles are conversation-shortcut based. Using
-                    // the shortcut constructor avoids PendingIntent mutability
-                    // ambiguity and lets the system manage the bubble activity.
-                    Notification.BubbleMetadata.Builder(shortcutId)
-                } else {
-                    // Android 10 requires a PendingIntent-based bubble. Leave the
-                    // PendingIntent mutable-by-default on pre-Android 12; newer
-                    // versions use the shortcut constructor above.
-                    val bubbleIntent = Intent(
-                        Intent.ACTION_VIEW,
-                        deepLink,
-                        context,
-                        ZameelBubbleActivity::class.java,
-                    ).apply {
-                        flags = Intent.FLAG_ACTIVITY_NEW_DOCUMENT or Intent.FLAG_ACTIVITY_MULTIPLE_TASK
-                    }
-                    val bubblePendingIntent = PendingIntent.getActivity(
-                        context,
-                        notificationId xor 0x5A5A,
-                        bubbleIntent,
-                        PendingIntent.FLAG_UPDATE_CURRENT,
-                    )
-                    @Suppress("DEPRECATION")
-                    Notification.BubbleMetadata.Builder()
-                        .setIntent(bubblePendingIntent)
-                        .setIcon(bubbleIcon)
-                }
-                // Incoming background messages should appear collapsed. Android
-                // owns whether a conversation is permitted to bubble; auto-expand
-                // is intentionally not requested because it is ignored in the
-                // background and is user-disruptive.
-                bubbleBuilder.setDesiredHeight(720)
-                builder.setBubbleMetadata(bubbleBuilder.build())
-            }
+
         }
 
         notificationManager.notify(notificationId, builder.build())
