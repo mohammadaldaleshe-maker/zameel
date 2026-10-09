@@ -160,6 +160,7 @@ class MainActivity : FlutterActivity() {
 
     override fun onResume() {
         super.onResume()
+        maybeAskForOverlayPermission()
         // Overlay permission is used only when a real incoming message arrives.
         // No service and no test bubble are started merely because Zameel opens.
     }
