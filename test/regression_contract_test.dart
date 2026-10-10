@@ -46,12 +46,12 @@ void main() {
       expect(
         home,
         matches(RegExp(
-            r'media\.addAll\(\s*await\s+PostPublishService\.pickMultipleImages\(\s*limit:\s*PostPublishService\.maxSelectableMedia\s*,?\s*\)\s*\)')),
+            r'media\.addAll\(\s*await\s+PostPublishService\.pickMultipleImages\(\s*limit:\s*PostPublishService\.maxSelectableMedia\s*,?\s*\)\s*,?\s*\)')),
       );
       expect(
         home,
         matches(RegExp(
-            r'media\.addAll\(\s*await\s+PostPublishService\.pickMultipleVideos\(\s*limit:\s*PostPublishService\.maxSelectableMedia\s*,?\s*\)\s*\)')),
+            r'media\.addAll\(\s*await\s+PostPublishService\.pickMultipleVideos\(\s*limit:\s*PostPublishService\.maxSelectableMedia\s*,?\s*\)\s*,?\s*\)')),
       );
       expect(
         home,

@@ -24,11 +24,11 @@ void main() {
     }
   });
   test(
-      'refresh changes ad candidates without pinning the owner or counting private posts',
+      'server candidates follow every six ordinary posts including private rows',
       () {
     final ordinary = [
       {'id': 'private', 'audience': 'friends'},
-      for (var i = 0; i < 10; i++) {'id': 'p$i', 'audience': 'public'}
+      for (var i = 0; i < 12; i++) {'id': 'p$i', 'audience': 'public'}
     ];
     final ads = [
       {'id': 'owner-ad', 'user_id': 'me'},
@@ -37,7 +37,7 @@ void main() {
     final result = arrangeSponsoredFeed(ordinary, ads, 'me');
     expect(result.first['id'], 'private');
     expect(result[6]['id'], 'owner-ad');
-    expect(result[12]['id'], 'other-ad');
+    expect(result[13]['id'], 'other-ad');
     expect(result.map((r) => r['id']).toSet().length, result.length);
   });
 }

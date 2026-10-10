@@ -18,8 +18,9 @@ class _AuthGateState extends State<AuthGate> {
     super.initState();
     _userId = Supabase.instance.client.auth.currentUser?.id;
     _initialScreen = _getInitialScreen();
-    _authSubscription =
-        Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((
+      data,
+    ) {
       if (!mounted) return;
       final next = data.session?.user.id;
       // Refreshing a token must not dispose the home feed and its players.
@@ -48,9 +49,10 @@ class _AuthGateState extends State<AuthGate> {
             collegeName.isEmpty ||
             departmentName.isEmpty)) {
       return const HomeFeedScreen(
-          university: generalCommunity,
-          college: generalCollege,
-          department: '');
+        university: generalCommunity,
+        college: generalCollege,
+        department: '',
+      );
     }
     if (universityName.isEmpty ||
         collegeName.isEmpty ||
@@ -62,9 +64,10 @@ class _AuthGateState extends State<AuthGate> {
       for (final college in university.colleges) {
         if (college.name == collegeName) {
           return HomeFeedScreen(
-              university: university,
-              college: college,
-              department: departmentName);
+            university: university,
+            college: college,
+            department: departmentName,
+          );
         }
       }
     }
@@ -91,40 +94,50 @@ class _AuthGateState extends State<AuthGate> {
     } catch (error) {
       debugPrint('Initial profile unavailable: $error');
       return Scaffold(
-          body: Center(
-              child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text('تعذر الاتصال. تحقق من الإنترنت وحاول مجددًا.'),
-          TextButton(
-              onPressed: () {
-                if (mounted)
-                  setState(() => _initialScreen = _getInitialScreen());
-              },
-              child: const Text('إعادة المحاولة')),
-        ],
-      )));
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('تعذر الاتصال. تحقق من الإنترنت وحاول مجددًا.'),
+              TextButton(
+                onPressed: () {
+                  if (mounted)
+                    setState(() => _initialScreen = _getInitialScreen());
+                },
+                child: const Text('إعادة المحاولة'),
+              ),
+            ],
+          ),
+        ),
+      );
     }
   }
 
-  Future<Map<String, dynamic>?> _fetchProfile(String userId) => Supabase
-      .instance.client
-      .from('users')
-      .select(
-          'university, college, department, onboarding_complete, account_type')
-      .eq('id', userId)
-      .maybeSingle()
-      .timeout(const Duration(seconds: 12));
+  Future<Map<String, dynamic>?> _fetchProfile(String userId) =>
+      Supabase.instance.client
+          .from('users')
+          .select(
+            'university, college, department, onboarding_complete, account_type',
+          )
+          .eq('id', userId)
+          .maybeSingle()
+          .timeout(const Duration(seconds: 12));
 
   Future<void> _refreshProfile(
-      String userId, int generation, Map<String, dynamic> cached) async {
+    String userId,
+    int generation,
+    Map<String, dynamic> cached,
+  ) async {
     try {
       final profile = await _fetchProfile(userId);
       if (!mounted ||
           generation != _generation ||
           Supabase.instance.client.auth.currentUser?.id != userId) return;
       await HomeSnapshotService.save(
-          userId, 'profile', profile == null ? [] : [profile]);
+        userId,
+        'profile',
+        profile == null ? [] : [profile],
+      );
       if (!mounted || generation != _generation) return;
       final changed = profile == null ||
           const [
@@ -143,16 +156,15 @@ class _AuthGateState extends State<AuthGate> {
 
   @override
   Widget build(BuildContext context) => AppearanceScope.rebuild(
-      context,
-      () => FutureBuilder<Widget>(
-            key: ValueKey(_userId),
-            future: _initialScreen,
-            builder: (context, snapshot) =>
-                snapshot.data ??
-                const Scaffold(
-                  body: Center(child: CircularProgressIndicator()),
-                ),
-          ));
+        context,
+        () => FutureBuilder<Widget>(
+          key: ValueKey(_userId),
+          future: _initialScreen,
+          builder: (context, snapshot) =>
+              snapshot.data ??
+              const Scaffold(body: Center(child: CircularProgressIndicator())),
+        ),
+      );
 
   @override
   void dispose() {
@@ -182,37 +194,51 @@ class RegistrationRequiredScreen extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.verified_user_outlined,
-                          size: 64, color: AppTheme.primary),
+                      const Icon(
+                        Icons.verified_user_outlined,
+                        size: 64,
+                        color: AppTheme.primary,
+                      ),
                       const SizedBox(height: 16),
-                      const Text('التسجيل غير مكتمل',
-                          style: TextStyle(
-                              fontSize: 22, fontWeight: FontWeight.w900)),
+                      const Text(
+                        'التسجيل غير مكتمل',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
                       const SizedBox(height: 8),
-                      const Text('أكمل بيانات حسابك ووسيلة التحقق للمتابعة.',
-                          textAlign: TextAlign.center),
+                      const Text(
+                        'أكمل بيانات حسابك ووسيلة التحقق للمتابعة.',
+                        textAlign: TextAlign.center,
+                      ),
                       const SizedBox(height: 20),
                       FilledButton(
                         onPressed: () async {
                           try {
-                            await Supabase.instance.client
-                                .rpc('delete_my_account');
+                            await Supabase.instance.client.rpc(
+                              'delete_my_account',
+                            );
                             await AuthSessionService.signOut();
                           } catch (_) {
                             if (context.mounted)
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                    content: Text(
-                                        'تعذر إرسال طلب حذف الحساب. تواصل مع zameel.jo@gmail.com.')),
+                                  content: Text(
+                                    'تعذر إرسال طلب حذف الحساب. تواصل مع zameel.jo@gmail.com.',
+                                  ),
+                                ),
                               );
                             return;
                           }
                           if (!context.mounted) return;
                           Navigator.pushAndRemoveUntil(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const WelcomeScreen()),
-                              (_) => false);
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const WelcomeScreen(),
+                            ),
+                            (_) => false,
+                          );
                         },
                         child: const Text('إعادة بدء التسجيل الآمن'),
                       ),
@@ -252,50 +278,57 @@ class ZameelApp extends StatelessWidget {
   Widget build(BuildContext context) {
     AppearanceScope.observe(context);
     return ListenableBuilder(
-        listenable: AppearanceController.instance,
-        builder: (context, _) => Consumer<LanguageProvider>(
-              builder: (context, languageProvider, child) {
-                return MaterialApp(
-                  navigatorKey: zameelNavigatorKey,
-                  debugShowCheckedModeBanner: false,
-                  title: 'Zameel',
-                  locale: languageProvider.currentLocale,
-                  supportedLocales: const [
-                    Locale('ar', ''),
-                    Locale('en', ''),
-                  ],
-                  localizationsDelegates: const [
-                    GlobalMaterialLocalizations.delegate,
-                    GlobalWidgetsLocalizations.delegate,
-                    GlobalCupertinoLocalizations.delegate,
-                  ],
-                  theme: AppTheme.theme(
-                      arabic: languageProvider.isArabic,
-                      brightness: Brightness.light),
-                  darkTheme: AppTheme.theme(
-                      arabic: languageProvider.isArabic,
-                      brightness: Brightness.dark),
-                  themeMode: AppearanceController.instance.themeMode,
-                  builder: (context, child) => AppearanceScope(
-                      child: MediaQuery(
-                    data: MediaQuery.of(context).copyWith(
-                        textScaler: CompactTextScaler(
-                            MediaQuery.textScalerOf(context))),
-                    child: AppReleaseGate(
-                        child: SelectionArea(
-                            child: AccountAccessMonitor(
+      listenable: AppearanceController.instance,
+      builder: (context, _) => Consumer<LanguageProvider>(
+        builder: (context, languageProvider, child) {
+          return MaterialApp(
+            navigatorKey: zameelNavigatorKey,
+            debugShowCheckedModeBanner: false,
+            title: 'Zameel',
+            locale: languageProvider.currentLocale,
+            supportedLocales: const [Locale('ar', ''), Locale('en', '')],
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            theme: AppTheme.theme(
+              arabic: languageProvider.isArabic,
+              brightness: Brightness.light,
+            ),
+            darkTheme: AppTheme.theme(
+              arabic: languageProvider.isArabic,
+              brightness: Brightness.dark,
+            ),
+            themeMode: AppearanceController.instance.themeMode,
+            builder: (context, child) => AppearanceScope(
+              child: MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  textScaler: CompactTextScaler(
+                    MediaQuery.textScalerOf(context),
+                  ),
+                ),
+                child: AppReleaseGate(
+                  child: SelectionArea(
+                    child: AccountAccessMonitor(
                       child: Listener(
                         behavior: HitTestBehavior.translucent,
                         onPointerDown: (_) =>
                             ScreenAwakeService.registerActivity(),
-                        child: child ?? const SizedBox.shrink(),
+                        child: BottomSystemInset(
+                          child: child ?? const SizedBox.shrink(),
+                        ),
                       ),
-                    ))),
-                  )),
-                  home: const AuthGate(),
-                );
-              },
-            ));
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            home: const AuthGate(),
+          );
+        },
+      ),
+    );
   }
 }
 
@@ -323,42 +356,42 @@ const List<Map<String, dynamic>> _demoUsers = [
     'name': 'ليان الخطيب',
     'gender': 'female',
     'role': 'student',
-    'department': 'علوم الحاسوب'
+    'department': 'علوم الحاسوب',
   },
   {
     'id': '00000000-0000-4000-8000-000000000002',
     'name': 'آدم الحوراني',
     'gender': 'male',
     'role': 'student',
-    'department': 'هندسة البرمجيات'
+    'department': 'هندسة البرمجيات',
   },
   {
     'id': '00000000-0000-4000-8000-000000000003',
     'name': 'نور العزام',
     'gender': 'female',
     'role': 'graduate',
-    'department': 'إدارة الأعمال'
+    'department': 'إدارة الأعمال',
   },
   {
     'id': '00000000-0000-4000-8000-000000000004',
     'name': 'يوسف الشديفات',
     'gender': 'male',
     'role': 'student',
-    'department': 'الهندسة المدنية'
+    'department': 'الهندسة المدنية',
   },
   {
     'id': '00000000-0000-4000-8000-000000000005',
     'name': 'مؤسسة Zameel للطلاب',
     'gender': null,
     'role': 'company',
-    'department': 'نشاط تجاري'
+    'department': 'نشاط تجاري',
   },
   {
     'id': '00000000-0000-4000-8000-000000000006',
     'name': 'رؤى المومني',
     'gender': 'female',
     'role': 'student',
-    'department': 'الصيدلة'
+    'department': 'الصيدلة',
   },
 ];
 
@@ -375,7 +408,7 @@ final List<Map<String, dynamic>> _demoPosts = [
     'shares_count': 2,
     'created_at': '2026-09-05T12:40:00Z',
     'users': _demoUsers[0],
-    'is_demo': true
+    'is_demo': true,
   },
   {
     'id': '00000000-0000-4000-8000-000000000102',
@@ -388,7 +421,7 @@ final List<Map<String, dynamic>> _demoPosts = [
     'shares_count': 1,
     'created_at': '2026-09-05T12:05:00Z',
     'users': _demoUsers[1],
-    'is_demo': true
+    'is_demo': true,
   },
   {
     'id': '00000000-0000-4000-8000-000000000103',
@@ -402,7 +435,7 @@ final List<Map<String, dynamic>> _demoPosts = [
     'shares_count': 4,
     'created_at': '2026-09-05T11:25:00Z',
     'users': _demoUsers[2],
-    'is_demo': true
+    'is_demo': true,
   },
   {
     'id': '00000000-0000-4000-8000-000000000104',
@@ -415,7 +448,7 @@ final List<Map<String, dynamic>> _demoPosts = [
     'shares_count': 3,
     'created_at': '2026-09-05T10:50:00Z',
     'users': _demoUsers[3],
-    'is_demo': true
+    'is_demo': true,
   },
   {
     'id': '00000000-0000-4000-8000-000000000105',
@@ -430,7 +463,7 @@ final List<Map<String, dynamic>> _demoPosts = [
     'shares_count': 12,
     'created_at': '2026-09-05T10:10:00Z',
     'users': _demoUsers[4],
-    'is_demo': true
+    'is_demo': true,
   },
   {
     'id': '00000000-0000-4000-8000-000000000106',
@@ -444,7 +477,7 @@ final List<Map<String, dynamic>> _demoPosts = [
     'shares_count': 2,
     'created_at': '2026-09-05T09:35:00Z',
     'users': _demoUsers[5],
-    'is_demo': true
+    'is_demo': true,
   },
 ];
 
@@ -482,16 +515,10 @@ class GlassContainer extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            AppTheme.adaptiveGlassFill,
-            AppTheme.adaptiveGlassSoft,
-          ],
+          colors: [AppTheme.adaptiveGlassFill, AppTheme.adaptiveGlassSoft],
         ),
         borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(
-          color: AppTheme.adaptiveGlassBorder,
-          width: 1.5,
-        ),
+        border: Border.all(color: AppTheme.adaptiveGlassBorder, width: 1.5),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withAlpha(25),
@@ -508,8 +535,9 @@ class GlassContainer extends StatelessWidget {
                     .copyWith(
                       hintStyle: TextStyle(color: AppTheme.legacySecondary),
                       labelStyle: TextStyle(color: AppTheme.legacyForeground),
-                      floatingLabelStyle:
-                          TextStyle(color: AppTheme.legacyForeground),
+                      floatingLabelStyle: TextStyle(
+                        color: AppTheme.legacyForeground,
+                      ),
                       prefixIconColor: AppTheme.legacyForeground,
                       suffixIconColor: AppTheme.legacyForeground,
                     ),

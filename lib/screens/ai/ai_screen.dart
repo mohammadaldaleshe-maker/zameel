@@ -8,6 +8,7 @@ import '../../providers/language_provider.dart';
 import '../../services/zameel_ai_service.dart';
 import '../../theme/app_theme.dart';
 import 'ai_faq_admin_screen.dart';
+import '../../widgets/ai_message_card.dart';
 
 class AIScreen extends StatefulWidget {
   const AIScreen({super.key});
@@ -310,6 +311,8 @@ class _AIScreenState extends State<AIScreen> {
                   Expanded(
                     child: TextField(
                       controller: _question,
+                      style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface),
                       minLines: 1,
                       maxLines: 5,
                       textInputAction: TextInputAction.send,
@@ -349,6 +352,7 @@ class _AIScreenState extends State<AIScreen> {
         const SizedBox(height: 14),
         TextField(
           controller: _text,
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
           minLines: 7,
           maxLines: 14,
           decoration: InputDecoration(
@@ -403,61 +407,16 @@ class _AIMessage {
 class _MessageBubble extends StatelessWidget {
   const _MessageBubble({required this.message});
   final _AIMessage message;
-
   @override
-  Widget build(BuildContext context) => AppearanceScope.rebuild(
-      context,
-      () => Align(
-            alignment:
-                message.isUser ? Alignment.centerRight : Alignment.centerLeft,
-            child: Container(
-              constraints: BoxConstraints(
-                  maxWidth: MediaQuery.sizeOf(context).width * .84),
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.all(13),
-              decoration: BoxDecoration(
-                color: message.isUser
-                    ? AppTheme.primary
-                    : message.isError
-                        ? Colors.red.shade50
-                        : Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (message.verified)
-                    const Padding(
-                      padding: EdgeInsets.only(bottom: 6),
-                      child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(Icons.verified_rounded,
-                            size: 17, color: Colors.teal),
-                        SizedBox(width: 4),
-                        Text('إجابة معتمدة من زميل',
-                            style: TextStyle(
-                                fontSize: 12, fontWeight: FontWeight.w700)),
-                      ]),
-                    ),
-                  SelectableText(
-                    message.text,
-                    style: TextStyle(
-                        color: message.isUser
-                            ? Colors.white
-                            : AppTheme.adaptiveText,
-                        height: 1.5),
-                  ),
-                  if (message.sources.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      'المصادر: ${message.sources.map((item) => item['title']?.toString() ?? 'مصدر معتمد').join('، ')}',
-                      style: TextStyle(
-                          fontSize: 11, color: AppTheme.adaptiveSecondary),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ));
+  Widget build(BuildContext context) => AiMessageCard(
+        text: message.text,
+        isUser: message.isUser,
+        isError: message.isError,
+        verified: message.verified,
+        sourceTitles: message.sources
+            .map((item) => item['title']?.toString() ?? 'مصدر معتمد')
+            .toList(),
+      );
 }
 
 class _ThinkingBubble extends StatelessWidget {
@@ -490,7 +449,7 @@ class _QuotaBanner extends StatelessWidget {
               'متبقي اليوم: $remaining من 50 سؤالاً ذكياً',
               textAlign: TextAlign.center,
               style: TextStyle(
-                  color: AppTheme.primary,
+                  color: AppTheme.adaptiveHighlightInk,
                   fontWeight: FontWeight.w700,
                   fontSize: 12),
             ),

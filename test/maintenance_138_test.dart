@@ -13,18 +13,31 @@ Map<String, dynamic> post(String id,
     {'id': id, 'user_id': owner, 'audience': audience};
 
 void main() {
-  test('owner ads rotate with targeted ads after each five public posts', () {
+  test('owner ads rotate with targeted ads after each six ordinary posts', () {
     final ordinary = [
       post('mine', owner: 'me'),
-      for (var i = 1; i <= 10; i++) post('$i')
+      for (var i = 1; i <= 12; i++) post('$i')
     ];
     final result = arrangeSponsoredFeed(
         ordinary, [post('mine', owner: 'me'), post('ad1'), post('ad2')], 'me');
-    expect(result.map((p) => p['id']),
-        ['1', '2', '3', '4', '5', 'mine', '6', '7', '8', '9', '10', 'ad1']);
+    expect(result.map((p) => p['id']), [
+      '1',
+      '2',
+      '3',
+      '4',
+      '5',
+      '6',
+      'mine',
+      '7',
+      '8',
+      '9',
+      '10',
+      '11',
+      '12',
+      'ad1'
+    ]);
   });
-  test(
-      'private rows do not count towards advertising interval; duplicates disappear',
+  test('private rows count towards advertising interval; duplicates disappear',
       () {
     final rows = [
       post('p', audience: 'friends'),

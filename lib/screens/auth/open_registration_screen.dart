@@ -57,10 +57,17 @@ class _OpenRegistrationScreenState extends State<OpenRegistrationScreen> {
       ].contains(saved['displayNameFormat'])
           ? saved['displayNameFormat'].toString()
           : 'first_family';
-      _degree =
-          ['bachelor', 'master', 'doctorate'].contains(saved['academicDegree'])
-              ? saved['academicDegree'].toString()
-              : 'bachelor';
+      _degree = [
+        'bachelor',
+        'master',
+        'doctorate',
+        'diploma',
+        'higher_diploma',
+        'associate_first',
+        'associate_second'
+      ].contains(saved['academicDegree'])
+          ? saved['academicDegree'].toString()
+          : 'bachelor';
       _number.text = '${saved['studentNumber'] ?? ''}';
       _phone.text = '${saved['phone'] ?? ''}';
       _email.text = '${saved['email'] ?? ''}';
@@ -326,6 +333,16 @@ class _OpenRegistrationScreenState extends State<OpenRegistrationScreen> {
                                   'bachelor': _t('بكالوريوس', 'Bachelor'),
                                   'master': _t('ماجستير', 'Master'),
                                   'doctorate': _t('دكتوراه', 'Doctorate'),
+                                  'diploma': _t('دبلوم متوسط / فني / بيرسون',
+                                      'Intermediate / technical / Pearson diploma'),
+                                  'higher_diploma':
+                                      _t('دبلوم عالٍ', 'Higher diploma'),
+                                  'associate_first': _t(
+                                      'الدرجة الجامعية المتوسطة الأولى',
+                                      'First associate degree'),
+                                  'associate_second': _t(
+                                      'الدرجة الجامعية المتوسطة الثانية',
+                                      'Second associate degree'),
                                 },
                                 (v) => _degree = v),
                             _field(

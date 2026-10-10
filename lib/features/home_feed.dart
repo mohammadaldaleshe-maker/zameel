@@ -54,7 +54,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
     'calendar',
     'groups',
     'books',
-    'clips'
+    'clips',
   ];
 
   @override
@@ -112,8 +112,9 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
   }
 
   Future<void> _loadAdvertisements() {
-    return _adsPending ??=
-        _refreshAdvertisements().whenComplete(() => _adsPending = null);
+    return _adsPending ??= _refreshAdvertisements().whenComplete(
+      () => _adsPending = null,
+    );
   }
 
   Future<void> _refreshAdvertisements() async {
@@ -138,10 +139,12 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
       final loaded = await AdvertisingService.liveAds(limit: 12)
           .timeout(const Duration(seconds: 15));
       if (mounted && Supabase.instance.client.auth.currentUser?.id == userId) {
-        setState(() => _advertisements =
-            FeatureControl.instance.enabled('partner_advertising')
-                ? loaded
-                : []);
+        setState(
+          () => _advertisements =
+              FeatureControl.instance.enabled('partner_advertising')
+                  ? loaded
+                  : [],
+        );
         unawaited(_saveHomeAds(userId, loaded));
       }
     } catch (error) {
@@ -150,7 +153,9 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
   }
 
   Future<void> _saveHomeAds(
-      String userId, List<Map<String, dynamic>> ads) async {
+    String userId,
+    List<Map<String, dynamic>> ads,
+  ) async {
     try {
       final db = Supabase.instance.client;
       if (ads.isEmpty) {
@@ -222,58 +227,108 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
   }
 
   List<_ArcItemData> _arcShortcutCatalog(bool ar) => <_ArcItemData>[
-        _ArcItemData('home', Icons.home_rounded, ar ? 'الرئيسية' : 'Home',
-            () => _openMenuDestination('home')),
-        _ArcItemData('books', Icons.menu_book_rounded, ar ? 'الكتب' : 'Books',
-            () => _openMenuDestination('books')),
-        _ArcItemData('chat', Icons.chat_bubble_rounded, ar ? 'الدردشة' : 'Chat',
-            () => _openMenuDestination('chat')),
         _ArcItemData(
-            'colleagues',
-            Icons.people_rounded,
-            ar ? 'زملاء' : 'Colleagues',
-            () => _openMenuDestination('colleagues')),
-        _ArcItemData('lamma', Icons.diversity_2_rounded, ar ? 'لَمّة' : 'Lamma',
-            () => _openMenuDestination('lamma')),
+          'home',
+          Icons.home_rounded,
+          ar ? 'الرئيسية' : 'Home',
+          () => _openMenuDestination('home'),
+        ),
         _ArcItemData(
-            'radio',
-            Icons.podcasts_rounded,
-            ar ? 'راديو Zameel' : 'Zameel Radio',
-            () => _openMenuDestination('radio')),
+          'books',
+          Icons.menu_book_rounded,
+          ar ? 'الكتب' : 'Books',
+          () => _openMenuDestination('books'),
+        ),
         _ArcItemData(
-            'beautiful_college',
-            Icons.photo_camera_back_rounded,
-            ar ? 'أجمل كلية' : 'Beautiful College',
-            () => _openMenuDestination('beautiful_college')),
+          'chat',
+          Icons.chat_bubble_rounded,
+          ar ? 'الدردشة' : 'Chat',
+          () => _openMenuDestination('chat'),
+        ),
         _ArcItemData(
-            'campus',
-            Icons.map_rounded,
-            ar ? 'الحرم الجامعي' : 'Campus',
-            () => _openMenuDestination('campus')),
-        _ArcItemData('meet', Icons.video_call_rounded,
-            ar ? 'اجتمع بالزملاء' : 'Meet', () => _openMenuDestination('meet')),
-        _ArcItemData('jobs', Icons.work_rounded, ar ? 'وظائف' : 'Jobs',
-            () => _openMenuDestination('jobs')),
-        _ArcItemData('calendar', Icons.calendar_month_rounded,
-            ar ? 'تقويم' : 'Calendar', () => _openMenuDestination('calendar')),
-        _ArcItemData('polls', Icons.poll_rounded, ar ? 'استطلاعات' : 'Polls',
-            () => _openMenuDestination('polls')),
-        _ArcItemData('groups', Icons.group_rounded, ar ? 'مجموعات' : 'Groups',
-            () => _openMenuDestination('groups')),
-        _ArcItemData('ai', Icons.auto_awesome_rounded, 'Zameel AI',
-            () => _openMenuDestination('ai')),
+          'colleagues',
+          Icons.people_rounded,
+          ar ? 'زملاء' : 'Colleagues',
+          () => _openMenuDestination('colleagues'),
+        ),
         _ArcItemData(
-            'partners',
-            Icons.business_center_rounded,
-            ar ? 'شركاء Zameel' : 'Partners',
-            () => _openMenuDestination('partners')),
-        _ArcItemData('profile', Icons.person_rounded, ar ? 'حسابي' : 'Profile',
-            () => _openMenuDestination('profile')),
+          'lamma',
+          Icons.diversity_2_rounded,
+          ar ? 'لَمّة' : 'Lamma',
+          () => _openMenuDestination('lamma'),
+        ),
         _ArcItemData(
-            'clips',
-            Icons.movie_creation_rounded,
-            ar ? 'زميل شورتس' : 'Zameel Shorts',
-            () => _openMenuDestination('clips')),
+          'radio',
+          Icons.podcasts_rounded,
+          ar ? 'راديو Zameel' : 'Zameel Radio',
+          () => _openMenuDestination('radio'),
+        ),
+        _ArcItemData(
+          'beautiful_college',
+          Icons.photo_camera_back_rounded,
+          ar ? 'أجمل كلية' : 'Beautiful College',
+          () => _openMenuDestination('beautiful_college'),
+        ),
+        _ArcItemData(
+          'campus',
+          Icons.map_rounded,
+          ar ? 'الحرم الجامعي' : 'Campus',
+          () => _openMenuDestination('campus'),
+        ),
+        _ArcItemData(
+          'meet',
+          Icons.video_call_rounded,
+          ar ? 'اجتمع بالزملاء' : 'Meet',
+          () => _openMenuDestination('meet'),
+        ),
+        _ArcItemData(
+          'jobs',
+          Icons.work_rounded,
+          ar ? 'وظائف' : 'Jobs',
+          () => _openMenuDestination('jobs'),
+        ),
+        _ArcItemData(
+          'calendar',
+          Icons.calendar_month_rounded,
+          ar ? 'تقويم' : 'Calendar',
+          () => _openMenuDestination('calendar'),
+        ),
+        _ArcItemData(
+          'polls',
+          Icons.poll_rounded,
+          ar ? 'استطلاعات' : 'Polls',
+          () => _openMenuDestination('polls'),
+        ),
+        _ArcItemData(
+          'groups',
+          Icons.group_rounded,
+          ar ? 'مجموعات' : 'Groups',
+          () => _openMenuDestination('groups'),
+        ),
+        _ArcItemData(
+          'ai',
+          Icons.auto_awesome_rounded,
+          'Zameel AI',
+          () => _openMenuDestination('ai'),
+        ),
+        _ArcItemData(
+          'partners',
+          Icons.business_center_rounded,
+          ar ? 'شركاء Zameel' : 'Partners',
+          () => _openMenuDestination('partners'),
+        ),
+        _ArcItemData(
+          'profile',
+          Icons.person_rounded,
+          ar ? 'حسابي' : 'Profile',
+          () => _openMenuDestination('profile'),
+        ),
+        _ArcItemData(
+          'clips',
+          Icons.movie_creation_rounded,
+          ar ? 'زميل شورتس' : 'Zameel Shorts',
+          () => _openMenuDestination('clips'),
+        ),
       ];
 
   String _featureForShortcut(String id) =>
@@ -299,8 +354,11 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
   void _openMenuDestination(String id) {
     final feature = _featureForShortcut(id);
     if (!FeatureControl.instance.enabled(feature)) {
-      FeatureControl.instance
-          .open(context, feature, () => const SizedBox.shrink());
+      FeatureControl.instance.open(
+        context,
+        feature,
+        () => const SizedBox.shrink(),
+      );
       return;
     }
     switch (id) {
@@ -308,75 +366,122 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
         setState(() => currentIndex = 0);
         break;
       case 'books':
-        FeatureControl.instance
-            .open(context, 'books_market', () => const BooksScreen());
+        FeatureControl.instance.open(
+          context,
+          'books_market',
+          () => const BooksScreen(),
+        );
         break;
       case 'chat':
-        FeatureControl.instance
-            .open(context, 'direct_chat', () => const ChatScreen());
+        FeatureControl.instance.open(
+          context,
+          'direct_chat',
+          () => const ChatScreen(),
+        );
         break;
       case 'colleagues':
-        FeatureControl.instance
-            .open(context, 'suggested_colleagues', () => const FriendsScreen());
+        FeatureControl.instance.open(
+          context,
+          'suggested_colleagues',
+          () => const FriendsScreen(),
+        );
         break;
       case 'lamma':
-        FeatureControl.instance
-            .open(context, 'lamma', () => const LammaScreen());
+        FeatureControl.instance.open(
+          context,
+          'lamma',
+          () => const LammaScreen(),
+        );
         break;
       case 'radio':
-        FeatureControl.instance
-            .open(context, 'zameel_radio', () => const ZameelRadioScreen());
+        FeatureControl.instance.open(
+          context,
+          'zameel_radio',
+          () => const ZameelRadioScreen(),
+        );
         break;
       case 'beautiful_college':
         FeatureControl.instance.open(
-            context, 'beautiful_college', () => const BeautifulCollegeScreen());
+          context,
+          'beautiful_college',
+          () => const BeautifulCollegeScreen(),
+        );
         break;
       case 'campus':
-        FeatureControl.instance
-            .open(context, 'campus_world', () => const CampusScreen());
+        FeatureControl.instance.open(
+          context,
+          'campus_world',
+          () => const CampusScreen(),
+        );
         break;
       case 'meet':
-        FeatureControl.instance
-            .open(context, 'zameel_meet', () => const MeetScreen());
+        FeatureControl.instance.open(
+          context,
+          'zameel_meet',
+          () => const MeetScreen(),
+        );
         break;
       case 'jobs':
-        FeatureControl.instance
-            .open(context, 'jobs_training', () => const JobsScreen());
+        FeatureControl.instance.open(
+          context,
+          'jobs_training',
+          () => const JobsScreen(),
+        );
         break;
       case 'calendar':
-        FeatureControl.instance
-            .open(context, 'university_calendar', () => const CalendarScreen());
+        FeatureControl.instance.open(
+          context,
+          'university_calendar',
+          () => const CalendarScreen(),
+        );
         break;
       case 'polls':
-        FeatureControl.instance
-            .open(context, 'polls', () => const PollsScreen());
+        FeatureControl.instance.open(
+          context,
+          'polls',
+          () => const PollsScreen(),
+        );
         break;
       case 'groups':
-        FeatureControl.instance
-            .open(context, 'groups', () => const GroupsScreen());
+        FeatureControl.instance.open(
+          context,
+          'groups',
+          () => const GroupsScreen(),
+        );
         break;
       case 'ai':
-        FeatureControl.instance
-            .open(context, 'zameel_ai', () => const AIScreen());
+        FeatureControl.instance.open(
+          context,
+          'zameel_ai',
+          () => const AIScreen(),
+        );
         break;
       case 'partners':
-        FeatureControl.instance
-            .open(context, 'business_partners', () => const BusinessScreen());
+        FeatureControl.instance.open(
+          context,
+          'business_partners',
+          () => const BusinessScreen(),
+        );
         break;
       case 'profile':
         final user = Supabase.instance.client.auth.currentUser;
         if (user != null) {
           Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (_) => ProfileScreen(userId: user.id)));
+            context,
+            MaterialPageRoute(builder: (_) => ProfileScreen(userId: user.id)),
+          );
         }
         break;
       case 'clips':
-        final ar =
-            Provider.of<LanguageProvider>(context, listen: false).isArabic;
-        FeatureControl.instance
-            .open(context, 'clips', () => ZameelSocialStudio(isArabic: ar));
+        final ar = Provider.of<LanguageProvider>(
+          context,
+          listen: false,
+        ).isArabic;
+        FeatureControl.instance.open(
+          context,
+          'clips',
+          () => ZameelSocialStudio(isArabic: ar),
+        );
         break;
     }
   }
@@ -386,7 +491,8 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
     var selected = List<String>.from(_arcShortcutIds);
     final catalog = _arcShortcutCatalog(ar)
         .where(
-            (e) => FeatureControl.instance.visible(_featureForShortcut(e.id)))
+          (e) => FeatureControl.instance.visible(_featureForShortcut(e.id)),
+        )
         .toList();
     final result = await showDialog<List<String>>(
       context: context,
@@ -472,23 +578,27 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
       final ids = active.map((r) => r['post_id'].toString()).toList();
       final rows = ids.isEmpty
           ? <Map<String, dynamic>>[]
-          : List<Map<String, dynamic>>.from(await db
-              .from('posts')
-              .select(
-                  '*, users(name, profile_image, gender, role, university, college, department, verification_expires_at)')
-              .inFilter('id', ids)
-              .eq('audience', 'public')
-              .or('is_hidden.eq.false,is_hidden.is.null')
-              .timeout(const Duration(seconds: 8)));
+          : List<Map<String, dynamic>>.from(
+              await db
+                  .from('posts')
+                  .select(
+                    '*, users(name, profile_image, gender, role, university, college, department, verification_expires_at)',
+                  )
+                  .inFilter('id', ids)
+                  .eq('audience', 'public')
+                  .or('is_hidden.eq.false,is_hidden.is.null')
+                  .timeout(const Duration(seconds: 8)),
+            );
       if (!mounted || db.auth.currentUser?.id != user) return;
       final expiry = {
-        for (final r in active) r['post_id'].toString(): r['ends_at']
+        for (final r in active) r['post_id'].toString(): r['ends_at'],
       };
-      setState(() => _promotedPosts = [
-            for (final row in rows)
-              {...row, 'promotion_ends_at': expiry[row['id'].toString()]}
-          ]);
-      shuffleSponsoredBatch(_promotedPosts);
+      setState(
+        () => _promotedPosts = [
+          for (final row in rows)
+            {...row, 'promotion_ends_at': expiry[row['id'].toString()]},
+        ],
+      );
       _promotionExpiry?.cancel();
       final deadlines = active
           .map((r) => DateTime.tryParse('${r['ends_at']}'))
@@ -515,23 +625,28 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
   List<Map<String, dynamic>> get _visiblePosts {
     final promoted = FeatureControl.instance.enabled('post_promotions')
         ? _promotedPosts
-            .where((r) =>
-                DateTime.tryParse('${r['promotion_ends_at']}')
-                    ?.isAfter(DateTime.now()) ==
-                true)
+            .where(
+              (r) =>
+                  DateTime.tryParse('${r['promotion_ends_at']}')
+                      ?.isAfter(DateTime.now()) ==
+                  true,
+            )
             .toList()
         : <Map<String, dynamic>>[];
-    final promotedIds = promoted.map((r) => r['id']).toSet();
-    final combined = arrangeSponsoredFeed(
-        posts, promoted, Supabase.instance.client.auth.currentUser?.id);
-    if (_feedScope == 'global') return combined;
+    if (_feedScope == 'global') {
+      return arrangeSponsoredFeed(
+        posts,
+        promoted,
+        Supabase.instance.client.auth.currentUser?.id,
+      );
+    }
     final university = widget.university.name.trim().toLowerCase();
     final college = widget.college.name.trim().toLowerCase();
     final department = widget.department.trim().toLowerCase();
-    return combined.where((post) {
+    final scoped = posts.where((post) {
       // Sponsored targeting is resolved by the server for the viewer,
       // independent of the author's college or the local ordinary-feed scope.
-      if (promotedIds.contains(post['id'])) return true;
+
       final user = post['users'] is Map
           ? post['users'] as Map
           : const <String, dynamic>{};
@@ -550,6 +665,11 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
           department.isNotEmpty &&
           postDepartment == department;
     }).toList();
+    return arrangeSponsoredFeed(
+      scoped,
+      promoted,
+      Supabase.instance.client.auth.currentUser?.id,
+    );
   }
 
   @override
@@ -589,10 +709,16 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
     final size = MediaQuery.sizeOf(context);
     final padding = MediaQuery.paddingOf(context);
     final maxX = (size.width - 250).clamp(0.0, double.infinity);
-    final maxY = (size.height - padding.bottom - 70)
-        .clamp(padding.top + 4, double.infinity);
-    setState(() => _arcMenuPosition =
-        Offset(x.clamp(0.0, maxX), y.clamp(padding.top + 4, maxY)));
+    final maxY = (size.height - padding.bottom - 70).clamp(
+      padding.top + 4,
+      double.infinity,
+    );
+    setState(
+      () => _arcMenuPosition = Offset(
+        x.clamp(0.0, maxX),
+        y.clamp(padding.top + 4, maxY),
+      ),
+    );
   }
 
   void _subscribeToFeedUpdates() {
@@ -617,15 +743,21 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
   void _moveArcMenu(Offset delta) {
     final size = MediaQuery.sizeOf(context);
     final padding = MediaQuery.paddingOf(context);
-    final isArabic =
-        Provider.of<LanguageProvider>(context, listen: false).isArabic;
+    final isArabic = Provider.of<LanguageProvider>(
+      context,
+      listen: false,
+    ).isArabic;
     final current = _arcMenuPosition ??
         Offset(isArabic ? 12 : size.width - 262, padding.top + 10);
     final maxX = (size.width - 250).clamp(0.0, double.infinity);
-    final maxY = (size.height - padding.bottom - 70)
-        .clamp(padding.top + 4, double.infinity);
-    final next = Offset((current.dx + delta.dx).clamp(0.0, maxX),
-        (current.dy + delta.dy).clamp(padding.top + 4, maxY));
+    final maxY = (size.height - padding.bottom - 70).clamp(
+      padding.top + 4,
+      double.infinity,
+    );
+    final next = Offset(
+      (current.dx + delta.dx).clamp(0.0, maxX),
+      (current.dy + delta.dy).clamp(padding.top + 4, maxY),
+    );
     setState(() => _arcMenuPosition = next);
     SharedPreferences.getInstance().then((prefs) {
       prefs.setDouble('zameel_arc_menu_x', next.dx);
@@ -653,8 +785,8 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
           .eq('user_id', user.id)
           .eq('is_read', false);
       final count = MessageNotificationGrouping.collapse(
-              List<Map<String, dynamic>>.from(rows))
-          .length;
+        List<Map<String, dynamic>>.from(rows),
+      ).length;
       if (mounted) setState(() => _unreadNotifications = count);
     } catch (_) {}
   }
@@ -663,8 +795,9 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
     final client = Supabase.instance.client;
     final user = client.auth.currentUser;
     if (user == null) return;
-    _notificationsChannel =
-        client.channel('zameel-home-notifications:${user.id}');
+    _notificationsChannel = client.channel(
+      'zameel-home-notifications:${user.id}',
+    );
     _notificationsChannel!
         .onPostgresChanges(
           event: PostgresChangeEvent.all,
@@ -747,11 +880,12 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
       MaterialPageRoute(
         fullscreenDialog: true,
         builder: (_) => IncomingCallScreen(
-            roomId: roomId,
-            callerName: callerName,
-            callerId: actorId,
-            callerImage: callerImage,
-            video: video),
+          roomId: roomId,
+          callerName: callerName,
+          callerId: actorId,
+          callerImage: callerImage,
+          video: video,
+        ),
       ),
     );
     _incomingCallDialogOpen = false;
@@ -768,7 +902,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
             .from('direct_call_sessions')
             .update({
               'status': 'declined',
-              'ended_at': DateTime.now().toUtc().toIso8601String()
+              'ended_at': DateTime.now().toUtc().toIso8601String(),
             })
             .eq('room_id', roomId)
             .eq('status', 'ringing');
@@ -834,7 +968,8 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
       _isLoading = false;
     });
     debugPrint(
-        'Zameel home: local posts visible ${watch.elapsedMilliseconds}ms');
+      'Zameel home: local posts visible ${watch.elapsedMilliseconds}ms',
+    );
     // Media widgets resolve only the objects they need. Restoring a local list
     // must never wait for Storage signing or for any network request.
   }
@@ -860,7 +995,8 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
       final response = await db
           .from('posts')
           .select(
-              '*, users(name, profile_image, gender, role, university, college, department, verification_expires_at)')
+            '*, users(name, profile_image, gender, role, university, college, department, verification_expires_at)',
+          )
           .order('created_at', ascending: false)
           .limit(30)
           .timeout(const Duration(seconds: 15));
@@ -888,14 +1024,20 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
         if (!mounted ||
             requestVersion != _postsRequestVersion ||
             db.auth.currentUser?.id != userId) return;
-        unawaited(MediaCacheService.prefetch(
-            loaded.take(5).expand((post) => postMediaItems(post)
-                .where((media) => media.type == 'image')
-                .map((media) => media.url)),
-            limit: 3));
+        unawaited(
+          MediaCacheService.prefetch(
+            loaded.take(5).expand(
+                  (post) => postMediaItems(post)
+                      .where((media) => media.type == 'image')
+                      .map((media) => media.url),
+                ),
+            limit: 3,
+          ),
+        );
       });
       debugPrint(
-          'Zameel home: ${silent ? 'refresh' : 'initial'} posts query + render ${watch.elapsedMilliseconds}ms');
+        'Zameel home: ${silent ? 'refresh' : 'initial'} posts query + render ${watch.elapsedMilliseconds}ms',
+      );
       final snapshot = userId == null
           ? Future<void>.value()
           : FeedSnapshotService.save(userId, loaded);
@@ -954,7 +1096,8 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
       final response = await Supabase.instance.client
           .from('users')
           .select(
-              'id,name,university,college,department,profile_image,account_privacy,default_post_audience,allow_messages,allow_calls,notifications_enabled,gender,role,created_at,updated_at')
+            'id,name,university,college,department,profile_image,account_privacy,default_post_audience,allow_messages,allow_calls,notifications_enabled,gender,role,created_at,updated_at',
+          )
           .eq('id', user.id)
           .maybeSingle();
 
@@ -1006,9 +1149,9 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
 
     if (user == null) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('❌ الرجاء تسجيل الدخول')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('❌ الرجاء تسجيل الدخول')));
       }
       return;
     }
@@ -1066,8 +1209,10 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
 
     try {
       if (mounted) {
-        final ar =
-            Provider.of<LanguageProvider>(context, listen: false).isArabic;
+        final ar = Provider.of<LanguageProvider>(
+          context,
+          listen: false,
+        ).isArabic;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -1192,8 +1337,10 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
     BuildContext context,
     Map<String, dynamic> post,
   ) {
-    final isArabic =
-        Provider.of<LanguageProvider>(context, listen: false).isArabic;
+    final isArabic = Provider.of<LanguageProvider>(
+      context,
+      listen: false,
+    ).isArabic;
     final user = Supabase.instance.client.auth.currentUser;
     final isOwner = post['user_id'] == user?.id;
     final isAdminUser = isAdmin;
@@ -1213,9 +1360,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
           child: AlertDialog(
             title: Text(
               isArabic ? '🗑️ حذف المنشور' : '🗑️ Delete Post',
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             content: Text(
               isArabic
@@ -1227,9 +1372,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogContext),
-                child: Text(
-                  isArabic ? 'إلغاء' : 'Cancel',
-                ),
+                child: Text(isArabic ? 'إلغاء' : 'Cancel'),
               ),
               ElevatedButton(
                 onPressed: () async {
@@ -1240,9 +1383,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                   backgroundColor: Colors.red,
                   foregroundColor: Colors.white,
                 ),
-                child: Text(
-                  isArabic ? 'تأكيد الحذف' : 'Confirm Delete',
-                ),
+                child: Text(isArabic ? 'تأكيد الحذف' : 'Confirm Delete'),
               ),
             ],
           ),
@@ -1255,8 +1396,10 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
   // الإعجاب بمنشور
   // ============================================================
 
-  Future<void> _toggleLike(int index,
-      {Map<String, dynamic>? postOverride}) async {
+  Future<void> _toggleLike(
+    int index, {
+    Map<String, dynamic>? postOverride,
+  }) async {
     if (postOverride == null && (index < 0 || index >= posts.length)) return;
     final post = postOverride ?? posts[index];
     final user = Supabase.instance.client.auth.currentUser;
@@ -1294,8 +1437,8 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content:
-                Text(FeatureControl.errorMessage(e, 'تعذر تحديث الإعجاب'))),
+          content: Text(FeatureControl.errorMessage(e, 'تعذر تحديث الإعجاب')),
+        ),
       );
     }
   }
@@ -1323,9 +1466,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
 
         setState(() {
           posts[index]['isSaved'] = false;
-          savedPosts.removeWhere(
-            (p) => p['id'] == post['id'],
-          );
+          savedPosts.removeWhere((p) => p['id'] == post['id']);
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1406,10 +1547,14 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
         );
         if (image == null) return;
         media.add(
-            PickedPostMedia(source: image, byteSize: await image.length()));
+          PickedPostMedia(source: image, byteSize: await image.length()),
+        );
       } else {
-        media.addAll(await PostPublishService.pickMultipleImages(
-            limit: PostPublishService.maxSelectableMedia));
+        media.addAll(
+          await PostPublishService.pickMultipleImages(
+            limit: PostPublishService.maxSelectableMedia,
+          ),
+        );
       }
       if (media.isEmpty) return;
 
@@ -1454,10 +1599,14 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
         );
         if (video == null) return;
         media.add(
-            PickedPostMedia(source: video, byteSize: await video.length()));
+          PickedPostMedia(source: video, byteSize: await video.length()),
+        );
       } else {
-        media.addAll(await PostPublishService.pickMultipleVideos(
-            limit: PostPublishService.maxSelectableMedia));
+        media.addAll(
+          await PostPublishService.pickMultipleVideos(
+            limit: PostPublishService.maxSelectableMedia,
+          ),
+        );
       }
       if (media.isEmpty) return;
 
@@ -1468,8 +1617,9 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content:
-              Text(FeatureControl.errorMessage(e, 'فشل اختيار/نشر الفيديوهات')),
+          content: Text(
+            FeatureControl.errorMessage(e, 'فشل اختيار/نشر الفيديوهات'),
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -1481,19 +1631,21 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
         context: context,
         showDragHandle: true,
         builder: (sheetContext) => SafeArea(
-          child: Wrap(children: [
-            ListTile(
-              leading: const Icon(Icons.photo_camera_rounded),
-              title: const Text('التصوير الآن'),
-              subtitle: const Text('الفيديو بحد أقصى 45 ثانية'),
-              onTap: () => Navigator.pop(sheetContext, ImageSource.camera),
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library_rounded),
-              title: const Text('اختيار من الهاتف'),
-              onTap: () => Navigator.pop(sheetContext, ImageSource.gallery),
-            ),
-          ]),
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_camera_rounded),
+                title: const Text('التصوير الآن'),
+                subtitle: const Text('الفيديو بحد أقصى 45 ثانية'),
+                onTap: () => Navigator.pop(sheetContext, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_rounded),
+                title: const Text('اختيار من الهاتف'),
+                onTap: () => Navigator.pop(sheetContext, ImageSource.gallery),
+              ),
+            ],
+          ),
         ),
       );
 
@@ -1503,33 +1655,45 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
       context: context,
       showDragHandle: true,
       builder: (ctx) => SafeArea(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-        ListTile(
-            leading: const Icon(Icons.public_rounded),
-            title: Text(ar ? 'عامة' : 'Public'),
-            subtitle: Text(ar
-                ? 'يراها جميع مستخدمي Zameel'
-                : 'Visible to all Zameel users'),
-            onTap: () => Navigator.pop(ctx, 'public')),
-        ListTile(
-            leading: const Icon(Icons.groups_rounded),
-            title: Text(ar ? 'للزملاء' : 'Colleagues'),
-            subtitle: Text(
-                ar ? 'للأشخاص الذين تتابعهم' : 'Visible to people you follow'),
-            onTap: () => Navigator.pop(ctx, 'friends')),
-        ListTile(
-            leading: const Icon(Icons.lock_rounded),
-            title: Text(ar ? 'لي فقط' : 'Only me'),
-            subtitle: Text(ar ? 'خاص بك فقط' : 'Private to you'),
-            onTap: () => Navigator.pop(ctx, 'private')),
-      ])),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.public_rounded),
+              title: Text(ar ? 'عامة' : 'Public'),
+              subtitle: Text(
+                ar
+                    ? 'يراها جميع مستخدمي Zameel'
+                    : 'Visible to all Zameel users',
+              ),
+              onTap: () => Navigator.pop(ctx, 'public'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.groups_rounded),
+              title: Text(ar ? 'للزملاء' : 'Colleagues'),
+              subtitle: Text(
+                ar ? 'للأشخاص الذين تتابعهم' : 'Visible to people you follow',
+              ),
+              onTap: () => Navigator.pop(ctx, 'friends'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.lock_rounded),
+              title: Text(ar ? 'لي فقط' : 'Only me'),
+              subtitle: Text(ar ? 'خاص بك فقط' : 'Private to you'),
+              onTap: () => Navigator.pop(ctx, 'private'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   void createPost() {
     final controller = TextEditingController();
-    final languageProvider =
-        Provider.of<LanguageProvider>(context, listen: false);
+    final languageProvider = Provider.of<LanguageProvider>(
+      context,
+      listen: false,
+    );
     final selectedMedia = <PickedPostMedia>[];
 
     showDialog(
@@ -1571,21 +1735,27 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                         items: [
                           DropdownMenuItem(
                             value: 'public',
-                            child: Text(languageProvider.isArabic
-                                ? '🌍 عامة'
-                                : '🌍 Public'),
+                            child: Text(
+                              languageProvider.isArabic
+                                  ? '🌍 عامة'
+                                  : '🌍 Public',
+                            ),
                           ),
                           DropdownMenuItem(
                             value: 'friends',
-                            child: Text(languageProvider.isArabic
-                                ? '👥 الزملاء'
-                                : '👥 Colleagues'),
+                            child: Text(
+                              languageProvider.isArabic
+                                  ? '👥 الزملاء'
+                                  : '👥 Colleagues',
+                            ),
                           ),
                           DropdownMenuItem(
                             value: 'private',
-                            child: Text(languageProvider.isArabic
-                                ? '🔒 لي فقط'
-                                : '🔒 Only me'),
+                            child: Text(
+                              languageProvider.isArabic
+                                  ? '🔒 لي فقط'
+                                  : '🔒 Only me',
+                            ),
                           ),
                         ],
                         onChanged: (value) {
@@ -1633,11 +1803,13 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
 
                                   final existing = selectedMedia
                                       .map(
-                                          (file) => '${file.name}:${file.path}')
+                                        (file) => '${file.name}:${file.path}',
+                                      )
                                       .toSet();
                                   for (final file in result) {
                                     if (!PostPublishService.isSupportedFile(
-                                        file)) continue;
+                                      file,
+                                    )) continue;
                                     final key = '${file.name}:${file.path}';
                                     if (!existing.add(key)) continue;
                                     if (selectedMedia.length >=
@@ -1688,7 +1860,8 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                                   return Text(
                                     '${(size / (1024 * 1024)).toStringAsFixed(1)} MB',
                                     style: TextStyle(
-                                        color: AppTheme.adaptiveSecondary),
+                                      color: AppTheme.adaptiveSecondary,
+                                    ),
                                   );
                                 },
                               ),
@@ -1763,19 +1936,14 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              gradientStart,
-              gradientEnd,
-            ],
+            colors: [gradientStart, gradientEnd],
           ),
         ),
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
             DrawerHeader(
-              decoration: BoxDecoration(
-                color: AppTheme.adaptiveGlassSoft,
-              ),
+              decoration: BoxDecoration(color: AppTheme.adaptiveGlassSoft),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1821,38 +1989,46 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                         child: Row(
                           children: [
                             _ProfileAvatar(
-                                image: profileImage,
-                                imageBytes: profileImageBytes,
-                                imageUrl: profileImageUrl,
-                                radius: 30),
+                              image: profileImage,
+                              imageBytes: profileImageBytes,
+                              imageUrl: profileImageUrl,
+                              radius: 30,
+                            ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   VerifiedName(
-                                      userId: Supabase
-                                          .instance.client.auth.currentUser?.id,
-                                      child: Text(
-                                        profileName ??
-                                            (isArabic ? 'مستخدم' : 'User'),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                            color: AppTheme.legacyForeground,
-                                            fontSize: 21,
-                                            fontWeight: FontWeight.w900),
-                                      )),
-                                  const SizedBox(height: 4),
-                                  Text(isArabic ? 'الصفحة الشخصية' : 'Profile',
+                                    userId: Supabase
+                                        .instance.client.auth.currentUser?.id,
+                                    child: Text(
+                                      profileName ??
+                                          (isArabic ? 'مستخدم' : 'User'),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
-                                          color: AppTheme.legacySecondary,
-                                          fontSize: 12)),
+                                        color: AppTheme.legacyForeground,
+                                        fontSize: 21,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    isArabic ? 'الصفحة الشخصية' : 'Profile',
+                                    style: TextStyle(
+                                      color: AppTheme.legacySecondary,
+                                      fontSize: 12,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
-                            Icon(Icons.chevron_right_rounded,
-                                color: AppTheme.legacySecondary),
+                            Icon(
+                              Icons.chevron_right_rounded,
+                              color: AppTheme.legacySecondary,
+                            ),
                           ],
                         ),
                       ),
@@ -1877,8 +2053,11 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                 icon: Icons.menu_book_rounded,
                 title: isArabic ? 'الكتب' : 'Books',
                 onTap: () {
-                  FeatureControl.instance
-                      .open(context, 'books_market', () => const BooksScreen());
+                  FeatureControl.instance.open(
+                    context,
+                    'books_market',
+                    () => const BooksScreen(),
+                  );
                 },
               ),
             if (FeatureControl.instance.visible('direct_chat'))
@@ -1886,8 +2065,11 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                 icon: Icons.chat_bubble_rounded,
                 title: isArabic ? 'الدردشة' : 'Chat',
                 onTap: () {
-                  FeatureControl.instance
-                      .open(context, 'direct_chat', () => const ChatScreen());
+                  FeatureControl.instance.open(
+                    context,
+                    'direct_chat',
+                    () => const ChatScreen(),
+                  );
                 },
               ),
             if (FeatureControl.instance.visible('suggested_colleagues'))
@@ -1895,8 +2077,11 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                 icon: Icons.people_rounded,
                 title: isArabic ? 'زملاء' : 'Colleagues',
                 onTap: () {
-                  FeatureControl.instance.open(context, 'suggested_colleagues',
-                      () => const FriendsScreen());
+                  FeatureControl.instance.open(
+                    context,
+                    'suggested_colleagues',
+                    () => const FriendsScreen(),
+                  );
                 },
               ),
             if (FeatureControl.instance.visible('trust_game'))
@@ -1906,10 +2091,11 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                 onTap: () {
                   Navigator.pop(context);
                   Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const ZameelGamesScreen(),
-                      ));
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ZameelGamesScreen(),
+                    ),
+                  );
                 },
               ),
             if (FeatureControl.instance.visible('lamma'))
@@ -1917,8 +2103,11 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                 icon: Icons.diversity_2_rounded,
                 title: isArabic ? 'لَمّة' : 'Lamma',
                 onTap: () {
-                  FeatureControl.instance
-                      .open(context, 'lamma', () => const LammaScreen());
+                  FeatureControl.instance.open(
+                    context,
+                    'lamma',
+                    () => const LammaScreen(),
+                  );
                 },
               ),
             if (FeatureControl.instance.visible('zameel_radio'))
@@ -1927,7 +2116,10 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                 title: isArabic ? 'راديو Zameel' : 'Zameel Radio',
                 onTap: () {
                   FeatureControl.instance.open(
-                      context, 'zameel_radio', () => const ZameelRadioScreen());
+                    context,
+                    'zameel_radio',
+                    () => const ZameelRadioScreen(),
+                  );
                 },
               ),
             if (FeatureControl.instance.visible('beautiful_college'))
@@ -1936,8 +2128,11 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                 title:
                     isArabic ? 'تحدي أجمل كلية' : 'Beautiful College Challenge',
                 onTap: () {
-                  FeatureControl.instance.open(context, 'beautiful_college',
-                      () => const BeautifulCollegeScreen());
+                  FeatureControl.instance.open(
+                    context,
+                    'beautiful_college',
+                    () => const BeautifulCollegeScreen(),
+                  );
                 },
               ),
             if (FeatureControl.instance.visible('campus_world'))
@@ -1946,7 +2141,10 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                 title: isArabic ? 'الحرم الجامعي' : 'Campus',
                 onTap: () {
                   FeatureControl.instance.open(
-                      context, 'campus_world', () => const CampusScreen());
+                    context,
+                    'campus_world',
+                    () => const CampusScreen(),
+                  );
                 },
               ),
             if (FeatureControl.instance.visible('zameel_meet'))
@@ -1954,8 +2152,11 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                 icon: Icons.video_call_rounded,
                 title: isArabic ? 'اجتمع بالزملاء' : 'Meet',
                 onTap: () {
-                  FeatureControl.instance
-                      .open(context, 'zameel_meet', () => const MeetScreen());
+                  FeatureControl.instance.open(
+                    context,
+                    'zameel_meet',
+                    () => const MeetScreen(),
+                  );
                 },
               ),
             if (FeatureControl.instance.visible('jobs_training'))
@@ -1963,8 +2164,11 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                 icon: Icons.work_rounded,
                 title: isArabic ? 'وظائف' : 'Jobs',
                 onTap: () {
-                  FeatureControl.instance
-                      .open(context, 'jobs_training', () => const JobsScreen());
+                  FeatureControl.instance.open(
+                    context,
+                    'jobs_training',
+                    () => const JobsScreen(),
+                  );
                 },
               ),
             if (FeatureControl.instance.visible('university_calendar'))
@@ -1973,7 +2177,10 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                 title: isArabic ? 'تقويم' : 'Calendar',
                 onTap: () {
                   FeatureControl.instance.open(
-                      context, 'university_calendar', () => CalendarScreen());
+                    context,
+                    'university_calendar',
+                    () => CalendarScreen(),
+                  );
                 },
               ),
             if (FeatureControl.instance.visible('polls'))
@@ -1981,8 +2188,11 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                 icon: Icons.poll_rounded,
                 title: isArabic ? 'استطلاعات' : 'Polls',
                 onTap: () {
-                  FeatureControl.instance
-                      .open(context, 'polls', () => const PollsScreen());
+                  FeatureControl.instance.open(
+                    context,
+                    'polls',
+                    () => const PollsScreen(),
+                  );
                 },
               ),
             if (FeatureControl.instance.visible('groups'))
@@ -1990,8 +2200,11 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                 icon: Icons.group_rounded,
                 title: isArabic ? 'مجموعات' : 'Groups',
                 onTap: () {
-                  FeatureControl.instance
-                      .open(context, 'groups', () => const GroupsScreen());
+                  FeatureControl.instance.open(
+                    context,
+                    'groups',
+                    () => const GroupsScreen(),
+                  );
                 },
               ),
             if (FeatureControl.instance.visible('clips'))
@@ -1999,8 +2212,11 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                 icon: Icons.movie_creation_rounded,
                 title: isArabic ? 'زميل شورتس' : 'Zameel Shorts',
                 onTap: () {
-                  FeatureControl.instance.open(context, 'clips',
-                      () => ZameelSocialStudio(isArabic: isArabic));
+                  FeatureControl.instance.open(
+                    context,
+                    'clips',
+                    () => ZameelSocialStudio(isArabic: isArabic),
+                  );
                 },
               ),
             if (FeatureControl.instance.visible('zameel_ai'))
@@ -2008,8 +2224,11 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                 icon: Icons.auto_awesome_rounded,
                 title: isArabic ? 'Zameel AI' : 'Zameel AI',
                 onTap: () {
-                  FeatureControl.instance
-                      .open(context, 'zameel_ai', () => const AIScreen());
+                  FeatureControl.instance.open(
+                    context,
+                    'zameel_ai',
+                    () => const AIScreen(),
+                  );
                 },
               ),
             if (FeatureControl.instance.visible('business_partners'))
@@ -2017,8 +2236,11 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                 icon: Icons.business_center_rounded,
                 title: isArabic ? 'شركاء Zameel' : 'Zameel Partners',
                 onTap: () {
-                  FeatureControl.instance.open(context, 'business_partners',
-                      () => const BusinessScreen());
+                  FeatureControl.instance.open(
+                    context,
+                    'business_partners',
+                    () => const BusinessScreen(),
+                  );
                 },
               ),
             _DrawerItem(
@@ -2038,22 +2260,23 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => AppSettingsScreen(
-                        onCustomizeFloatingMenu: () {
-                          Future<void>.delayed(
-                              const Duration(milliseconds: 180), () {
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => AppSettingsScreen(
+                      onCustomizeFloatingMenu: () {
+                        Future<void>.delayed(
+                          const Duration(milliseconds: 180),
+                          () {
                             if (mounted) _showArcShortcutCustomizer();
-                          });
-                        },
-                      ),
-                    ));
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                );
               },
             ),
-            Divider(
-              color: AppTheme.adaptiveGlassBorder,
-            ),
+            Divider(color: AppTheme.adaptiveGlassBorder),
             _DrawerItem(
               icon: Icons.logout_rounded,
               title: isArabic ? '🚪 تسجيل الخروج' : '🚪 Logout',
@@ -2069,17 +2292,18 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                       child: AlertDialog(
                         backgroundColor: AppTheme.adaptiveSurface,
                         titleTextStyle: TextStyle(
-                            color: AppTheme.adaptiveText,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold),
+                          color: AppTheme.adaptiveText,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
                         contentTextStyle: TextStyle(
-                            color: AppTheme.adaptiveText, fontSize: 16),
+                          color: AppTheme.adaptiveText,
+                          fontSize: 16,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        title: Text(
-                          isArabic ? 'تسجيل الخروج' : 'Logout',
-                        ),
+                        title: Text(isArabic ? 'تسجيل الخروج' : 'Logout'),
                         content: Text(
                           isArabic
                               ? 'هل أنت متأكد من رغبتك في تسجيل الخروج؟'
@@ -2088,29 +2312,19 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                         actions: [
                           TextButton(
                             onPressed: () {
-                              Navigator.pop(
-                                dialogContext,
-                                false,
-                              );
+                              Navigator.pop(dialogContext, false);
                             },
-                            child: Text(
-                              isArabic ? 'إلغاء' : 'Cancel',
-                            ),
+                            child: Text(isArabic ? 'إلغاء' : 'Cancel'),
                           ),
                           ElevatedButton(
                             onPressed: () {
-                              Navigator.pop(
-                                dialogContext,
-                                true,
-                              );
+                              Navigator.pop(dialogContext, true);
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.red,
                               foregroundColor: Colors.white,
                             ),
-                            child: Text(
-                              isArabic ? 'تسجيل الخروج' : 'Logout',
-                            ),
+                            child: Text(isArabic ? 'تسجيل الخروج' : 'Logout'),
                           ),
                         ],
                       ),
@@ -2123,9 +2337,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
 
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(
-                      builder: (_) => const WelcomeScreen(),
-                    ),
+                    MaterialPageRoute(builder: (_) => const WelcomeScreen()),
                   );
                 }
               },
@@ -2156,17 +2368,19 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
           foregroundColor: primaryColor,
           elevation: 1,
           leading: Builder(
-              builder: (scaffoldContext) => IconButton(
-                  tooltip: isArabic ? 'القائمة' : 'Menu',
-                  icon: const Icon(Icons.menu_rounded),
-                  onPressed: () {
-                    final scaffold = Scaffold.of(scaffoldContext);
-                    if (isArabic) {
-                      scaffold.openDrawer();
-                    } else {
-                      scaffold.openEndDrawer();
-                    }
-                  })),
+            builder: (scaffoldContext) => IconButton(
+              tooltip: isArabic ? 'القائمة' : 'Menu',
+              icon: const Icon(Icons.menu_rounded),
+              onPressed: () {
+                final scaffold = Scaffold.of(scaffoldContext);
+                if (isArabic) {
+                  scaffold.openDrawer();
+                } else {
+                  scaffold.openEndDrawer();
+                }
+              },
+            ),
+          ),
           title: const Text(
             'Zameel',
             maxLines: 1,
@@ -2185,10 +2399,11 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                 final userId = Supabase.instance.client.auth.currentUser?.id;
                 if (userId == null) return;
                 Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => ProfileSettingsScreen(userId: userId),
-                    ));
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ProfileSettingsScreen(userId: userId),
+                  ),
+                );
               },
             ),
             if (FeatureControl.instance.visible('direct_calls'))
@@ -2196,72 +2411,97 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                 tooltip: isArabic ? 'اتصال' : 'Call',
                 icon: const Icon(Icons.add_call),
                 onPressed: () => FeatureControl.instance.open(
-                    context, 'direct_calls', () => const ContactCallsScreen()),
+                  context,
+                  'direct_calls',
+                  () => const ContactCallsScreen(),
+                ),
               ),
             PopupMenuButton<String>(
               tooltip: isArabic ? 'فلترة المنشورات' : 'Filter posts',
               icon: Badge(
-                  isLabelVisible: _feedScope != 'global',
-                  smallSize: 8,
-                  child: const Icon(Icons.filter_alt_outlined)),
+                isLabelVisible: _feedScope != 'global',
+                smallSize: 8,
+                child: const Icon(Icons.filter_alt_outlined),
+              ),
               initialValue: _feedScope,
               onSelected: _setFeedScope,
               itemBuilder: (_) => [
                 CheckedPopupMenuItem(
-                    value: 'global',
-                    checked: _feedScope == 'global',
-                    child: Text(
-                        isArabic ? 'العامة — الجميع' : 'Global — everyone')),
+                  value: 'global',
+                  checked: _feedScope == 'global',
+                  child: Text(
+                    isArabic ? 'العامة — الجميع' : 'Global — everyone',
+                  ),
+                ),
                 if (widget.university.name.isNotEmpty)
                   CheckedPopupMenuItem(
-                      value: 'college',
-                      checked: _feedScope == 'college',
-                      child: Text(isArabic ? 'الكلية' : 'College')),
+                    value: 'college',
+                    checked: _feedScope == 'college',
+                    child: Text(isArabic ? 'الكلية' : 'College'),
+                  ),
                 if (widget.university.name.isNotEmpty)
                   CheckedPopupMenuItem(
-                      value: 'department',
-                      checked: _feedScope == 'department',
-                      child: Text(isArabic ? 'التخصص' : 'Major')),
+                    value: 'department',
+                    checked: _feedScope == 'department',
+                    child: Text(isArabic ? 'التخصص' : 'Major'),
+                  ),
               ],
             ),
             if (FeatureControl.instance.visible('global_search'))
               IconButton(
-                  tooltip: isArabic ? 'البحث' : 'Search',
-                  icon: const Icon(Icons.search_rounded),
-                  onPressed: () => FeatureControl.instance.open(
-                      context, 'global_search', () => const SearchScreen())),
+                tooltip: isArabic ? 'البحث' : 'Search',
+                icon: const Icon(Icons.search_rounded),
+                onPressed: () => FeatureControl.instance.open(
+                  context,
+                  'global_search',
+                  () => const SearchScreen(),
+                ),
+              ),
             if (FeatureControl.instance.visible('notifications_center'))
-              Stack(alignment: Alignment.center, children: [
-                IconButton(
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  IconButton(
                     tooltip: isArabic ? 'الإشعارات' : 'Notifications',
                     icon: const Icon(Icons.notifications_none_rounded),
                     onPressed: () async {
                       await FeatureControl.instance.open(
-                          context,
-                          'notifications_center',
-                          () => const NotificationsScreen());
+                        context,
+                        'notifications_center',
+                        () => const NotificationsScreen(),
+                      );
                       _loadUnreadNotifications();
-                    }),
-                if (_unreadNotifications > 0)
-                  Positioned(
+                    },
+                  ),
+                  if (_unreadNotifications > 0)
+                    Positioned(
                       top: 7,
                       right: 5,
                       child: Container(
-                          constraints:
-                              const BoxConstraints(minWidth: 16, minHeight: 16),
-                          alignment: Alignment.center,
-                          padding: const EdgeInsets.symmetric(horizontal: 3),
-                          decoration: const BoxDecoration(
-                              color: Colors.red, shape: BoxShape.circle),
-                          child: Text(
-                              _unreadNotifications > 99
-                                  ? '99+'
-                                  : '$_unreadNotifications',
-                              style: TextStyle(
-                                  color: AppTheme.legacyForeground,
-                                  fontSize: 8,
-                                  fontWeight: FontWeight.bold)))),
-              ]),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.symmetric(horizontal: 3),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          _unreadNotifications > 99
+                              ? '99+'
+                              : '$_unreadNotifications',
+                          style: TextStyle(
+                            color: AppTheme.legacyForeground,
+                            fontSize: 8,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             const SizedBox(width: 4),
           ],
         ),
@@ -2285,18 +2525,23 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
               child: _ZameelArcMenu(
                 isArabic: isArabic,
                 items: _arcShortcutCatalog(isArabic)
-                    .where((item) =>
-                        _arcShortcutIds.contains(item.id) &&
-                        FeatureControl.instance
-                            .visible(_featureForShortcut(item.id)))
+                    .where(
+                      (item) =>
+                          _arcShortcutIds.contains(item.id) &&
+                          FeatureControl.instance.visible(
+                            _featureForShortcut(item.id),
+                          ),
+                    )
                     .toList()
-                  ..sort((a, b) => _arcShortcutIds
-                      .indexOf(a.id)
-                      .compareTo(_arcShortcutIds.indexOf(b.id))),
+                  ..sort(
+                    (a, b) => _arcShortcutIds
+                        .indexOf(a.id)
+                        .compareTo(_arcShortcutIds.indexOf(b.id)),
+                  ),
                 onDrag: _moveArcMenu,
                 onCustomize: _showArcShortcutCustomizer,
               ),
-            )
+            ),
           ],
         ),
         floatingActionButton:
@@ -2305,8 +2550,10 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                     backgroundColor: primaryColor,
                     foregroundColor: Colors.white,
                     onPressed: () async {
-                      if (await FeatureControl.instance
-                              .check(context, 'feed_posts') &&
+                      if (await FeatureControl.instance.check(
+                            context,
+                            'feed_posts',
+                          ) &&
                           mounted) createPost();
                     },
                     child: const Icon(Icons.add_rounded),
@@ -2327,29 +2574,41 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
             ? _buildFeed()
             : const Center(child: Text(FeatureControl.suspendedMessage));
       case 1:
-        return FeatureControl.instance
-            .page('books_market', const BooksScreen());
+        return FeatureControl.instance.page(
+          'books_market',
+          const BooksScreen(),
+        );
       case 2:
         return FeatureControl.instance.page('direct_chat', const ChatScreen());
       case 3:
-        return FeatureControl.instance
-            .page('suggested_colleagues', const FriendsScreen());
+        return FeatureControl.instance.page(
+          'suggested_colleagues',
+          const FriendsScreen(),
+        );
       case 4:
-        return FeatureControl.instance
-            .page('campus_world', const CampusScreen());
+        return FeatureControl.instance.page(
+          'campus_world',
+          const CampusScreen(),
+        );
       case 5:
         return FeatureControl.instance.page('zameel_meet', const MeetScreen());
       case 6:
-        return FeatureControl.instance
-            .page('jobs_training', const JobsScreen());
+        return FeatureControl.instance.page(
+          'jobs_training',
+          const JobsScreen(),
+        );
       case 7:
-        return FeatureControl.instance
-            .page('university_calendar', CalendarScreen());
+        return FeatureControl.instance.page(
+          'university_calendar',
+          CalendarScreen(),
+        );
       case 8:
         return FeatureControl.instance.page('polls', const PollsScreen());
       case 9:
-        return FeatureControl.instance
-            .page('groups', const PrivateGroupsScreen());
+        return FeatureControl.instance.page(
+          'groups',
+          const PrivateGroupsScreen(),
+        );
       case 10:
         return FeatureControl.instance.page('zameel_ai', const AIScreen());
       case 11:
@@ -2368,22 +2627,29 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
       await Clipboard.setData(ClipboardData(text: text));
       if (mounted)
         ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('تم نسخ محتوى المنشور التجريبي ✓')));
+          const SnackBar(content: Text('تم نسخ محتوى المنشور التجريبي ✓')),
+        );
       return;
     }
     try {
-      await Supabase.instance.client
-          .from('shared_posts')
-          .upsert({'post_id': postId, 'shared_by': user.id});
+      await Supabase.instance.client.from('shared_posts').upsert({
+        'post_id': postId,
+        'shared_by': user.id,
+      });
       await _loadPosts();
       if (mounted)
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('✅ تمت مشاركة المنشور على ملفك الشخصي')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✅ تمت مشاركة المنشور على ملفك الشخصي')),
+        );
     } catch (e) {
       if (mounted)
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content:
-                Text(FeatureControl.errorMessage(e, 'تعذر مشاركة المنشور'))));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              FeatureControl.errorMessage(e, 'تعذر مشاركة المنشور'),
+            ),
+          ),
+        );
     }
   }
 
@@ -2399,60 +2665,80 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
           .order('created_at', ascending: false);
       if (!mounted) return;
       showModalBottomSheet(
-          context: context,
-          showDragHandle: true,
-          builder: (_) => Directionality(
-              textDirection: ar ? TextDirection.rtl : TextDirection.ltr,
-              child: SizedBox(
-                  height: 480,
-                  child: Column(children: [
-                    Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Text(
-                            ar
-                                ? 'الأشخاص الذين أعجبوا بالمنشور'
-                                : 'People who liked this post',
-                            style: const TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.w800))),
-                    Expanded(
-                        child: rows.isEmpty
-                            ? Center(
-                                child: Text(ar
-                                    ? 'لا توجد إعجابات بعد'
-                                    : 'No likes yet'))
-                            : ListView.builder(
-                                itemCount: rows.length,
-                                itemBuilder: (_, i) {
-                                  final u = rows[i]['users'];
-                                  final name = u is Map
-                                      ? (u['name']?.toString() ?? 'User')
-                                      : 'User';
-                                  final image = u is Map
-                                      ? u['profile_image']?.toString()
-                                      : null;
-                                  return ListTile(
-                                      leading: CircleAvatar(
-                                          backgroundImage:
-                                              image != null && image.isNotEmpty
-                                                  ? NetworkImage(image)
-                                                  : null,
-                                          child: image == null || image.isEmpty
-                                              ? const Icon(Icons.person)
-                                              : null),
-                                      title: VerifiedName(
-                                          userId:
-                                              rows[i]['user_id']?.toString(),
-                                          child: Text(name,
-                                              style: const TextStyle(
-                                                  fontWeight:
-                                                      FontWeight.w700))));
-                                }))
-                  ]))));
+        context: context,
+        showDragHandle: true,
+        builder: (_) => Directionality(
+          textDirection: ar ? TextDirection.rtl : TextDirection.ltr,
+          child: SizedBox(
+            height: 480,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    ar
+                        ? 'الأشخاص الذين أعجبوا بالمنشور'
+                        : 'People who liked this post',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: rows.isEmpty
+                      ? Center(
+                          child: Text(
+                            ar ? 'لا توجد إعجابات بعد' : 'No likes yet',
+                          ),
+                        )
+                      : ListView.builder(
+                          itemCount: rows.length,
+                          itemBuilder: (_, i) {
+                            final u = rows[i]['users'];
+                            final name = u is Map
+                                ? (u['name']?.toString() ?? 'User')
+                                : 'User';
+                            final image = u is Map
+                                ? u['profile_image']?.toString()
+                                : null;
+                            return ListTile(
+                              leading: CircleAvatar(
+                                backgroundImage:
+                                    image != null && image.isNotEmpty
+                                        ? NetworkImage(image)
+                                        : null,
+                                child: image == null || image.isEmpty
+                                    ? const Icon(Icons.person)
+                                    : null,
+                              ),
+                              title: VerifiedName(
+                                userId: rows[i]['user_id']?.toString(),
+                                child: Text(
+                                  name,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
     } catch (e) {
       if (mounted)
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content:
-                Text(FeatureControl.errorMessage(e, 'تعذر تحميل الإعجابات'))));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              FeatureControl.errorMessage(e, 'تعذر تحميل الإعجابات'),
+            ),
+          ),
+        );
     }
   }
 
@@ -2469,39 +2755,54 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
     final children = <Widget>[
       if (FeatureControl.instance.visible('stories'))
         FeatureControl.instance.page(
-            'stories', const StoriesWidget(key: ValueKey('home_stories')),
-            embedded: true),
+          'stories',
+          const StoriesWidget(key: ValueKey('home_stories')),
+          embedded: true,
+        ),
       _buildCreateBox(),
       Padding(
         padding: const EdgeInsets.fromLTRB(14, 8, 14, 2),
-        child: Row(children: [
-          const Icon(Icons.dynamic_feed_rounded, color: primaryColor),
-          const SizedBox(width: 8),
-          Text(scopeLabel,
-              style:
-                  const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w900)),
-        ]),
+        child: Row(
+          children: [
+            const Icon(Icons.dynamic_feed_rounded, color: primaryColor),
+            const SizedBox(width: 8),
+            Text(
+              scopeLabel,
+              style: const TextStyle(
+                fontSize: 14.5,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
       ),
     ];
 
     if (visiblePosts.isEmpty && _isLoading) {
-      children.add(const Padding(
-        padding: EdgeInsets.all(24),
-        child: Center(child: CircularProgressIndicator(color: primaryColor)),
-      ));
+      children.add(
+        const Padding(
+          padding: EdgeInsets.all(24),
+          child: Center(child: CircularProgressIndicator(color: primaryColor)),
+        ),
+      );
     } else if (visiblePosts.isEmpty) {
       children.add(
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 44),
           child: Column(
             children: [
-              Icon(Icons.post_add_rounded,
-                  size: 58, color: primaryColor.withOpacity(.35)),
+              Icon(
+                Icons.post_add_rounded,
+                size: 58,
+                color: primaryColor.withOpacity(.35),
+              ),
               const SizedBox(height: 10),
               Text(
                 isArabic ? '📭 لا توجد منشورات' : '📭 No posts',
-                style:
-                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 6),
               Text(
@@ -2515,81 +2816,106 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
         ),
       );
     } else {
+      var ordinaryAdSlots = 0;
+      var partnerAdIndex = 0;
       for (var postIndex = 0; postIndex < visiblePosts.length; postIndex++) {
         final post = visiblePosts[postIndex];
-        if (post['promotion_ends_at'] != null)
-          children.add(Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Row(children: [
-              const Icon(Icons.campaign_outlined, size: 18),
-              const SizedBox(width: 6),
-              Text(isArabic ? 'إعلان ممول' : 'Sponsored')
-            ]),
-          ));
+        final promoted = post['promotion_ends_at'] != null;
         final userData = post['users'] is Map
             ? Map<String, dynamic>.from(post['users'])
             : {};
         final isLiked = post['liked'] == true;
-        children.add(
-          Padding(
-            key: ValueKey('post_${post['id']}'),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            child: CompactPost(
-              child: _PostCard(
-                post: {
-                  ...post,
-                  'name_ar': userData['name'] ?? 'مستخدم',
-                  'name_en': userData['name'] ?? 'User',
-                  'department_ar': userData['department'] ?? widget.department,
-                  'department_en': userData['department'] ?? widget.department,
-                  'time_ar': _formatTime(post['created_at']?.toString()),
-                  'time_en': _formatTime(post['created_at']?.toString()),
-                  'likes': post['likes_count'] ?? 0,
-                  'comments': post['comments_count'] ?? 0,
-                  'shares': post['shares_count'] ?? 0,
-                  'profile_image': userData['profile_image'],
-                  'verification_expires_at':
-                      userData['verification_expires_at'],
-                  'liked': isLiked,
-                },
-                onLike: () =>
-                    _toggleLike(posts.indexOf(post), postOverride: post),
-                savedPosts: savedPosts,
-                isAdmin: isAdmin,
-                postOwnerId: post['user_id']?.toString(),
-                onDelete: () => _showDeleteConfirmation(context, post),
-                onShareToProfile: _sharePostToProfile,
-              ),
+        final postCard = Padding(
+          key: ValueKey('post_${post['id']}'),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: CompactPost(
+            child: _PostCard(
+              post: {
+                ...post,
+                'name_ar': userData['name'] ?? 'مستخدم',
+                'name_en': userData['name'] ?? 'User',
+                'department_ar': userData['department'] ?? widget.department,
+                'department_en': userData['department'] ?? widget.department,
+                'time_ar': _formatTime(post['created_at']?.toString()),
+                'time_en': _formatTime(post['created_at']?.toString()),
+                'likes': post['likes_count'] ?? 0,
+                'comments': post['comments_count'] ?? 0,
+                'shares': post['shares_count'] ?? 0,
+                'profile_image': userData['profile_image'],
+                'verification_expires_at': userData['verification_expires_at'],
+                'liked': isLiked,
+              },
+              onLike: () =>
+                  _toggleLike(posts.indexOf(post), postOverride: post),
+              savedPosts: savedPosts,
+              isAdmin: isAdmin,
+              postOwnerId: post['user_id']?.toString(),
+              onDelete: () => _showDeleteConfirmation(context, post),
+              onShareToProfile: _sharePostToProfile,
             ),
           ),
         );
-        if ((postIndex + 1) % 5 == 0 &&
+        if (post['promotion_ends_at'] != null) {
+          children.add(
+            SponsoredExposure(
+              key: ValueKey('sponsored_${post['id']}'),
+              postId: post['id'].toString(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Text(isArabic ? 'إعلان ممول' : 'Sponsored'),
+                  ),
+                  postCard,
+                ],
+              ),
+            ),
+          );
+        } else {
+          children.add(postCard);
+        }
+        if (!promoted) ordinaryAdSlots++;
+        final nextIsSponsored = postIndex + 1 < visiblePosts.length &&
+            _promotedPosts
+                .any((p) => p['id'] == visiblePosts[postIndex + 1]['id']);
+        if (!promoted &&
+            ordinaryAdSlots % 6 == 0 &&
+            !nextIsSponsored &&
             FeatureControl.instance.enabled('partner_advertising')) {
-          final adIndex = (postIndex + 1) ~/ 5 - 1;
+          final adIndex = partnerAdIndex++;
           if (adIndex < _advertisements.length) {
             final ad = _advertisements[adIndex];
-            children.add(AdvertisementCard(
-              key: ValueKey('ad_${ad['id']}'),
-              ad: ad,
-              isArabic: isArabic,
-              onHide: () async {
-                await AdvertisingService.hide(ad['id'].toString());
-                final userId = Supabase.instance.client.auth.currentUser?.id;
-                if (userId != null)
-                  await HomeSnapshotService.clear(userId, section: 'ads');
-                if (mounted)
-                  setState(() => _advertisements.removeWhere(
+            children.add(
+              AdvertisementCard(
+                key: ValueKey('ad_${ad['id']}'),
+                ad: ad,
+                isArabic: isArabic,
+                onHide: () async {
+                  await AdvertisingService.hide(ad['id'].toString());
+                  final userId = Supabase.instance.client.auth.currentUser?.id;
+                  if (userId != null)
+                    await HomeSnapshotService.clear(userId, section: 'ads');
+                  if (mounted)
+                    setState(
+                      () => _advertisements.removeWhere(
                         (item) => item['id'] == ad['id'],
-                      ));
-              },
-            ));
+                      ),
+                    );
+                },
+              ),
+            );
           }
         }
         if (postIndex == 4 && visiblePosts.length >= 5) {
           if (FeatureControl.instance.visible('suggested_colleagues')) {
-            children.add(FeatureControl.instance.page(
-                'suggested_colleagues', const SuggestedColleaguesSection(),
-                embedded: true));
+            children.add(
+              FeatureControl.instance.page(
+                'suggested_colleagues',
+                const SuggestedColleaguesSection(),
+                embedded: true,
+              ),
+            );
           }
         }
       }
@@ -2622,9 +2948,11 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
           bottom: 16,
           child: FloatingActionButton.small(
             heroTag: 'feed_top',
-            onPressed: () => _feedScrollController.animateTo(0,
-                duration: const Duration(milliseconds: 350),
-                curve: Curves.easeOut),
+            onPressed: () => _feedScrollController.animateTo(
+              0,
+              duration: const Duration(milliseconds: 350),
+              curve: Curves.easeOut,
+            ),
             child: const Icon(Icons.keyboard_arrow_up_rounded),
           ),
         ),
@@ -2770,8 +3098,11 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
         await _pickVideo();
         break;
       case 'clip':
-        await FeatureControl.instance
-            .open(context, 'clips', () => ClipCreateScreen(isArabic: isArabic));
+        await FeatureControl.instance.open(
+          context,
+          'clips',
+          () => ClipCreateScreen(isArabic: isArabic),
+        );
         break;
     }
   }
@@ -2780,10 +3111,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
     final languageProvider = Provider.of<LanguageProvider>(context);
 
     return GlassContainer(
-      margin: const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 6,
-      ),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: Column(
         children: [
           Row(
@@ -2813,19 +3141,14 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                         'feed_share',
                         languageProvider.currentLanguage,
                       ),
-                      style: TextStyle(
-                        color: AppTheme.legacySecondary,
-                      ),
+                      style: TextStyle(color: AppTheme.legacySecondary),
                     ),
                   ),
                 ),
               ),
             ],
           ),
-          Divider(
-            color: AppTheme.adaptiveGlassBorder,
-            height: 28,
-          ),
+          Divider(color: AppTheme.adaptiveGlassBorder, height: 28),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -2834,16 +3157,22 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                   _CreateAction(
                     icon: Icons.quiz_outlined,
                     text: languageProvider.isArabic ? 'كويز' : 'Quiz',
-                    onTap: () => FeatureControl.instance.open(context, 'quiz',
-                        () => QuizScreen(isArabic: languageProvider.isArabic)),
+                    onTap: () => FeatureControl.instance.open(
+                      context,
+                      'quiz',
+                      () => QuizScreen(isArabic: languageProvider.isArabic),
+                    ),
                   ),
                 const SizedBox(width: 14),
                 if (FeatureControl.instance.visible('lamma'))
                   _CreateAction(
                     icon: Icons.groups_rounded,
                     text: languageProvider.isArabic ? 'لَمّة' : 'Lamma',
-                    onTap: () => FeatureControl.instance
-                        .open(context, 'lamma', () => const LammaScreen()),
+                    onTap: () => FeatureControl.instance.open(
+                      context,
+                      'lamma',
+                      () => const LammaScreen(),
+                    ),
                   ),
                 const SizedBox(width: 14),
                 if (FeatureControl.instance.visible('zameel_radio'))
@@ -2852,8 +3181,11 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                     text: languageProvider.isArabic
                         ? 'راديو زميل'
                         : 'Zameel Radio',
-                    onTap: () => FeatureControl.instance.open(context,
-                        'zameel_radio', () => const ZameelRadioScreen()),
+                    onTap: () => FeatureControl.instance.open(
+                      context,
+                      'zameel_radio',
+                      () => const ZameelRadioScreen(),
+                    ),
                   ),
                 const SizedBox(width: 14),
                 if (FeatureControl.instance.visible('beautiful_college'))
@@ -2863,9 +3195,10 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                         ? 'أجمل كلية'
                         : 'Beautiful College',
                     onTap: () => FeatureControl.instance.open(
-                        context,
-                        'beautiful_college',
-                        () => const BeautifulCollegeScreen()),
+                      context,
+                      'beautiful_college',
+                      () => const BeautifulCollegeScreen(),
+                    ),
                   ),
               ],
             ),
@@ -2880,16 +3213,10 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
     final isArabic = languageProvider.isArabic;
 
     return ListView(
-      padding: const EdgeInsets.only(
-        top: 80,
-        bottom: 20,
-      ),
+      padding: const EdgeInsets.only(top: 80, bottom: 20),
       children: [
         GlassContainer(
-          margin: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 8,
-          ),
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Column(
             children: [
               const SizedBox(height: 10),
@@ -2941,19 +3268,13 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                   languageProvider.currentLanguage,
                 ),
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: AppTheme.legacySecondary,
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: AppTheme.legacySecondary, fontSize: 14),
               ),
               const SizedBox(height: 4),
               Text(
                 '${translateText(widget.college.name, languageProvider.currentLanguage)} • ${translateText(widget.department, languageProvider.currentLanguage)}',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: AppTheme.legacySecondary,
-                  fontSize: 13,
-                ),
+                style: TextStyle(color: AppTheme.legacySecondary, fontSize: 13),
               ),
             ],
           ),
@@ -3025,9 +3346,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (_) => ProfileScreen(userId: null),
-              ),
+              MaterialPageRoute(builder: (_) => ProfileScreen(userId: null)),
             );
           },
         ),
@@ -3040,9 +3359,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (_) => const BooksScreen(),
-              ),
+              MaterialPageRoute(builder: (_) => const BooksScreen()),
             );
           },
         ),
@@ -3076,17 +3393,12 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => SavedPostsScreen(
-                  savedPosts: savedPosts,
-                ),
+                builder: (_) => SavedPostsScreen(savedPosts: savedPosts),
               ),
             );
           },
         ),
-        Divider(
-          color: AppTheme.adaptiveGlassBorder,
-          height: 30,
-        ),
+        Divider(color: AppTheme.adaptiveGlassBorder, height: 30),
         _ProfileOption(
           icon: Icons.logout_rounded,
           title: isArabic ? '🚪 تسجيل الخروج' : '🚪 Logout',
@@ -3101,17 +3413,18 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                   child: AlertDialog(
                     backgroundColor: AppTheme.adaptiveSurface,
                     titleTextStyle: TextStyle(
-                        color: AppTheme.adaptiveText,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold),
-                    contentTextStyle:
-                        TextStyle(color: AppTheme.adaptiveText, fontSize: 16),
+                      color: AppTheme.adaptiveText,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    contentTextStyle: TextStyle(
+                      color: AppTheme.adaptiveText,
+                      fontSize: 16,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    title: Text(
-                      isArabic ? 'تسجيل الخروج' : 'Logout',
-                    ),
+                    title: Text(isArabic ? 'تسجيل الخروج' : 'Logout'),
                     content: Text(
                       isArabic
                           ? 'هل أنت متأكد من رغبتك في تسجيل الخروج؟'
@@ -3120,9 +3433,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(dialogContext, false),
-                        child: Text(
-                          isArabic ? 'إلغاء' : 'Cancel',
-                        ),
+                        child: Text(isArabic ? 'إلغاء' : 'Cancel'),
                       ),
                       ElevatedButton(
                         onPressed: () => Navigator.pop(dialogContext, true),
@@ -3130,9 +3441,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                           backgroundColor: Colors.red,
                           foregroundColor: Colors.white,
                         ),
-                        child: Text(
-                          isArabic ? 'تسجيل الخروج' : 'Logout',
-                        ),
+                        child: Text(isArabic ? 'تسجيل الخروج' : 'Logout'),
                       ),
                     ],
                   ),
@@ -3145,9 +3454,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
 
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(
-                  builder: (_) => const WelcomeScreen(),
-                ),
+                MaterialPageRoute(builder: (_) => const WelcomeScreen()),
               );
             }
           },

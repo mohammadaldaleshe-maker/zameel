@@ -17,10 +17,12 @@ class University {
 class College {
   final String name;
   final List<String> departments;
+  final Map<String, List<String>> programDegrees;
 
   const College({
     required this.name,
     required this.departments,
+    this.programDegrees = const {},
   });
 }
 
@@ -30,9 +32,13 @@ class College {
 
 const generalCollege = College(name: '', departments: <String>[]);
 const generalCommunity = University(
-    name: '', type: 'general', city: '', colleges: <College>[generalCollege]);
+  name: '',
+  type: 'general',
+  city: '',
+  colleges: <College>[generalCollege],
+);
 
-const List<University> universities = [
+const List<University> legacyUniversities = [
   // ============================================================
   // الجامعات الحكومية
   // ============================================================
@@ -43,32 +49,15 @@ const List<University> universities = [
     type: 'حكومية',
     city: 'عمّان',
     colleges: [
-      College(
-        name: 'كلية الطب',
-        departments: [
-          'الطب العام',
-          'الجراحة العامة',
-        ],
-      ),
-      College(
-        name: 'كلية طب الأسنان',
-        departments: [
-          'جراحة الفم والأسنان',
-        ],
-      ),
+      College(name: 'كلية الطب', departments: ['الطب العام', 'الجراحة العامة']),
+      College(name: 'كلية طب الأسنان', departments: ['جراحة الفم والأسنان']),
       College(
         name: 'كلية الصيدلة',
-        departments: [
-          'العلوم الصيدلانية',
-          'الصيدلة السريرية',
-        ],
+        departments: ['العلوم الصيدلانية', 'الصيدلة السريرية'],
       ),
       College(
         name: 'كلية التمريض',
-        departments: [
-          'التمريض العام',
-          'التمريض الصحي',
-        ],
+        departments: ['التمريض العام', 'التمريض الصحي'],
       ),
       College(
         name: 'كلية الهندسة',
@@ -109,40 +98,23 @@ const List<University> universities = [
       ),
       College(
         name: 'كلية القانون',
-        departments: [
-          'القانون العام',
-          'القانون الخاص',
-        ],
+        departments: ['القانون العام', 'القانون الخاص'],
       ),
       College(
         name: 'كلية الشريعة الإسلامية',
-        departments: [
-          'الفقه الإسلامي',
-          'أصول الدين',
-        ],
+        departments: ['الفقه الإسلامي', 'أصول الدين'],
       ),
       College(
         name: 'كلية التربية',
-        departments: [
-          'المناهج',
-          'الإدارة التربوية',
-          'علم النفس',
-        ],
+        departments: ['المناهج', 'الإدارة التربوية', 'علم النفس'],
       ),
       College(
         name: 'كلية الإعلام',
-        departments: [
-          'الصحافة',
-          'الإذاعة والتلفزيون',
-          'العلاقات العامة',
-        ],
+        departments: ['الصحافة', 'الإذاعة والتلفزيون', 'العلاقات العامة'],
       ),
       College(
         name: 'كلية الآثار والسياحة',
-        departments: [
-          'إدارة المواقع الأثرية',
-          'السياحة',
-        ],
+        departments: ['إدارة المواقع الأثرية', 'السياحة'],
       ),
     ],
   ),
@@ -153,39 +125,16 @@ const List<University> universities = [
     type: 'حكومية',
     city: 'إربد',
     colleges: [
-      College(
-        name: 'كلية الطب',
-        departments: [
-          'الطب العام',
-          'الجراحة العامة',
-        ],
-      ),
-      College(
-        name: 'كلية طب الأسنان',
-        departments: [
-          'جراحة الفم والأسنان',
-        ],
-      ),
+      College(name: 'كلية الطب', departments: ['الطب العام', 'الجراحة العامة']),
+      College(name: 'كلية طب الأسنان', departments: ['جراحة الفم والأسنان']),
       College(
         name: 'كلية الصيدلة',
-        departments: [
-          'العلوم الصيدلانية',
-          'الصيدلة السريرية',
-        ],
+        departments: ['العلوم الصيدلانية', 'الصيدلة السريرية'],
       ),
-      College(
-        name: 'كلية التمريض',
-        departments: [
-          'التمريض العام',
-        ],
-      ),
+      College(name: 'كلية التمريض', departments: ['التمريض العام']),
       College(
         name: 'كلية العلوم الطبية المساندة',
-        departments: [
-          'المختبرات الطبية',
-          'الأشعة',
-          'العلاج الطبيعي',
-        ],
+        departments: ['المختبرات الطبية', 'الأشعة', 'العلاج الطبيعي'],
       ),
       College(
         name: 'كلية الهندسة',
@@ -210,12 +159,7 @@ const List<University> universities = [
       ),
       College(
         name: 'كلية الأعمال',
-        departments: [
-          'إدارة الأعمال',
-          'المحاسبة',
-          'التسويق',
-          'التمويل',
-        ],
+        departments: ['إدارة الأعمال', 'المحاسبة', 'التسويق', 'التمويل'],
       ),
     ],
   ),
@@ -226,30 +170,10 @@ const List<University> universities = [
     type: 'حكومية',
     city: 'إربد',
     colleges: [
-      College(
-        name: 'كلية الطب',
-        departments: [
-          'الطب العام',
-        ],
-      ),
-      College(
-        name: 'كلية طب الأسنان',
-        departments: [
-          'جراحة الفم والأسنان',
-        ],
-      ),
-      College(
-        name: 'كلية الصيدلة',
-        departments: [
-          'العلوم الصيدلانية',
-        ],
-      ),
-      College(
-        name: 'كلية التمريض',
-        departments: [
-          'التمريض العام',
-        ],
-      ),
+      College(name: 'كلية الطب', departments: ['الطب العام']),
+      College(name: 'كلية طب الأسنان', departments: ['جراحة الفم والأسنان']),
+      College(name: 'كلية الصيدلة', departments: ['العلوم الصيدلانية']),
+      College(name: 'كلية التمريض', departments: ['التمريض العام']),
       College(
         name: 'كلية الهندسة',
         departments: [
@@ -262,63 +186,35 @@ const List<University> universities = [
       ),
       College(
         name: 'كلية تكنولوجيا المعلومات',
-        departments: [
-          'علوم الحاسوب',
-          'تكنولوجيا المعلومات',
-          'هندسة البرمجيات',
-        ],
+        departments: ['علوم الحاسوب', 'تكنولوجيا المعلومات', 'هندسة البرمجيات'],
       ),
       College(
         name: 'كلية الأعمال',
-        departments: [
-          'إدارة الأعمال',
-          'المحاسبة',
-          'التسويق',
-          'التمويل',
-        ],
+        departments: ['إدارة الأعمال', 'المحاسبة', 'التسويق', 'التمويل'],
       ),
       College(
         name: 'كلية اللغات',
-        departments: [
-          'اللغة العربية وآدابها',
-          'اللغة الإنجليزية',
-        ],
+        departments: ['اللغة العربية وآدابها', 'اللغة الإنجليزية'],
       ),
       College(
         name: 'كلية القانون',
-        departments: [
-          'القانون العام',
-          'القانون الخاص',
-        ],
+        departments: ['القانون العام', 'القانون الخاص'],
       ),
       College(
         name: 'كلية الشريعة الإسلامية',
-        departments: [
-          'الفقه الإسلامي',
-          'أصول الدين',
-        ],
+        departments: ['الفقه الإسلامي', 'أصول الدين'],
       ),
       College(
         name: 'كلية التربية',
-        departments: [
-          'المناهج',
-          'الإدارة التربوية',
-          'علم النفس',
-        ],
+        departments: ['المناهج', 'الإدارة التربوية', 'علم النفس'],
       ),
       College(
         name: 'كلية الإعلام',
-        departments: [
-          'الصحافة',
-          'الإذاعة والتلفزيون',
-        ],
+        departments: ['الصحافة', 'الإذاعة والتلفزيون'],
       ),
       College(
         name: 'كلية الآثار والسياحة',
-        departments: [
-          'إدارة المواقع الأثرية',
-          'السياحة',
-        ],
+        departments: ['إدارة المواقع الأثرية', 'السياحة'],
       ),
     ],
   ),
@@ -329,30 +225,10 @@ const List<University> universities = [
     type: 'حكومية',
     city: 'الزرقاء',
     colleges: [
-      College(
-        name: 'كلية الطب',
-        departments: [
-          'الطب العام',
-        ],
-      ),
-      College(
-        name: 'كلية طب الأسنان',
-        departments: [
-          'جراحة الفم والأسنان',
-        ],
-      ),
-      College(
-        name: 'كلية الصيدلة',
-        departments: [
-          'العلوم الصيدلانية',
-        ],
-      ),
-      College(
-        name: 'كلية التمريض',
-        departments: [
-          'التمريض العام',
-        ],
-      ),
+      College(name: 'كلية الطب', departments: ['الطب العام']),
+      College(name: 'كلية طب الأسنان', departments: ['جراحة الفم والأسنان']),
+      College(name: 'كلية الصيدلة', departments: ['العلوم الصيدلانية']),
+      College(name: 'كلية التمريض', departments: ['التمريض العام']),
       College(
         name: 'كلية الهندسة',
         departments: [
@@ -364,33 +240,19 @@ const List<University> universities = [
       ),
       College(
         name: 'كلية تكنولوجيا المعلومات',
-        departments: [
-          'علوم الحاسوب',
-          'تكنولوجيا المعلومات',
-          'الأمن السيبراني',
-        ],
+        departments: ['علوم الحاسوب', 'تكنولوجيا المعلومات', 'الأمن السيبراني'],
       ),
       College(
         name: 'كلية الأعمال',
-        departments: [
-          'إدارة الأعمال',
-          'المحاسبة',
-          'التسويق',
-        ],
+        departments: ['إدارة الأعمال', 'المحاسبة', 'التسويق'],
       ),
       College(
         name: 'كلية اللغات',
-        departments: [
-          'اللغة العربية وآدابها',
-          'اللغة الإنجليزية',
-        ],
+        departments: ['اللغة العربية وآدابها', 'اللغة الإنجليزية'],
       ),
       College(
         name: 'كلية القانون',
-        departments: [
-          'القانون العام',
-          'القانون الخاص',
-        ],
+        departments: ['القانون العام', 'القانون الخاص'],
       ),
     ],
   ),
@@ -401,30 +263,10 @@ const List<University> universities = [
     type: 'حكومية',
     city: 'الكرك',
     colleges: [
-      College(
-        name: 'كلية الطب',
-        departments: [
-          'الطب العام',
-        ],
-      ),
-      College(
-        name: 'كلية طب الأسنان',
-        departments: [
-          'جراحة الفم والأسنان',
-        ],
-      ),
-      College(
-        name: 'كلية الصيدلة',
-        departments: [
-          'العلوم الصيدلانية',
-        ],
-      ),
-      College(
-        name: 'كلية التمريض',
-        departments: [
-          'التمريض العام',
-        ],
-      ),
+      College(name: 'كلية الطب', departments: ['الطب العام']),
+      College(name: 'كلية طب الأسنان', departments: ['جراحة الفم والأسنان']),
+      College(name: 'كلية الصيدلة', departments: ['العلوم الصيدلانية']),
+      College(name: 'كلية التمريض', departments: ['التمريض العام']),
       College(
         name: 'كلية الهندسة',
         departments: [
@@ -435,32 +277,19 @@ const List<University> universities = [
       ),
       College(
         name: 'كلية تكنولوجيا المعلومات',
-        departments: [
-          'علوم الحاسوب',
-          'تكنولوجيا المعلومات',
-        ],
+        departments: ['علوم الحاسوب', 'تكنولوجيا المعلومات'],
       ),
       College(
         name: 'كلية الأعمال',
-        departments: [
-          'إدارة الأعمال',
-          'المحاسبة',
-          'التمويل',
-        ],
+        departments: ['إدارة الأعمال', 'المحاسبة', 'التمويل'],
       ),
       College(
         name: 'كلية القانون',
-        departments: [
-          'القانون العام',
-          'القانون الخاص',
-        ],
+        departments: ['القانون العام', 'القانون الخاص'],
       ),
       College(
         name: 'كلية الشريعة الإسلامية',
-        departments: [
-          'الفقه الإسلامي',
-          'أصول الدين',
-        ],
+        departments: ['الفقه الإسلامي', 'أصول الدين'],
       ),
     ],
   ),
@@ -471,30 +300,10 @@ const List<University> universities = [
     type: 'حكومية',
     city: 'المفرق',
     colleges: [
-      College(
-        name: 'كلية الطب',
-        departments: [
-          'الطب العام',
-        ],
-      ),
-      College(
-        name: 'كلية طب الأسنان',
-        departments: [
-          'جراحة الفم والأسنان',
-        ],
-      ),
-      College(
-        name: 'كلية الصيدلة',
-        departments: [
-          'العلوم الصيدلانية',
-        ],
-      ),
-      College(
-        name: 'كلية التمريض',
-        departments: [
-          'التمريض العام',
-        ],
-      ),
+      College(name: 'كلية الطب', departments: ['الطب العام']),
+      College(name: 'كلية طب الأسنان', departments: ['جراحة الفم والأسنان']),
+      College(name: 'كلية الصيدلة', departments: ['العلوم الصيدلانية']),
+      College(name: 'كلية التمريض', departments: ['التمريض العام']),
       College(
         name: 'كلية الهندسة',
         departments: [
@@ -505,31 +314,16 @@ const List<University> universities = [
       ),
       College(
         name: 'كلية تكنولوجيا المعلومات',
-        departments: [
-          'علوم الحاسوب',
-          'تكنولوجيا المعلومات',
-        ],
+        departments: ['علوم الحاسوب', 'تكنولوجيا المعلومات'],
       ),
-      College(
-        name: 'كلية الأعمال',
-        departments: [
-          'إدارة الأعمال',
-          'المحاسبة',
-        ],
-      ),
+      College(name: 'كلية الأعمال', departments: ['إدارة الأعمال', 'المحاسبة']),
       College(
         name: 'كلية اللغات',
-        departments: [
-          'اللغة العربية وآدابها',
-          'اللغة الإنجليزية',
-        ],
+        departments: ['اللغة العربية وآدابها', 'اللغة الإنجليزية'],
       ),
       College(
         name: 'كلية القانون',
-        departments: [
-          'القانون العام',
-          'القانون الخاص',
-        ],
+        departments: ['القانون العام', 'القانون الخاص'],
       ),
     ],
   ),
@@ -551,25 +345,15 @@ const List<University> universities = [
       ),
       College(
         name: 'كلية تكنولوجيا المعلومات',
-        departments: [
-          'علوم الحاسوب',
-          'تكنولوجيا المعلومات',
-        ],
+        departments: ['علوم الحاسوب', 'تكنولوجيا المعلومات'],
       ),
       College(
         name: 'كلية الأعمال',
-        departments: [
-          'إدارة الأعمال',
-          'المحاسبة',
-          'التسويق',
-        ],
+        departments: ['إدارة الأعمال', 'المحاسبة', 'التسويق'],
       ),
       College(
         name: 'كلية اللغات',
-        departments: [
-          'اللغة العربية وآدابها',
-          'اللغة الإنجليزية',
-        ],
+        departments: ['اللغة العربية وآدابها', 'اللغة الإنجليزية'],
       ),
     ],
   ),
@@ -590,18 +374,9 @@ const List<University> universities = [
       ),
       College(
         name: 'كلية تكنولوجيا المعلومات',
-        departments: [
-          'علوم الحاسوب',
-          'تكنولوجيا المعلومات',
-        ],
+        departments: ['علوم الحاسوب', 'تكنولوجيا المعلومات'],
       ),
-      College(
-        name: 'كلية الأعمال',
-        departments: [
-          'إدارة الأعمال',
-          'المحاسبة',
-        ],
-      ),
+      College(name: 'كلية الأعمال', departments: ['إدارة الأعمال', 'المحاسبة']),
     ],
   ),
 
@@ -621,18 +396,9 @@ const List<University> universities = [
       ),
       College(
         name: 'كلية تكنولوجيا المعلومات',
-        departments: [
-          'علوم الحاسوب',
-          'تكنولوجيا المعلومات',
-        ],
+        departments: ['علوم الحاسوب', 'تكنولوجيا المعلومات'],
       ),
-      College(
-        name: 'كلية الأعمال',
-        departments: [
-          'إدارة الأعمال',
-          'المحاسبة',
-        ],
-      ),
+      College(name: 'كلية الأعمال', departments: ['إدارة الأعمال', 'المحاسبة']),
     ],
   ),
 
@@ -660,19 +426,10 @@ const List<University> universities = [
           'الذكاء الاصطناعي',
         ],
       ),
-      College(
-        name: 'كلية الأعمال',
-        departments: [
-          'إدارة الأعمال',
-          'التمويل',
-        ],
-      ),
+      College(name: 'كلية الأعمال', departments: ['إدارة الأعمال', 'التمويل']),
       College(
         name: 'كلية اللغات',
-        departments: [
-          'اللغة الإنجليزية',
-          'اللغات الحديثة',
-        ],
+        departments: ['اللغة الإنجليزية', 'اللغات الحديثة'],
       ),
     ],
   ),
@@ -705,11 +462,7 @@ const List<University> universities = [
       ),
       College(
         name: 'كلية الأعمال',
-        departments: [
-          'إدارة الأعمال',
-          'المحاسبة',
-          'التمويل',
-        ],
+        departments: ['إدارة الأعمال', 'المحاسبة', 'التمويل'],
       ),
     ],
   ),
@@ -724,30 +477,10 @@ const List<University> universities = [
     type: 'خاصة',
     city: 'عمّان',
     colleges: [
-      College(
-        name: 'كلية الطب',
-        departments: [
-          'الطب العام',
-        ],
-      ),
-      College(
-        name: 'كلية طب الأسنان',
-        departments: [
-          'جراحة الفم والأسنان',
-        ],
-      ),
-      College(
-        name: 'كلية الصيدلة',
-        departments: [
-          'العلوم الصيدلانية',
-        ],
-      ),
-      College(
-        name: 'كلية التمريض',
-        departments: [
-          'التمريض العام',
-        ],
-      ),
+      College(name: 'كلية الطب', departments: ['الطب العام']),
+      College(name: 'كلية طب الأسنان', departments: ['جراحة الفم والأسنان']),
+      College(name: 'كلية الصيدلة', departments: ['العلوم الصيدلانية']),
+      College(name: 'كلية التمريض', departments: ['التمريض العام']),
       College(
         name: 'كلية الهندسة',
         departments: [
@@ -760,34 +493,19 @@ const List<University> universities = [
       ),
       College(
         name: 'كلية تكنولوجيا المعلومات',
-        departments: [
-          'علوم الحاسوب',
-          'تكنولوجيا المعلومات',
-          'الأمن السيبراني',
-        ],
+        departments: ['علوم الحاسوب', 'تكنولوجيا المعلومات', 'الأمن السيبراني'],
       ),
       College(
         name: 'كلية الأعمال',
-        departments: [
-          'إدارة الأعمال',
-          'المحاسبة',
-          'التسويق',
-          'التمويل',
-        ],
+        departments: ['إدارة الأعمال', 'المحاسبة', 'التسويق', 'التمويل'],
       ),
       College(
         name: 'كلية اللغات',
-        departments: [
-          'اللغة العربية وآدابها',
-          'اللغة الإنجليزية',
-        ],
+        departments: ['اللغة العربية وآدابها', 'اللغة الإنجليزية'],
       ),
       College(
         name: 'كلية القانون',
-        departments: [
-          'القانون العام',
-          'القانون الخاص',
-        ],
+        departments: ['القانون العام', 'القانون الخاص'],
       ),
     ],
   ),
@@ -819,26 +537,15 @@ const List<University> universities = [
       ),
       College(
         name: 'كلية الأعمال',
-        departments: [
-          'إدارة الأعمال',
-          'المحاسبة',
-          'التسويق',
-          'التمويل',
-        ],
+        departments: ['إدارة الأعمال', 'المحاسبة', 'التسويق', 'التمويل'],
       ),
       College(
         name: 'كلية اللغات',
-        departments: [
-          'اللغة العربية وآدابها',
-          'اللغة الإنجليزية',
-        ],
+        departments: ['اللغة العربية وآدابها', 'اللغة الإنجليزية'],
       ),
       College(
         name: 'كلية القانون',
-        departments: [
-          'القانون العام',
-          'القانون الخاص',
-        ],
+        departments: ['القانون العام', 'القانون الخاص'],
       ),
     ],
   ),
@@ -849,30 +556,10 @@ const List<University> universities = [
     type: 'خاصة',
     city: 'عمّان',
     colleges: [
-      College(
-        name: 'كلية الطب',
-        departments: [
-          'الطب العام',
-        ],
-      ),
-      College(
-        name: 'كلية طب الأسنان',
-        departments: [
-          'جراحة الفم والأسنان',
-        ],
-      ),
-      College(
-        name: 'كلية الصيدلة',
-        departments: [
-          'العلوم الصيدلانية',
-        ],
-      ),
-      College(
-        name: 'كلية التمريض',
-        departments: [
-          'التمريض العام',
-        ],
-      ),
+      College(name: 'كلية الطب', departments: ['الطب العام']),
+      College(name: 'كلية طب الأسنان', departments: ['جراحة الفم والأسنان']),
+      College(name: 'كلية الصيدلة', departments: ['العلوم الصيدلانية']),
+      College(name: 'كلية التمريض', departments: ['التمريض العام']),
       College(
         name: 'كلية الهندسة',
         departments: [
@@ -885,26 +572,15 @@ const List<University> universities = [
       ),
       College(
         name: 'كلية تكنولوجيا المعلومات',
-        departments: [
-          'علوم الحاسوب',
-          'تكنولوجيا المعلومات',
-          'الأمن السيبراني',
-        ],
+        departments: ['علوم الحاسوب', 'تكنولوجيا المعلومات', 'الأمن السيبراني'],
       ),
       College(
         name: 'كلية الأعمال',
-        departments: [
-          'إدارة الأعمال',
-          'المحاسبة',
-          'التسويق',
-        ],
+        departments: ['إدارة الأعمال', 'المحاسبة', 'التسويق'],
       ),
       College(
         name: 'كلية اللغات',
-        departments: [
-          'اللغة العربية وآدابها',
-          'اللغة الإنجليزية',
-        ],
+        departments: ['اللغة العربية وآدابها', 'اللغة الإنجليزية'],
       ),
     ],
   ),
@@ -926,33 +602,19 @@ const List<University> universities = [
       ),
       College(
         name: 'كلية تكنولوجيا المعلومات',
-        departments: [
-          'علوم الحاسوب',
-          'تكنولوجيا المعلومات',
-        ],
+        departments: ['علوم الحاسوب', 'تكنولوجيا المعلومات'],
       ),
       College(
         name: 'كلية الأعمال',
-        departments: [
-          'إدارة الأعمال',
-          'المحاسبة',
-          'التسويق',
-          'التمويل',
-        ],
+        departments: ['إدارة الأعمال', 'المحاسبة', 'التسويق', 'التمويل'],
       ),
       College(
         name: 'كلية اللغات',
-        departments: [
-          'اللغة العربية وآدابها',
-          'اللغة الإنجليزية',
-        ],
+        departments: ['اللغة العربية وآدابها', 'اللغة الإنجليزية'],
       ),
       College(
         name: 'كلية القانون',
-        departments: [
-          'القانون العام',
-          'القانون الخاص',
-        ],
+        departments: ['القانون العام', 'القانون الخاص'],
       ),
     ],
   ),
@@ -963,12 +625,7 @@ const List<University> universities = [
     type: 'خاصة',
     city: 'عمّان',
     colleges: [
-      College(
-        name: 'كلية الصيدلة',
-        departments: [
-          'العلوم الصيدلانية',
-        ],
-      ),
+      College(name: 'كلية الصيدلة', departments: ['العلوم الصيدلانية']),
       College(
         name: 'كلية الهندسة',
         departments: [
@@ -989,26 +646,15 @@ const List<University> universities = [
       ),
       College(
         name: 'كلية الأعمال',
-        departments: [
-          'إدارة الأعمال',
-          'المحاسبة',
-          'التسويق',
-          'التمويل',
-        ],
+        departments: ['إدارة الأعمال', 'المحاسبة', 'التسويق', 'التمويل'],
       ),
       College(
         name: 'كلية اللغات',
-        departments: [
-          'اللغة العربية وآدابها',
-          'اللغة الإنجليزية',
-        ],
+        departments: ['اللغة العربية وآدابها', 'اللغة الإنجليزية'],
       ),
       College(
         name: 'كلية القانون',
-        departments: [
-          'القانون العام',
-          'القانون الخاص',
-        ],
+        departments: ['القانون العام', 'القانون الخاص'],
       ),
     ],
   ),
@@ -1029,32 +675,19 @@ const List<University> universities = [
       ),
       College(
         name: 'كلية تكنولوجيا المعلومات',
-        departments: [
-          'علوم الحاسوب',
-          'تكنولوجيا المعلومات',
-        ],
+        departments: ['علوم الحاسوب', 'تكنولوجيا المعلومات'],
       ),
       College(
         name: 'كلية الأعمال',
-        departments: [
-          'إدارة الأعمال',
-          'المحاسبة',
-          'التسويق',
-        ],
+        departments: ['إدارة الأعمال', 'المحاسبة', 'التسويق'],
       ),
       College(
         name: 'كلية اللغات',
-        departments: [
-          'اللغة العربية وآدابها',
-          'اللغة الإنجليزية',
-        ],
+        departments: ['اللغة العربية وآدابها', 'اللغة الإنجليزية'],
       ),
       College(
         name: 'كلية القانون',
-        departments: [
-          'القانون العام',
-          'القانون الخاص',
-        ],
+        departments: ['القانون العام', 'القانون الخاص'],
       ),
     ],
   ),
@@ -1076,32 +709,19 @@ const List<University> universities = [
       ),
       College(
         name: 'كلية تكنولوجيا المعلومات',
-        departments: [
-          'علوم الحاسوب',
-          'تكنولوجيا المعلومات',
-        ],
+        departments: ['علوم الحاسوب', 'تكنولوجيا المعلومات'],
       ),
       College(
         name: 'كلية الأعمال',
-        departments: [
-          'إدارة الأعمال',
-          'المحاسبة',
-          'التسويق',
-        ],
+        departments: ['إدارة الأعمال', 'المحاسبة', 'التسويق'],
       ),
       College(
         name: 'كلية اللغات',
-        departments: [
-          'اللغة العربية وآدابها',
-          'اللغة الإنجليزية',
-        ],
+        departments: ['اللغة العربية وآدابها', 'اللغة الإنجليزية'],
       ),
       College(
         name: 'كلية القانون',
-        departments: [
-          'القانون العام',
-          'القانون الخاص',
-        ],
+        departments: ['القانون العام', 'القانون الخاص'],
       ),
     ],
   ),
@@ -1123,32 +743,19 @@ const List<University> universities = [
       ),
       College(
         name: 'كلية تكنولوجيا المعلومات',
-        departments: [
-          'علوم الحاسوب',
-          'تكنولوجيا المعلومات',
-        ],
+        departments: ['علوم الحاسوب', 'تكنولوجيا المعلومات'],
       ),
       College(
         name: 'كلية الأعمال',
-        departments: [
-          'إدارة الأعمال',
-          'المحاسبة',
-          'التسويق',
-        ],
+        departments: ['إدارة الأعمال', 'المحاسبة', 'التسويق'],
       ),
       College(
         name: 'كلية اللغات',
-        departments: [
-          'اللغة العربية وآدابها',
-          'اللغة الإنجليزية',
-        ],
+        departments: ['اللغة العربية وآدابها', 'اللغة الإنجليزية'],
       ),
       College(
         name: 'كلية القانون',
-        departments: [
-          'القانون العام',
-          'القانون الخاص',
-        ],
+        departments: ['القانون العام', 'القانون الخاص'],
       ),
     ],
   ),
@@ -1169,31 +776,16 @@ const List<University> universities = [
       ),
       College(
         name: 'كلية تكنولوجيا المعلومات',
-        departments: [
-          'علوم الحاسوب',
-          'تكنولوجيا المعلومات',
-        ],
+        departments: ['علوم الحاسوب', 'تكنولوجيا المعلومات'],
       ),
-      College(
-        name: 'كلية الأعمال',
-        departments: [
-          'إدارة الأعمال',
-          'المحاسبة',
-        ],
-      ),
+      College(name: 'كلية الأعمال', departments: ['إدارة الأعمال', 'المحاسبة']),
       College(
         name: 'كلية اللغات',
-        departments: [
-          'اللغة العربية وآدابها',
-          'اللغة الإنجليزية',
-        ],
+        departments: ['اللغة العربية وآدابها', 'اللغة الإنجليزية'],
       ),
       College(
         name: 'كلية القانون',
-        departments: [
-          'القانون العام',
-          'القانون الخاص',
-        ],
+        departments: ['القانون العام', 'القانون الخاص'],
       ),
     ],
   ),
@@ -1214,31 +806,16 @@ const List<University> universities = [
       ),
       College(
         name: 'كلية تكنولوجيا المعلومات',
-        departments: [
-          'علوم الحاسوب',
-          'تكنولوجيا المعلومات',
-        ],
+        departments: ['علوم الحاسوب', 'تكنولوجيا المعلومات'],
       ),
-      College(
-        name: 'كلية الأعمال',
-        departments: [
-          'إدارة الأعمال',
-          'المحاسبة',
-        ],
-      ),
+      College(name: 'كلية الأعمال', departments: ['إدارة الأعمال', 'المحاسبة']),
       College(
         name: 'كلية اللغات',
-        departments: [
-          'اللغة العربية وآدابها',
-          'اللغة الإنجليزية',
-        ],
+        departments: ['اللغة العربية وآدابها', 'اللغة الإنجليزية'],
       ),
       College(
         name: 'كلية القانون',
-        departments: [
-          'القانون العام',
-          'القانون الخاص',
-        ],
+        departments: ['القانون العام', 'القانون الخاص'],
       ),
     ],
   ),
@@ -1249,12 +826,7 @@ const List<University> universities = [
     type: 'خاصة',
     city: 'عمّان',
     colleges: [
-      College(
-        name: 'كلية الصيدلة',
-        departments: [
-          'العلوم الصيدلانية',
-        ],
-      ),
+      College(name: 'كلية الصيدلة', departments: ['العلوم الصيدلانية']),
       College(
         name: 'كلية الهندسة',
         departments: [
@@ -1266,32 +838,19 @@ const List<University> universities = [
       ),
       College(
         name: 'كلية تكنولوجيا المعلومات',
-        departments: [
-          'علوم الحاسوب',
-          'تكنولوجيا المعلومات',
-        ],
+        departments: ['علوم الحاسوب', 'تكنولوجيا المعلومات'],
       ),
       College(
         name: 'كلية الأعمال',
-        departments: [
-          'إدارة الأعمال',
-          'المحاسبة',
-          'التسويق',
-        ],
+        departments: ['إدارة الأعمال', 'المحاسبة', 'التسويق'],
       ),
       College(
         name: 'كلية اللغات',
-        departments: [
-          'اللغة العربية وآدابها',
-          'اللغة الإنجليزية',
-        ],
+        departments: ['اللغة العربية وآدابها', 'اللغة الإنجليزية'],
       ),
       College(
         name: 'كلية القانون',
-        departments: [
-          'القانون العام',
-          'القانون الخاص',
-        ],
+        departments: ['القانون العام', 'القانون الخاص'],
       ),
     ],
   ),
@@ -1313,31 +872,16 @@ const List<University> universities = [
       ),
       College(
         name: 'كلية تكنولوجيا المعلومات',
-        departments: [
-          'علوم الحاسوب',
-          'تكنولوجيا المعلومات',
-        ],
+        departments: ['علوم الحاسوب', 'تكنولوجيا المعلومات'],
       ),
-      College(
-        name: 'كلية الأعمال',
-        departments: [
-          'إدارة الأعمال',
-          'المحاسبة',
-        ],
-      ),
+      College(name: 'كلية الأعمال', departments: ['إدارة الأعمال', 'المحاسبة']),
       College(
         name: 'كلية اللغات',
-        departments: [
-          'اللغة العربية وآدابها',
-          'اللغة الإنجليزية',
-        ],
+        departments: ['اللغة العربية وآدابها', 'اللغة الإنجليزية'],
       ),
       College(
         name: 'كلية القانون',
-        departments: [
-          'القانون العام',
-          'القانون الخاص',
-        ],
+        departments: ['القانون العام', 'القانون الخاص'],
       ),
     ],
   ),
@@ -1350,31 +894,16 @@ const List<University> universities = [
     colleges: [
       College(
         name: 'كلية الشريعة الإسلامية',
-        departments: [
-          'الفقه الإسلامي',
-          'أصول الدين',
-        ],
+        departments: ['الفقه الإسلامي', 'أصول الدين'],
       ),
       College(
         name: 'كلية اللغات',
-        departments: [
-          'اللغة العربية وآدابها',
-          'اللغة الإنجليزية',
-        ],
+        departments: ['اللغة العربية وآدابها', 'اللغة الإنجليزية'],
       ),
-      College(
-        name: 'كلية الأعمال',
-        departments: [
-          'إدارة الأعمال',
-          'المحاسبة',
-        ],
-      ),
+      College(name: 'كلية الأعمال', departments: ['إدارة الأعمال', 'المحاسبة']),
       College(
         name: 'كلية القانون',
-        departments: [
-          'القانون العام',
-          'القانون الخاص',
-        ],
+        departments: ['القانون العام', 'القانون الخاص'],
       ),
     ],
   ),
@@ -1387,25 +916,15 @@ const List<University> universities = [
     colleges: [
       College(
         name: 'كلية الأعمال',
-        departments: [
-          'إدارة الأعمال',
-          'المحاسبة',
-          'التسويق',
-        ],
+        departments: ['إدارة الأعمال', 'المحاسبة', 'التسويق'],
       ),
       College(
         name: 'كلية تكنولوجيا المعلومات',
-        departments: [
-          'علوم الحاسوب',
-          'تكنولوجيا المعلومات',
-        ],
+        departments: ['علوم الحاسوب', 'تكنولوجيا المعلومات'],
       ),
       College(
         name: 'كلية اللغات',
-        departments: [
-          'اللغة العربية وآدابها',
-          'اللغة الإنجليزية',
-        ],
+        departments: ['اللغة العربية وآدابها', 'اللغة الإنجليزية'],
       ),
     ],
   ),
@@ -1426,24 +945,12 @@ const List<University> universities = [
       ),
       College(
         name: 'كلية تكنولوجيا المعلومات',
-        departments: [
-          'علوم الحاسوب',
-          'تكنولوجيا المعلومات',
-        ],
+        departments: ['علوم الحاسوب', 'تكنولوجيا المعلومات'],
       ),
-      College(
-        name: 'كلية الأعمال',
-        departments: [
-          'إدارة الأعمال',
-          'المحاسبة',
-        ],
-      ),
+      College(name: 'كلية الأعمال', departments: ['إدارة الأعمال', 'المحاسبة']),
       College(
         name: 'كلية اللغات',
-        departments: [
-          'اللغة العربية وآدابها',
-          'اللغة الإنجليزية',
-        ],
+        departments: ['اللغة العربية وآدابها', 'اللغة الإنجليزية'],
       ),
     ],
   ),
@@ -1464,25 +971,15 @@ const List<University> universities = [
       ),
       College(
         name: 'كلية تكنولوجيا المعلومات',
-        departments: [
-          'علوم الحاسوب',
-          'تكنولوجيا المعلومات',
-        ],
+        departments: ['علوم الحاسوب', 'تكنولوجيا المعلومات'],
       ),
       College(
         name: 'كلية الأعمال',
-        departments: [
-          'إدارة الأعمال',
-          'المحاسبة',
-          'التسويق',
-        ],
+        departments: ['إدارة الأعمال', 'المحاسبة', 'التسويق'],
       ),
       College(
         name: 'كلية اللغات',
-        departments: [
-          'اللغة العربية وآدابها',
-          'اللغة الإنجليزية',
-        ],
+        departments: ['اللغة العربية وآدابها', 'اللغة الإنجليزية'],
       ),
     ],
   ),
@@ -1505,23 +1002,44 @@ const List<University> universities = [
       ),
       College(
         name: 'كلية تكنولوجيا المعلومات',
-        departments: [
-          'علوم الحاسوب',
-          'تكنولوجيا المعلومات',
-          'الأمن السيبراني',
-        ],
+        departments: ['علوم الحاسوب', 'تكنولوجيا المعلومات', 'الأمن السيبراني'],
       ),
       College(
         name: 'كلية الأعمال',
-        departments: [
-          'إدارة الأعمال',
-          'المحاسبة',
-          'التمويل',
-        ],
+        departments: ['إدارة الأعمال', 'المحاسبة', 'التمويل'],
       ),
     ],
   ),
 ];
+
+// Merge by existing identity; never rewrite a saved profile during an upgrade.
+final List<University> universities = _mergeJordanUniversities();
+List<University> _mergeJordanUniversities() {
+  final result = <String, University>{
+    for (final u in legacyUniversities) u.name: u,
+  };
+  for (final official in officialJordanUniversities150) {
+    final legacy = result[official.name];
+    final colleges = <String, College>{
+      for (final c in legacy?.colleges ?? <College>[]) c.name: c,
+    };
+    for (final c in official.colleges) {
+      final old = colleges[c.name];
+      colleges[c.name] = College(
+        name: c.name,
+        departments: {...?old?.departments, ...c.departments}.toList(),
+        programDegrees: {...?old?.programDegrees, ...c.programDegrees},
+      );
+    }
+    result[official.name] = University(
+      name: official.name,
+      type: legacy?.type ?? official.type,
+      city: legacy?.city ?? official.city,
+      colleges: colleges.values.toList(),
+    );
+  }
+  return List.unmodifiable(result.values);
+}
 
 // ============================================================
 // UNIVERSITY SCREEN (مع زر رجوع)
@@ -1551,8 +1069,9 @@ class _UniversityScreenState extends State<UniversityScreen> {
     final private = filtered.where((u) => u.type == 'خاصة').toList();
 
     return Directionality(
-      textDirection:
-          languageProvider.isArabic ? TextDirection.rtl : TextDirection.ltr,
+      textDirection: languageProvider.isArabic
+          ? TextDirection.rtl
+          : TextDirection.ltr,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
@@ -1582,10 +1101,7 @@ class _UniversityScreenState extends State<UniversityScreen> {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                gradientStart,
-                gradientEnd,
-              ],
+              colors: [gradientStart, gradientEnd],
             ),
           ),
           child: ListView(
@@ -1603,9 +1119,7 @@ class _UniversityScreenState extends State<UniversityScreen> {
                       'university_search',
                       languageProvider.currentLanguage,
                     ),
-                    hintStyle: TextStyle(
-                      color: AppTheme.legacySecondary,
-                    ),
+                    hintStyle: TextStyle(color: AppTheme.legacySecondary),
                     prefixIcon: Icon(
                       Icons.search,
                       color: AppTheme.legacySecondary,
@@ -1617,9 +1131,7 @@ class _UniversityScreenState extends State<UniversityScreen> {
                       borderSide: BorderSide.none,
                     ),
                   ),
-                  style: TextStyle(
-                    color: AppTheme.legacyForeground,
-                  ),
+                  style: TextStyle(color: AppTheme.legacyForeground),
                 ),
               ),
               const SizedBox(height: 25),
@@ -1636,11 +1148,7 @@ class _UniversityScreenState extends State<UniversityScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                ...government.map(
-                  (u) => _UniversityCard(
-                    university: u,
-                  ),
-                ),
+                ...government.map((u) => _UniversityCard(university: u)),
               ],
               const SizedBox(height: 22),
               if (private.isNotEmpty) ...[
@@ -1656,11 +1164,7 @@ class _UniversityScreenState extends State<UniversityScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                ...private.map(
-                  (u) => _UniversityCard(
-                    university: u,
-                  ),
-                ),
+                ...private.map((u) => _UniversityCard(university: u)),
               ],
             ],
           ),
@@ -1673,9 +1177,7 @@ class _UniversityScreenState extends State<UniversityScreen> {
 class _UniversityCard extends StatelessWidget {
   final University university;
 
-  const _UniversityCard({
-    required this.university,
-  });
+  const _UniversityCard({required this.university});
 
   @override
   Widget build(BuildContext context) {
@@ -1686,10 +1188,7 @@ class _UniversityCard extends StatelessWidget {
     return GlassContainer(
       margin: const EdgeInsets.only(bottom: 10),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 8,
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: CircleAvatar(
           backgroundColor: AppTheme.adaptiveGlassFill,
           child: Icon(
@@ -1698,10 +1197,7 @@ class _UniversityCard extends StatelessWidget {
           ),
         ),
         title: Text(
-          translateText(
-            university.name,
-            languageProvider.currentLanguage,
-          ),
+          translateText(university.name, languageProvider.currentLanguage),
           style: TextStyle(
             color: AppTheme.legacyForeground,
             fontWeight: FontWeight.bold,
@@ -1711,10 +1207,7 @@ class _UniversityCard extends StatelessWidget {
           isArabic
               ? '📍 ${university.city} - ${university.type}'
               : '📍 ${university.city} - ${university.type}',
-          style: TextStyle(
-            color: AppTheme.legacySecondary,
-            fontSize: 12,
-          ),
+          style: TextStyle(color: AppTheme.legacySecondary, fontSize: 12),
         ),
         trailing: Icon(
           Icons.arrow_forward_ios_rounded,
@@ -1725,9 +1218,7 @@ class _UniversityCard extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => CollegeScreen(
-                university: university,
-              ),
+              builder: (_) => CollegeScreen(university: university),
             ),
           );
         },
@@ -1743,10 +1234,7 @@ class _UniversityCard extends StatelessWidget {
 class CollegeScreen extends StatelessWidget {
   final University university;
 
-  const CollegeScreen({
-    super.key,
-    required this.university,
-  });
+  const CollegeScreen({super.key, required this.university});
 
   @override
   Widget build(BuildContext context) {
@@ -1754,8 +1242,9 @@ class CollegeScreen extends StatelessWidget {
     final languageProvider = Provider.of<LanguageProvider>(context);
 
     return Directionality(
-      textDirection:
-          languageProvider.isArabic ? TextDirection.rtl : TextDirection.ltr,
+      textDirection: languageProvider.isArabic
+          ? TextDirection.rtl
+          : TextDirection.ltr,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
@@ -1785,10 +1274,7 @@ class CollegeScreen extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                gradientStart,
-                gradientEnd,
-              ],
+              colors: [gradientStart, gradientEnd],
             ),
           ),
           child: ListView(
@@ -1881,8 +1367,9 @@ class DepartmentScreen extends StatelessWidget {
     final languageProvider = Provider.of<LanguageProvider>(context);
 
     return Directionality(
-      textDirection:
-          languageProvider.isArabic ? TextDirection.rtl : TextDirection.ltr,
+      textDirection: languageProvider.isArabic
+          ? TextDirection.rtl
+          : TextDirection.ltr,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
@@ -1912,10 +1399,7 @@ class DepartmentScreen extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                gradientStart,
-                gradientEnd,
-              ],
+              colors: [gradientStart, gradientEnd],
             ),
           ),
           child: ListView(
@@ -1923,10 +1407,7 @@ class DepartmentScreen extends StatelessWidget {
             children: [
               GlassContainer(
                 child: Text(
-                  translateText(
-                    college.name,
-                    languageProvider.currentLanguage,
-                  ),
+                  translateText(college.name, languageProvider.currentLanguage),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 20,
@@ -1976,11 +1457,14 @@ class DepartmentScreen extends StatelessWidget {
                       }
 
                       try {
-                        await Supabase.instance.client.from('users').update({
-                          'university': university.name,
-                          'college': college.name,
-                          'department': department,
-                        }).eq('id', user.id);
+                        await Supabase.instance.client
+                            .from('users')
+                            .update({
+                              'university': university.name,
+                              'college': college.name,
+                              'department': department,
+                            })
+                            .eq('id', user.id);
 
                         if (!context.mounted) return;
 

@@ -1,3 +1,5 @@
+import 'widgets/bottom_system_inset.dart';
+import 'widgets/sponsored_exposure.dart';
 import 'services/play_billing_service.dart';
 import 'screens/social/clip_create_screen.dart';
 import 'screens/settings/app_settings_screen.dart';
@@ -101,6 +103,7 @@ import 'platform/local_image_provider.dart';
 
 part 'features/auth_app.dart';
 part 'features/university.dart';
+part 'features/academic_catalog_150.dart';
 part 'features/home_feed.dart';
 part 'features/arc_menu.dart';
 part 'features/drawer_profile.dart';
@@ -334,19 +337,19 @@ Future<void> _handlePushNavigationData(Map<String, dynamic> data) async {
       final accepted = nativeAction == 'accept'
           ? true
           : nativeAction == 'decline'
-          ? false
-          : await nav.push<bool>(
-              MaterialPageRoute(
-                fullscreenDialog: true,
-                builder: (_) => IncomingCallScreen(
-                  roomId: roomId,
-                  callerName: callerName,
-                  callerId: callerId,
-                  callerImage: callerImage,
-                  video: video,
-                ),
-              ),
-            );
+              ? false
+              : await nav.push<bool>(
+                  MaterialPageRoute(
+                    fullscreenDialog: true,
+                    builder: (_) => IncomingCallScreen(
+                      roomId: roomId,
+                      callerName: callerName,
+                      callerId: callerId,
+                      callerImage: callerImage,
+                      video: video,
+                    ),
+                  ),
+                );
       if (accepted != true) {
         try {
           await Supabase.instance.client
