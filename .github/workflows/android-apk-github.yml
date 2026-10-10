@@ -95,7 +95,7 @@ jobs:
           npm test --prefix verification/play_billing_146
           node --test verification/play_provider_146_test.mjs verification/play_purchase_146_test.mjs
           npm ci --prefix verification --ignore-scripts
-          npm run test:151 --prefix verification
+          npm run test:152 --prefix verification
 
       - name: Build universal and device-specific APKs
         shell: bash

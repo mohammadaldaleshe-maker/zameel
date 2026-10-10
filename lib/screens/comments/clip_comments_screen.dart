@@ -1,3 +1,4 @@
+import 'package:zameel/widgets/copyable_text.dart';
 import 'package:zameel/theme/appearance_controller.dart';
 import 'package:zameel/widgets/verified_name.dart';
 import 'dart:ui' as ui;
@@ -491,7 +492,7 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
                       ],
                     ),
                     const SizedBox(height: 3),
-                    SelectableText(comment['text']?.toString() ?? ''),
+                    CopyableText(comment['text']?.toString() ?? ''),
                     const SizedBox(height: 7),
                     Wrap(
                       spacing: 8,

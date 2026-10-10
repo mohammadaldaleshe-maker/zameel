@@ -1,3 +1,6 @@
+import 'package:zameel/widgets/chat_presence_label.dart';
+import 'package:zameel/widgets/keep_keyboard_send_button.dart';
+import 'package:zameel/widgets/copyable_text.dart';
 import '../../widgets/chat_media_viewer.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../widgets/chat_voice_widgets.dart';
@@ -682,7 +685,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
         const Duration(seconds: 5), (_) => _refreshMeet(silent: true));
     _refreshPresence();
     _typingTimer =
-        Timer.periodic(const Duration(seconds: 2), (_) => _readTyping());
+        Timer.periodic(const Duration(seconds: 2), (_) {
+          unawaited(_readTyping());
+          if (++_reactionReadTick % 2 == 0 && WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) unawaited(_readReactions());
+        });
     _presenceTimer =
         Timer.periodic(const Duration(seconds: 25), (_) => _refreshPresence());
     _syncTimer = Timer.periodic(const Duration(seconds: 8), (_) => _syncChat());
@@ -714,6 +720,74 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
 
   List<Map<String, dynamic>> get _timeline => [..._messages, ..._calls]
     ..sort((a, b) => '${a['created_at']}'.compareTo('${b['created_at']}'));
+  final Map<String, List<Map<String, dynamic>>> _reactions = {};
+  bool _reactionsReading = false, _reactionWriting = false;
+  int _reactionReadTick = 0;
+  Future<void> _readReactions() async {
+    if (!mounted || _reactionsReading || ModalRoute.of(context)?.isCurrent != true) return;
+    final ids = _messages.where((m) => m['_sending'] != true)
+        .map((m) => m['id'].toString()).where((id) => !id.startsWith('local-')).toList();
+    if (ids.isEmpty) return;
+    _reactionsReading = true;
+    try {
+      final next = <String, List<Map<String, dynamic>>>{};
+      for (var start = 0; start < ids.length; start += 100) {
+        final rows = await db.rpc('zameel_message_reactions_get', params: {
+          'p_conversation': widget.conversationId,
+          'p_messages': ids.sublist(start, math.min(start + 100, ids.length)),
+        });
+        for (final raw in rows as List) {
+          final r = Map<String, dynamic>.from(raw as Map);
+          next.putIfAbsent(r['message_id'].toString(), () => []).add(r);
+        }
+      }
+      if (mounted) setState(() { _reactions..clear()..addAll(next); });
+    } catch (error) { debugPrint('Message reactions refresh: $error'); }
+    finally { _reactionsReading = false; }
+  }
+
+  Future<void> _reactionPicker(Map<String, dynamic> message) async {
+    if (message['sender_id'] == uid || message['deleted'] == true || message['_sending'] == true || _reactionWriting) return;
+    final ar = Provider.of<LanguageProvider>(context, listen: false).isArabic;
+    final selected = await showModalBottomSheet<String>(context: context,
+      builder: (c) => SafeArea(child: Padding(padding: const EdgeInsets.all(18),
+        child: Wrap(spacing: 6, children: [
+          for (final emoji in const ['❤️','😂','🙏','😭','😲','💩'])
+            TextButton(onPressed: () => Navigator.pop(c, emoji),
+              child: Text(emoji, style: const TextStyle(fontSize: 30))),
+          TextButton(onPressed: () => Navigator.pop(c, 'remove'),
+            child: Text(ar ? 'إلغاء التفاعل' : 'Remove reaction')),
+        ]))));
+    if (selected == null || !mounted) return;
+    _reactionWriting = true;
+    try {
+      final current = _reactions[message['id'].toString()] ?? [];
+      final same = current.any((r) => r['user_id'] == uid && r['emoji'] == selected);
+      await db.rpc('zameel_message_react', params: {
+        'p_conversation': widget.conversationId, 'p_message': message['id'],
+        'p_emoji': selected == 'remove' || same ? null : selected,
+      });
+      await _readReactions();
+    } catch (error) {
+      if (mounted) _notice(ar ? 'تعذر حفظ التفاعل، حاول مجددًا' : 'Could not save reaction. Try again.');
+    } finally { _reactionWriting = false; }
+  }
+
+  Widget _reactionBar(Map<String, dynamic> message, bool mine) {
+    final rows = _reactions[message['id'].toString()] ?? [];
+    return Wrap(spacing: 4, children: [
+      IconButton(tooltip: 'خيارات الرسالة', onPressed: () => _messageMenu(message),
+        icon: const Icon(Icons.more_horiz, size: 18)),
+      for (final r in rows) TextButton(
+        onPressed: !mine ? () => _reactionPicker(message) : null,
+        child: Text(r['emoji'].toString(), style: const TextStyle(fontSize: 20))),
+      if (!mine && (message['media_url']?.toString().isNotEmpty ?? false))
+        IconButton(tooltip: 'التفاعل مع الرسالة',
+          onPressed: () => _reactionPicker(message),
+          icon: const Icon(Icons.add_reaction_outlined, size: 20)),
+    ]);
+  }
+
   Future<void> _sendTyping(bool active) async {
     try {
       await db.rpc('zameel_chat_typing_set', params: {
@@ -1054,6 +1128,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   Future<void> _load() async {
     try {
       await _reconcilePersistedMessages();
+      unawaited(_readReactions());
       if (mounted) {
         setState(() => _loading = false);
         _scrollToEnd(immediate: true);
@@ -1090,6 +1165,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
     setState(() => _messages.add(optimistic));
     _controller.clear();
     _composerFocus.requestFocus();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && ModalRoute.of(context)?.isCurrent == true) {
+        _composerFocus.requestFocus();
+      }
+    });
     unawaited(_sendTyping(false));
     _scrollToEnd();
     try {
@@ -1359,7 +1439,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
     final path = message['media_url']?.toString() ?? '';
     final type = message['media_type']?.toString() ?? '';
     if (path.isEmpty) {
-      return SelectableText(message['content']?.toString() ?? '',
+      return CopyableText(message['content']?.toString() ?? '',
+          onTap: message['sender_id'] != uid ? () => _reactionPicker(message) : () => _messageMenu(message),
           style: TextStyle(
               color: mine ? Colors.white : AppTheme.adaptiveText,
               fontSize: 15));
@@ -1867,12 +1948,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                 userId: widget.partnerId,
                 child: Text(widget.partnerName,
                     style: const TextStyle(fontWeight: FontWeight.bold))),
-            if (_partnerOnline)
-              Text(
-                  _partnerTyping
-                      ? 'جارٍ الكتابة…'
-                      : (_partnerOnline ? 'متصل الآن' : ''),
-                  style: TextStyle(fontSize: 12, color: Colors.green)),
+            ChatPresenceLabel(typing: _partnerTyping, online: _partnerOnline, arabic: ar),
             if (widget.contextLabel != null)
               Text(widget.contextLabel!,
                   style: const TextStyle(
@@ -1957,6 +2033,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                                       ? Alignment.centerRight
                                       : Alignment.centerLeft,
                                   child: GestureDetector(
+                                    onTap: !mine ? () => _reactionPicker(m) : null,
                                     onLongPress: () => _messageMenu(m),
                                     child: Container(
                                       margin: const EdgeInsets.only(bottom: 8),
@@ -1975,6 +2052,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                                             CrossAxisAlignment.end,
                                         children: [
                                           _messageContent(m, mine),
+                                          _reactionBar(m, mine),
                                           if (mine) ...[
                                             const SizedBox(height: 3),
                                             Icon(
@@ -2072,8 +2150,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                   Expanded(
                     child: TextField(
                       controller: _controller,
+                      key: const ValueKey('direct-chat-composer'),
                       focusNode: _composerFocus,
                       onChanged: _typingChanged,
+                      textInputAction: TextInputAction.send,
                       onEditingComplete: () {},
                       enableInteractiveSelection: true,
                       style: TextStyle(color: AppTheme.adaptiveText),
@@ -2092,9 +2172,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                     ),
                   ),
                   const SizedBox(width: 8),
-                  IconButton.filled(
-                    onPressed: _send,
-                    icon: const Icon(Icons.send_rounded),
+                  KeepKeyboardSendButton(
+                    key: const ValueKey('direct-chat-send'),
+                    composerFocus: _composerFocus,
+                    onSend: _send,
                   ),
                 ],
               ),

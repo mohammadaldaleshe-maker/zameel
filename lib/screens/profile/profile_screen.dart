@@ -1,3 +1,4 @@
+import 'package:zameel/widgets/copyable_text.dart';
 import '../../widgets/post_media_frame.dart';
 import 'package:zameel/theme/appearance_controller.dart';
 import 'package:zameel/widgets/verified_name.dart';
@@ -159,7 +160,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final row = await db
           .from('users')
           .select(
-              'id,name,username,university,college,department,profile_image,cover_image,headline,bio,account_privacy,default_post_audience,allow_messages,allow_calls,notifications_enabled,gender,role,verification_expires_at,created_at,updated_at')
+              'id,name,username,university,college,department,profile_image,cover_image,headline,bio,account_privacy,default_post_audience,allow_messages,allow_calls,notifications_enabled,gender,role,account_type,verification_expires_at,created_at,updated_at')
           .eq('id', id)
           .maybeSingle()
           .timeout(const Duration(seconds: 15));
@@ -1525,7 +1526,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 padding: const EdgeInsets.only(top: 12),
                 child: InkWell(
                   onTap: () => _openPost(post),
-                  child: Text(text,
+                  child: CopyableText(text,
                       style: const TextStyle(fontSize: 15, height: 1.55)),
                 ),
               ),

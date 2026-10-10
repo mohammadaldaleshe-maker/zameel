@@ -298,6 +298,7 @@ class ZameelApp extends StatelessWidget {
         builder: (context, languageProvider, child) {
           return MaterialApp(
             navigatorKey: zameelNavigatorKey,
+            navigatorObservers: [GlobalNavigationMenu.observer],
             debugShowCheckedModeBanner: false,
             title: 'Zameel',
             locale: languageProvider.currentLocale,
@@ -331,7 +332,11 @@ class ZameelApp extends StatelessWidget {
                         onPointerDown: (_) =>
                             ScreenAwakeService.registerActivity(),
                         child: BottomSystemInset(
-                          child: child ?? const SizedBox.shrink(),
+                          child: GlobalNavigationSwipe(
+                            navigatorKey: zameelNavigatorKey,
+                            canOpen: () => Supabase.instance.client.auth.currentUser != null,
+                            child: child ?? const SizedBox.shrink(),
+                          ),
                         ),
                       ),
                     ),

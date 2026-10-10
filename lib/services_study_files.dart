@@ -22,7 +22,10 @@ class ZameelStudyFilesService {
       throw StateError('study_files_temporarily_unavailable');
     }
 
-    final profile = await db.from('users').select('university,college,department').eq('id', userId).maybeSingle();
+    final profile = await db.from('users').select('university,college,department,account_type').eq('id', userId).maybeSingle();
+    if (profile?['account_type'] == 'graduate' || profile?['account_type'] == 'general') {
+      throw StateError('ملفات الدراسة مخصصة للطلبة');
+    }
     final university = profile?['university']?.toString().trim() ?? '';
     final college = profile?['college']?.toString().trim() ?? '';
     final department = profile?['department']?.toString().trim() ?? '';

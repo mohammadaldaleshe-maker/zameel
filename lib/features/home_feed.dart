@@ -61,6 +61,11 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    GlobalNavigationMenu.register(this, (menuContext) => _buildDrawer(menuContext), () {
+      if (!mounted || currentIndex != 0) return;
+      FeatureControl.instance.open(context, 'profile_student',
+          () => const ProfileScreen());
+    });
     _createUserIfNotExists();
     _loadCurrentProfileImage();
     // Restore the on-device feed before the network request can replace it.
@@ -78,6 +83,17 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
     _loadFeedScope();
     FeatureControl.instance.changes.addListener(_onFeatureChange);
     FeatureControl.instance.refresh(force: true);
+  }
+
+  @override
+  void didUpdateWidget(covariant HomeFeedScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.university.name != widget.university.name ||
+        oldWidget.college.name != widget.college.name ||
+        oldWidget.department != widget.department) {
+      _feedScope = 'global';
+      unawaited(_loadPosts(silent: true));
+    }
   }
 
   void _onFeatureChange() {
@@ -674,6 +690,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
 
   @override
   void dispose() {
+    GlobalNavigationMenu.unregister(this);
     WidgetsBinding.instance.removeObserver(this);
     FeatureControl.instance.changes.removeListener(_onFeatureChange);
     _notificationReloadDebounce?.cancel();
@@ -1096,7 +1113,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
       final response = await Supabase.instance.client
           .from('users')
           .select(
-            'id,name,university,college,department,profile_image,account_privacy,default_post_audience,allow_messages,allow_calls,notifications_enabled,gender,role,created_at,updated_at',
+            'id,name,university,college,department,profile_image,account_privacy,default_post_audience,allow_messages,allow_calls,notifications_enabled,gender,role,account_type,created_at,updated_at',
           )
           .eq('id', user.id)
           .maybeSingle();
@@ -1929,6 +1946,10 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
     final languageProvider = Provider.of<LanguageProvider>(context);
     final isArabic = languageProvider.isArabic;
 
+    void openMenuFeature(String key, Widget Function() screen) {
+      if (GlobalNavigationMenu.open) Navigator.of(context).pop();
+      FeatureControl.instance.open(this.context, key, screen);
+    }
     return Drawer(
       backgroundColor: Colors.transparent,
       child: Container(
@@ -2044,7 +2065,9 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                 setState(() {
                   currentIndex = 0;
                 });
-                Navigator.pop(context);
+                if (GlobalNavigationMenu.open) {
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                } else { Navigator.pop(context); }
               },
               isSelected: currentIndex == 0,
             ),
@@ -2053,8 +2076,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                 icon: Icons.menu_book_rounded,
                 title: isArabic ? 'الكتب' : 'Books',
                 onTap: () {
-                  FeatureControl.instance.open(
-                    context,
+                  openMenuFeature(
                     'books_market',
                     () => const BooksScreen(),
                   );
@@ -2065,8 +2087,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                 icon: Icons.chat_bubble_rounded,
                 title: isArabic ? 'الدردشة' : 'Chat',
                 onTap: () {
-                  FeatureControl.instance.open(
-                    context,
+                  openMenuFeature(
                     'direct_chat',
                     () => const ChatScreen(),
                   );
@@ -2077,8 +2098,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                 icon: Icons.people_rounded,
                 title: isArabic ? 'زملاء' : 'Colleagues',
                 onTap: () {
-                  FeatureControl.instance.open(
-                    context,
+                  openMenuFeature(
                     'suggested_colleagues',
                     () => const FriendsScreen(),
                   );
@@ -2103,8 +2123,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                 icon: Icons.diversity_2_rounded,
                 title: isArabic ? 'لَمّة' : 'Lamma',
                 onTap: () {
-                  FeatureControl.instance.open(
-                    context,
+                  openMenuFeature(
                     'lamma',
                     () => const LammaScreen(),
                   );
@@ -2115,8 +2134,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                 icon: Icons.podcasts_rounded,
                 title: isArabic ? 'راديو Zameel' : 'Zameel Radio',
                 onTap: () {
-                  FeatureControl.instance.open(
-                    context,
+                  openMenuFeature(
                     'zameel_radio',
                     () => const ZameelRadioScreen(),
                   );
@@ -2128,8 +2146,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                 title:
                     isArabic ? 'تحدي أجمل كلية' : 'Beautiful College Challenge',
                 onTap: () {
-                  FeatureControl.instance.open(
-                    context,
+                  openMenuFeature(
                     'beautiful_college',
                     () => const BeautifulCollegeScreen(),
                   );
@@ -2140,8 +2157,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                 icon: Icons.map_rounded,
                 title: isArabic ? 'الحرم الجامعي' : 'Campus',
                 onTap: () {
-                  FeatureControl.instance.open(
-                    context,
+                  openMenuFeature(
                     'campus_world',
                     () => const CampusScreen(),
                   );
@@ -2152,8 +2168,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                 icon: Icons.video_call_rounded,
                 title: isArabic ? 'اجتمع بالزملاء' : 'Meet',
                 onTap: () {
-                  FeatureControl.instance.open(
-                    context,
+                  openMenuFeature(
                     'zameel_meet',
                     () => const MeetScreen(),
                   );
@@ -2164,8 +2179,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                 icon: Icons.work_rounded,
                 title: isArabic ? 'وظائف' : 'Jobs',
                 onTap: () {
-                  FeatureControl.instance.open(
-                    context,
+                  openMenuFeature(
                     'jobs_training',
                     () => const JobsScreen(),
                   );
@@ -2176,8 +2190,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                 icon: Icons.calendar_month_rounded,
                 title: isArabic ? 'تقويم' : 'Calendar',
                 onTap: () {
-                  FeatureControl.instance.open(
-                    context,
+                  openMenuFeature(
                     'university_calendar',
                     () => CalendarScreen(),
                   );
@@ -2188,8 +2201,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                 icon: Icons.poll_rounded,
                 title: isArabic ? 'استطلاعات' : 'Polls',
                 onTap: () {
-                  FeatureControl.instance.open(
-                    context,
+                  openMenuFeature(
                     'polls',
                     () => const PollsScreen(),
                   );
@@ -2200,8 +2212,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                 icon: Icons.group_rounded,
                 title: isArabic ? 'مجموعات' : 'Groups',
                 onTap: () {
-                  FeatureControl.instance.open(
-                    context,
+                  openMenuFeature(
                     'groups',
                     () => const GroupsScreen(),
                   );
@@ -2212,8 +2223,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                 icon: Icons.movie_creation_rounded,
                 title: isArabic ? 'زميل شورتس' : 'Zameel Shorts',
                 onTap: () {
-                  FeatureControl.instance.open(
-                    context,
+                  openMenuFeature(
                     'clips',
                     () => ZameelSocialStudio(isArabic: isArabic),
                   );
@@ -2224,8 +2234,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                 icon: Icons.auto_awesome_rounded,
                 title: isArabic ? 'Zameel AI' : 'Zameel AI',
                 onTap: () {
-                  FeatureControl.instance.open(
-                    context,
+                  openMenuFeature(
                     'zameel_ai',
                     () => const AIScreen(),
                   );
@@ -2236,8 +2245,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                 icon: Icons.business_center_rounded,
                 title: isArabic ? 'شركاء Zameel' : 'Zameel Partners',
                 onTap: () {
-                  FeatureControl.instance.open(
-                    context,
+                  openMenuFeature(
                     'business_partners',
                     () => const BusinessScreen(),
                   );
@@ -2250,7 +2258,9 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                 setState(() {
                   currentIndex = 11;
                 });
-                Navigator.pop(context);
+                if (GlobalNavigationMenu.open) {
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                } else { Navigator.pop(context); }
               },
               isSelected: currentIndex == 11,
             ),
@@ -2362,7 +2372,8 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
         drawer: isArabic ? _buildDrawer(context) : null,
         endDrawer: isArabic ? null : _buildDrawer(context),
         drawerEdgeDragWidth: 28,
-        drawerEnableOpenDragGesture: true,
+        drawerEnableOpenDragGesture: false,
+        endDrawerEnableOpenDragGesture: false,
         appBar: AppBar(
           backgroundColor: AppTheme.adaptiveSurface,
           foregroundColor: primaryColor,

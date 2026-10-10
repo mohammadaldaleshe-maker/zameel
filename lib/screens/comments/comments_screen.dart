@@ -1,3 +1,4 @@
+import 'package:zameel/widgets/copyable_text.dart';
 import 'package:zameel/theme/appearance_controller.dart';
 import 'package:zameel/widgets/verified_name.dart';
 import 'dart:ui' as ui;
@@ -677,7 +678,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
                       ],
                     ),
                     const SizedBox(height: 3),
-                    SelectableText(body),
+                    CopyableText(body),
                     const SizedBox(height: 7),
                     Wrap(
                       spacing: 8,

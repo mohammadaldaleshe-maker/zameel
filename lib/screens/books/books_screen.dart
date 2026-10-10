@@ -45,6 +45,7 @@ class _BooksScreenState extends State<BooksScreen> {
   String _myCollege = '';
   String _myDepartment = '';
   String _bookScope = 'college';
+  String? _accountType;
   bool _booksLoading = true;
   bool _booksFetching = false;
   String? _booksError;
@@ -530,11 +531,13 @@ class _BooksScreenState extends State<BooksScreen> {
     try {
       final row = await Supabase.instance.client
           .from('users')
-          .select('university,college,department')
+          .select('university,college,department,account_type')
           .eq('id', uid)
           .maybeSingle();
       if (!mounted || row == null) return;
       setState(() {
+        _accountType = row['account_type']?.toString();
+        if (_accountType == 'graduate' || _accountType == 'general') _bookScope = 'all';
         _myUniversity = row['university']?.toString().trim() ?? '';
         _myCollege = row['college']?.toString().trim() ?? '';
         _myDepartment = row['department']?.toString().trim() ?? '';
@@ -1300,10 +1303,10 @@ class _BooksScreenState extends State<BooksScreen> {
                     DropdownButton<String>(
                       value: _bookScope,
                       items: [
-                        DropdownMenuItem(
+                        if (_accountType != 'graduate' && _accountType != 'general') DropdownMenuItem(
                             value: 'college',
                             child: Text(isArabic ? 'كليتي' : 'My college')),
-                        DropdownMenuItem(
+                        if (_accountType != 'graduate' && _accountType != 'general') DropdownMenuItem(
                             value: 'university',
                             child: Text(isArabic ? 'جامعتي' : 'My university')),
                         DropdownMenuItem(

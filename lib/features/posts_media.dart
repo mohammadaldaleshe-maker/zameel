@@ -339,7 +339,7 @@ class _ImagePostState extends State<_ImagePost> {
             .isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
-            child: Text(
+            child: CopyableText(
               (isArabic ? widget.post['text_ar'] : widget.post['text_en'])
                   .toString(),
               style: TextStyle(
@@ -687,7 +687,7 @@ class _VideoPostState extends State<_VideoPost> {
             ),
           ),
         const SizedBox(height: 10),
-        Text(
+        CopyableText(
           isArabic ? widget.post['text_ar'] : widget.post['text_en'],
           style: TextStyle(
             color: AppTheme.legacyForeground,
@@ -1256,7 +1256,7 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
                               padding:
                                   const EdgeInsets.fromLTRB(16, 10, 16, 12),
                               color: Colors.black,
-                              child: Text(
+                              child: CopyableText(
                                 text,
                                 style: TextStyle(
                                     color: Colors.white, height: 1.45),
@@ -1276,7 +1276,7 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
                               borderRadius: BorderRadius.circular(22),
                               border: Border.all(color: Colors.white12),
                             ),
-                            child: Text(
+                            child: CopyableText(
                               text,
                               textAlign: TextAlign.start,
                               style: TextStyle(
@@ -1728,7 +1728,7 @@ class _TextPostState extends State<_TextPost> {
             );
             if (mounted) setState(() {});
           },
-          child: Text(
+          child: CopyableText(
             isArabic ? widget.post['text_ar'] : widget.post['text_en'],
             style: TextStyle(
               color: AppTheme.legacyForeground,
