@@ -2,9 +2,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node trust_db_test.mjs"
+    "test": "node trust_db_test.mjs",
+    "test:151": "node account_chat_151_test.mjs && node likes_151_test.mjs && node trust_151_test.mjs && node play_billing_146/database_151_test.mjs && node order_finance_151_test.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "0.5.8"
-  }
+  },
+  "name": "zameel-maintenance-verification"
 }

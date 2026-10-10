@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { verifyWithGoogle } from './purchase_validation.mjs';
 import { googleAccessToken, providerRequest, seal, unseal, sha256 } from './google_provider.mjs';
+import { orderFinance } from './order_finance.mjs';
 const env=(key:string)=>Deno.env.get(key)??'';
 const db=createClient(env('SUPABASE_URL'),env('SUPABASE_SERVICE_ROLE_KEY'),{auth:{persistSession:false}});
 const token=()=>googleAccessToken(env('GOOGLE_PLAY_SERVICE_ACCOUNT_JSON'));
@@ -30,6 +31,9 @@ async function reconcile(receipt:any) {
  // Persist the paid pending-review entitlement before consuming. Consumption permits a later new purchase.
  if(purchase.consumptionState===0)await providerRequest(access,base+':consume',{method:'POST'});
  requireData(await db.from('zameel_play_purchase_ledger').update({acknowledgement_state:'completed',provider_checked_at:new Date().toISOString(),last_error:null}).eq('token_sha256',receipt.token_sha256));
+ requireData(await db.rpc('zameel_play_activate',{p_token:receipt.token_sha256}));
+ // Finance availability must never prevent granting a confirmed purchase.
+ if(receipt.order_id && !receipt.is_test){try{const order=await providerRequest(access,'orders/'+encodeURIComponent(receipt.order_id));requireData(await db.from('zameel_play_finance').upsert(orderFinance(order,receipt)));}catch{console.warn('order_finance_pending');}}
 }
 Deno.serve(async(req:Request)=>{
  if(req.method!=='POST')return result(405,{ok:false,error:'method_not_allowed'});

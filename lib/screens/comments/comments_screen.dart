@@ -368,177 +368,187 @@ class _CommentsScreenState extends State<CommentsScreen> {
     return Directionality(
       textDirection: isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
       child: Scaffold(
+        resizeToAvoidBottomInset: false,
         appBar: AppBar(
           title: Text(isArabic ? 'التعليقات' : 'Comments'),
           centerTitle: true,
         ),
-        body: Column(
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppTheme.adaptiveBackground,
-                border: Border(
-                  bottom: BorderSide(color: AppTheme.adaptiveMuted.shade200),
+        body: Padding(
+            padding: EdgeInsets.only(
+                bottom: MediaQuery.viewInsetsOf(context).bottom),
+            child: Column(
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.adaptiveBackground,
+                    border: Border(
+                      bottom:
+                          BorderSide(color: AppTheme.adaptiveMuted.shade200),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (postText.toString().trim().isNotEmpty)
+                        Text(
+                          postText.toString(),
+                          style: const TextStyle(fontSize: 15, height: 1.5),
+                        ),
+                      if (hasOrderedMedia) ...[
+                        const SizedBox(height: 10),
+                        PostMediaGallery(
+                          post: widget.post,
+                          height: 210,
+                        ),
+                      ] else if ((widget.post['image_url']?.toString() ?? '')
+                          .isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(14),
+                          child: Image.network(
+                            widget.post['image_url'].toString(),
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) =>
+                                const SizedBox.shrink(),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (postText.toString().trim().isNotEmpty)
-                    Text(
-                      postText.toString(),
-                      style: const TextStyle(fontSize: 15, height: 1.5),
-                    ),
-                  if (hasOrderedMedia) ...[
-                    const SizedBox(height: 10),
-                    PostMediaGallery(
-                      post: widget.post,
-                      height: 210,
-                    ),
-                  ] else if ((widget.post['image_url']?.toString() ?? '')
-                      .isNotEmpty) ...[
-                    const SizedBox(height: 10),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(14),
-                      child: Image.network(
-                        widget.post['image_url'].toString(),
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 18,
+                        backgroundImage: _imageForPost(widget.post),
+                        child: _imageForPost(widget.post) == null
+                            ? const Icon(Icons.person_outline)
+                            : null,
                       ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 18,
-                    backgroundImage: _imageForPost(widget.post),
-                    child: _imageForPost(widget.post) == null
-                        ? const Icon(Icons.person_outline)
-                        : null,
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: VerifiedName(
+                            userId: widget.post['user_id']?.toString(),
+                            child: Text(
+                              ownerName.toString(),
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w800),
+                            )),
+                      ),
+                      Text('${_comments.length}'),
+                    ],
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: VerifiedName(
-                        userId: widget.post['user_id']?.toString(),
-                        child: Text(
-                          ownerName.toString(),
-                          style: const TextStyle(fontWeight: FontWeight.w800),
-                        )),
-                  ),
-                  Text('${_comments.length}'),
-                ],
-              ),
-            ),
-            Expanded(
-              child: _loading
-                  ? const Center(child: CircularProgressIndicator())
-                  : threaded.isEmpty
-                      ? Center(
+                ),
+                Expanded(
+                  child: _loading
+                      ? const Center(child: CircularProgressIndicator())
+                      : threaded.isEmpty
+                          ? Center(
+                              child: Text(
+                                isArabic
+                                    ? 'لا توجد تعليقات بعد\nكن أول من يعلق!'
+                                    : 'No comments yet\nBe the first to comment!',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                    color: AppTheme.adaptiveMuted.shade600),
+                              ),
+                            )
+                          : RefreshIndicator(
+                              onRefresh: _loadComments,
+                              child: ListView.builder(
+                                padding: const EdgeInsets.all(12),
+                                itemCount: threaded.length,
+                                itemBuilder: (_, index) {
+                                  final entry = threaded[index];
+                                  return _commentCard(
+                                    entry.comment,
+                                    entry.depth,
+                                    isArabic,
+                                  );
+                                },
+                              ),
+                            ),
+                ),
+                if (_replyingTo != null)
+                  Container(
+                    width: double.infinity,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    color: AppTheme.adaptiveHighlight,
+                    child: Row(
+                      children: [
+                        const Icon(Icons.reply_rounded, size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
                           child: Text(
                             isArabic
-                                ? 'لا توجد تعليقات بعد\nكن أول من يعلق!'
-                                : 'No comments yet\nBe the first to comment!',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                                color: AppTheme.adaptiveMuted.shade600),
-                          ),
-                        )
-                      : RefreshIndicator(
-                          onRefresh: _loadComments,
-                          child: ListView.builder(
-                            padding: const EdgeInsets.all(12),
-                            itemCount: threaded.length,
-                            itemBuilder: (_, index) {
-                              final entry = threaded[index];
-                              return _commentCard(
-                                entry.comment,
-                                entry.depth,
-                                isArabic,
-                              );
-                            },
+                                ? 'الرد على ${_commenterName(_replyingTo!)}'
+                                : 'Replying to ${_commenterName(_replyingTo!)}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-            ),
-            if (_replyingTo != null)
-              Container(
-                width: double.infinity,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                color: AppTheme.adaptiveHighlight,
-                child: Row(
-                  children: [
-                    const Icon(Icons.reply_rounded, size: 18),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        isArabic
-                            ? 'الرد على ${_commenterName(_replyingTo!)}'
-                            : 'Replying to ${_commenterName(_replyingTo!)}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          onPressed: () => setState(() => _replyingTo = null),
+                          icon: const Icon(Icons.close_rounded, size: 18),
+                        ),
+                      ],
                     ),
-                    IconButton(
-                      visualDensity: VisualDensity.compact,
-                      onPressed: () => setState(() => _replyingTo = null),
-                      icon: const Icon(Icons.close_rounded, size: 18),
-                    ),
-                  ],
-                ),
-              ),
-            SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        focusNode: _composerFocus,
-                        controller: _commentController,
-                        minLines: 1,
-                        maxLines: 4,
-                        style: TextStyle(color: AppTheme.adaptiveText),
-                        decoration: InputDecoration(
-                          hintText: _replyingTo == null
-                              ? (isArabic
-                                  ? 'اكتب تعليقك...'
-                                  : 'Write a comment...')
-                              : (isArabic ? 'اكتب ردك...' : 'Write a reply...'),
-                          filled: true,
-                          fillColor: AppTheme.adaptiveMuted.shade100,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(24),
-                            borderSide: BorderSide.none,
+                  ),
+                SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            focusNode: _composerFocus,
+                            controller: _commentController,
+                            minLines: 1,
+                            maxLines: 4,
+                            style: TextStyle(color: AppTheme.adaptiveText),
+                            decoration: InputDecoration(
+                              hintText: _replyingTo == null
+                                  ? (isArabic
+                                      ? 'اكتب تعليقك...'
+                                      : 'Write a comment...')
+                                  : (isArabic
+                                      ? 'اكتب ردك...'
+                                      : 'Write a reply...'),
+                              filled: true,
+                              fillColor: AppTheme.adaptiveMuted.shade100,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(24),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                            onSubmitted: (_) => _addComment(),
                           ),
                         ),
-                        onSubmitted: (_) => _addComment(),
-                      ),
+                        const SizedBox(width: 8),
+                        FloatingActionButton.small(
+                          onPressed: _sending ? null : _addComment,
+                          child: _sending
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.send_rounded),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    FloatingActionButton.small(
-                      onPressed: _sending ? null : _addComment,
-                      child: _sending
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.send_rounded),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-          ],
-        ),
+              ],
+            )),
       ),
     );
   }
@@ -667,7 +677,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
                       ],
                     ),
                     const SizedBox(height: 3),
-                    Text(body),
+                    SelectableText(body),
                     const SizedBox(height: 7),
                     Wrap(
                       spacing: 8,

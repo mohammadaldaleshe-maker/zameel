@@ -286,107 +286,114 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
     return Directionality(
       textDirection: ar ? ui.TextDirection.rtl : ui.TextDirection.ltr,
       child: Scaffold(
+        resizeToAvoidBottomInset: false,
         appBar: AppBar(
           title: Text(ar ? 'تعليقات الشورتس' : 'Clip comments'),
           centerTitle: true,
         ),
-        body: Column(
-          children: [
-            Expanded(
-              child: _loading
-                  ? const Center(child: CircularProgressIndicator())
-                  : threaded.isEmpty
-                      ? Center(
+        body: Padding(
+            padding: EdgeInsets.only(
+                bottom: MediaQuery.viewInsetsOf(context).bottom),
+            child: Column(
+              children: [
+                Expanded(
+                  child: _loading
+                      ? const Center(child: CircularProgressIndicator())
+                      : threaded.isEmpty
+                          ? Center(
+                              child: Text(
+                                ar
+                                    ? 'لا توجد تعليقات بعد\nكن أول من يعلق!'
+                                    : 'No comments yet\nBe the first to comment!',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                    color: AppTheme.adaptiveMuted.shade600),
+                              ),
+                            )
+                          : RefreshIndicator(
+                              onRefresh: _load,
+                              child: ListView.builder(
+                                padding: const EdgeInsets.all(12),
+                                itemCount: threaded.length,
+                                itemBuilder: (_, index) => _card(
+                                  threaded[index].comment,
+                                  threaded[index].depth,
+                                  ar,
+                                ),
+                              ),
+                            ),
+                ),
+                if (_replyingTo != null)
+                  Container(
+                    width: double.infinity,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    color: AppTheme.adaptiveHighlight,
+                    child: Row(
+                      children: [
+                        const Icon(Icons.reply_rounded, size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
                           child: Text(
                             ar
-                                ? 'لا توجد تعليقات بعد\nكن أول من يعلق!'
-                                : 'No comments yet\nBe the first to comment!',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                                color: AppTheme.adaptiveMuted.shade600),
+                                ? 'الرد على ${_nameOf(_replyingTo!)}'
+                                : 'Replying to ${_nameOf(_replyingTo!)}',
                           ),
-                        )
-                      : RefreshIndicator(
-                          onRefresh: _load,
-                          child: ListView.builder(
-                            padding: const EdgeInsets.all(12),
-                            itemCount: threaded.length,
-                            itemBuilder: (_, index) => _card(
-                              threaded[index].comment,
-                              threaded[index].depth,
-                              ar,
+                        ),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          onPressed: () => setState(() => _replyingTo = null),
+                          icon: const Icon(Icons.close_rounded, size: 18),
+                        ),
+                      ],
+                    ),
+                  ),
+                SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _controller,
+                            focusNode: _focusNode,
+                            minLines: 1,
+                            maxLines: 4,
+                            style: TextStyle(color: AppTheme.adaptiveText),
+                            decoration: InputDecoration(
+                              hintText: _replyingTo == null
+                                  ? (ar
+                                      ? 'اكتب تعليقك...'
+                                      : 'Write a comment...')
+                                  : (ar ? 'اكتب ردك...' : 'Write a reply...'),
+                              filled: true,
+                              fillColor: AppTheme.adaptiveMuted.shade100,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(24),
+                                borderSide: BorderSide.none,
+                              ),
                             ),
+                            onSubmitted: (_) => _send(),
                           ),
                         ),
-            ),
-            if (_replyingTo != null)
-              Container(
-                width: double.infinity,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                color: AppTheme.adaptiveHighlight,
-                child: Row(
-                  children: [
-                    const Icon(Icons.reply_rounded, size: 18),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        ar
-                            ? 'الرد على ${_nameOf(_replyingTo!)}'
-                            : 'Replying to ${_nameOf(_replyingTo!)}',
-                      ),
-                    ),
-                    IconButton(
-                      visualDensity: VisualDensity.compact,
-                      onPressed: () => setState(() => _replyingTo = null),
-                      icon: const Icon(Icons.close_rounded, size: 18),
-                    ),
-                  ],
-                ),
-              ),
-            SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _controller,
-                        focusNode: _focusNode,
-                        minLines: 1,
-                        maxLines: 4,
-                        style: TextStyle(color: AppTheme.adaptiveText),
-                        decoration: InputDecoration(
-                          hintText: _replyingTo == null
-                              ? (ar ? 'اكتب تعليقك...' : 'Write a comment...')
-                              : (ar ? 'اكتب ردك...' : 'Write a reply...'),
-                          filled: true,
-                          fillColor: AppTheme.adaptiveMuted.shade100,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(24),
-                            borderSide: BorderSide.none,
-                          ),
+                        const SizedBox(width: 8),
+                        FloatingActionButton.small(
+                          onPressed: _sending ? null : _send,
+                          child: _sending
+                              ? const SizedBox.square(
+                                  dimension: 18,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.send_rounded),
                         ),
-                        onSubmitted: (_) => _send(),
-                      ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    FloatingActionButton.small(
-                      onPressed: _sending ? null : _send,
-                      child: _sending
-                          ? const SizedBox.square(
-                              dimension: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.send_rounded),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-          ],
-        ),
+              ],
+            )),
       ),
     );
   }
@@ -484,7 +491,7 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
                       ],
                     ),
                     const SizedBox(height: 3),
-                    Text(comment['text']?.toString() ?? ''),
+                    SelectableText(comment['text']?.toString() ?? ''),
                     const SizedBox(height: 7),
                     Wrap(
                       spacing: 8,

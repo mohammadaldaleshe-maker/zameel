@@ -126,7 +126,9 @@ class _AccountVerificationScreenState extends State<AccountVerificationScreen> {
                     const SizedBox(height: 12),
                     Text(
                       PlayBillingService.enabled
-                          ? 'الشراء عبر Google Play دون تجديد تلقائي. يبدأ الشهر بعد إثبات الدفع وموافقة الإدارة.'
+                          ? (ar
+                              ? 'الشراء عبر Google Play دون تجديد تلقائي. يبدأ الشهر تلقائيًا بعد تأكيد الدفع.'
+                              : 'No automatic renewal. Your month starts automatically after Google Play confirms payment.')
                           : ar
                               ? 'يبدأ الشهر بعد مطابقة الحوالة والموافقة. التجديد بطلب دفع جديد، دون خصم تلقائي. العلامة تدل على اشتراك توثيق مدفوع.'
                               : 'One month starts after payment review and approval. Renew with a new payment request; no automatic charge. The badge indicates a paid verification subscription.',

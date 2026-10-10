@@ -209,7 +209,7 @@ class PushNotificationService {
 
     _lastToken = token;
     final platform = NativeIncomingCallService.supported
-        ? 'android_call_v3'
+        ? 'android_call_v3_alert151'
         : defaultTargetPlatform.name;
     final locale = ui.PlatformDispatcher.instance.locale.languageCode;
 
@@ -253,13 +253,17 @@ class PushNotificationService {
         message.data['notification_type']?.toString() ??
         '';
 
+    if (type == 'notification_cancel') return;
+
     // Android direct-chat messages are posted by ZameelBubbleReceiver using
     // the official system Conversation/Bubble API. Skipping the generic local
     // notification here prevents a duplicate alert while preserving iOS and
     // every non-chat notification path.
     if (!kIsWeb &&
         defaultTargetPlatform == TargetPlatform.android &&
-        (type == 'message' ||
+        (type == 'post_like' ||
+            type == 'like' ||
+            type == 'message' ||
             type == 'incoming_video_call' ||
             type == 'incoming_voice_call' ||
             type == 'call_ended')) {

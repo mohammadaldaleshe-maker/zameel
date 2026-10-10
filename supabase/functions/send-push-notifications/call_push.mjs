@@ -12,7 +12,7 @@ export function incomingCallData(session, notification, callerName, now = Date.n
   };
 }
 export function isNativeCallDevice(platform) {
-  return String(platform).toLowerCase() === 'android_call_v3';
+  return ['android_call_v3','android_call_v3_alert151'].includes(String(platform).toLowerCase());
 }
 export function callEndRecipients(session) {
   if (!session || session.status === 'ringing') return [];

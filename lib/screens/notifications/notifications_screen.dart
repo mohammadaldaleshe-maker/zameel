@@ -83,6 +83,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           .select(
               '*, actor:users!notifications_actor_id_fkey(id,name,profile_image)')
           .eq('user_id', uid!)
+          .neq('type', 'notification_cancel')
           .order('created_at', ascending: false)
           .limit(100);
       if (mounted)

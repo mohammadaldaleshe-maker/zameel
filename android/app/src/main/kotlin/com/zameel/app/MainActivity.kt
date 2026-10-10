@@ -19,6 +19,17 @@ class MainActivity : FlutterActivity() {
     }
     override fun configureFlutterEngine(engine: io.flutter.embedding.engine.FlutterEngine) {
         super.configureFlutterEngine(engine)
+        io.flutter.plugin.common.MethodChannel(engine.dartExecutor.binaryMessenger, "zameel/notification_settings")
+            .setMethodCallHandler { call, result ->
+                if (call.method != "open") result.notImplemented()
+                else try {
+                    val intent = if (Build.VERSION.SDK_INT >= 26) Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                        .putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                    else Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName"))
+                    startActivity(intent)
+                    result.success(null)
+                } catch (e: Exception) { result.error("settings_unavailable", "Notification settings unavailable", null) }
+            }
         playBilling?.close()
         playBilling = ZameelPlayBilling(this, engine)
         io.flutter.plugin.common.MethodChannel(engine.dartExecutor.binaryMessenger, "zameel/incoming_calls")

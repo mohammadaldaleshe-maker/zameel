@@ -1365,9 +1365,9 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
             content: Text(
               isArabic
                   ? 'هل أنت متأكد من رغبتك في حذف هذا المنشور؟\n\n'
-                      '👤 صاحب المنشور: $ownerName'
+                      '👤 $ownerName'
                   : 'Are you sure you want to delete this post?\n\n'
-                      '👤 Post owner: $ownerName',
+                      '👤 $ownerName',
             ),
             actions: [
               TextButton(

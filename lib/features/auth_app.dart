@@ -18,6 +18,7 @@ class _AuthGateState extends State<AuthGate> {
     super.initState();
     _userId = Supabase.instance.client.auth.currentUser?.id;
     _initialScreen = _getInitialScreen();
+    academicProfileRevision.addListener(_academicChanged);
     _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((
       data,
     ) {
@@ -37,6 +38,21 @@ class _AuthGateState extends State<AuthGate> {
     });
   }
 
+  void _academicChanged() {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) return;
+    unawaited(() async {
+      try {
+        final profile = await _fetchProfile(userId);
+        if (!mounted || Supabase.instance.client.auth.currentUser?.id != userId)
+          return;
+        setState(() => _initialScreen = Future.value(_profileScreen(profile)));
+        await HomeSnapshotService.save(
+            userId, 'profile', profile == null ? [] : [profile]);
+      } catch (_) {}
+    }());
+  }
+
   Widget _profileScreen(Map<String, dynamic>? profile) {
     if (profile == null || profile['onboarding_complete'] != true) {
       return const OpenRegistrationScreen();
@@ -44,10 +60,8 @@ class _AuthGateState extends State<AuthGate> {
     final universityName = (profile['university'] ?? '').toString().trim();
     final collegeName = (profile['college'] ?? '').toString().trim();
     final departmentName = (profile['department'] ?? '').toString().trim();
-    if (profile['account_type'] == 'general' &&
-        (universityName.isEmpty ||
-            collegeName.isEmpty ||
-            departmentName.isEmpty)) {
+    if (profile['account_type'] == 'general' ||
+        profile['account_type'] == 'graduate') {
       return const HomeFeedScreen(
         university: generalCommunity,
         college: generalCollege,
@@ -169,6 +183,7 @@ class _AuthGateState extends State<AuthGate> {
   @override
   void dispose() {
     _generation++;
+    academicProfileRevision.removeListener(_academicChanged);
     _authSubscription?.cancel();
     super.dispose();
   }

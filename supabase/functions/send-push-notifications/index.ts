@@ -338,11 +338,13 @@ Deno.serve(async (req) => {
         const platform = String(device.platform ?? "").toLowerCase();
         const androidBubbleMessage = directMessage && platform.startsWith("android");
 
+        if(notification.type === "notification_cancel" && platform !== "android_call_v3_alert151") continue;
+        const androidInteraction = platform === "android_call_v3_alert151" && ["post_like","like","notification_cancel"].includes(notification.type);
         const androidNativeCall = incomingCall && isNativeCallDevice(platform);
         const fcmMessage: Record<string, unknown> = {
           token: device.token,
           data,
-          android: androidBubbleMessage || androidNativeCall
+          android: androidBubbleMessage || androidNativeCall || androidInteraction
             ? { priority: "HIGH", ...(androidNativeCall ? {
                 ttl: `${Math.max(1, Math.floor((Number(data.expires_at_ms) - Date.now()) / 1000))}s`,
               } : {}) }
@@ -360,7 +362,7 @@ Deno.serve(async (req) => {
         // Android direct-chat messages are intentionally data-only so the
         // app's native bubble receiver can post one conversation notification
         // instead of FCM also creating a duplicate standard notification.
-        if (!androidBubbleMessage && !androidNativeCall) {
+        if (!androidBubbleMessage && !androidNativeCall && !androidInteraction) {
           fcmMessage.notification = { title, body };
           const conversationId = directMessage
             ? String(notification.data?.conversation_id ?? "").trim() : "";

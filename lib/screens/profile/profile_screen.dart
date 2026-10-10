@@ -1235,6 +1235,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   spacing: 8,
                   runSpacing: 6,
                   children: [
+                    if (pString('account_type') == 'graduate')
+                      _chip(Icons.school_rounded, ar ? 'خريج' : 'Graduate'),
                     if (pString('university').isNotEmpty)
                       _chip(
                           Icons.account_balance_rounded, pString('university')),

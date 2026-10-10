@@ -130,6 +130,12 @@ Future<void> _openZameelDeepLink(Uri uri) async {
   final nav = await _waitForZameelNavigator();
   if (nav == null) return;
 
+  if (uri.host == 'notification') {
+    await _handlePushNavigationData(
+        {...uri.queryParameters, 'type': 'post_like'});
+    return;
+  }
+
   if (uri.host == 'call') {
     await _handlePushNavigationData({
       ...uri.queryParameters,

@@ -240,9 +240,8 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
         'p_cities': _audience == 'general' && !_countrywide
             ? _cities.toList()
             : <String>[],
-        'p_universities': _audience == 'students'
-            ? _universities.toList()
-            : <String>[],
+        'p_universities':
+            _audience == 'students' ? _universities.toList() : <String>[],
         'p_min_age': _parseAge(_min.text)!,
         'p_max_age': _parseAge(_max.text)!,
         'p_gender': _gender,
@@ -288,8 +287,8 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
       return a >= 0
           ? '$a'
           : p >= 0
-          ? '$p'
-          : c;
+              ? '$p'
+              : c;
     }).join();
     return int.tryParse(normalized);
   }
@@ -309,229 +308,241 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
 
   @override
   Widget build(BuildContext context) => Directionality(
-    textDirection: widget.arabic ? TextDirection.rtl : TextDirection.ltr,
-    child: Scaffold(
-      appBar: AppBar(title: Text(t('ترويج المنشور', 'Promote post'))),
-      body: _error != null
-          ? Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(_error!),
-                  TextButton(
-                    onPressed: _load,
-                    child: Text(t('إعادة المحاولة', 'Retry')),
-                  ),
-                ],
-              ),
-            )
-          : _catalog == null
-          ? const Center(child: CircularProgressIndicator())
-          : _receipt != null
-          ? _payment()
-          : Form(
-              key: _form,
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  Text(
-                    t(
-                      PlayBillingService.enabled
-                          ? 'يبدأ الترويج بعد إثبات شراء Google Play واعتماد الإدارة.'
-                          : 'يبدأ الترويج بعد مطابقة حوالتك والكود واعتماد الإدارة.',
-                      'Promotion begins after your transfer and reference are verified.',
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    initialValue: _audience,
-                    decoration: InputDecoration(
-                      labelText: t('الجمهور المستهدف', 'Audience'),
-                    ),
-                    items: [
-                      DropdownMenuItem(
-                        value: 'general',
-                        child: Text(t('الجميع', 'General public')),
-                      ),
-                      DropdownMenuItem(
-                        value: 'students',
-                        child: Text(t('طلبة الجامعات', 'University students')),
-                      ),
-                    ],
-                    onChanged: _busy
-                        ? null
-                        : (v) => setState(() {
-                            _audience = v!;
-                          }),
-                  ),
-                  const SizedBox(height: 12),
-                  if (_audience == 'general') ...[
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      value: _countrywide,
-                      title: Text(
-                        t('المملكة الأردنية الهاشمية ككل', 'All of Jordan'),
-                      ),
-                      onChanged: _busy
-                          ? null
-                          : (v) => setState(() => _countrywide = v),
-                    ),
-                    if (!_countrywide)
-                      OutlinedButton(
-                        onPressed: _busy ? null : () => _select(false),
-                        child: Text(
-                          _cities.isEmpty
-                              ? t('اختيار مدينة أو عدة مدن', 'Choose cities')
-                              : _citySummary(_cities),
-                        ),
-                      ),
-                  ] else
-                    OutlinedButton(
-                      onPressed: _busy ? null : () => _select(true),
-                      child: Text(
-                        _universities.isEmpty
-                            ? t(
-                                'اختيار جامعة أو عدة جامعات',
-                                'Choose universities',
-                              )
-                            : _universities.join('، '),
-                      ),
-                    ),
-                  const SizedBox(height: 12),
-                  Row(
+        textDirection: widget.arabic ? TextDirection.rtl : TextDirection.ltr,
+        child: Scaffold(
+          appBar: AppBar(title: Text(t('ترويج المنشور', 'Promote post'))),
+          body: _error != null
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: _min,
-                          enabled: !_busy,
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.allow(
-                              RegExp(r'[0-9٠-٩۰-۹]'),
-                            ),
-                          ],
-                          validator: (v) => _age(v, false),
-                          decoration: InputDecoration(
-                            labelText: t('العمر من (18+)', 'Minimum age (18+)'),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextFormField(
-                          controller: _max,
-                          enabled: !_busy,
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.allow(
-                              RegExp(r'[0-9٠-٩۰-۹]'),
-                            ),
-                          ],
-                          validator: (v) => _age(v, true),
-                          decoration: InputDecoration(
-                            labelText: t('العمر إلى', 'Maximum age'),
-                          ),
-                        ),
+                      Text(_error!),
+                      TextButton(
+                        onPressed: _load,
+                        child: Text(t('إعادة المحاولة', 'Retry')),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    initialValue: _gender,
-                    decoration: InputDecoration(
-                      labelText: t('الجنس المستهدف', 'Target gender'),
-                    ),
-                    items: [
-                      DropdownMenuItem(
-                        value: 'both',
-                        child: Text(t('كلاهما', 'Both')),
-                      ),
-                      DropdownMenuItem(
-                        value: 'male',
-                        child: Text(t('ذكور', 'Male')),
-                      ),
-                      DropdownMenuItem(
-                        value: 'female',
-                        child: Text(t('إناث', 'Female')),
-                      ),
-                    ],
-                    onChanged: _busy
-                        ? null
-                        : (v) => setState(() => _gender = v!),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<int>(
-                    initialValue: _days,
-                    isExpanded: true,
-                    decoration: InputDecoration(
-                      labelText: t('عدد أيام الترويج', 'Duration'),
-                    ),
-                    items: [
-                      for (var d = 1; d <= 30; d++)
-                        DropdownMenuItem(
-                          value: d,
-                          child: Text(
-                            PlayBillingService.enabled
-                                ? '$d ${t('يوم', 'day(s)')}'
-                                : '$d ${t('يوم', 'day(s)')} — ${(d * .5).toStringAsFixed(2)} ${t('دينار أردني', 'JOD')}',
+                )
+              : _catalog == null
+                  ? const Center(child: CircularProgressIndicator())
+                  : _receipt != null
+                      ? _payment()
+                      : Form(
+                          key: _form,
+                          child: ListView(
+                            padding: const EdgeInsets.all(16),
+                            children: [
+                              Text(
+                                t(
+                                  PlayBillingService.enabled
+                                      ? 'يبدأ الترويج تلقائيًا بعد تأكيد الدفع عبر Google Play.'
+                                      : 'يبدأ الترويج بعد مطابقة حوالتك والكود واعتماد الإدارة.',
+                                  PlayBillingService.enabled
+                                      ? 'Promotion starts automatically after Google Play confirms payment.'
+                                      : 'Promotion begins after your transfer and reference are verified.',
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              DropdownButtonFormField<String>(
+                                initialValue: _audience,
+                                decoration: InputDecoration(
+                                  labelText: t('الجمهور المستهدف', 'Audience'),
+                                ),
+                                items: [
+                                  DropdownMenuItem(
+                                    value: 'general',
+                                    child: Text(t('الجميع', 'General public')),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'students',
+                                    child: Text(t('طلبة الجامعات',
+                                        'University students')),
+                                  ),
+                                ],
+                                onChanged: _busy
+                                    ? null
+                                    : (v) => setState(() {
+                                          _audience = v!;
+                                        }),
+                              ),
+                              const SizedBox(height: 12),
+                              if (_audience == 'general') ...[
+                                SwitchListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  value: _countrywide,
+                                  title: Text(
+                                    t('المملكة الأردنية الهاشمية ككل',
+                                        'All of Jordan'),
+                                  ),
+                                  onChanged: _busy
+                                      ? null
+                                      : (v) => setState(() => _countrywide = v),
+                                ),
+                                if (!_countrywide)
+                                  OutlinedButton(
+                                    onPressed:
+                                        _busy ? null : () => _select(false),
+                                    child: Text(
+                                      _cities.isEmpty
+                                          ? t('اختيار مدينة أو عدة مدن',
+                                              'Choose cities')
+                                          : _citySummary(_cities),
+                                    ),
+                                  ),
+                              ] else
+                                OutlinedButton(
+                                  onPressed: _busy ? null : () => _select(true),
+                                  child: Text(
+                                    _universities.isEmpty
+                                        ? t(
+                                            'اختيار جامعة أو عدة جامعات',
+                                            'Choose universities',
+                                          )
+                                        : _universities.join('، '),
+                                  ),
+                                ),
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: _min,
+                                      enabled: !_busy,
+                                      keyboardType: TextInputType.number,
+                                      inputFormatters: [
+                                        FilteringTextInputFormatter.allow(
+                                          RegExp(r'[0-9٠-٩۰-۹]'),
+                                        ),
+                                      ],
+                                      validator: (v) => _age(v, false),
+                                      decoration: InputDecoration(
+                                        labelText: t('العمر من (18+)',
+                                            'Minimum age (18+)'),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: _max,
+                                      enabled: !_busy,
+                                      keyboardType: TextInputType.number,
+                                      inputFormatters: [
+                                        FilteringTextInputFormatter.allow(
+                                          RegExp(r'[0-9٠-٩۰-۹]'),
+                                        ),
+                                      ],
+                                      validator: (v) => _age(v, true),
+                                      decoration: InputDecoration(
+                                        labelText:
+                                            t('العمر إلى', 'Maximum age'),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              DropdownButtonFormField<String>(
+                                initialValue: _gender,
+                                decoration: InputDecoration(
+                                  labelText:
+                                      t('الجنس المستهدف', 'Target gender'),
+                                ),
+                                items: [
+                                  DropdownMenuItem(
+                                    value: 'both',
+                                    child: Text(t('كلاهما', 'Both')),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'male',
+                                    child: Text(t('ذكور', 'Male')),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'female',
+                                    child: Text(t('إناث', 'Female')),
+                                  ),
+                                ],
+                                onChanged: _busy
+                                    ? null
+                                    : (v) => setState(() => _gender = v!),
+                              ),
+                              const SizedBox(height: 12),
+                              DropdownButtonFormField<int>(
+                                initialValue: _days,
+                                isExpanded: true,
+                                decoration: InputDecoration(
+                                  labelText: t('عدد أيام الترويج', 'Duration'),
+                                ),
+                                items: [
+                                  for (var d = 1; d <= 30; d++)
+                                    DropdownMenuItem(
+                                      value: d,
+                                      child: Text(
+                                        PlayBillingService.enabled
+                                            ? '$d ${t('يوم', 'day(s)')}'
+                                            : '$d ${t('يوم', 'day(s)')} — ${(d * .5).toStringAsFixed(2)} ${t('دينار أردني', 'JOD')}',
+                                      ),
+                                    ),
+                                ],
+                                onChanged: _busy
+                                    ? null
+                                    : (v) => setState(() => _days = v!),
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                PlayBillingService.enabled
+                                    ? t(
+                                        'السعر النهائي يظهر من Google Play قبل الشراء',
+                                        'Google Play shows the final price before purchase',
+                                      )
+                                    : '${t('الإجمالي', 'Total')}: ${(_days * .5).toStringAsFixed(2)} ${t('دينار أردني', 'JOD')}',
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
+                              const SizedBox(height: 12),
+                              TextFormField(
+                                controller: _notes,
+                                enabled: !_busy,
+                                maxLength: 1000,
+                                maxLines: 3,
+                                decoration: InputDecoration(
+                                  labelText: t(
+                                    'ملاحظات للإدارة (اختياري)',
+                                    'Notes (optional)',
+                                  ),
+                                ),
+                              ),
+                              if (!PlayBillingService.enabled &&
+                                  _catalog!['wallet_ready'] != true)
+                                Text(
+                                  t(
+                                    'الدفع غير متاح حاليًا؛ تنتظر الخدمة إعداد المحفظة من الإدارة.',
+                                    'Payment is unavailable until the wallet is configured.',
+                                  ),
+                                ),
+                              const SizedBox(height: 12),
+                              FilledButton(
+                                onPressed: _busy ||
+                                        (!PlayBillingService.enabled &&
+                                            _catalog!['wallet_ready'] != true)
+                                    ? null
+                                    : _send,
+                                child: Text(
+                                  t(
+                                    _busy
+                                        ? 'جارٍ إنشاء الطلب…'
+                                        : 'إنشاء الطلب وعرض تعليمات الدفع',
+                                    _busy
+                                        ? 'Creating…'
+                                        : 'Create request and show payment',
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                    ],
-                    onChanged: _busy ? null : (v) => setState(() => _days = v!),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    PlayBillingService.enabled
-                        ? t(
-                            'السعر النهائي يظهر من Google Play قبل الشراء',
-                            'Google Play shows the final price before purchase',
-                          )
-                        : '${t('الإجمالي', 'Total')}: ${(_days * .5).toStringAsFixed(2)} ${t('دينار أردني', 'JOD')}',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _notes,
-                    enabled: !_busy,
-                    maxLength: 1000,
-                    maxLines: 3,
-                    decoration: InputDecoration(
-                      labelText: t(
-                        'ملاحظات للإدارة (اختياري)',
-                        'Notes (optional)',
-                      ),
-                    ),
-                  ),
-                  if (!PlayBillingService.enabled &&
-                      _catalog!['wallet_ready'] != true)
-                    Text(
-                      t(
-                        'الدفع غير متاح حاليًا؛ تنتظر الخدمة إعداد المحفظة من الإدارة.',
-                        'Payment is unavailable until the wallet is configured.',
-                      ),
-                    ),
-                  const SizedBox(height: 12),
-                  FilledButton(
-                    onPressed:
-                        _busy ||
-                            (!PlayBillingService.enabled &&
-                                _catalog!['wallet_ready'] != true)
-                        ? null
-                        : _send,
-                    child: Text(
-                      t(
-                        _busy
-                            ? 'جارٍ إنشاء الطلب…'
-                            : 'إنشاء الطلب وعرض تعليمات الدفع',
-                        _busy ? 'Creating…' : 'Create request and show payment',
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-    ),
-  );
+        ),
+      );
   Widget _payment() {
     final r = _receipt!;
     if (!PlayBillingService.enabled &&
@@ -613,15 +624,15 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
         const SizedBox(height: 16),
         Text('${t('المدة', 'Duration')}: ${r['days']} ${t('يوم', 'days')}'),
         Text(
-          '${t('الجمهور', 'Audience')}: ${r['audience_type'] == 'students'
-              ? (r['target_universities'] as List).join('، ')
-              : r['countrywide'] == true
-              ? t('الأردن ككل', 'All Jordan')
-              : _citySummary((r['target_cities'] as List).map((v) => v.toString()))}',
+          '${t('الجمهور', 'Audience')}: ${r['audience_type'] == 'students' ? (r['target_universities'] as List).join('، ') : r['countrywide'] == true ? t('الأردن ككل', 'All Jordan') : _citySummary((r['target_cities'] as List).map((v) => v.toString()))}',
         ),
         Text('${t('العمر', 'Age')}: ${r['min_age']}–${r['max_age']}'),
         Text(
-          '${t('الجنس', 'Gender')}: ${({'both': t('كلاهما', 'Both'), 'male': t('ذكور', 'Male'), 'female': t('إناث', 'Female')})[r['target_gender']]}',
+          '${t('الجنس', 'Gender')}: ${({
+            'both': t('كلاهما', 'Both'),
+            'male': t('ذكور', 'Male'),
+            'female': t('إناث', 'Female')
+          })[r['target_gender']]}',
         ),
       ],
     );

@@ -1310,10 +1310,6 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
                             fontWeight: FontWeight.w800,
                           ),
                         )),
-                    subtitle: Text(
-                      isArabic ? 'صاحب المنشور' : 'Post author',
-                      style: const TextStyle(color: Colors.white60),
-                    ),
                     trailing: const Icon(
                       Icons.arrow_forward_ios_rounded,
                       color: AppTheme.accent,

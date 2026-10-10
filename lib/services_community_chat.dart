@@ -31,7 +31,8 @@ class ZameelCommunityChatService {
     if (uid == null) return null;
     final row = await db
         .from('users')
-        .select('id,name,university,college,department,profile_image')
+        .select(
+            'id,name,university,college,department,profile_image,account_type')
         .eq('id', uid)
         .maybeSingle();
     return row == null ? null : Map<String, dynamic>.from(row);

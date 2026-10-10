@@ -7,9 +7,9 @@ import 'package:zameel/widgets/verified_name.dart';
 import 'dart:ui' as ui;
 import 'dart:async';
 import 'dart:math' as math;
-import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../services/feature_control.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
@@ -41,16 +41,29 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   bool _loading = true;
   Set<String> _onlineIds = {};
   Timer? _onlineTimer;
+  RealtimeChannel? _inboxChannel;
+  bool _refreshingInbox = false;
+  bool _inboxRefreshPending = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _onlineTimer = Timer.periodic(const Duration(seconds: 25), (_) {
-      if (mounted && ModalRoute.of(context)?.isCurrent == true)
+      if (mounted && ModalRoute.of(context)?.isCurrent == true) {
         _loadChatPresence();
+        _refreshInbox();
+      }
     });
     _load();
+    _inboxChannel = db
+        .channel('inbox-151:$uid')
+        .onPostgresChanges(
+            event: PostgresChangeEvent.insert,
+            schema: 'public',
+            table: 'messages',
+            callback: (_) => _refreshInbox())
+        .subscribe();
     if (widget.partnerId != null)
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted)
@@ -61,6 +74,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   @override
   void dispose() {
     _onlineTimer?.cancel();
+    _inboxChannel?.unsubscribe();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -71,8 +85,10 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       _loadChatPresence();
       _onlineTimer = Timer.periodic(const Duration(seconds: 25), (_) {
-        if (mounted && ModalRoute.of(context)?.isCurrent == true)
+        if (mounted && ModalRoute.of(context)?.isCurrent == true) {
           _loadChatPresence();
+          _refreshInbox();
+        }
       });
     }
   }
@@ -102,20 +118,9 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   Future<void> _load() async {
     if (uid == null) return;
     try {
-      final me = uid!;
       unawaited(_loadChatProfile());
       unawaited(_loadChatPresence());
-      final req = await db
-          .from('friend_requests')
-          .select(
-              'id,sender_id,receiver_id,status,sender:users!friend_requests_sender_id_fkey(id,name,profile_image),receiver:users!friend_requests_receiver_id_fkey(id,name,profile_image)')
-          .or('sender_id.eq.$me,receiver_id.eq.$me')
-          .eq('status', 'accepted');
-      final friends = <Map<String, dynamic>>[];
-      for (final r in req) {
-        final u = (r['sender_id'] == me ? r['receiver'] : r['sender']) as Map?;
-        if (u != null) friends.add(Map<String, dynamic>.from(u));
-      }
+      final friends = await _inboxRows();
       if (mounted)
         setState(() {
           _friends = friends;
@@ -126,6 +131,33 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         setState(() => _loading = false);
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('تعذر تحميل الدردشة: $e')));
+      }
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> _inboxRows() async {
+    final rows = await db.rpc('zameel_chat_inbox');
+    return [
+      for (final row in rows as List) Map<String, dynamic>.from(row as Map)
+    ];
+  }
+
+  Future<void> _refreshInbox() async {
+    if (!mounted || uid == null) return;
+    if (_refreshingInbox) {
+      _inboxRefreshPending = true;
+      return;
+    }
+    _refreshingInbox = true;
+    try {
+      final rows = await _inboxRows();
+      if (mounted) setState(() => _friends = rows);
+    } catch (_) {
+    } finally {
+      _refreshingInbox = false;
+      if (_inboxRefreshPending && mounted) {
+        _inboxRefreshPending = false;
+        unawaited(_refreshInbox());
       }
     }
   }
@@ -142,11 +174,12 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     try {
       final cid = await _getConversation(id);
       if (!mounted || cid == null || cid.isEmpty) return;
-      Navigator.push(
+      await Navigator.push(
           context,
           MaterialPageRoute(
               builder: (_) => ChatDetailScreen(
                   conversationId: cid, partnerId: id, partnerName: name)));
+      await _refreshInbox();
     } on PostgrestException catch (e) {
       if (mounted)
         ScaffoldMessenger.of(context).showSnackBar(
@@ -176,7 +209,9 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     final university = _profileValue('university');
     final college = _profileValue('college');
     final department = _profileValue('department');
-    final academicReady = university.isNotEmpty && college.isNotEmpty;
+    final academicReady = _profileValue('account_type') == 'student' &&
+        university.isNotEmpty &&
+        college.isNotEmpty;
     final majorReady = academicReady && department.isNotEmpty;
     return Directionality(
       textDirection: ar ? ui.TextDirection.rtl : ui.TextDirection.ltr,
@@ -612,6 +647,11 @@ class ChatDetailScreen extends StatefulWidget {
 class _ChatDetailScreenState extends State<ChatDetailScreen>
     with WidgetsBindingObserver {
   final _controller = TextEditingController();
+  final _composerFocus = FocusNode();
+  Timer? _typingStopTimer;
+  DateTime _lastTypingSent = DateTime.fromMillisecondsSinceEpoch(0);
+  bool _partnerTyping = false;
+
   final _scroll = ScrollController();
   SupabaseClient get db => Supabase.instance.client;
   String? get uid => db.auth.currentUser?.id;
@@ -622,6 +662,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   Timer? _meetTimer;
   Timer? _presenceTimer;
   Timer? _syncTimer;
+  Timer? _typingTimer;
   bool _syncing = false, _partnerOnline = false;
   List<Map<String, dynamic>> _calls = [];
   Map<String, dynamic>? _activeMeet;
@@ -640,6 +681,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
     _meetTimer = Timer.periodic(
         const Duration(seconds: 5), (_) => _refreshMeet(silent: true));
     _refreshPresence();
+    _typingTimer =
+        Timer.periodic(const Duration(seconds: 2), (_) => _readTyping());
     _presenceTimer =
         Timer.periodic(const Duration(seconds: 25), (_) => _refreshPresence());
     _syncTimer = Timer.periodic(const Duration(seconds: 8), (_) => _syncChat());
@@ -655,6 +698,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
       _syncTimer ??=
           Timer.periodic(const Duration(seconds: 8), (_) => _syncChat());
     } else {
+      unawaited(_sendTyping(false));
+      _typingStopTimer?.cancel();
       _presenceTimer?.cancel();
       _presenceTimer = null;
       _syncTimer?.cancel();
@@ -669,6 +714,45 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
 
   List<Map<String, dynamic>> get _timeline => [..._messages, ..._calls]
     ..sort((a, b) => '${a['created_at']}'.compareTo('${b['created_at']}'));
+  Future<void> _sendTyping(bool active) async {
+    try {
+      await db.rpc('zameel_chat_typing_set', params: {
+        'p_conversation': widget.conversationId,
+        'p_active': active
+      });
+    } catch (_) {}
+  }
+
+  void _typingChanged(String value) {
+    _typingStopTimer?.cancel();
+    if (value.trim().isEmpty) {
+      unawaited(_sendTyping(false));
+      return;
+    }
+    final now = DateTime.now();
+    if (now.difference(_lastTypingSent).inSeconds >= 3) {
+      _lastTypingSent = now;
+      unawaited(_sendTyping(true));
+    }
+    _typingStopTimer =
+        Timer(const Duration(seconds: 4), () => _sendTyping(false));
+  }
+
+  Future<void> _readTyping() async {
+    if (!mounted ||
+        ModalRoute.of(context)?.isCurrent != true ||
+        WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed)
+      return;
+    try {
+      final active = await db.rpc('zameel_chat_typing_get',
+          params: {'p_conversation': widget.conversationId});
+      if (mounted && active is bool && active != _partnerTyping)
+        setState(() => _partnerTyping = active);
+    } catch (_) {
+      if (mounted && _partnerTyping) setState(() => _partnerTyping = false);
+    }
+  }
+
   Future<void> _refreshPresence() async {
     try {
       await db.rpc('touch_my_presence');
@@ -748,6 +832,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
         context: context,
         builder: (c) => SafeArea(
                 child: Wrap(children: [
+              if (m['deleted'] != true &&
+                  (m['media_url']?.toString() ?? '').isEmpty)
+                ListTile(
+                    title: const Text('نسخ النص'),
+                    onTap: () => Navigator.pop(c, 'copy')),
               ListTile(
                   title: const Text('حذف لديّ'),
                   onTap: () => Navigator.pop(c, 'hide')),
@@ -757,6 +846,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                     onTap: () => Navigator.pop(c, 'delete_everyone')),
             ])));
     if (action == null || !mounted) return;
+    if (action == 'copy') {
+      await Clipboard.setData(
+          ClipboardData(text: m['content']?.toString() ?? ''));
+      return;
+    }
     if (action == 'delete_everyone' &&
         !await _confirm('حذف الرسالة لدى الجميع')) return;
     try {
@@ -948,6 +1042,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
     _meetTimer?.cancel();
     _presenceTimer?.cancel();
     _syncTimer?.cancel();
+    unawaited(_sendTyping(false));
+    _typingStopTimer?.cancel();
+    _typingTimer?.cancel();
+    _composerFocus.dispose();
     _controller.dispose();
     _scroll.dispose();
     super.dispose();
@@ -991,6 +1089,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
     };
     setState(() => _messages.add(optimistic));
     _controller.clear();
+    _composerFocus.requestFocus();
+    unawaited(_sendTyping(false));
     _scrollToEnd();
     try {
       Map<String, dynamic> row;
@@ -1259,7 +1359,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
     final path = message['media_url']?.toString() ?? '';
     final type = message['media_type']?.toString() ?? '';
     if (path.isEmpty) {
-      return Text(message['content']?.toString() ?? '',
+      return SelectableText(message['content']?.toString() ?? '',
           style: TextStyle(
               color: mine ? Colors.white : AppTheme.adaptiveText,
               fontSize: 15));
@@ -1768,7 +1868,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                 child: Text(widget.partnerName,
                     style: const TextStyle(fontWeight: FontWeight.bold))),
             if (_partnerOnline)
-              const Text('متصل الآن',
+              Text(
+                  _partnerTyping
+                      ? 'جارٍ الكتابة…'
+                      : (_partnerOnline ? 'متصل الآن' : ''),
                   style: TextStyle(fontSize: 12, color: Colors.green)),
             if (widget.contextLabel != null)
               Text(widget.contextLabel!,
@@ -1969,6 +2072,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                   Expanded(
                     child: TextField(
                       controller: _controller,
+                      focusNode: _composerFocus,
+                      onChanged: _typingChanged,
+                      onEditingComplete: () {},
+                      enableInteractiveSelection: true,
                       style: TextStyle(color: AppTheme.adaptiveText),
                       cursorColor: AppTheme.primary,
                       onSubmitted: (_) => _send(),

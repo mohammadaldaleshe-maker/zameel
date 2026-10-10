@@ -1072,7 +1072,7 @@ class _StoryImagePreview extends StatelessWidget {
   Widget _fallback() => Container(
         width: width,
         height: height,
-        color: AppTheme.adaptiveMuted.shade900,
+        color: const Color(0xFF161B29),
         alignment: Alignment.center,
         child: const Icon(
           Icons.image_not_supported_outlined,
@@ -1520,10 +1520,7 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
                     end: Alignment.bottomCenter,
                     colors: (hasImage || hasVideo)
                         ? const [Colors.black, Colors.black]
-                        : [
-                            AppTheme.adaptiveMuted.shade800,
-                            AppTheme.adaptiveMuted.shade900
-                          ],
+                        : [const Color(0xFF252B3A), const Color(0xFF161B29)],
                   ),
                 ),
                 child: SafeArea(

@@ -88,7 +88,7 @@ class _PlayPaymentCardState extends State<PlayPaymentCard> {
           ),
           const SizedBox(height: 12),
           const Text(
-            'لا تتجدد المدة تلقائيًا. يبدأ التوثيق أو الترويج بعد إثبات الدفع وموافقة الإدارة. إذا رُفض الطلب المدفوع، يُطلب استرداد المبلغ عبر Google Play.',
+            'لا تتجدد المدة تلقائيًا. يبدأ التوثيق أو الترويج تلقائيًا بعد تأكيد الدفع من Google Play. إذا تعذر تفعيل الطلب المدفوع، تتم معالجة استرداده عبر Google Play.',
           ),
           if (error != null) Text(error!),
           if (service.error != null) Text(service.error!),
@@ -106,12 +106,12 @@ class _PlayPaymentCardState extends State<PlayPaymentCard> {
                       : state == 'refunded'
                           ? 'تم استرداد المبلغ.'
                           : state == 'approved'
-                              ? 'تمت الموافقة والتفعيل.'
+                              ? 'تم التفعيل.'
                               : state == 'cancelled'
                                   ? 'أُلغي الطلب؛ لا تُجرِ عملية شراء جديدة لهذا الطلب.'
                                   : state == 'revoked'
                                       ? 'أُلغي استحقاق هذا الشراء.'
-                                      : 'تم تسجيل الدفع؛ الطلب بانتظار مراجعة الإدارة.',
+                                      : 'تم تسجيل الدفع؛ جارٍ تأكيد التفعيل. لا تدفع مرة ثانية.',
             ),
           TextButton(
             onPressed: busy

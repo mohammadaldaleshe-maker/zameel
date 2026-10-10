@@ -56,7 +56,10 @@ class ZameelBubbleReceiver : FlutterFirebaseMessagingReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val appContext = context.applicationContext
         val extras = intent.extras
-        if (extras != null) ZameelIncomingCall.receive(appContext, extras)
+        if (extras != null) {
+            handleLikeAlert(appContext, extras)
+            ZameelIncomingCall.receive(appContext, extras)
+        }
 
         if (extras != null && isDirectMessage(extras)) {
             postConversationFallback(appContext, extras)
@@ -65,6 +68,47 @@ class ZameelBubbleReceiver : FlutterFirebaseMessagingReceiver() {
         // Preserve FlutterFire's existing onMessage/background-isolate path for
         // every push type, including direct messages and calls.
         super.onReceive(context, intent)
+    }
+
+    private fun handleLikeAlert(context: Context, extras: Bundle) {
+        val type = value(extras, "type")
+        if (type !in listOf("post_like", "like", "notification_cancel")) return
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val prefs = context.getSharedPreferences("zameel_cancelled_alerts", Context.MODE_PRIVATE)
+        if (type == "notification_cancel") {
+            val id = value(extras, "cancel_notification_id")
+            if (id.isNotBlank()) {
+                prefs.edit().putLong(id, System.currentTimeMillis()).apply()
+                manager.cancel("zameel:" + id, 0)
+            }
+            return
+        }
+        val id = value(extras, "notification_id")
+        if (id.isBlank() || prefs.contains(id)) return
+        // Keep a bounded 31-day cancellation history to handle out-of-order delivery.
+        val cutoff = System.currentTimeMillis() - 31L * 24 * 60 * 60 * 1000
+        val edit = prefs.edit()
+        prefs.all.forEach { (key, time) -> if (time is Long && time < cutoff) edit.remove(key) }
+        edit.apply()
+        val silent = value(extras, "play_sound") == "false"
+        val channelId = if (silent) "zameel_notifications_silent151" else "zameel_notifications_v2"
+        if (Build.VERSION.SDK_INT >= 26 && manager.getNotificationChannel(channelId) == null) {
+            val channel = NotificationChannel(channelId, "إشعارات زميل", NotificationManager.IMPORTANCE_HIGH)
+            val sound = Uri.parse("android.resource://" + context.packageName + "/raw/zameel_notification")
+            channel.setSound(if (silent) null else sound, AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION).build())
+            if (silent) channel.enableVibration(false)
+            manager.createNotificationChannel(channel)
+        }
+        val builder = if (Build.VERSION.SDK_INT >= 26) Notification.Builder(context, channelId) else Notification.Builder(context)
+        val link = Uri.Builder().scheme("zameel").authority("notification")
+            .appendQueryParameter("post_id", value(extras, "post_id"))
+            .appendQueryParameter("notification_id", id).build()
+        val launch = Intent(Intent.ACTION_VIEW, link, context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        val pending = PendingIntent.getActivity(context, id.hashCode(), launch, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        builder.setSmallIcon(R.mipmap.ic_launcher).setContentTitle(value(extras, "title"))
+            .setContentText(value(extras, "body")).setAutoCancel(true).setOnlyAlertOnce(true).setContentIntent(pending)
+        if (Build.VERSION.SDK_INT < 26) { if (silent) builder.setSound(null) else builder.setSound(Uri.parse("android.resource://" + context.packageName + "/raw/zameel_notification")) }
+        try { manager.notify("zameel:" + id, 0, builder.build()) } catch (error: SecurityException) { Log.w(TAG, "Notifications disabled", error) }
     }
 
     internal fun postConversationFallback(context: Context, extras: Bundle) {

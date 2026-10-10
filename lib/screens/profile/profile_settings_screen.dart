@@ -1,3 +1,5 @@
+import '../../main.dart' show universities;
+import 'package:flutter/services.dart';
 import 'account_verification_screen.dart';
 import '../promotions/audience_profile_screen.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +9,8 @@ import '../../providers/language_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:zameel/theme/app_theme.dart';
 import '../../services/auth_session_service.dart';
+
+final academicProfileRevision = ValueNotifier<int>(0);
 
 class ProfileSettingsScreen extends StatefulWidget {
   final String userId;
@@ -26,6 +30,15 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   final _university = TextEditingController();
   final _college = TextEditingController();
   final _department = TextEditingController();
+  String _academicStatus = 'general';
+  int _academicSelectionRevision = 0;
+  String _originalAcademic = '';
+  String get _academicFingerprint => [
+        _academicStatus,
+        _university.text,
+        _college.text,
+        _department.text
+      ].toString();
   String _privacy = 'public';
   String _defaultAudience = 'public';
   String _gender = '';
@@ -56,7 +69,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       final row = await Supabase.instance.client
           .from('users')
           .select(
-              'name,email,phone,username,headline,bio,university,college,department,account_privacy,default_post_audience,gender,allow_messages,allow_calls,notifications_enabled,show_online_status,call_sounds_enabled,notification_sounds_enabled')
+              'name,email,phone,username,headline,bio,account_type,university,college,department,account_privacy,default_post_audience,gender,allow_messages,allow_calls,notifications_enabled,show_online_status,call_sounds_enabled,notification_sounds_enabled')
           .eq('id', widget.userId)
           .maybeSingle();
 
@@ -73,6 +86,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         _university.text = row?['university']?.toString() ?? '';
         _college.text = row?['college']?.toString() ?? '';
         _department.text = row?['department']?.toString() ?? '';
+        _academicStatus = row?['account_type']?.toString() ?? 'general';
+        _originalAcademic = _academicFingerprint;
         _privacy = row?['account_privacy']?.toString() ?? 'public';
         _defaultAudience =
             row?['default_post_audience']?.toString() ?? 'public';
@@ -137,9 +152,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
             : _username.text.trim().toLowerCase(),
         'headline': _headline.text.trim(),
         'bio': _bio.text.trim(),
-        'university': _university.text.trim(),
-        'college': _college.text.trim(),
-        'department': _department.text.trim(),
         'account_privacy': _privacy,
         'default_post_audience': _defaultAudience,
         'allow_messages': _allowMessages,
@@ -149,6 +161,14 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         'notification_sounds_enabled': _notificationSoundsEnabled,
         'show_online_status': _showOnlineStatus,
       }).eq('id', widget.userId);
+
+      await Supabase.instance.client
+          .rpc('zameel_update_academic_status', params: {
+        'p_status': _academicStatus,
+        'p_university': _university.text.trim(),
+        'p_college': _college.text.trim(),
+        'p_major': _department.text.trim(),
+      });
 
       final authEmail = Supabase.instance.client.auth.currentUser?.email ?? '';
       if (_email.text.trim().isNotEmpty && _email.text.trim() != authEmail) {
@@ -161,6 +181,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         const SnackBar(content: Text('تم حفظ إعدادات الحساب ✓')),
       );
       Navigator.pop(context);
+      if (_originalAcademic != _academicFingerprint)
+        academicProfileRevision.value++;
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -291,12 +313,102 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                           Icons.badge_rounded),
                       _field(_bio, ar ? 'نبذة عني' : 'Bio', Icons.notes_rounded,
                           lines: 3, maxLength: 160),
-                      _field(_university, ar ? 'الجامعة' : 'University',
-                          Icons.account_balance_rounded),
-                      _field(_college, ar ? 'الكلية' : 'College',
-                          Icons.school_rounded),
-                      _field(_department, ar ? 'التخصص' : 'Major',
-                          Icons.menu_book_rounded),
+                      DropdownButtonFormField<String>(
+                        key: ValueKey(_academicSelectionRevision),
+                        initialValue: _academicStatus,
+                        decoration: InputDecoration(
+                            labelText:
+                                ar ? 'الحالة الأكاديمية' : 'Academic status'),
+                        items: [
+                          for (final item in {
+                            'general': ar ? 'مستخدم عام' : 'General user',
+                            'student': ar ? 'طالب' : 'Student',
+                            'graduate': ar ? 'خريج' : 'Graduate'
+                          }.entries)
+                            DropdownMenuItem(
+                                value: item.key, child: Text(item.value))
+                        ],
+                        onChanged: (v) async {
+                          if (v == null || v == _academicStatus) return;
+                          final accepted = await showDialog<bool>(
+                              context: context,
+                              builder: (c) => AlertDialog(
+                                      title: Text(ar
+                                          ? 'تغيير الحالة الأكاديمية؟'
+                                          : 'Change academic status?'),
+                                      content: Text(ar
+                                          ? 'الخريج والمستخدم العام لا يحصلان على خدمات الطلبة. تبقى منشوراتك ومحادثاتك وتوثيقك محفوظة.'
+                                          : 'Graduates and general users do not receive student services. Posts, chats and verification remain.'),
+                                      actions: [
+                                        TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(c, false),
+                                            child:
+                                                Text(ar ? 'إلغاء' : 'Cancel')),
+                                        FilledButton(
+                                            onPressed: () =>
+                                                Navigator.pop(c, true),
+                                            child: Text(
+                                                ar ? 'متابعة' : 'Continue'))
+                                      ]));
+                          if (mounted)
+                            setState(() {
+                              _academicSelectionRevision++;
+                              if (accepted == true) _academicStatus = v;
+                            });
+                        },
+                      ),
+                      if (_academicStatus != 'general') ...[
+                        _academicField(
+                            _university,
+                            ar ? 'الجامعة' : 'University',
+                            universities
+                                .map((u) => u.name)
+                                .where((n) => n.isNotEmpty)
+                                .toList(), () {
+                          _college.clear();
+                          _department.clear();
+                        }),
+                        _academicField(_college, ar ? 'الكلية' : 'College', [
+                          for (final u in universities
+                              .where((u) => u.name == _university.text))
+                            for (final c in u.colleges) c.name
+                        ], () {
+                          _department.clear();
+                        }),
+                        _academicField(
+                            _department,
+                            ar ? 'التخصص' : 'Major',
+                            [
+                              for (final u in universities
+                                  .where((u) => u.name == _university.text))
+                                for (final c in u.colleges
+                                    .where((c) => c.name == _college.text))
+                                  ...c.departments
+                            ],
+                            () {}),
+                      ],
+                      ListTile(
+                          leading: const Icon(Icons.music_note),
+                          title: Text(ar
+                              ? 'تغيير نغمة الإشعارات'
+                              : 'Notification sound'),
+                          subtitle: Text(ar
+                              ? 'اختيار النغمة من إعدادات الهاتف'
+                              : 'Choose in phone settings'),
+                          onTap: () async {
+                            try {
+                              await const MethodChannel(
+                                      'zameel/notification_settings')
+                                  .invokeMethod<void>('open');
+                            } catch (_) {
+                              if (mounted)
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                    content: Text(ar
+                                        ? 'افتح إعدادات إشعارات زميل من إعدادات الهاتف'
+                                        : 'Open Zameel notifications in phone settings')));
+                            }
+                          }),
                     ]),
               ),
             ),
@@ -523,6 +635,66 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                     : 'Could not request deletion. Retry or contact zameel.jo@gmail.com.'))));
     }
   }
+
+  Widget _academicField(TextEditingController controller, String label,
+          List<String> options, VoidCallback reset) =>
+      Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: TextField(
+              controller: controller,
+              readOnly: true,
+              decoration: InputDecoration(
+                  labelText: label,
+                  suffixIcon: const Icon(Icons.expand_more),
+                  border: const OutlineInputBorder()),
+              onTap: () async {
+                final choices = options
+                    .where((s) => s.trim().isNotEmpty)
+                    .toSet()
+                    .toList()
+                  ..sort();
+                final selected = await showModalBottomSheet<String>(
+                    context: context,
+                    isScrollControlled: true,
+                    builder: (c) {
+                      String query = '';
+                      return StatefulBuilder(
+                          builder: (c, setModal) => SafeArea(
+                              child: SizedBox(
+                                  height: MediaQuery.sizeOf(c).height * .7,
+                                  child: Padding(
+                                      padding: EdgeInsets.only(
+                                          bottom: MediaQuery.viewInsetsOf(c)
+                                              .bottom),
+                                      child: Column(children: [
+                                        Padding(
+                                            padding: const EdgeInsets.all(12),
+                                            child: TextField(
+                                                autofocus: true,
+                                                decoration: InputDecoration(
+                                                    labelText: label,
+                                                    prefixIcon: const Icon(
+                                                        Icons.search)),
+                                                onChanged: (v) => setModal(
+                                                    () => query = v.trim()))),
+                                        Expanded(
+                                            child: ListView(children: [
+                                          for (final choice in choices.where(
+                                              (v) => v.toLowerCase().contains(
+                                                  query.toLowerCase())))
+                                            ListTile(
+                                                title: Text(choice),
+                                                onTap: () =>
+                                                    Navigator.pop(c, choice))
+                                        ])),
+                                      ])))));
+                    });
+                if (selected != null && mounted && selected != controller.text)
+                  setState(() {
+                    controller.text = selected;
+                    reset();
+                  });
+              }));
 
   Widget _field(TextEditingController controller, String label, IconData icon,
           {TextInputType? keyboard, int lines = 1, int? maxLength}) =>
