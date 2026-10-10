@@ -1,4 +1,4 @@
-import '../lib/services/sponsored_feed.dart';
+import 'package:zameel/services/sponsored_feed.dart';
 
 void check(bool value, String reason) {
   if (!value) throw StateError(reason);
