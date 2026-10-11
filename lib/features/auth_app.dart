@@ -298,7 +298,7 @@ class ZameelApp extends StatelessWidget {
         builder: (context, languageProvider, child) {
           return MaterialApp(
             navigatorKey: zameelNavigatorKey,
-            navigatorObservers: [GlobalNavigationMenu.observer],
+            navigatorObservers: [GlobalNavigationMenu.observer, chatRouteObserver],
             debugShowCheckedModeBanner: false,
             title: 'Zameel',
             locale: languageProvider.currentLocale,

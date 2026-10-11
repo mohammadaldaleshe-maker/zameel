@@ -1,3 +1,6 @@
+import 'package:zameel/services/story_seen_store.dart';
+import '../../services/story_order_service.dart';
+import '../../services/chat_visibility_service.dart';
 import 'story_media_editor.dart';
 import 'package:zameel/theme/appearance_controller.dart';
 import 'package:zameel/widgets/verified_name.dart';
@@ -38,32 +41,10 @@ class StoriesWidget extends StatefulWidget {
   State<StoriesWidget> createState() => _StoriesWidgetState();
 }
 
-String _storyOwnerKey(Map<String, dynamic> story) {
-  if (story['isMine'] == true) return '__me__';
-  final userId = story['user_id']?.toString().trim() ?? '';
-  if (userId.isNotEmpty) return userId;
-  final name = story['name']?.toString().trim() ?? '';
-  return 'name:$name';
-}
-
+String _storyOwnerKey(Map<String, dynamic> story) => storyOwnerKey(story);
 List<List<Map<String, dynamic>>> _groupStories(
-  List<Map<String, dynamic>> stories,
-) {
-  final groups = <String, List<Map<String, dynamic>>>{};
-  for (final story in stories) {
-    groups
-        .putIfAbsent(_storyOwnerKey(story), () => <Map<String, dynamic>>[])
-        .add(story);
-  }
-  final result = groups.values.toList();
-  final mineIndex = result
-      .indexWhere((group) => group.any((story) => story['isMine'] == true));
-  if (mineIndex > 0) {
-    final mine = result.removeAt(mineIndex);
-    result.insert(0, mine);
-  }
-  return result;
-}
+        List<Map<String, dynamic>> stories) =>
+    orderedStoryGroups(stories);
 
 class _StoriesWidgetState extends State<StoriesWidget>
     with WidgetsBindingObserver {
@@ -73,6 +54,14 @@ class _StoriesWidgetState extends State<StoriesWidget>
   Timer? _refreshTimer;
   bool _refreshing = false;
   bool _remoteShown = false;
+  final Set<String> _seenIds = {};
+  Future<void>? _seenLoaded;
+  bool _viewerOpen = false;
+  List<List<Map<String, dynamic>>>? _frozenGroups;
+  Future<void> _loadSeen() => _seenLoaded ??= () async {
+        final uid = ZameelSocialService.uid;
+        if (uid != null) _seenIds.addAll(await StorySeenStore.load(uid));
+      }();
 
   @override
   void initState() {
@@ -109,7 +98,11 @@ class _StoriesWidgetState extends State<StoriesWidget>
   Future<void> _restoreStories() async {
     final userId = ZameelSocialService.uid;
     if (userId == null || widget.friendsOnly) return;
+    await _loadSeen();
     final cached = await HomeSnapshotService.read(userId, 'stories');
+    for (final story in cached) {
+      story['viewed'] = _seenIds.contains('${story['id']}');
+    }
     if (!mounted ||
         _remoteShown ||
         ZameelSocialService.uid != userId ||
@@ -131,6 +124,7 @@ class _StoriesWidgetState extends State<StoriesWidget>
     _refreshing = true;
     final userId = ZameelSocialService.uid;
     try {
+      await _loadSeen();
       final remote = await ZameelSocialService.loadStories(
               friendsOnly: widget.friendsOnly, resolveMedia: false)
           .timeout(const Duration(seconds: 15));
@@ -157,7 +151,7 @@ class _StoriesWidgetState extends State<StoriesWidget>
           'text': story['caption']?.toString() ?? '',
           'imagePath': type == 'image' ? story['media_url']?.toString() : null,
           'videoPath': type == 'video' ? story['media_url']?.toString() : null,
-          'viewed': false,
+          'viewed': _seenIds.contains('${story['id']}'),
           'isMine': story['user_id'] == currentUserId,
         };
       }).toList();
@@ -484,19 +478,24 @@ class _StoriesWidgetState extends State<StoriesWidget>
         .showSnackBar(SnackBar(content: Text(message)));
   }
 
-  void _openStoryGroup(
+  Future<void> _openStoryGroup(
     List<List<Map<String, dynamic>>> groups,
     List<Map<String, dynamic>> selectedGroup,
-  ) {
+  ) async {
     if (selectedGroup.isEmpty) {
       _addMyStory();
       return;
     }
     final ordered = groups.expand((group) => group).toList(growable: true);
     final selectedKey = _storyOwnerKey(selectedGroup.first);
-    final initialIndex =
-        ordered.indexWhere((story) => _storyOwnerKey(story) == selectedKey);
-    Navigator.push(
+    final unseenIndex = ordered.indexWhere((story) =>
+        _storyOwnerKey(story) == selectedKey && story['viewed'] != true);
+    final initialIndex = unseenIndex >= 0
+        ? unseenIndex
+        : ordered.indexWhere((story) => _storyOwnerKey(story) == selectedKey);
+    _viewerOpen = true;
+    _frozenGroups = groups;
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => StoryViewScreen(
@@ -505,6 +504,12 @@ class _StoriesWidgetState extends State<StoriesWidget>
           onStoryViewed: (index) {
             if (index < 0 || index >= ordered.length || !mounted) return;
             setState(() => ordered[index]['viewed'] = true);
+            final id = ordered[index]['id']?.toString();
+            final uid = ZameelSocialService.uid;
+            if (id != null && uid != null) {
+              _seenIds.add(id);
+              unawaited(StorySeenStore.save(uid, _seenIds));
+            }
           },
           onStoryDeleted: (story) {
             if (!mounted) return;
@@ -517,13 +522,24 @@ class _StoriesWidgetState extends State<StoriesWidget>
         ),
       ),
     );
+    if (!mounted) return;
+    setState(() {
+      _viewerOpen = false;
+      _frozenGroups = null;
+      for (final story in _stories) {
+        story['viewed'] =
+            _seenIds.contains('${story['id']}') || story['viewed'] == true;
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     AppearanceScope.observe(context);
     final isArabic = Provider.of<LanguageProvider>(context).isArabic;
-    final groups = _groupStories(_stories);
+    final groups = _viewerOpen
+        ? (_frozenGroups ?? _groupStories(_stories))
+        : _groupStories(_stories);
     final mineGroup = groups.firstWhere(
       (group) => group.any((story) => story['isMine'] == true),
       orElse: () => <Map<String, dynamic>>[],
@@ -842,100 +858,152 @@ class _StoryTypeButton extends StatelessWidget {
 // STORY VIEW SCREEN
 // ============================================================
 
-class _StoryVideoPlayer extends StatefulWidget {
+class StoryVideoPlayer extends StatefulWidget {
   final String path;
   final bool pausedForReport;
+  final bool active;
   final Uint8List? bytes;
 
-  const _StoryVideoPlayer({
+  const StoryVideoPlayer({
+    super.key,
     required this.path,
     this.pausedForReport = false,
+    this.active = true,
     this.bytes,
   });
 
   @override
-  State<_StoryVideoPlayer> createState() => _StoryVideoPlayerState();
+  State<StoryVideoPlayer> createState() => StoryVideoPlayerState();
 }
 
-class _StoryVideoPlayerState extends State<_StoryVideoPlayer> {
-  bool _resumeAfterReport = false;
+class StoryVideoPlayerState extends State<StoryVideoPlayer>
+    with WidgetsBindingObserver {
+  bool _userPaused = false;
+  bool _foreground = true;
+  int _generation = 0;
+  Future<void> _playbackOperations = Future.value();
+  bool get _shouldPlay =>
+      mounted &&
+      widget.active &&
+      !widget.pausedForReport &&
+      _foreground &&
+      !_userPaused;
+  void _applyPlayback() {
+    _playbackOperations =
+        _playbackOperations.catchError((Object _) {}).then((_) async {
+      final c = _controller;
+      if (c == null || !c.value.isInitialized) return;
+      if (_shouldPlay) {
+        await c.setVolume(1);
+        if (_shouldPlay && identical(c, _controller)) await c.play();
+      } else {
+        await c.setVolume(0);
+        await c.pause();
+      }
+    }).catchError((Object e) {
+      debugPrint('Story playback: $e');
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _foreground = state == AppLifecycleState.resumed;
+    _applyPlayback();
+  }
+
   VideoPlayerController? _controller;
   String? _error;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _foreground = WidgetsBinding.instance.lifecycleState == null ||
+        WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
     _initialize();
   }
 
   @override
-  void didUpdateWidget(covariant _StoryVideoPlayer oldWidget) {
+  void didUpdateWidget(covariant StoryVideoPlayer oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final controller = _controller;
-    if (oldWidget.pausedForReport == widget.pausedForReport ||
-        controller == null ||
-        !controller.value.isInitialized) return;
-    if (widget.pausedForReport) {
-      _resumeAfterReport = controller.value.isPlaying;
-      unawaited(controller.pause());
-    } else if (_resumeAfterReport) {
-      _resumeAfterReport = false;
-      unawaited(controller.play());
+    if (oldWidget.path != widget.path || oldWidget.bytes != widget.bytes) {
+      final previous = _controller;
+      _controller = null;
+      _userPaused = false;
+      if (previous != null) unawaited(_stopAndDispose(previous));
+      _initialize();
+    } else {
+      _applyPlayback();
+    }
+  }
+
+  Future<void> _stopAndDispose(VideoPlayerController controller) async {
+    try {
+      await controller.setVolume(0);
+      await controller.pause();
+    } catch (e) {
+      debugPrint('Story stopping: $e');
+    } finally {
+      await controller.dispose();
     }
   }
 
   Future<void> _initialize() async {
+    final generation = ++_generation;
+    VideoPlayerController? candidate;
     try {
       final path = widget.path;
-      final isNetworkSource = path.startsWith('http://') ||
+      if (path.startsWith('http://') ||
           path.startsWith('https://') ||
-          path.startsWith('zameel-private://');
-      if (isNetworkSource) {
-        _controller = await VideoSourceService.controller(path);
-        if (!mounted) {
-          await _controller?.dispose();
-          return;
-        }
+          path.startsWith('zameel-private://')) {
+        candidate = await VideoSourceService.controller(path);
       } else if (kIsWeb ||
           path.startsWith('blob:') ||
           path.startsWith('data:')) {
-        // Flutter Web cannot use VideoPlayerController.file. ImagePicker Web
-        // normally returns a blob URL; use it directly. If a blob URL is not
-        // available, fall back to a data URL built from the selected bytes.
-        Uri? uri;
-        if (path.startsWith('http://') ||
+        final validUri = path.startsWith('blob:') ||
+            path.startsWith('data:') ||
             path.startsWith('https://') ||
-            path.startsWith('blob:') ||
-            path.startsWith('data:')) {
-          uri = Uri.tryParse(path);
-        }
-        if (uri == null && widget.bytes != null && widget.bytes!.isNotEmpty) {
-          uri = Uri.dataFromBytes(widget.bytes!, mimeType: 'video/mp4');
-        }
-        if (uri == null) {
-          throw Exception('No web video source available');
-        }
-        _controller = VideoPlayerController.networkUrl(uri);
+            path.startsWith('http://');
+        final uri = validUri
+            ? Uri.tryParse(path)
+            : (widget.bytes == null
+                ? null
+                : Uri.dataFromBytes(widget.bytes!, mimeType: 'video/mp4'));
+        if (uri == null) throw StateError('No video source');
+        candidate = VideoPlayerController.networkUrl(uri);
       } else {
-        _controller = videoControllerFromLocalPath(path);
+        candidate = videoControllerFromLocalPath(path);
       }
-
-      await _controller!.initialize();
-      await _controller!.setLooping(true);
-      if (widget.pausedForReport) {
-        _resumeAfterReport = true;
-      } else {
-        await _controller!.play();
+      if (!mounted || generation != _generation) {
+        await candidate.dispose();
+        return;
       }
-      if (mounted) setState(() {});
+      await candidate.initialize();
+      await candidate.setLooping(true);
+      if (!mounted || generation != _generation) {
+        await candidate.dispose();
+        return;
+      }
+      _controller = candidate;
+      _applyPlayback();
+      setState(() => _error = null);
     } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
+      if (candidate != null && !identical(candidate, _controller))
+        await candidate.dispose();
+      if (mounted && generation == _generation)
+        setState(() => _error = e.toString());
     }
   }
 
   @override
   void dispose() {
-    _controller?.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+    ++_generation;
+    final controller = _controller;
+    _controller = null;
+    if (controller != null) {
+      unawaited(_stopAndDispose(controller));
+    }
     super.dispose();
   }
 
@@ -980,11 +1048,8 @@ class _StoryVideoPlayerState extends State<_StoryVideoPlayer> {
 
     return GestureDetector(
       onTap: () {
-        if (controller.value.isPlaying) {
-          controller.pause();
-        } else {
-          controller.play();
-        }
+        _userPaused = !_userPaused;
+        _applyPlayback();
         setState(() {});
       },
       child: ClipRRect(
@@ -1100,7 +1165,49 @@ class StoryViewScreen extends StatefulWidget {
   State<StoryViewScreen> createState() => _StoryViewScreenState();
 }
 
-class _StoryViewScreenState extends State<StoryViewScreen> {
+class _StoryViewScreenState extends State<StoryViewScreen>
+    with WidgetsBindingObserver, RouteAware {
+  ModalRoute<dynamic>? _playbackRoute;
+  bool _routeVisible = true;
+  bool _foreground = true;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route != _playbackRoute) {
+      chatRouteObserver.unsubscribe(this);
+      _playbackRoute = route;
+      if (route != null) chatRouteObserver.subscribe(this, route);
+    }
+    _routeVisible = route?.isCurrent == true;
+  }
+
+  @override
+  void didPush() {
+    _routeVisible = true;
+  }
+
+  @override
+  void didPushNext() {
+    if (mounted) setState(() => _routeVisible = false);
+  }
+
+  @override
+  void didPopNext() {
+    if (mounted) setState(() => _routeVisible = true);
+  }
+
+  @override
+  void didPop() {
+    if (mounted) setState(() => _routeVisible = false);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (mounted)
+      setState(() => _foreground = state == AppLifecycleState.resumed);
+  }
+
   late final PageController _pageController;
   late int _currentIndex;
   bool _deleting = false;
@@ -1111,6 +1218,7 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _currentIndex = widget.stories.isEmpty
         ? 0
         : widget.initialIndex < 0
@@ -1148,6 +1256,8 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    chatRouteObserver.unsubscribe(this);
     _pageController.dispose();
     super.dispose();
   }
@@ -1543,8 +1653,13 @@ class _StoryViewScreenState extends State<StoryViewScreen> {
                               ),
                             )
                           else if (hasVideo)
-                            _StoryVideoPlayer(
+                            StoryVideoPlayer(
+                              key: ValueKey(
+                                  'story-video-${story['id'] ?? index}'),
                               path: videoPath,
+                              active: index == _currentIndex &&
+                                  _routeVisible &&
+                                  _foreground,
                               pausedForReport: _reporting,
                               bytes: story['videoBytes'] is Uint8List
                                   ? story['videoBytes'] as Uint8List

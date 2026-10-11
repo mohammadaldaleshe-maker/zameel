@@ -1,4 +1,6 @@
 import 'package:zameel/widgets/chat_presence_label.dart';
+import 'package:zameel/widgets/typing_message_bubble.dart';
+import 'package:zameel/widgets/unread_conversation_badge.dart';
 import 'package:zameel/widgets/keep_keyboard_send_button.dart';
 import 'package:zameel/widgets/copyable_text.dart';
 import '../../widgets/chat_media_viewer.dart';
@@ -27,6 +29,7 @@ import '../anonymous/anonymous_screen.dart';
 import '../meet/meet_screen.dart';
 import 'package:zameel/theme/app_theme.dart';
 import '../../services/screen_awake_service.dart';
+import '../../services/chat_visibility_service.dart';
 
 class ChatScreen extends StatefulWidget {
   final String? partnerId;
@@ -62,7 +65,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     _inboxChannel = db
         .channel('inbox-151:$uid')
         .onPostgresChanges(
-            event: PostgresChangeEvent.insert,
+            event: PostgresChangeEvent.all,
             schema: 'public',
             table: 'messages',
             callback: (_) => _refreshInbox())
@@ -87,6 +90,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     _onlineTimer?.cancel();
     if (state == AppLifecycleState.resumed) {
       _loadChatPresence();
+      _refreshInbox();
       _onlineTimer = Timer.periodic(const Duration(seconds: 25), (_) {
         if (mounted && ModalRoute.of(context)?.isCurrent == true) {
           _loadChatPresence();
@@ -139,7 +143,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   }
 
   Future<List<Map<String, dynamic>>> _inboxRows() async {
-    final rows = await db.rpc('zameel_chat_inbox');
+    final rows = await db.rpc('zameel_chat_inbox_153');
     return [
       for (final row in rows as List) Map<String, dynamic>.from(row as Map)
     ];
@@ -329,6 +333,14 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                                               radius: 5,
                                               backgroundColor: Colors.green)))
                               ]),
+                              trailing:
+                                  (num.tryParse('${f['unread_count'] ?? 0}') ??
+                                              0) >
+                                          0
+                                      ? UnreadConversationBadge(
+                                          count:
+                                              int.parse('${f['unread_count']}'))
+                                      : null,
                               title: VerifiedName(
                                   userId: f['id']?.toString(),
                                   child: Text(name,
@@ -648,7 +660,59 @@ class ChatDetailScreen extends StatefulWidget {
 }
 
 class _ChatDetailScreenState extends State<ChatDetailScreen>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver, RouteAware {
+  ModalRoute<dynamic>? _visibilityRoute;
+  Timer? _visibilityTimer;
+  bool _routeVisible = false;
+  bool get _chatVisible =>
+      mounted &&
+      _routeVisible &&
+      ModalRoute.of(context)?.isCurrent == true &&
+      (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed ||
+          WidgetsBinding.instance.lifecycleState == null);
+  void _visibilityChanged() {
+    ChatVisibilityService.set(
+        this, _chatVisible ? widget.conversationId : null);
+    if (_chatVisible && !_loading) unawaited(_markRead());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route != _visibilityRoute) {
+      chatRouteObserver.unsubscribe(this);
+      _visibilityRoute = route;
+      if (route != null) chatRouteObserver.subscribe(this, route);
+    }
+    _routeVisible = route?.isCurrent == true;
+    _visibilityChanged();
+  }
+
+  @override
+  void didPush() {
+    _routeVisible = true;
+    _visibilityChanged();
+  }
+
+  @override
+  void didPopNext() {
+    _routeVisible = true;
+    _visibilityChanged();
+  }
+
+  @override
+  void didPushNext() {
+    _routeVisible = false;
+    _visibilityChanged();
+  }
+
+  @override
+  void didPop() {
+    _routeVisible = false;
+    _visibilityChanged();
+  }
+
   final _controller = TextEditingController();
   final _composerFocus = FocusNode();
   Timer? _typingStopTimer;
@@ -678,17 +742,20 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
     WidgetsBinding.instance.addObserver(this);
     _load();
     _subscribe();
+    _visibilityTimer =
+        Timer.periodic(const Duration(seconds: 5), (_) => _visibilityChanged());
     _subscribeMeet();
     _refreshMeet();
     _syncChat();
     _meetTimer = Timer.periodic(
         const Duration(seconds: 5), (_) => _refreshMeet(silent: true));
     _refreshPresence();
-    _typingTimer =
-        Timer.periodic(const Duration(seconds: 2), (_) {
-          unawaited(_readTyping());
-          if (++_reactionReadTick % 2 == 0 && WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) unawaited(_readReactions());
-        });
+    _typingTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+      unawaited(_readTyping());
+      if (++_reactionReadTick % 2 == 0 &&
+          WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed)
+        unawaited(_readReactions());
+    });
     _presenceTimer =
         Timer.periodic(const Duration(seconds: 25), (_) => _refreshPresence());
     _syncTimer = Timer.periodic(const Duration(seconds: 8), (_) => _syncChat());
@@ -696,6 +763,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    _visibilityChanged();
     if (state == AppLifecycleState.resumed) {
       _refreshPresence();
       _syncChat();
@@ -724,9 +792,14 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   bool _reactionsReading = false, _reactionWriting = false;
   int _reactionReadTick = 0;
   Future<void> _readReactions() async {
-    if (!mounted || _reactionsReading || ModalRoute.of(context)?.isCurrent != true) return;
-    final ids = _messages.where((m) => m['_sending'] != true)
-        .map((m) => m['id'].toString()).where((id) => !id.startsWith('local-')).toList();
+    if (!mounted ||
+        _reactionsReading ||
+        ModalRoute.of(context)?.isCurrent != true) return;
+    final ids = _messages
+        .where((m) => m['_sending'] != true)
+        .map((m) => m['id'].toString())
+        .where((id) => !id.startsWith('local-'))
+        .toList();
     if (ids.isEmpty) return;
     _reactionsReading = true;
     try {
@@ -741,50 +814,82 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
           next.putIfAbsent(r['message_id'].toString(), () => []).add(r);
         }
       }
-      if (mounted) setState(() { _reactions..clear()..addAll(next); });
-    } catch (error) { debugPrint('Message reactions refresh: $error'); }
-    finally { _reactionsReading = false; }
+      if (mounted)
+        setState(() {
+          _reactions
+            ..clear()
+            ..addAll(next);
+        });
+    } catch (error) {
+      debugPrint('Message reactions refresh: $error');
+    } finally {
+      _reactionsReading = false;
+    }
   }
 
   Future<void> _reactionPicker(Map<String, dynamic> message) async {
-    if (message['sender_id'] == uid || message['deleted'] == true || message['_sending'] == true || _reactionWriting) return;
+    if (message['sender_id'] == uid ||
+        message['deleted'] == true ||
+        message['_sending'] == true ||
+        _reactionWriting) return;
     final ar = Provider.of<LanguageProvider>(context, listen: false).isArabic;
-    final selected = await showModalBottomSheet<String>(context: context,
-      builder: (c) => SafeArea(child: Padding(padding: const EdgeInsets.all(18),
-        child: Wrap(spacing: 6, children: [
-          for (final emoji in const ['❤️','😂','🙏','😭','😲','💩'])
-            TextButton(onPressed: () => Navigator.pop(c, emoji),
-              child: Text(emoji, style: const TextStyle(fontSize: 30))),
-          TextButton(onPressed: () => Navigator.pop(c, 'remove'),
-            child: Text(ar ? 'إلغاء التفاعل' : 'Remove reaction')),
-        ]))));
+    final selected = await showModalBottomSheet<String>(
+        context: context,
+        builder: (c) => SafeArea(
+            child: Padding(
+                padding: const EdgeInsets.all(18),
+                child: Wrap(spacing: 6, children: [
+                  for (final emoji in const [
+                    '❤️',
+                    '😂',
+                    '🙏',
+                    '😭',
+                    '😲',
+                    '💩'
+                  ])
+                    TextButton(
+                        onPressed: () => Navigator.pop(c, emoji),
+                        child:
+                            Text(emoji, style: const TextStyle(fontSize: 30))),
+                  TextButton(
+                      onPressed: () => Navigator.pop(c, 'remove'),
+                      child: Text(ar ? 'إلغاء التفاعل' : 'Remove reaction')),
+                ]))));
     if (selected == null || !mounted) return;
     _reactionWriting = true;
     try {
       final current = _reactions[message['id'].toString()] ?? [];
-      final same = current.any((r) => r['user_id'] == uid && r['emoji'] == selected);
+      final same =
+          current.any((r) => r['user_id'] == uid && r['emoji'] == selected);
       await db.rpc('zameel_message_react', params: {
-        'p_conversation': widget.conversationId, 'p_message': message['id'],
+        'p_conversation': widget.conversationId,
+        'p_message': message['id'],
         'p_emoji': selected == 'remove' || same ? null : selected,
       });
       await _readReactions();
     } catch (error) {
-      if (mounted) _notice(ar ? 'تعذر حفظ التفاعل، حاول مجددًا' : 'Could not save reaction. Try again.');
-    } finally { _reactionWriting = false; }
+      if (mounted)
+        _notice(ar
+            ? 'تعذر حفظ التفاعل، حاول مجددًا'
+            : 'Could not save reaction. Try again.');
+    } finally {
+      _reactionWriting = false;
+    }
   }
 
   Widget _reactionBar(Map<String, dynamic> message, bool mine) {
     final rows = _reactions[message['id'].toString()] ?? [];
     return Wrap(spacing: 4, children: [
-      IconButton(tooltip: 'خيارات الرسالة', onPressed: () => _messageMenu(message),
-        icon: const Icon(Icons.more_horiz, size: 18)),
-      for (final r in rows) TextButton(
-        onPressed: !mine ? () => _reactionPicker(message) : null,
-        child: Text(r['emoji'].toString(), style: const TextStyle(fontSize: 20))),
+      for (final r in rows)
+        TextButton(
+            onPressed: !mine ? () => _reactionPicker(message) : null,
+            child: Text(r['emoji'].toString(),
+                style: const TextStyle(fontSize: 20))),
       if (!mine && (message['media_url']?.toString().isNotEmpty ?? false))
-        IconButton(tooltip: 'التفاعل مع الرسالة',
-          onPressed: () => _reactionPicker(message),
-          icon: const Icon(Icons.add_reaction_outlined, size: 20)),
+        IconButton(
+            tooltip: 'التفاعل مع الرسالة',
+            onPressed: () => _reactionPicker(message),
+            icon: const Icon(Icons.add_reaction_outlined, size: 20)),
     ]);
   }
 
@@ -1110,6 +1215,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
 
   @override
   void dispose() {
+    _visibilityTimer?.cancel();
+    chatRouteObserver.unsubscribe(this);
+    ChatVisibilityService.set(this, null);
     WidgetsBinding.instance.removeObserver(this);
     _messagesChannel?.unsubscribe();
     _meetChannel?.unsubscribe();
@@ -1164,12 +1272,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
     };
     setState(() => _messages.add(optimistic));
     _controller.clear();
-    _composerFocus.requestFocus();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && ModalRoute.of(context)?.isCurrent == true) {
-        _composerFocus.requestFocus();
-      }
-    });
+    // Keep the existing input connection; sending must not unfocus/refocus it.
     unawaited(_sendTyping(false));
     _scrollToEnd();
     try {
@@ -1440,7 +1543,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
     final type = message['media_type']?.toString() ?? '';
     if (path.isEmpty) {
       return CopyableText(message['content']?.toString() ?? '',
-          onTap: message['sender_id'] != uid ? () => _reactionPicker(message) : () => _messageMenu(message),
+          onTap: message['sender_id'] != uid
+              ? () => _reactionPicker(message)
+              : () => _messageMenu(message),
+          onOptions: () => _messageMenu(message),
           style: TextStyle(
               color: mine ? Colors.white : AppTheme.adaptiveText,
               fontSize: 15));
@@ -1515,8 +1621,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   }
 
   Future<void> _markRead() async {
+    if (!_chatVisible) return;
     try {
-      await db.rpc('mark_conversation_read', params: {
+      await db.rpc('zameel_chat_mark_read_153', params: {
         'target_conversation_id': widget.conversationId,
       });
     } catch (_) {}
@@ -1948,7 +2055,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                 userId: widget.partnerId,
                 child: Text(widget.partnerName,
                     style: const TextStyle(fontWeight: FontWeight.bold))),
-            ChatPresenceLabel(typing: _partnerTyping, online: _partnerOnline, arabic: ar),
+            ChatPresenceLabel(
+                typing: false, online: _partnerOnline, arabic: ar),
             if (widget.contextLabel != null)
               Text(widget.contextLabel!,
                   style: const TextStyle(
@@ -2020,9 +2128,15 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                               controller: _scroll,
                               reverse: true,
                               padding: const EdgeInsets.all(14),
-                              itemCount: timeline.length,
+                              itemCount:
+                                  timeline.length + (_partnerTyping ? 1 : 0),
                               itemBuilder: (_, i) {
-                                final m = timeline[timeline.length - 1 - i];
+                                if (_partnerTyping && i == 0)
+                                  return TypingMessageBubble(arabic: ar);
+                                final messageIndex =
+                                    i - (_partnerTyping ? 1 : 0);
+                                final m = timeline[
+                                    timeline.length - 1 - messageIndex];
                                 if (m['call_event'] == true)
                                   return _callEvent(m);
 
@@ -2033,7 +2147,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                                       ? Alignment.centerRight
                                       : Alignment.centerLeft,
                                   child: GestureDetector(
-                                    onTap: !mine ? () => _reactionPicker(m) : null,
+                                    onTap:
+                                        !mine ? () => _reactionPicker(m) : null,
                                     onLongPress: () => _messageMenu(m),
                                     child: Container(
                                       margin: const EdgeInsets.only(bottom: 8),
@@ -2151,6 +2266,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                     child: TextField(
                       controller: _controller,
                       key: const ValueKey('direct-chat-composer'),
+                      groupId: _composerFocus,
                       focusNode: _composerFocus,
                       onChanged: _typingChanged,
                       textInputAction: TextInputAction.send,

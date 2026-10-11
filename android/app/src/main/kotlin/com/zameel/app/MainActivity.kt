@@ -12,6 +12,14 @@ import io.flutter.embedding.android.FlutterActivity
 class MainActivity : FlutterActivity() {
     private var playBilling: ZameelPlayBilling? = null
     private var pendingExport: Triple<java.io.File, io.flutter.plugin.common.MethodChannel.Result, () -> Unit>? = null
+    override fun onResume() {
+        super.onResume()
+        ZameelChatVisibility.setForeground(this, true)
+    }
+    override fun onPause() {
+        ZameelChatVisibility.setForeground(this, false)
+        super.onPause()
+    }
     override fun cleanUpFlutterEngine(engine: io.flutter.embedding.engine.FlutterEngine) {
         playBilling?.close()
         playBilling = null
@@ -19,6 +27,15 @@ class MainActivity : FlutterActivity() {
     }
     override fun configureFlutterEngine(engine: io.flutter.embedding.engine.FlutterEngine) {
         super.configureFlutterEngine(engine)
+        io.flutter.plugin.common.MethodChannel(engine.dartExecutor.binaryMessenger, "zameel/chat_visibility")
+            .setMethodCallHandler { call, result ->
+                if (call.method != "set") result.notImplemented()
+                else {
+                    ZameelChatVisibility.set(this, call.argument<String>("conversationId"), call.argument<String>("userId"))
+                    result.success(null)
+                }
+            }
+
         io.flutter.plugin.common.MethodChannel(engine.dartExecutor.binaryMessenger, "zameel/notification_settings")
             .setMethodCallHandler { call, result ->
                 if (call.method != "open") result.notImplemented()

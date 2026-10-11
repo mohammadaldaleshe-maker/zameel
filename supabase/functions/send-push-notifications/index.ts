@@ -292,6 +292,21 @@ Deno.serve(async (req) => {
           continue;
         }
 
+        if (notification.type === "message") {
+          const { data: suppress, error: visibilityError } = await supabase.rpc(
+            "zameel_chat_should_suppress_push_153", { p_notification: notification.id, p_device: device.id });
+          // Fail visibly/retry on schema or RPC errors; never silently drop a push.
+          if (visibilityError) throw visibilityError;
+          if (suppress === true) {
+            if (deliveryLedgerAvailable) await supabase.from("push_notification_deliveries").upsert({
+              queue_id: item.id, token_id: device.id, status: "sent",
+              attempts: Number(previousDelivery?.attempts ?? 0), last_error: "conversation_visible",
+              sent_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+            }, { onConflict: "queue_id,token_id" });
+            continue;
+          }
+        }
+
         const useArabic = String(device.locale ?? "ar").toLowerCase().startsWith("ar");
         const directMessage = notification.type === "message";
         const title = directMessage && messageSenderName

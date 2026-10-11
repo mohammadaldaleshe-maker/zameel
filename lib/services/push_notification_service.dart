@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'call_invitation_guard.dart';
+import 'chat_visibility_service.dart';
 import 'native_incoming_call_service.dart';
 
 @pragma('vm:entry-point')
@@ -254,6 +255,7 @@ class PushNotificationService {
         '';
 
     if (type == 'notification_cancel') return;
+    if (type == 'message' && ChatVisibilityService.matches(message.data['conversation_id']?.toString())) return;
 
     // Android direct-chat messages are posted by ZameelBubbleReceiver using
     // the official system Conversation/Bubble API. Skipping the generic local

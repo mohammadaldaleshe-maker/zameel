@@ -4,10 +4,14 @@
   "scripts": {
     "test": "node trust_db_test.mjs",
     "test:151": "node account_chat_151_test.mjs && node likes_151_test.mjs && node trust_151_test.mjs && node play_billing_146/database_151_test.mjs && node order_finance_151_test.mjs",
-    "test:152": "npm run test:151 && node reactions_152_test.mjs"
+    "test:152": "npm run test:151 && node reactions_152_test.mjs",
+    "test:153": "npm run test:152 && node chat_153_test.mjs && node push_visibility_153_test.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "0.5.8"
   },
-  "name": "zameel-maintenance-verification"
+  "name": "zameel-maintenance-verification",
+  "devDependencies": {
+    "esbuild": "0.25.12"
+  }
 }

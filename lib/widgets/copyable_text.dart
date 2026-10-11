@@ -8,12 +8,14 @@ class CopyableText extends StatelessWidget {
       {super.key,
       this.style,
       this.onTap,
+      this.onOptions,
       this.maxLines,
       this.overflow,
       this.textAlign});
   final String? data;
   final TextStyle? style;
   final VoidCallback? onTap;
+  final VoidCallback? onOptions;
   final int? maxLines;
   final TextOverflow? overflow;
   final TextAlign? textAlign;
@@ -32,6 +34,13 @@ class CopyableText extends StatelessWidget {
                       child: SelectableText(text,
                           enableInteractiveSelection: true))),
               actions: [
+                if (onOptions != null)
+                  TextButton(
+                      onPressed: () {
+                        Navigator.pop(c);
+                        onOptions!();
+                      },
+                      child: Text(ar ? 'خيارات الرسالة' : 'Message options')),
                 TextButton(
                     onPressed: () async {
                       await Clipboard.setData(ClipboardData(text: text));

@@ -1,33 +1,28 @@
 import 'package:flutter/material.dart';
 
-class KeepKeyboardSendButton extends StatefulWidget {
+/// A send target that never joins a FocusScope or changes the input connection.
+class KeepKeyboardSendButton extends StatelessWidget {
   const KeepKeyboardSendButton(
       {super.key, required this.composerFocus, required this.onSend});
   final FocusNode composerFocus;
   final VoidCallback onSend;
   @override
-  State<KeepKeyboardSendButton> createState() => _KeepKeyboardSendButtonState();
-}
-
-class _KeepKeyboardSendButtonState extends State<KeepKeyboardSendButton> {
-  final _buttonFocus = FocusNode(skipTraversal: true, canRequestFocus: false);
-  @override
-  void dispose() {
-    _buttonFocus.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => TextFieldTapRegion(
-      child: IconButton.filled(
-          focusNode: _buttonFocus,
-          onPressed: () {
-            final wasFocused = widget.composerFocus.hasFocus;
-            widget.onSend();
-            if (wasFocused)
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted) widget.composerFocus.requestFocus();
-              });
-          },
-          icon: const Icon(Icons.send_rounded)));
+  Widget build(BuildContext context) => SelectionContainer.disabled(
+      child: TextFieldTapRegion(
+          groupId: composerFocus,
+          child: Semantics(
+              button: true,
+              label: 'إرسال / Send',
+              onTap: onSend,
+              child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: onSend,
+                  child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary,
+                          shape: BoxShape.circle),
+                      child: Icon(Icons.send_rounded,
+                          color: Theme.of(context).colorScheme.onPrimary))))));
 }

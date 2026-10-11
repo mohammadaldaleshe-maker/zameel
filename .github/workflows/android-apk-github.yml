@@ -91,11 +91,12 @@ jobs:
       - name: Check Google Play server and database contracts
         run: |
           node verification/academic_catalog_150_test.mjs
+          dart verification/story_order_153_test.dart
           npm ci --prefix verification/play_billing_146 --ignore-scripts
           npm test --prefix verification/play_billing_146
           node --test verification/play_provider_146_test.mjs verification/play_purchase_146_test.mjs
           npm ci --prefix verification --ignore-scripts
-          npm run test:152 --prefix verification
+          npm run test:153 --prefix verification
 
       - name: Build universal and device-specific APKs
         shell: bash
@@ -108,14 +109,14 @@ jobs:
             --dart-define="WEBRTC_TURN_URL=$WEBRTC_TURN_URL" \
             --dart-define="WEBRTC_TURN_USERNAME=$WEBRTC_TURN_USERNAME" \
             --dart-define="WEBRTC_TURN_CREDENTIAL=$WEBRTC_TURN_CREDENTIAL" \
-            --dart-define=ZAMEEL_VERSION=2.0.12+21
+            --dart-define=ZAMEEL_VERSION=2.0.15+24
           flutter build apk --release --split-per-abi --build-number="$build_number" \
             --dart-define="SUPABASE_URL=$SUPABASE_URL" \
             --dart-define="SUPABASE_PUBLISHABLE_KEY=$SUPABASE_PUBLISHABLE_KEY" \
             --dart-define="WEBRTC_TURN_URL=$WEBRTC_TURN_URL" \
             --dart-define="WEBRTC_TURN_USERNAME=$WEBRTC_TURN_USERNAME" \
             --dart-define="WEBRTC_TURN_CREDENTIAL=$WEBRTC_TURN_CREDENTIAL" \
-            --dart-define=ZAMEEL_VERSION=2.0.12+21
+            --dart-define=ZAMEEL_VERSION=2.0.15+24
 
       - name: Build Android App Bundle for Google Play
         if: inputs.signing == 'signed'
@@ -130,7 +131,7 @@ jobs:
             --dart-define="WEBRTC_TURN_URL=$WEBRTC_TURN_URL" \
             --dart-define="WEBRTC_TURN_USERNAME=$WEBRTC_TURN_USERNAME" \
             --dart-define="WEBRTC_TURN_CREDENTIAL=$WEBRTC_TURN_CREDENTIAL" \
-            --dart-define=ZAMEEL_VERSION=2.0.12+21
+            --dart-define=ZAMEEL_VERSION=2.0.15+24
 
       - name: Check APK signature
         shell: bash

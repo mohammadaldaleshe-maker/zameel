@@ -61,7 +61,8 @@ class ZameelBubbleReceiver : FlutterFirebaseMessagingReceiver() {
             ZameelIncomingCall.receive(appContext, extras)
         }
 
-        if (extras != null && isDirectMessage(extras)) {
+        if (extras != null && isDirectMessage(extras) &&
+            !ZameelChatVisibility.isVisible(appContext, value(extras, "conversation_id"))) {
             postConversationFallback(appContext, extras)
         }
 

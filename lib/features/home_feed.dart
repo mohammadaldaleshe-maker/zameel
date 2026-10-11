@@ -65,6 +65,10 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
       if (!mounted || currentIndex != 0) return;
       FeatureControl.instance.open(context, 'profile_student',
           () => const ProfileScreen());
+    }, profilePageBuilder: () async {
+      if (!mounted || currentIndex != 0) return null;
+      if (!await FeatureControl.instance.check(context, 'profile_student') || !mounted || currentIndex != 0) return null;
+      return const ProfileScreen();
     });
     _createUserIfNotExists();
     _loadCurrentProfileImage();
