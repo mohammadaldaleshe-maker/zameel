@@ -1,3 +1,4 @@
+import '../../widgets/chat_timestamp.dart';
 import 'package:zameel/theme/appearance_controller.dart';
 import 'package:zameel/widgets/verified_name.dart';
 import 'package:flutter/material.dart';
@@ -42,7 +43,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
       final rows = await RemainingServices.groupMessages(widget.groupId);
       if (!mounted) return;
       setState(() {
-        _messages = rows;
+        _messages = chatDatedRows(rows);
         _loading = false;
       });
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -106,6 +107,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                         itemCount: _messages.length,
                         itemBuilder: (context, index) {
                           final message = _messages[index];
+                          if (message['date_separator'] == true) return ChatDateSeparator(value: message['created_at']);
                           final isMe = message['user_id']?.toString() == me;
                           final name = message['sender_name']
                                       ?.toString()

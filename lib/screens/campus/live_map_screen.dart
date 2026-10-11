@@ -17,6 +17,8 @@ import '../../services/screen_awake_service.dart';
 import '../../services/advertising_service.dart';
 import '../../services/feature_control.dart';
 import '../business/advertisement_card.dart';
+import '../business/partner_ads_screen.dart';
+import '../../services/remaining_services.dart';
 import 'campus_place_admin_screen.dart';
 
 class LiveMapScreen extends StatefulWidget {
@@ -76,6 +78,7 @@ class _LiveMapScreenState extends State<LiveMapScreen>
   List<_CampusData> _campuses = const [];
   List<_CampusPlace> _places = const [];
   List<Map<String, dynamic>> _partnerAdvertisements = const [];
+  List<Map<String, dynamic>> _partnerLocations = const [];
   _CampusData? _campus;
   _CampusData? _registeredCampus;
   _CampusPlace? _destination;
@@ -165,6 +168,13 @@ class _LiveMapScreenState extends State<LiveMapScreen>
   }
 
   Future<void> _loadPartnerAdvertisements() async {
+    if (FeatureControl.instance.enabled('business_partners')) {
+      try {
+        final partners = await RemainingServices.partners();
+        if (mounted) setState(() => _partnerLocations = partners.where(
+            (p) => p['latitude'] is num && p['longitude'] is num).toList());
+      } catch (_) { /* Existing campus markers remain available. */ }
+    }
     if (!FeatureControl.instance.enabled('partner_advertising')) return;
     try {
       final ads = await AdvertisingService.liveAds(limit: 50);
@@ -620,7 +630,22 @@ class _LiveMapScreenState extends State<LiveMapScreen>
                   points: _routePoints, color: AppTheme.primary, strokeWidth: 5)
             ]),
           MarkerLayer(markers: [
-            for (final ad in _partnerAdvertisements)
+            for (final partner in _partnerLocations)
+              Marker(
+                point: LatLng((partner['latitude'] as num).toDouble(),
+                    (partner['longitude'] as num).toDouble()),
+                width: 150, height: 72,
+                child: GestureDetector(
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                    builder: (_) => PartnerAdsScreen(partner: partner, isArabic: ar))),
+                  child: Card(child: Padding(padding: const EdgeInsets.all(6),
+                    child: Center(child: Text('📍 ${partner['name']}',
+                      textAlign: TextAlign.center, maxLines: 2,
+                      overflow: TextOverflow.ellipsis)))),
+                ),
+              ),
+            for (final ad in _partnerAdvertisements.where((ad) =>
+                !_partnerLocations.any((p) => p['id'] == ad['partner_id'])))
               Marker(
                 point: LatLng((ad['latitude'] as num).toDouble(),
                     (ad['longitude'] as num).toDouble()),

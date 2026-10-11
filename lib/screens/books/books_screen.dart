@@ -734,6 +734,14 @@ class _BooksScreenState extends State<BooksScreen> {
         fileName: brandedName,
         bytes: bytes,
       );
+      if (savedPath != null) {
+        try {
+          await Supabase.instance.client.rpc('zameel_record_study_save_154',
+              params: {'p_file': file['id']});
+        } catch (error) {
+          debugPrint('Study save audit unavailable: $error');
+        }
+      }
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

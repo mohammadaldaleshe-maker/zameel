@@ -1,3 +1,4 @@
+import '../../widgets/chat_timestamp.dart';
 import 'package:zameel/widgets/chat_presence_label.dart';
 import 'package:zameel/widgets/typing_message_bubble.dart';
 import 'package:zameel/widgets/unread_conversation_badge.dart';
@@ -2044,7 +2045,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   Widget build(BuildContext context) {
     AppearanceScope.observe(context);
     final ar = Provider.of<LanguageProvider>(context).isArabic;
-    final timeline = _timeline;
+    final timeline = chatDatedRows(_timeline);
     return Directionality(
       textDirection: ar ? ui.TextDirection.rtl : ui.TextDirection.ltr,
       child: Scaffold(
@@ -2137,6 +2138,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                                     i - (_partnerTyping ? 1 : 0);
                                 final m = timeline[
                                     timeline.length - 1 - messageIndex];
+                                if (m['date_separator'] == true) {
+                                  return ChatDateSeparator(value: m['created_at'], arabic: ar);
+                                }
                                 if (m['call_event'] == true)
                                   return _callEvent(m);
 
@@ -2168,6 +2172,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                                         children: [
                                           _messageContent(m, mine),
                                           _reactionBar(m, mine),
+                                          Text(chatTime(m['created_at']),
+                                              textDirection: ui.TextDirection.ltr,
+                                              style: TextStyle(fontSize: 11,
+                                                  color: mine ? Colors.white70 : AppTheme.adaptiveSecondary)),
                                           if (mine) ...[
                                             const SizedBox(height: 3),
                                             Icon(

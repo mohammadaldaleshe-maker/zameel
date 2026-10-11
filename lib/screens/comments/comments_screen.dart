@@ -369,56 +369,56 @@ class _CommentsScreenState extends State<CommentsScreen> {
     return Directionality(
       textDirection: isArabic ? ui.TextDirection.rtl : ui.TextDirection.ltr,
       child: Scaffold(
-        resizeToAvoidBottomInset: false,
+        resizeToAvoidBottomInset: true,
         appBar: AppBar(
           title: Text(isArabic ? 'التعليقات' : 'Comments'),
           centerTitle: true,
         ),
         body: Padding(
-            padding: EdgeInsets.only(
-                bottom: MediaQuery.viewInsetsOf(context).bottom),
+            padding: EdgeInsets.zero,
             child: Column(
               children: [
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppTheme.adaptiveBackground,
-                    border: Border(
-                      bottom:
-                          BorderSide(color: AppTheme.adaptiveMuted.shade200),
+                if (MediaQuery.viewInsetsOf(context).bottom == 0)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppTheme.adaptiveBackground,
+                      border: Border(
+                        bottom:
+                            BorderSide(color: AppTheme.adaptiveMuted.shade200),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (postText.toString().trim().isNotEmpty)
+                          Text(
+                            postText.toString(),
+                            style: const TextStyle(fontSize: 15, height: 1.5),
+                          ),
+                        if (hasOrderedMedia) ...[
+                          const SizedBox(height: 10),
+                          PostMediaGallery(
+                            post: widget.post,
+                            height: 210,
+                          ),
+                        ] else if ((widget.post['image_url']?.toString() ?? '')
+                            .isNotEmpty) ...[
+                          const SizedBox(height: 10),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(14),
+                            child: Image.network(
+                              widget.post['image_url'].toString(),
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) =>
+                                  const SizedBox.shrink(),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (postText.toString().trim().isNotEmpty)
-                        Text(
-                          postText.toString(),
-                          style: const TextStyle(fontSize: 15, height: 1.5),
-                        ),
-                      if (hasOrderedMedia) ...[
-                        const SizedBox(height: 10),
-                        PostMediaGallery(
-                          post: widget.post,
-                          height: 210,
-                        ),
-                      ] else if ((widget.post['image_url']?.toString() ?? '')
-                          .isNotEmpty) ...[
-                        const SizedBox(height: 10),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(14),
-                          child: Image.network(
-                            widget.post['image_url'].toString(),
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) =>
-                                const SizedBox.shrink(),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
                   child: Row(

@@ -197,15 +197,20 @@ class _GlobalNavigationSwipeState extends State<GlobalNavigationSwipe>
         GlobalNavigationMenu.open ||
         _preview != null ||
         GlobalNavigationMenu.observer.popup) return;
-    final width = MediaQuery.sizeOf(context).width;
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return;
+    final position = box.globalToLocal(event.position);
+    final width = box.size.width;
     final insets = MediaQuery.systemGestureInsetsOf(context);
-    if (event.position.dx > 28 + insets.left &&
-        event.position.dx < width - 28 - insets.right) return;
+    // Give the app an accessible band inside Android's reserved back gesture.
+    final leftBand = 80 + insets.left;
+    final rightBand = 80 + insets.right;
+    if (position.dx > leftBand && position.dx < width - rightBand) return;
     _pointer = event.pointer;
     _start = event.position;
     _last = event.position;
     _width = width;
-    _right = event.position.dx >= width - 28 - insets.right;
+    _right = position.dx >= width - rightBand;
   }
 
   double get _progress {

@@ -216,13 +216,17 @@ class RemainingServices {
 
   static Future<List<Map<String, dynamic>>> partners() async {
     if (uid == null) return [];
-    final rows = await _db
-        .from('business_partners')
-        .select('id,name,category,tag,description,website_url,logo_url,is_approved,created_at')
-        .eq('is_approved', true)
-        .eq('is_active', true)
-        .order('created_at', ascending: false);
-    return _maps(rows);
+    final output = <Map<String, dynamic>>[];
+    for (var offset = 0; ; offset += 200) {
+      final rows = await _db.from('business_partners')
+          .select('id,name,category,tag,description,website_url,logo_url,is_approved,created_at,latitude,longitude,contact_phone,contact_email')
+          .eq('is_approved', true).eq('is_active', true)
+          .order('created_at', ascending: false).order('id')
+          .range(offset, offset + 199);
+      output.addAll(_maps(rows));
+      if (rows.length < 200) break;
+    }
+    return output;
   }
 
   static Future<bool> canManagePartners() async {

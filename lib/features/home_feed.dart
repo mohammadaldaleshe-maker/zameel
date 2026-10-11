@@ -67,8 +67,9 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
           () => const ProfileScreen());
     }, profilePageBuilder: () async {
       if (!mounted || currentIndex != 0) return null;
-      if (!await FeatureControl.instance.check(context, 'profile_student') || !mounted || currentIndex != 0) return null;
-      return const ProfileScreen();
+      // A drag cannot wait for a network round-trip: the finger may already be up.
+      if (!FeatureControl.instance.enabled('profile_student')) return null;
+      return FeatureControl.instance.page('profile_student', const ProfileScreen());
     });
     _createUserIfNotExists();
     _loadCurrentProfileImage();
@@ -1540,6 +1541,15 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
     _toggleLike(index);
   }
 
+  Future<String?> _describeSelectedMedia(int count) async {
+    if (!mounted) return null;
+    return showDialog<String>(
+      context: context,
+      builder: (_) => MediaDescriptionDialog(mediaCount: count,
+          arabic: Provider.of<LanguageProvider>(context, listen: false).isArabic),
+    );
+  }
+
   Future<void> _pickImage() async {
     if (_mediaPublishing) return;
     final user = Supabase.instance.client.auth.currentUser;
@@ -1581,7 +1591,9 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
 
       final audience = await _choosePostAudience();
       if (audience == null) return;
-      await _createPost('', audience: audience, media: media);
+      final description = await _describeSelectedMedia(media.length);
+      if (description == null || !mounted) return;
+      await _createPost(description, audience: audience, media: media);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1633,7 +1645,9 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
 
       final audience = await _choosePostAudience();
       if (audience == null) return;
-      await _createPost('', audience: audience, media: media);
+      final description = await _describeSelectedMedia(media.length);
+      if (description == null || !mounted) return;
+      await _createPost(description, audience: audience, media: media);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

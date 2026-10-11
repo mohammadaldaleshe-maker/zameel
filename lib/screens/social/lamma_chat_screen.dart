@@ -1,3 +1,4 @@
+import '../../widgets/chat_timestamp.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -73,7 +74,7 @@ class _LammaChatScreenState extends State<LammaChatScreen> {
                   if (!snapshot.hasData) {
                     return const Center(child: CircularProgressIndicator());
                   }
-                  final messages = snapshot.data!;
+                  final messages = chatDatedRows(snapshot.data!);
                   if (messages.isEmpty) {
                     return const Center(child: Text('ابدأوا الحديث في اللّمّة 👋'));
                   }
@@ -83,6 +84,7 @@ class _LammaChatScreenState extends State<LammaChatScreen> {
                     itemCount: messages.length,
                     itemBuilder: (_, index) {
                       final item = messages[index];
+                      if (item['date_separator'] == true) return ChatDateSeparator(value: item['created_at']);
                       final mine = item['sender_id'] == uid;
                       return Align(
                         alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
@@ -94,7 +96,11 @@ class _LammaChatScreenState extends State<LammaChatScreen> {
                             color: mine ? AppTheme.primary : Theme.of(context).colorScheme.surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          child: Text(item['body']?.toString() ?? '', style: TextStyle(color: mine ? Colors.white : null)),
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                            Text(item['body']?.toString() ?? '', style: TextStyle(color: mine ? Colors.white : null)),
+                            Text(chatTime(item['created_at']), textDirection: TextDirection.ltr,
+                              style: TextStyle(fontSize: 11, color: mine ? Colors.white70 : Theme.of(context).colorScheme.onSurfaceVariant)),
+                          ]),
                         ),
                       );
                     },

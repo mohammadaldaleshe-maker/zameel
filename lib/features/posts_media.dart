@@ -653,6 +653,15 @@ class _VideoPostState extends State<_VideoPost> {
           ],
         ),
         const SizedBox(height: 10),
+        CopyableText(
+          isArabic ? widget.post['text_ar'] : widget.post['text_en'],
+          style: TextStyle(
+            color: AppTheme.legacyForeground,
+            fontSize: 14,
+            height: 1.4,
+          ),
+        ),
+        const SizedBox(height: 10),
         if (hasOrderedMedia)
           PostMediaGallery(
             post: widget.post,
@@ -686,15 +695,6 @@ class _VideoPostState extends State<_VideoPost> {
               ),
             ),
           ),
-        const SizedBox(height: 10),
-        CopyableText(
-          isArabic ? widget.post['text_ar'] : widget.post['text_en'],
-          style: TextStyle(
-            color: AppTheme.legacyForeground,
-            fontSize: 14,
-            height: 1.4,
-          ),
-        ),
         const SizedBox(height: 10),
         Row(children: [
           InkWell(

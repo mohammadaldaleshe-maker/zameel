@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// A send target that never joins a FocusScope or changes the input connection.
+/// A send target in the composer tap region; retain its focus before sending.
 class KeepKeyboardSendButton extends StatelessWidget {
   const KeepKeyboardSendButton(
       {super.key, required this.composerFocus, required this.onSend});
@@ -13,10 +13,17 @@ class KeepKeyboardSendButton extends StatelessWidget {
           child: Semantics(
               button: true,
               label: 'إرسال / Send',
-              onTap: onSend,
+              onTap: () {
+                composerFocus.requestFocus();
+                onSend();
+              },
               child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
-                  onTap: onSend,
+                  onTapDown: (_) => composerFocus.requestFocus(),
+                  onTap: () {
+                    composerFocus.requestFocus();
+                    onSend();
+                  },
                   child: Container(
                       width: 48,
                       height: 48,

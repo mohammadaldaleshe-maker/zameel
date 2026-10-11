@@ -55,7 +55,7 @@ void main() {
       );
       expect(
         home,
-        contains("await _createPost('', audience: audience, media: media);"),
+        contains("await _createPost(description, audience: audience, media: media);"),
       );
     });
 
