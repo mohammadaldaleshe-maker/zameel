@@ -1,4 +1,4 @@
-import '../../services/shorts_video_preparer.dart';
+import '../../services/background_publish156.dart';
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -6,7 +6,6 @@ import '../../services/feature_control.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:video_player/video_player.dart';
 
-import '../../services_social.dart';
 import '../../theme/app_theme.dart';
 import '../../platform/video_controller_factory.dart';
 
@@ -338,33 +337,19 @@ class _ClipPreviewPublishScreenState extends State<_ClipPreviewPublishScreen> {
       return;
     }
     setState(() => _publishing = true);
-    PreparedShort? prepared;
     try {
-      prepared = await prepareShortVideo(widget.file, cover: _cover);
-      final id = await ZameelSocialService.createClipFile(
-        file: prepared.video,
-        cover: prepared.cover,
-        caption: _caption.text.trim(),
-        durationSeconds: _durationSeconds,
-        audience: 'public',
-      );
-      if (id == null) throw StateError('clip_not_created');
-      if (!mounted) return;
-      Navigator.pop(context, true);
+      await BackgroundPublish156.clip(
+          video: widget.file,
+          cover: _cover,
+          caption: _caption.text.trim(),
+          duration: _durationSeconds);
+      if (mounted) await BackgroundPublish156.notice(context);
     } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(FeatureControl.errorMessage(
-                error,
-                ar
-                    ? 'تعذر نشر الشورتس. تحقق من الاتصال وحاول مجددًا.'
-                    : 'Could not publish the clip. Check your connection and try again.')),
-          ),
-        );
-      }
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(
+                FeatureControl.errorMessage(error, 'تعذر بدء رفع الشورتس'))));
     } finally {
-      await prepared?.cleanup();
       if (mounted) setState(() => _publishing = false);
     }
   }

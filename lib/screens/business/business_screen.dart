@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:zameel/theme/appearance_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -16,6 +17,7 @@ class BusinessScreen extends StatefulWidget {
 }
 
 class _BusinessScreenState extends State<BusinessScreen> {
+  Timer? _partnerRefresh156;
   String query = '';
   int category = 0;
   bool _loading = true;
@@ -26,6 +28,17 @@ class _BusinessScreenState extends State<BusinessScreen> {
   void initState() {
     super.initState();
     _load();
+    _partnerRefresh156 = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted &&
+          WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed &&
+          ModalRoute.of(context)?.isCurrent == true) _load();
+    });
+  }
+
+  @override
+  void dispose() {
+    _partnerRefresh156?.cancel();
+    super.dispose();
   }
 
   Future<void> _load() async {

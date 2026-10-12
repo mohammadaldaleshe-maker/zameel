@@ -1,3 +1,6 @@
+import '../../services/external_share156.dart';
+import '../../services/background_publish156.dart';
+import '../../widgets/mention_field156.dart';
 import '../../widgets/content_editor155.dart';
 import 'package:zameel/widgets/copyable_text.dart';
 import '../../widgets/post_media_frame.dart';
@@ -307,6 +310,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               .from('posts')
               .select('*, users(name,profile_image,verification_expires_at)')
               .eq('user_id', id)
+              .eq('upload_state156', 'ready')
               .order('created_at', ascending: false)
               .order('id', ascending: false)
               .range(po, po + 29)
@@ -315,14 +319,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Future.value(<Map<String, dynamic>>[]),
         if (reset || _moreShared)
           _optional(
-              db
-                  .from('shared_posts')
-                  .select(
-                      'id,post_id,created_at,posts(*, users(name,profile_image,verification_expires_at))')
-                  .eq('shared_by', id)
-                  .order('created_at', ascending: false)
-                  .order('id', ascending: false)
-                  .range(so, so + 29),
+              db.rpc('zameel_shared_activity_156',
+                  params: {'p_owner': id, 'p_kind': 'post', 'p_offset': so}),
               <Map<String, dynamic>>[])
         else
           Future.value(<Map<String, dynamic>>[]),
@@ -886,6 +884,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         savedOnly: isMe && _showSavedShorts))
               else ...[
                 SliverToBoxAdapter(child: _buildSectionHeader(ar)),
+                if (!_showShorts)
+                  SliverToBoxAdapter(
+                      child: SharedActivity156(
+                          owner: widget.userId ??
+                              Supabase.instance.client.auth.currentUser?.id,
+                          kind: 'clip')),
                 if (_contentLoading && _posts.isEmpty && _sharedPosts.isEmpty)
                   const SliverToBoxAdapter(
                       child: Padding(
@@ -1537,6 +1541,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       style: const TextStyle(fontSize: 15, height: 1.55)),
                 ),
               ),
+            if (post['mention_ids156'] is List &&
+                (post['mention_ids156'] as List).isNotEmpty)
+              MentionLinks156(postId: '${post['id']}'),
             if (hasOrderedMedia)
               Padding(
                 padding: const EdgeInsets.only(top: 12),
@@ -1724,6 +1731,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Navigator.pop(sheetContext);
                     _share(post);
                   }),
+              ListTile(
+                  leading: const Icon(Icons.ios_share),
+                  title: const Text('مشاركة خارج التطبيق — واتساب وغيرها'),
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    sharePostExternally156(context, '${post['id']}');
+                  }),
               if (!ownsPost)
                 ListTile(
                   leading: const Icon(Icons.flag_outlined),
@@ -1868,7 +1882,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _composeRichPost(bool ar) async {
-    final controller = TextEditingController();
+    final controller = MentionController156();
     var audience = _profile?['default_post_audience']?.toString() ?? 'public';
     final selectedMedia = <PickedPostMedia>[];
 
@@ -1883,7 +1897,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  TextField(
+                  MentionTextField156(
                     controller: controller,
                     autofocus: true,
                     maxLines: 5,
@@ -2006,16 +2020,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (publish != true) return;
 
     try {
-      await PostPublishService.publishPost(
+      await BackgroundPublish156.post(
         text: text,
         audience: audience,
         media: List<PickedPostMedia>.from(selectedMedia),
+        mentions: controller.mentionIds,
       );
-      await _load();
+      if (mounted) await BackgroundPublish156.notice(context);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(ar ? 'تم نشر المنشور ✓' : 'Post published ✓'),
+            content: Text(
+                ar ? 'جارٍ رفع المنشور في الخلفية' : 'Uploading in background'),
             backgroundColor: Colors.green,
           ),
         );
@@ -2069,7 +2085,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final audience = await _newAudience(ar);
     if (audience == null) return;
 
-    final caption = TextEditingController();
+    final caption = MentionController156();
     final publish = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -2087,7 +2103,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   : '${media.length} file(s) selected.',
             ),
             const SizedBox(height: 10),
-            TextField(
+            MentionTextField156(
               controller: caption,
               maxLines: 3,
               decoration: InputDecoration(
@@ -2115,18 +2131,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (publish != true) return;
 
     try {
-      await PostPublishService.publishPost(
+      await BackgroundPublish156.post(
         text: text,
         audience: audience,
         media: media,
+        mentions: caption.mentionIds,
       );
-      await _load();
+      if (mounted) await BackgroundPublish156.notice(context);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               ar
-                  ? 'تم نشر ${media.length} ملف وسائط ✓'
+                  ? 'جارٍ رفع ${media.length} ملف وسائط في الخلفية'
                   : '${media.length} media item(s) published ✓',
             ),
             backgroundColor: Colors.green,
@@ -2168,12 +2185,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final audience = await _newAudience(ar);
     if (audience == null) return;
     try {
-      final id = await ZameelSocialService.createStoryFile(
-          file: file, mediaType: type, caption: '', audience: audience);
-      if (id == null) throw Exception('upload_failed');
+      final id = await BackgroundPublish156.story(
+          file: file, type: type, caption: '', audience: audience);
+      if (id.isEmpty) throw StateError('upload_failed');
+      if (mounted) await BackgroundPublish156.notice(context);
       if (mounted)
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(ar ? 'تم نشر الحالة ✓' : 'Story published ✓')));
+            content: Text(ar ? 'جارٍ رفع الحالة في الخلفية' : 'Story upload queued')));
     } catch (e) {
       if (mounted)
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -2183,7 +2201,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _composeTextPost(bool ar) async {
-    final controller = TextEditingController();
+    final controller = MentionController156();
     var audience = _profile?['default_post_audience']?.toString() ?? 'public';
     final publish = await showDialog<bool>(
       context: context,
@@ -2191,7 +2209,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         builder: (_, setDialogState) => AlertDialog(
           title: Text(ar ? 'إنشاء منشور' : 'Create post'),
           content: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextField(
+            MentionTextField156(
                 controller: controller,
                 autofocus: true,
                 maxLines: 5,
@@ -2233,6 +2251,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       await Supabase.instance.client.from('posts').insert({
         'user_id': me.id,
         'type': 'text',
+        'mention_ids156': controller.mentionIds,
         'text_ar': text,
         'text_en': text,
         'audience': audience
@@ -2336,9 +2355,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final postId = post['id'];
     if (me == null || postId == null) return;
     try {
-      await Supabase.instance.client
-          .from('shared_posts')
-          .upsert({'post_id': postId, 'shared_by': me.id});
+      await Supabase.instance.client.from('shared_posts').upsert(
+          {'post_id': postId, 'shared_by': me.id},
+          onConflict: 'post_id,shared_by');
+      SharedActivity156.refresh();
       final text = (post['text_ar'] ?? post['text_en'] ?? '').toString();
       await Clipboard.setData(ClipboardData(text: text));
       await _load();

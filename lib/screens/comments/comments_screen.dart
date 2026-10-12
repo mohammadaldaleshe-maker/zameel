@@ -1,3 +1,7 @@
+import 'package:image_picker/image_picker.dart';
+import '../../services/comment_images156.dart';
+import '../../platform/local_image_widget.dart';
+import '../../widgets/cached_media_image.dart';
 import 'package:zameel/widgets/copyable_text.dart';
 import 'package:zameel/theme/appearance_controller.dart';
 import 'package:zameel/widgets/verified_name.dart';
@@ -36,6 +40,22 @@ class _CommentsScreenState extends State<CommentsScreen>
     with WidgetsBindingObserver {
   final TextEditingController _commentController = TextEditingController();
   final FocusNode _composerFocus = FocusNode();
+
+  final _pickedImages156 = <XFile>[];
+  Future<void> _pickImages156() async {
+    if (_sending || _pickedImages156.length >= 5) return;
+    try {
+      final files = await ImagePicker()
+          .pickMultiImage(imageQuality: 90, limit: 5 - _pickedImages156.length);
+      if (mounted)
+        setState(() =>
+            _pickedImages156.addAll(files.take(5 - _pickedImages156.length)));
+    } catch (_) {
+      if (mounted)
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('تعذر اختيار الصور')));
+    }
+  }
 
   bool _keyboardSeenForFocus = false;
   bool _loading = true;
@@ -89,12 +109,17 @@ class _CommentsScreenState extends State<CommentsScreen>
       final rows = await db
           .from('post_comments')
           .select(
-            'id,post_id,user_id,content,created_at,updated_at,parent_comment_id,likes_count',
+            'id,post_id,user_id,content,created_at,updated_at,parent_comment_id,likes_count,image_paths156',
           )
           .eq('post_id', postId)
           .order('created_at', ascending: true);
 
       final comments = List<Map<String, dynamic>>.from(rows);
+      try {
+        await CommentImages156.resolve(comments);
+      } catch (_) {
+        /* Keep text comments available if image signing is temporarily unavailable. */
+      }
       final profiles = await ZameelSocialService.loadUserProfiles(
         comments
             .map((comment) => comment['user_id']?.toString())
@@ -146,18 +171,30 @@ class _CommentsScreenState extends State<CommentsScreen>
   Future<void> _addComment() async {
     final text = _commentController.text.trim();
     final user = db.auth.currentUser;
-    if (text.isEmpty || user == null || postId.isEmpty || _sending) return;
+    if ((text.isEmpty && _pickedImages156.isEmpty) ||
+        user == null ||
+        postId.isEmpty ||
+        _sending) return;
 
     setState(() => _sending = true);
     try {
+      final paths = await CommentImages156.upload(
+          postId, List<XFile>.from(_pickedImages156));
+      if (db.auth.currentUser?.id != user.id)
+        throw StateError('account_changed');
       await db.from('post_comments').insert({
         'post_id': postId,
         'user_id': user.id,
-        'content': text,
+        'content': text.isEmpty ? '📷' : text,
+        'image_paths156': paths,
         'parent_comment_id': _replyingTo?['id']?.toString(),
       });
       _commentController.clear();
-      if (mounted) setState(() => _replyingTo = null);
+      if (mounted)
+        setState(() {
+          _replyingTo = null;
+          _pickedImages156.clear();
+        });
       await _loadComments();
     } catch (error) {
       if (mounted) {
@@ -542,12 +579,51 @@ class _CommentsScreenState extends State<CommentsScreen>
                     ],
                   ),
                 ),
+              if (_pickedImages156.isNotEmpty &&
+                  View.of(context).viewInsets.bottom == 0)
+                SizedBox(
+                    height: 82,
+                    child:
+                        ListView(scrollDirection: Axis.horizontal, children: [
+                      for (var i = 0; i < _pickedImages156.length; i++)
+                        SizedBox(
+                            width: 82,
+                            child: Stack(children: [
+                              localImageFromPath(_pickedImages156[i].path,
+                                  width: 78, height: 78, fit: BoxFit.cover),
+                              Positioned(
+                                  top: 0,
+                                  right: 0,
+                                  child: IconButton(
+                                      tooltip: 'إزالة الصورة',
+                                      onPressed: _sending
+                                          ? null
+                                          : () => setState(() =>
+                                              _pickedImages156.removeAt(i)),
+                                      icon: const Icon(Icons.close,
+                                          color: Colors.red)))
+                            ]))
+                    ])),
               SafeArea(
                 top: false,
                 child: Padding(
                   padding: const EdgeInsets.all(12),
                   child: Row(
                     children: [
+                      TextFieldTapRegion(
+                          groupId: _composerFocus,
+                          child: IconButton(
+                              tooltip:
+                                  'إضافة صور (${_pickedImages156.length}/5)',
+                              onPressed:
+                                  _sending || _pickedImages156.length >= 5
+                                      ? null
+                                      : _pickImages156,
+                              icon: Badge(
+                                  label: Text('${_pickedImages156.length}'),
+                                  isLabelVisible: _pickedImages156.isNotEmpty,
+                                  child: const Icon(
+                                      Icons.add_photo_alternate_outlined)))),
                       Expanded(
                         child: TextField(
                           key: const ValueKey('comment-composer'),
@@ -727,6 +803,33 @@ class _CommentsScreenState extends State<CommentsScreen>
                     ),
                     const SizedBox(height: 3),
                     CopyableText(body),
+                    if (comment['image_urls156'] is List)
+                      Wrap(spacing: 6, runSpacing: 6, children: [
+                        for (final url in comment['image_urls156'])
+                          InkWell(
+                              onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) => Scaffold(
+                                          appBar: AppBar(
+                                              title:
+                                                  const Text('صورة التعليق')),
+                                          body: Center(
+                                              child: InteractiveViewer(
+                                                  child: CachedMediaImage(
+                                                      url: '$url',
+                                                      fit: BoxFit.contain,
+                                                      fallback: const Icon(Icons
+                                                          .image_not_supported_outlined))))))),
+                              child: SizedBox(
+                                  width: 90,
+                                  height: 90,
+                                  child: CachedMediaImage(
+                                      url: '$url',
+                                      fit: BoxFit.cover,
+                                      fallback: const Icon(
+                                          Icons.image_not_supported_outlined))))
+                      ]),
                     const SizedBox(height: 7),
                     Wrap(
                       spacing: 8,

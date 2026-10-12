@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'main.dart' show SharedActivity156;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'services/media_cache_service.dart';
@@ -17,35 +18,49 @@ class ZameelSocialService {
   /// Legacy byte upload remains for small/public compatibility paths. New story
   /// and clip publishing uses XFile streaming below so native videos are never
   /// loaded wholly into RAM.
-  static Future<String?> uploadMediaBytes(Uint8List bytes, {required String filename, required String type}) async {
+  static Future<String?> uploadMediaBytes(Uint8List bytes,
+      {required String filename, required String type}) async {
     final id = uid;
     if (id == null) return null;
     final ext = _safeExtension(filename);
-    final path = '$id/social/${type}_${DateTime.now().millisecondsSinceEpoch}.$ext';
+    final path =
+        '$id/social/${type}_${DateTime.now().millisecondsSinceEpoch}.$ext';
     await db.storage.from('posts').uploadBinary(
-      path,
-      bytes,
-      fileOptions: FileOptions(contentType: _contentType(ext, type.contains('video') || type == 'clip'), upsert: false),
-    );
+          path,
+          bytes,
+          fileOptions: FileOptions(
+              contentType:
+                  _contentType(ext, type.contains('video') || type == 'clip'),
+              upsert: false),
+        );
     final url = db.storage.from('posts').getPublicUrl(path);
     await MediaCacheService.storeBytes(url, bytes);
     return url;
   }
 
-  static Future<String?> createStory({String? mediaUrl, required String mediaType, String caption = '', required String audience}) async {
+  static Future<String?> createStory(
+      {String? mediaUrl,
+      required String mediaType,
+      String caption = '',
+      required String audience}) async {
     final id = uid;
     if (id == null) return null;
     if (mediaUrl != null && mediaUrl.trim().isNotEmpty) {
-      final ready = await MediaCacheService.waitUntilRemoteReady(await SecureMediaService.resolve(mediaUrl));
+      final ready = await MediaCacheService.waitUntilRemoteReady(
+          await SecureMediaService.resolve(mediaUrl));
       if (!ready) throw StateError('story_media_not_ready');
     }
-    final row = await db.from('social_stories').insert({
-      'user_id': id,
-      'media_url': mediaUrl,
-      'media_type': mediaType,
-      'caption': caption,
-      'audience': audience,
-    }).select('id').single();
+    final row = await db
+        .from('social_stories')
+        .insert({
+          'user_id': id,
+          'media_url': mediaUrl,
+          'media_type': mediaType,
+          'caption': caption,
+          'audience': audience,
+        })
+        .select('id')
+        .single();
     return row['id']?.toString();
   }
 
@@ -54,16 +69,34 @@ class ZameelSocialService {
     required String mediaType,
     String caption = '',
     required String audience,
+    String? jobId,
   }) async {
     final id = uid;
     if (id == null) return null;
-    final row = await db.from('social_stories').insert({
-      'user_id': id,
-      'media_url': null,
-      'media_type': mediaType,
-      'caption': caption,
-      'audience': audience,
-    }).select('id').single();
+    final existing = jobId == null
+        ? null
+        : await db
+            .from('social_stories')
+            .select()
+            .eq('id', jobId)
+            .eq('user_id', id)
+            .maybeSingle();
+    if (existing?['upload_state156'] == 'ready') return jobId;
+    final row = existing ??
+        await db
+            .from('social_stories')
+            .insert({
+              if (jobId != null) 'id': jobId,
+              'upload_state156': 'pending',
+              'background156': jobId != null,
+              'user_id': id,
+              'media_url': null,
+              'media_type': mediaType,
+              'caption': caption,
+              'audience': audience,
+            })
+            .select('id')
+            .single();
     final storyId = row['id']?.toString() ?? '';
     if (storyId.isEmpty) throw StateError('story_id_missing');
 
@@ -87,18 +120,30 @@ class ZameelSocialService {
       final storedRef = isPublic
           ? db.storage.from(bucket).getPublicUrl(path)
           : SecureMediaService.privateReference(path);
-      await db.from('social_stories').update({'media_url': storedRef}).eq('id', storyId).eq('user_id', id);
+      await db
+          .from('social_stories')
+          .update({'media_url': storedRef, 'upload_state156': 'ready'})
+          .eq('id', storyId)
+          .eq('user_id', id);
       final readyUrl = await SecureMediaService.resolve(storedRef);
       final ready = await MediaCacheService.waitUntilRemoteReady(readyUrl);
       if (!ready) throw StateError('story_media_not_ready');
       return storyId;
     } catch (_) {
-      try { await db.storage.from(bucket).remove(<String>[path]); } catch (_) {}
-      try { await db.from('social_stories').delete().eq('id', storyId).eq('user_id', id); } catch (_) {}
+      if (jobId != null) rethrow;
+      try {
+        await db.storage.from(bucket).remove(<String>[path]);
+      } catch (_) {}
+      try {
+        await db
+            .from('social_stories')
+            .delete()
+            .eq('id', storyId)
+            .eq('user_id', id);
+      } catch (_) {}
       rethrow;
     }
   }
-
 
   static Future<void> recordStoryView(String storyId) async {
     final id = uid;
@@ -112,16 +157,28 @@ class ZameelSocialService {
   static Future<bool> toggleStoryReaction(String storyId) async {
     final id = uid;
     if (id == null || storyId.trim().isEmpty) return false;
-    final existing = await db.from('story_reactions').select('story_id').eq('story_id', storyId).eq('user_id', id).maybeSingle();
+    final existing = await db
+        .from('story_reactions')
+        .select('story_id')
+        .eq('story_id', storyId)
+        .eq('user_id', id)
+        .maybeSingle();
     if (existing != null) {
-      await db.from('story_reactions').delete().eq('story_id', storyId).eq('user_id', id);
+      await db
+          .from('story_reactions')
+          .delete()
+          .eq('story_id', storyId)
+          .eq('user_id', id);
       return false;
     }
-    await db.from('story_reactions').upsert({'story_id': storyId, 'user_id': id, 'reaction': '❤️'});
+    await db
+        .from('story_reactions')
+        .upsert({'story_id': storyId, 'user_id': id, 'reaction': '❤️'});
     return true;
   }
 
-  static Future<List<Map<String, dynamic>>> loadStoryViewers(String storyId) async {
+  static Future<List<Map<String, dynamic>>> loadStoryViewers(
+      String storyId) async {
     if (!signedIn || storyId.trim().isEmpty) return [];
     final rows = await db.rpc(
       'get_story_viewers',
@@ -131,7 +188,8 @@ class ZameelSocialService {
     return rows.map((row) => Map<String, dynamic>.from(row as Map)).toList();
   }
 
-  static Future<List<Map<String, dynamic>>> loadStoryReactions(String storyId) async {
+  static Future<List<Map<String, dynamic>>> loadStoryReactions(
+      String storyId) async {
     if (!signedIn || storyId.trim().isEmpty) return [];
     final rows = await db.rpc(
       'get_story_reactions',
@@ -141,7 +199,8 @@ class ZameelSocialService {
     return rows.map((row) => Map<String, dynamic>.from(row as Map)).toList();
   }
 
-  static Future<Map<String, int>> loadStoryEngagementCounts(String storyId) async {
+  static Future<Map<String, int>> loadStoryEngagementCounts(
+      String storyId) async {
     if (!signedIn || storyId.trim().isEmpty) {
       return const {'views': 0, 'reactions': 0};
     }
@@ -162,7 +221,12 @@ class ZameelSocialService {
   static Future<bool> isStoryReacted(String storyId) async {
     final id = uid;
     if (id == null || storyId.trim().isEmpty) return false;
-    final row = await db.from('story_reactions').select('story_id').eq('story_id', storyId).eq('user_id', id).maybeSingle();
+    final row = await db
+        .from('story_reactions')
+        .select('story_id')
+        .eq('story_id', storyId)
+        .eq('user_id', id)
+        .maybeSingle();
     return row != null;
   }
 
@@ -170,8 +234,17 @@ class ZameelSocialService {
     if (uid != null) await HomeSnapshotService.clear(uid!, section: 'stories');
     final id = uid;
     if (id == null || storyId.trim().isEmpty) return;
-    final row = await db.from('social_stories').select('media_url').eq('id', storyId).eq('user_id', id).maybeSingle();
-    await db.from('social_stories').delete().eq('id', storyId).eq('user_id', id);
+    final row = await db
+        .from('social_stories')
+        .select('media_url')
+        .eq('id', storyId)
+        .eq('user_id', id)
+        .maybeSingle();
+    await db
+        .from('social_stories')
+        .delete()
+        .eq('id', storyId)
+        .eq('user_id', id);
     await SecureMediaService.removeReference(row?['media_url']?.toString());
   }
 
@@ -181,17 +254,36 @@ class ZameelSocialService {
     String caption = '',
     int durationSeconds = 1,
     required String audience,
+    String? jobId,
   }) async {
     final id = uid;
     if (id == null) return null;
-    if (durationSeconds < 1 || durationSeconds > 120) throw StateError('invalid_short_duration');
-    final row = await db.from('clips').insert({
-      'user_id': id,
-      'video_url': 'uploading://pending',
-      'caption': caption,
-      'duration_seconds': durationSeconds,
-      'audience': audience,
-    }).select('id').single();
+    if (durationSeconds < 1 || durationSeconds > 120)
+      throw StateError('invalid_short_duration');
+    final existing = jobId == null
+        ? null
+        : await db
+            .from('clips')
+            .select()
+            .eq('id', jobId)
+            .eq('user_id', id)
+            .maybeSingle();
+    if (existing?['upload_state156'] == 'ready') return jobId;
+    final row = existing ??
+        await db
+            .from('clips')
+            .insert({
+              if (jobId != null) 'id': jobId,
+              'upload_state156': 'pending',
+              'background156': jobId != null,
+              'user_id': id,
+              'video_url': 'uploading://pending',
+              'caption': caption,
+              'duration_seconds': durationSeconds,
+              'audience': audience,
+            })
+            .select('id')
+            .single();
     final clipId = row['id']?.toString() ?? '';
     if (clipId.isEmpty) throw StateError('clip_id_missing');
     final ext = _safeExtension(file.name);
@@ -217,43 +309,78 @@ class ZameelSocialService {
           : SecureMediaService.privateReference(path);
       if (cover != null) {
         final coverExt = _safeExtension(cover.name);
-        coverPath = isPublic ? '$id/social/short_cover_$clipId.$coverExt' : 'clips/$clipId/$id/cover.$coverExt';
-        await uploadPickedPostMedia(client: db, bucket: bucket, storagePath: coverPath, source: cover, maxBytes: _maxImageBytes, tooLargeError: 'cover_too_large', contentType: _contentType(coverExt, false));
-        coverRef = isPublic ? db.storage.from(bucket).getPublicUrl(coverPath) : SecureMediaService.privateReference(coverPath);
+        coverPath = isPublic
+            ? '$id/social/short_cover_$clipId.$coverExt'
+            : 'clips/$clipId/$id/cover.$coverExt';
+        await uploadPickedPostMedia(
+            client: db,
+            bucket: bucket,
+            storagePath: coverPath,
+            source: cover,
+            maxBytes: _maxImageBytes,
+            tooLargeError: 'cover_too_large',
+            contentType: _contentType(coverExt, false));
+        coverRef = isPublic
+            ? db.storage.from(bucket).getPublicUrl(coverPath)
+            : SecureMediaService.privateReference(coverPath);
       }
-      final ready = await MediaCacheService.waitUntilRemoteReady(await SecureMediaService.resolve(storedRef));
+      final ready = await MediaCacheService.waitUntilRemoteReady(
+          await SecureMediaService.resolve(storedRef));
       if (!ready) throw StateError('clip_media_not_ready');
-      await db.from('clips').update({'video_url': storedRef, 'cover_url': coverRef}).eq('id', clipId).eq('user_id', id);
+      await db
+          .from('clips')
+          .update({
+            'video_url': storedRef,
+            'cover_url': coverRef,
+            'upload_state156': 'ready'
+          })
+          .eq('id', clipId)
+          .eq('user_id', id);
       return clipId;
     } catch (_) {
-      try { await db.storage.from(bucket).remove(<String>[path, if (coverPath != null) coverPath]); } catch (_) {}
-      try { await db.from('clips').delete().eq('id', clipId).eq('user_id', id); } catch (_) {}
+      if (jobId != null) rethrow;
+      try {
+        await db.storage
+            .from(bucket)
+            .remove(<String>[path, if (coverPath != null) coverPath]);
+      } catch (_) {}
+      try {
+        await db.from('clips').delete().eq('id', clipId).eq('user_id', id);
+      } catch (_) {}
       rethrow;
     }
   }
 
-  static Future<List<Map<String, dynamic>>> loadStories({bool friendsOnly = false, bool resolveMedia = true}) async {
+  static Future<List<Map<String, dynamic>>> loadStories(
+      {bool friendsOnly = false, bool resolveMedia = true}) async {
     if (!signedIn) return [];
     final id = uid!;
     final raw = await db
         .from('social_stories')
         .select()
+        .eq('upload_state156', 'ready')
         .gt('expires_at', DateTime.now().toUtc().toIso8601String())
         .order('created_at', ascending: false)
         .limit(40);
     var stories = List<Map<String, dynamic>>.from(raw);
 
-    final userIds = <String>{id, ...stories.map((story) => story['user_id']?.toString()).whereType<String>()}.toList();
+    final userIds = <String>{
+      id,
+      ...stories
+          .map((story) => story['user_id']?.toString())
+          .whereType<String>()
+    }.toList();
     // These lookups depend only on the story list and viewer, so request them
     // together instead of adding three network round trips to the tray.
     final lookups = await Future.wait<dynamic>([
       userIds.isEmpty
           ? Future<dynamic>.value(<Map<String, dynamic>>[])
           : db
-                .from('users')
-                .select('id,name,profile_image,university,college,department')
-                .inFilter('id', userIds),
-      db.from('friend_requests')
+              .from('users')
+              .select('id,name,profile_image,university,college,department')
+              .inFilter('id', userIds),
+      db
+          .from('friend_requests')
           .select('sender_id,receiver_id,status')
           .eq('status', 'accepted')
           .or('sender_id.eq.$id,receiver_id.eq.$id'),
@@ -280,7 +407,8 @@ class ZameelSocialService {
         .whereType<String>()
         .toSet();
 
-    String normalized(dynamic value) => value?.toString().trim().toLowerCase() ?? '';
+    String normalized(dynamic value) =>
+        value?.toString().trim().toLowerCase() ?? '';
     bool sameCollege(Map<String, dynamic> owner) {
       final myUniversity = normalized(me['university']);
       final myCollege = normalized(me['college']);
@@ -322,7 +450,8 @@ class ZameelSocialService {
       return !friendsOnly || friendIds.contains(ownerId);
     }).toList();
 
-    if (resolveMedia) await Future.wait(stories.map(SecureMediaService.resolveStory));
+    if (resolveMedia)
+      await Future.wait(stories.map(SecureMediaService.resolveStory));
     return stories;
   }
 
@@ -382,28 +511,37 @@ class ZameelSocialService {
     return clips;
   }
 
-  static Future<void> updateClip(String clipId, {String? audience, bool? hidden}) async {
+  static Future<void> updateClip(String clipId,
+      {String? audience, bool? hidden}) async {
     if (uid != null) await HomeSnapshotService.clear(uid!, section: 'clips');
     final id = uid;
     if (id == null) return;
     final values = <String, dynamic>{};
     String? oldRefToDelete;
     if (audience != null) {
-      final current = await db.from('clips').select('audience,video_url').eq('id', clipId).eq('user_id', id).single();
+      final current = await db
+          .from('clips')
+          .select('audience,video_url')
+          .eq('id', clipId)
+          .eq('user_id', id)
+          .single();
       final oldAudience = current['audience']?.toString() ?? 'public';
       final oldUrl = current['video_url']?.toString() ?? '';
       if (SecureMediaService.isPublicAudience(oldAudience) &&
           !SecureMediaService.isPublicAudience(audience) &&
-          oldUrl.isNotEmpty && !SecureMediaService.isPrivateReference(oldUrl)) {
+          oldUrl.isNotEmpty &&
+          !SecureMediaService.isPrivateReference(oldUrl)) {
         final path = _publicPostsPath(oldUrl);
         final bytes = await db.storage.from('posts').download(path);
         final ext = _safeExtension(path);
-        final privatePath = 'clips/$clipId/$id/${DateTime.now().microsecondsSinceEpoch}.$ext';
+        final privatePath =
+            'clips/$clipId/$id/${DateTime.now().microsecondsSinceEpoch}.$ext';
         await db.storage.from(SecureMediaService.privateBucket).uploadBinary(
-          privatePath,
-          bytes,
-          fileOptions: FileOptions(contentType: _contentType(ext, true), upsert: false),
-        );
+              privatePath,
+              bytes,
+              fileOptions: FileOptions(
+                  contentType: _contentType(ext, true), upsert: false),
+            );
         values['video_url'] = SecureMediaService.privateReference(privatePath);
         oldRefToDelete = oldUrl;
       }
@@ -412,18 +550,25 @@ class ZameelSocialService {
     if (hidden != null) values['is_hidden'] = hidden;
     if (values.isEmpty) return;
     await db.from('clips').update(values).eq('id', clipId).eq('user_id', id);
-    if (oldRefToDelete != null) await SecureMediaService.removeReference(oldRefToDelete);
+    if (oldRefToDelete != null)
+      await SecureMediaService.removeReference(oldRefToDelete);
   }
 
   static Future<void> deleteClip(String clipId) async {
     if (uid != null) await HomeSnapshotService.clear(uid!, section: 'clips');
     final id = uid;
     if (id == null) return;
-    final row = await db.from('clips').select('video_url,cover_url').eq('id', clipId).maybeSingle();
+    final row = await db
+        .from('clips')
+        .select('video_url,cover_url')
+        .eq('id', clipId)
+        .maybeSingle();
     try {
-      await db.rpc('delete_clip_authorized', params: {'target_clip_id': clipId});
+      await db
+          .rpc('delete_clip_authorized', params: {'target_clip_id': clipId});
     } on PostgrestException catch (error) {
-      if (!error.message.contains('delete_clip_authorized') && error.code != 'PGRST202') rethrow;
+      if (!error.message.contains('delete_clip_authorized') &&
+          error.code != 'PGRST202') rethrow;
       await db.from('clips').delete().eq('id', clipId).eq('user_id', id);
     }
     await SecureMediaService.removeReference(row?['video_url']?.toString());
@@ -434,7 +579,11 @@ class ZameelSocialService {
     final id = uid;
     if (id == null) return;
     if (liked) {
-      await db.from('clip_likes').delete().eq('clip_id', clipId).eq('user_id', id);
+      await db
+          .from('clip_likes')
+          .delete()
+          .eq('clip_id', clipId)
+          .eq('user_id', id);
     } else {
       await db.from('clip_likes').upsert({'clip_id': clipId, 'user_id': id});
     }
@@ -443,7 +592,12 @@ class ZameelSocialService {
   static Future<bool> isClipLiked(String clipId) async {
     final id = uid;
     if (id == null) return false;
-    final row = await db.from('clip_likes').select('clip_id').eq('clip_id', clipId).eq('user_id', id).maybeSingle();
+    final row = await db
+        .from('clip_likes')
+        .select('clip_id')
+        .eq('clip_id', clipId)
+        .eq('user_id', id)
+        .maybeSingle();
     return row != null;
   }
 
@@ -494,8 +648,8 @@ class ZameelSocialService {
           .whereType<String>(),
     );
     for (final comment in comments) {
-      comment['users'] = profiles[comment['user_id']?.toString()] ??
-          const <String, dynamic>{};
+      comment['users'] =
+          profiles[comment['user_id']?.toString()] ?? const <String, dynamic>{};
     }
     return comments;
   }
@@ -575,16 +729,24 @@ class ZameelSocialService {
   static Future<void> shareClip(String clipId) async {
     final id = uid;
     if (id == null) return;
-    await db.from('shared_clips').upsert({'clip_id': clipId, 'shared_by': id});
+    await db.from('shared_clips').upsert({'clip_id': clipId, 'shared_by': id},
+        onConflict: 'clip_id,shared_by');
+    SharedActivity156.refresh();
   }
 
   static Future<void> setCloseFriend(String friendId, bool value) async {
     final id = uid;
     if (id == null) return;
     if (value) {
-      await db.from('close_friends').upsert({'owner_id': id, 'friend_id': friendId});
+      await db
+          .from('close_friends')
+          .upsert({'owner_id': id, 'friend_id': friendId});
     } else {
-      await db.from('close_friends').delete().eq('owner_id', id).eq('friend_id', friendId);
+      await db
+          .from('close_friends')
+          .delete()
+          .eq('owner_id', id)
+          .eq('friend_id', friendId);
     }
   }
 
@@ -592,9 +754,15 @@ class ZameelSocialService {
     final id = uid;
     if (id == null || id == targetId) return;
     if (following) {
-      await db.from('follows').delete().eq('follower_id', id).eq('following_id', targetId);
+      await db
+          .from('follows')
+          .delete()
+          .eq('follower_id', id)
+          .eq('following_id', targetId);
     } else {
-      await db.from('follows').upsert({'follower_id': id, 'following_id': targetId});
+      await db
+          .from('follows')
+          .upsert({'follower_id': id, 'following_id': targetId});
     }
   }
 
@@ -628,5 +796,4 @@ class ZameelSocialService {
     }
     return Uri.decodeFull(segments.sublist(idx + 2).join('/'));
   }
-
 }

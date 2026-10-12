@@ -119,10 +119,17 @@ class PostPublishService {
     return result;
   }
 
+  static void validateMedia156(List<PickedPostMedia> media) {
+    if (media.length > maxSelectableMedia) throw StateError('too_many_media');
+    _validateSelection(media);
+  }
+
   static Future<Map<String, dynamic>> publishPost({
     required String text,
     required String audience,
     List<PickedPostMedia> media = const <PickedPostMedia>[],
+    List<String> mentions = const [],
+    String? jobId,
   }) async {
     final db = Supabase.instance.client;
     final user = db.auth.currentUser;
@@ -142,26 +149,42 @@ class PostPublishService {
 
     // Create the RLS-protected entity before private uploads so Storage policy
     // can authorize the owner and later viewers against this exact post id.
-    final draft = Map<String, dynamic>.from(
-      await db
-          .from('posts')
-          .insert(<String, dynamic>{
-            'user_id': user.id,
-            'type': selected.isEmpty
-                ? 'text'
-                : (isVideoFile(selected.first) ? 'video' : 'image'),
-            'text_ar': cleanText,
-            'text_en': cleanText,
-            'image_url': null,
-            'video_url': null,
-            'media_items': const <dynamic>[],
-            'likes_count': 0,
-            'comments_count': 0,
-            'audience': audience,
-          })
-          .select()
-          .single(),
-    );
+    final existing = jobId == null
+        ? null
+        : await db
+            .from('posts')
+            .select()
+            .eq('id', jobId)
+            .eq('user_id', user.id)
+            .maybeSingle();
+    if (existing?['upload_state156'] == 'ready')
+      return Map<String, dynamic>.from(existing!);
+    final draft = existing == null
+        ? Map<String, dynamic>.from(
+            await db
+                .from('posts')
+                .insert(<String, dynamic>{
+                  if (jobId != null) 'id': jobId,
+                  'background156': jobId != null,
+                  'user_id': user.id,
+                  'mention_ids156': mentions,
+                  'upload_state156': 'pending',
+                  'type': selected.isEmpty
+                      ? 'text'
+                      : (isVideoFile(selected.first) ? 'video' : 'image'),
+                  'text_ar': cleanText,
+                  'text_en': cleanText,
+                  'image_url': null,
+                  'video_url': null,
+                  'media_items': const <dynamic>[],
+                  'likes_count': 0,
+                  'comments_count': 0,
+                  'audience': audience,
+                })
+                .select()
+                .single(),
+          )
+        : Map<String, dynamic>.from(existing);
     final postId = draft['id']?.toString() ?? '';
     if (postId.isEmpty) throw StateError('post_id_missing');
 
@@ -192,6 +215,7 @@ class PostPublishService {
               'image_url': firstImage.isEmpty ? null : firstImage,
               'video_url': firstVideo.isEmpty ? null : firstVideo,
               'media_items': items,
+              'upload_state156': 'ready',
             })
             .eq('id', postId)
             .eq('user_id', user.id)
@@ -201,6 +225,7 @@ class PostPublishService {
       await SecureMediaService.resolvePost(updated);
       return updated;
     } catch (_) {
+      if (jobId != null) rethrow;
       for (final item in uploaded) {
         try {
           await db.storage.from(item.bucket).remove(<String>[item.storagePath]);

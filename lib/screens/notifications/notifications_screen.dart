@@ -1,3 +1,4 @@
+import '../social/public_clips_strip.dart';
 import '../../main.dart' show ZameelMediaViewer;
 import 'package:zameel/theme/appearance_controller.dart';
 import 'package:zameel/widgets/verified_name.dart';
@@ -197,6 +198,22 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Future<void> _openNotificationSource(Map<String, dynamic> n) async {
     final type = n['type']?.toString() ?? '';
     final data = _notificationData(n);
+    if (type == 'upload_complete' && data['clip_id'] != null) {
+      if (!await FeatureControl.instance.check(context, 'clips')) return;
+      final clip = await db
+          .from('clips')
+          .select()
+          .eq('id', data['clip_id'])
+          .maybeSingle();
+      if (clip != null && mounted)
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (_) => VerticalClipsViewer(
+                    clips: [Map<String, dynamic>.from(clip)],
+                    initialIndex: 0)));
+      return;
+    }
     if (type == 'account_verification_review') {
       if (mounted)
         Navigator.push(
@@ -237,7 +254,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         (data['post_id'] ?? data['target_post_id'])?.toString() ?? '';
     if (postId.isNotEmpty) {
       if (!await FeatureControl.instance.check(context, 'feed_posts') ||
-          (type != 'post_promotion_approved' &&
+          (!['post_promotion_approved', 'post_mention', 'upload_complete']
+                  .contains(type) &&
               !await FeatureControl.instance.check(context, 'comments')))
         return;
       try {
@@ -254,15 +272,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           Navigator.push(
               context,
               MaterialPageRoute(
-                  builder: (_) => type == 'post_promotion_approved'
-                      ? ZameelMediaViewer(
-                          post: resolvedPost,
-                          isVideo: resolvedPost['type'] == 'video',
-                          enableVerticalPaging: false)
-                      : CommentsScreen(
-                          post: resolvedPost,
-                          highlightedCommentId:
-                              data['comment_id']?.toString())));
+                  builder: (_) => [
+                        'post_promotion_approved',
+                        'post_mention',
+                        'upload_complete'
+                      ].contains(type)
+                          ? ZameelMediaViewer(
+                              post: resolvedPost,
+                              isVideo: resolvedPost['type'] == 'video',
+                              enableVerticalPaging: false)
+                          : CommentsScreen(
+                              post: resolvedPost,
+                              highlightedCommentId:
+                                  data['comment_id']?.toString())));
           return;
         }
       } catch (_) {}

@@ -85,7 +85,9 @@ class _AuthGateState extends State<AuthGate> {
         }
       }
     }
-    return const UniversityScreen();
+    for(final old in _mergeJordanUniversities()){if(old.name==universityName){for(final college in old.colleges){if(college.name==collegeName)return HomeFeedScreen(university:old,college:college,department:departmentName);}}}
+    // A renamed or removed catalog option must not reset an existing account.
+    return HomeFeedScreen(university:University(name:universityName,type:'خاصة',city:'',colleges:const []),college:College(name:collegeName,departments:[departmentName]),department:departmentName);
   }
 
   Future<Widget> _getInitialScreen() async {

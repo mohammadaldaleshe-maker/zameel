@@ -61,16 +61,20 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    GlobalNavigationMenu.register(this, (menuContext) => _buildDrawer(menuContext), () {
+    GlobalNavigationMenu.register(
+        this, (menuContext) => _buildDrawer(menuContext), () {
       if (!mounted || currentIndex != 0) return;
-      FeatureControl.instance.open(context, 'profile_student',
-          () => const ProfileScreen());
+      FeatureControl.instance
+          .open(context, 'profile_student', () => const ProfileScreen());
     }, profilePageBuilder: () async {
       if (!mounted || currentIndex != 0) return null;
       // A drag cannot wait for a network round-trip: the finger may already be up.
       if (!FeatureControl.instance.enabled('profile_student')) return null;
-      return FeatureControl.instance.page('profile_student', const ProfileScreen());
+      return FeatureControl.instance
+          .page('profile_student', const ProfileScreen());
     });
+    BackgroundPublish156.revision.addListener(_uploadChanged156);
+    BackgroundPublish156.resume();
     _createUserIfNotExists();
     _loadCurrentProfileImage();
     // Restore the on-device feed before the network request can replace it.
@@ -693,6 +697,13 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
     );
   }
 
+  void _uploadChanged156() {
+    if (mounted) {
+      _loadPosts(silent: true);
+      SharedActivity156.refresh();
+    }
+  }
+
   @override
   void dispose() {
     GlobalNavigationMenu.unregister(this);
@@ -704,6 +715,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
     _feedRefreshTimer?.cancel();
     _promotionExpiry?.cancel();
     _postsChannel?.unsubscribe();
+    BackgroundPublish156.revision.removeListener(_uploadChanged156);
     _feedScrollController.dispose();
     super.dispose();
   }
@@ -711,6 +723,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      BackgroundPublish156.resume();
       _startFeedRefreshTimer();
       FeatureControl.instance.refresh(force: true);
       _loadPosts(silent: true);
@@ -1019,6 +1032,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
           .select(
             '*, users(name, profile_image, gender, role, university, college, department, verification_expires_at)',
           )
+          .eq('upload_state156', 'ready')
           .order('created_at', ascending: false)
           .limit(30)
           .timeout(const Duration(seconds: 15));
@@ -1166,6 +1180,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
     String text, {
     String? audience,
     List<PickedPostMedia> media = const <PickedPostMedia>[],
+    List<String> mentions = const [],
   }) async {
     final user = Supabase.instance.client.auth.currentUser;
 
@@ -1183,6 +1198,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
       try {
         final newPost = {
           'user_id': user.id,
+          'mention_ids156': mentions,
           'type': 'text',
           'text_ar': text,
           'text_en': text,
@@ -1228,64 +1244,18 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
 
     if (_mediaPublishing) return;
     if (mounted) setState(() => _mediaPublishing = true);
-
     try {
-      if (mounted) {
-        final ar = Provider.of<LanguageProvider>(
-          context,
-          listen: false,
-        ).isArabic;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              ar
-                  ? 'جاري رفع ${media.length} ملف وسائط ونشر المنشور...'
-                  : 'Uploading ${media.length} media item(s) and publishing...',
-            ),
-          ),
-        );
-      }
-
-      final response = await PostPublishService.publishPost(
-        text: text,
-        audience: audience ?? _postAudience,
-        media: media,
-      );
-
-      if (!mounted) return;
-      setState(() {
-        posts.insert(0, {
-          ...response,
-          'users': {
-            'name': profileName ?? user.userMetadata?['name'] ?? 'مستخدم',
-            'profile_image': profileImageUrl,
-            'department': widget.department,
-          },
-          'liked': false,
-          'isSaved': false,
-          'shares': response['shares_count'] ?? 0,
-        });
-      });
-
-      final ar = Provider.of<LanguageProvider>(context, listen: false).isArabic;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            ar
-                ? '✅ تم نشر المنشور مع ${media.length} ملف وسائط!'
-                : '✅ Post published with ${media.length} media item(s)!',
-          ),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(FeatureControl.errorMessage(e, '❌ فشل النشر')),
-          backgroundColor: Colors.red,
-        ),
-      );
+      await BackgroundPublish156.post(
+          text: text,
+          audience: audience ?? _postAudience,
+          media: media,
+          mentions: mentions.isEmpty ? _mediaMentions156 : mentions);
+      if (mounted) await BackgroundPublish156.notice(context);
+    } catch (error) {
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content:
+                Text(FeatureControl.errorMessage(error, 'تعذر بدء الرفع'))));
     } finally {
       if (mounted) setState(() => _mediaPublishing = false);
     }
@@ -1541,12 +1511,17 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
     _toggleLike(index);
   }
 
+  List<String> _mediaMentions156 = [];
   Future<String?> _describeSelectedMedia(int count) async {
     if (!mounted) return null;
+    _mediaMentions156 = [];
     return showDialog<String>(
       context: context,
-      builder: (_) => MediaDescriptionDialog(mediaCount: count,
-          arabic: Provider.of<LanguageProvider>(context, listen: false).isArabic),
+      builder: (_) => MediaDescriptionDialog(
+          onMentions: (ids) => _mediaMentions156 = ids,
+          mediaCount: count,
+          arabic:
+              Provider.of<LanguageProvider>(context, listen: false).isArabic),
     );
   }
 
@@ -1724,7 +1699,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
   }
 
   void createPost() {
-    final controller = TextEditingController();
+    final controller = MentionController156();
     final languageProvider = Provider.of<LanguageProvider>(
       context,
       listen: false,
@@ -1801,7 +1776,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                         },
                       ),
                       const SizedBox(height: 10),
-                      TextField(
+                      MentionTextField156(
                         controller: controller,
                         maxLines: 5,
                         autofocus: true,
@@ -1939,6 +1914,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                       text,
                       audience: _postAudience,
                       media: media,
+                      mentions: controller.mentionIds,
                     );
                   },
                   style: ElevatedButton.styleFrom(
@@ -1968,6 +1944,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
       if (GlobalNavigationMenu.open) Navigator.of(context).pop();
       FeatureControl.instance.open(this.context, key, screen);
     }
+
     return Drawer(
       backgroundColor: Colors.transparent,
       child: Container(
@@ -2085,7 +2062,9 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                 });
                 if (GlobalNavigationMenu.open) {
                   Navigator.of(context).popUntil((route) => route.isFirst);
-                } else { Navigator.pop(context); }
+                } else {
+                  Navigator.pop(context);
+                }
               },
               isSelected: currentIndex == 0,
             ),
@@ -2278,7 +2257,9 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                 });
                 if (GlobalNavigationMenu.open) {
                   Navigator.of(context).popUntil((route) => route.isFirst);
-                } else { Navigator.pop(context); }
+                } else {
+                  Navigator.pop(context);
+                }
               },
               isSelected: currentIndex == 11,
             ),
@@ -2410,15 +2391,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
               },
             ),
           ),
-          title: const Text(
-            'Zameel',
-            maxLines: 1,
-            overflow: TextOverflow.visible,
-            style: TextStyle(
-              color: AppTheme.primary,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
+          title: const HeaderOccasion156(),
           actions: [
             IconButton(
               key: const ValueKey('homeAccountSettings'),
@@ -2664,7 +2637,8 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
       await Supabase.instance.client.from('shared_posts').upsert({
         'post_id': postId,
         'shared_by': user.id,
-      });
+      }, onConflict: 'post_id,shared_by');
+      SharedActivity156.refresh();
       await _loadPosts();
       if (mounted)
         ScaffoldMessenger.of(context).showSnackBar(
@@ -2789,6 +2763,14 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
           embedded: true,
         ),
       _buildCreateBox(),
+      Align(
+          alignment: AlignmentDirectional.centerEnd,
+          child: TextButton.icon(
+              onPressed: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const UploadTasks156())),
+              icon: const Icon(Icons.cloud_upload_outlined),
+              label: const Text('عمليات الرفع'))),
+      const SharedActivity156(),
       Padding(
         padding: const EdgeInsets.fromLTRB(14, 8, 14, 2),
         child: Row(

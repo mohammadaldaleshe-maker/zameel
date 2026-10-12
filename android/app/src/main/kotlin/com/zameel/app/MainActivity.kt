@@ -27,6 +27,17 @@ class MainActivity : FlutterActivity() {
     }
     override fun configureFlutterEngine(engine: io.flutter.embedding.engine.FlutterEngine) {
         super.configureFlutterEngine(engine)
+        io.flutter.plugin.common.MethodChannel(engine.dartExecutor.binaryMessenger, "zameel/uploads156").setMethodCallHandler { call, result ->
+            try {
+                when (call.method) {
+                    "start" -> { val intent = Intent(this, ZameelUploadService156::class.java); if (Build.VERSION.SDK_INT >= 26) startForegroundService(intent) else startService(intent); result.success(null) }
+                    "stop" -> { stopService(Intent(this, ZameelUploadService156::class.java)); result.success(null) }
+                    "failed" -> { ZameelUploadService156.failed(this, call.argument<String>("id") ?: "upload"); result.success(null) }
+                    else -> result.notImplemented()
+                }
+            } catch (error: Exception) { result.error("upload_service_unavailable", error.javaClass.simpleName, null) }
+        }
+
         io.flutter.plugin.common.MethodChannel(engine.dartExecutor.binaryMessenger, "zameel/chat_visibility")
             .setMethodCallHandler { call, result ->
                 if (call.method != "set") result.notImplemented()

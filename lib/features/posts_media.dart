@@ -173,8 +173,14 @@ class _PostCard extends StatelessWidget {
     AppearanceScope.observe(context);
     final String type = post['type'] ?? 'text';
 
+    Widget withMentions(Widget child) => (post['mention_ids156'] is List &&
+            (post['mention_ids156'] as List).isNotEmpty)
+        ? Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [child, MentionLinks156(postId: '${post['id']}')])
+        : child;
     if (type == 'video') {
-      return _VideoPost(
+      return withMentions(_VideoPost(
         post: post,
         onLike: onLike,
         savedPosts: savedPosts,
@@ -182,11 +188,11 @@ class _PostCard extends StatelessWidget {
         postOwnerId: postOwnerId,
         onDelete: onDelete,
         onShareToProfile: onShareToProfile,
-      );
+      ));
     }
 
     if (type == 'image') {
-      return _ImagePost(
+      return withMentions(_ImagePost(
         post: post,
         onLike: onLike,
         savedPosts: savedPosts,
@@ -194,10 +200,10 @@ class _PostCard extends StatelessWidget {
         postOwnerId: postOwnerId,
         onDelete: onDelete,
         onShareToProfile: onShareToProfile,
-      );
+      ));
     }
 
-    return _TextPost(
+    return withMentions(_TextPost(
       post: post,
       onLike: onLike,
       savedPosts: savedPosts,
@@ -205,7 +211,7 @@ class _PostCard extends StatelessWidget {
       postOwnerId: postOwnerId,
       onDelete: onDelete,
       onShareToProfile: onShareToProfile,
-    );
+    ));
   }
 }
 

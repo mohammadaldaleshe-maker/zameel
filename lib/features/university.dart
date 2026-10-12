@@ -1013,7 +1013,13 @@ const List<University> legacyUniversities = [
 ];
 
 // Merge by existing identity; never rewrite a saved profile during an upgrade.
-final List<University> universities = _mergeJordanUniversities();
+List<University> universities = _mergeJordanUniversities();
+Future<void> refreshAcademicCatalog156() async {
+  final rows=await Supabase.instance.client.rpc('zameel_catalog_snapshot_156');
+  if(rows is! List)throw StateError('invalid_academic_catalog');
+  universities=rows.map((raw){final u=Map<String,dynamic>.from(raw as Map);return University(name:u['name'].toString(),type:u['type'].toString(),city:u['city']?.toString()??'',colleges:(u['colleges'] as List).map((raw){final c=Map<String,dynamic>.from(raw as Map);return College(name:c['name'].toString(),departments:List<String>.from(c['departments'] as List),programDegrees:(c['programDegrees'] as Map).map((k,v)=>MapEntry(k.toString(),List<String>.from(v as List))));}).toList());}).toList();
+}
+
 List<University> _mergeJordanUniversities() {
   final result = <String, University>{
     for (final u in legacyUniversities) u.name: u,
@@ -1054,12 +1060,17 @@ class UniversityScreen extends StatefulWidget {
 
 class _UniversityScreenState extends State<UniversityScreen> {
   String search = '';
+  bool catalogLoading156=true;String? catalogError156;
+  @override void initState(){super.initState();_refresh156();}
+  Future<void> _refresh156()async{try{await refreshAcademicCatalog156();if(mounted)setState(()=>catalogLoading156=false);}catch(e){if(mounted)setState((){catalogLoading156=false;catalogError156='تعذر تحديث قائمة الجامعات. تحقق من الاتصال وأعد المحاولة.';});}}
 
   @override
   Widget build(BuildContext context) {
     AppearanceScope.observe(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
 
+    if(catalogLoading156)return const Scaffold(body:Center(child:CircularProgressIndicator()));
+    if(catalogError156!=null)return Scaffold(body:Center(child:Column(mainAxisSize:MainAxisSize.min,children:[Text(catalogError156!),TextButton(onPressed:(){setState((){catalogLoading156=true;catalogError156=null;});_refresh156();},child:const Text('إعادة المحاولة'))])));
     final filtered = universities.where((u) {
       return u.name.contains(search) || u.city.contains(search);
     }).toList();

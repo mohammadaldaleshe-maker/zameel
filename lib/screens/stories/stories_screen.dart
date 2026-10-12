@@ -1,3 +1,4 @@
+import '../../services/background_publish156.dart';
 import 'package:zameel/services/story_seen_store.dart';
 import '../../services/story_order_service.dart';
 import '../../services/chat_visibility_service.dart';
@@ -67,6 +68,7 @@ class _StoriesWidgetState extends State<StoriesWidget>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    BackgroundPublish156.revision.addListener(_uploadChanged156);
     _stories = widget.stories
         .map((story) => Map<String, dynamic>.from(story))
         .toList();
@@ -76,8 +78,13 @@ class _StoriesWidgetState extends State<StoriesWidget>
         Timer.periodic(const Duration(minutes: 2), (_) => _loadStories());
   }
 
+  void _uploadChanged156() {
+    if (mounted) _loadStories();
+  }
+
   @override
   void dispose() {
+    BackgroundPublish156.revision.removeListener(_uploadChanged156);
     WidgetsBinding.instance.removeObserver(this);
     _refreshTimer?.cancel();
     super.dispose();
@@ -439,11 +446,9 @@ class _StoriesWidgetState extends State<StoriesWidget>
               builder: (_) => StoryMediaEditor(
                   file: file, video: video, audience: _storyAudience)));
       if (draft == null || !mounted) return;
-      final id = await ZameelSocialService.createStoryFile(
-          file: draft.file, mediaType: draft.type, audience: draft.audience);
-      if (id == null) throw StateError('story_not_saved');
-      await _loadStories();
-      if (mounted) _showMessage('تم نشر الحالة');
+      await BackgroundPublish156.story(
+          file: draft.file, type: draft.type, audience: draft.audience);
+      if (mounted) await BackgroundPublish156.notice(context);
     } catch (_) {
       if (mounted)
         _showMessage(
@@ -1245,7 +1250,9 @@ class _StoryViewScreenState extends State<StoryViewScreen>
     final next = index + 1;
     if (next < 0 || next >= widget.stories.length) return;
     final story = widget.stories[next];
-    for (final key in const ['imagePath']) {
+    if (DateTime.tryParse('${story['expires_at']}')?.isBefore(DateTime.now()) ==
+        true) return;
+    for (final key in const ['imagePath', 'videoPath']) {
       final url = story[key]?.toString() ?? '';
       if (url.startsWith('http') || url.startsWith('zameel-private://')) {
         unawaited(MediaCacheService.prefetch(<String>[url], limit: 1));

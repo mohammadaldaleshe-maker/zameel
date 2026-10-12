@@ -67,6 +67,7 @@ class _CampusPlace {
 
 class _LiveMapScreenState extends State<LiveMapScreen>
     with TickerProviderStateMixin {
+  Timer? _partnerRefresh156;
   final _db = Supabase.instance.client;
   final _map = MapController();
   late final AnimationController _walk;
@@ -143,6 +144,12 @@ class _LiveMapScreenState extends State<LiveMapScreen>
   void initState() {
     super.initState();
     _loadPartnerAdvertisements();
+    _partnerRefresh156 = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted &&
+          WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed &&
+          ModalRoute.of(context)?.isCurrent == true)
+        _loadPartnerAdvertisements();
+    });
     ScreenAwakeService.enterPersistent();
     _world = widget.showUniversityWorldInitially;
     _walk = AnimationController(
@@ -1019,6 +1026,7 @@ class _LiveMapScreenState extends State<LiveMapScreen>
 
   @override
   void dispose() {
+    _partnerRefresh156?.cancel();
     _positionStream?.cancel();
     _walk.dispose();
     _measure.dispose();

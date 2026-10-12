@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../main.dart' show University, College, universities;
+import '../../main.dart'
+    show University, College, universities, refreshAcademicCatalog156;
 import '../../providers/language_provider.dart';
 import '../../theme/app_theme.dart';
 import 'contact_verification_screen.dart';
@@ -32,6 +33,35 @@ class _OpenRegistrationScreenState extends State<OpenRegistrationScreen> {
   University? _university;
   College? _college;
   String? _major;
+  bool _catalogLoading156 = true;
+  String? _catalogError156;
+  Future<void> _catalog156() async {
+    try {
+      await refreshAcademicCatalog156();
+      if (!mounted) return;
+      final oldU = _university?.name, oldC = _college?.name, oldM = _major;
+      _university = null;
+      _college = null;
+      _major = null;
+      for (final u in universities) {
+        if (u.name != oldU) continue;
+        _university = u;
+        for (final c in u.colleges) {
+          if (c.name != oldC) continue;
+          _college = c;
+          if (c.departments.contains(oldM)) _major = oldM;
+        }
+      }
+      setState(() => _catalogLoading156 = false);
+    } catch (_) {
+      if (mounted)
+        setState(() {
+          _catalogLoading156 = false;
+          _catalogError156 = 'تعذر تحميل خيارات التسجيل. تحقق من الاتصال.';
+        });
+    }
+  }
+
   bool get _resume => Supabase.instance.client.auth.currentUser != null;
   bool get _ar => context.read<LanguageProvider>().isArabic;
   String _t(String ar, String en) => _ar ? ar : en;
@@ -39,6 +69,7 @@ class _OpenRegistrationScreenState extends State<OpenRegistrationScreen> {
   @override
   void initState() {
     super.initState();
+    _catalog156();
     final user = Supabase.instance.client.auth.currentUser;
     final saved = user?.userMetadata?['registration'];
     if (saved is Map) {
@@ -189,6 +220,23 @@ class _OpenRegistrationScreenState extends State<OpenRegistrationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_kind == 'student' && _catalogLoading156)
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (_kind == 'student' && _catalogError156 != null)
+      return Scaffold(
+          body: Center(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Text(_catalogError156!),
+        TextButton(
+            onPressed: () {
+              setState(() {
+                _catalogError156 = null;
+                _catalogLoading156 = true;
+              });
+              _catalog156();
+            },
+            child: const Text('إعادة المحاولة'))
+      ])));
     context.watch<LanguageProvider>();
     final ar = _ar;
     return Directionality(

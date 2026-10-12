@@ -55,7 +55,8 @@ void main() {
       );
       expect(
         home,
-        contains("await _createPost(description, audience: audience, media: media);"),
+        contains(
+            "await _createPost(description, audience: audience, media: media);"),
       );
     });
 
@@ -64,7 +65,9 @@ void main() {
 
       expect(profile, contains('PostPublishService.pickMultipleImages()'));
       expect(profile, contains('PostPublishService.pickMultipleVideos()'));
-      expect(profile, contains('PostPublishService.publishPost('));
+      expect(profile, contains('BackgroundPublish156.post('));
+      expect(_read('lib/services/background_publish156_io.dart'),
+          contains('PostPublishService.publishPost('));
     });
 
     test('native picker supports image, video and mixed multi-selection', () {
@@ -98,29 +101,45 @@ void main() {
   });
 
   group('Zameel 073 floating bubble regression contracts', () {
-    test('release manifest excludes floating overlay permissions and service', () {
+    test('release manifest excludes floating overlay permissions and service',
+        () {
       final manifest = _read('android/app/src/main/AndroidManifest.xml');
-      expect(manifest, isNot(contains('android.permission.SYSTEM_ALERT_WINDOW')));
-      expect(manifest, isNot(contains('android.permission.FOREGROUND_SERVICE_SPECIAL_USE')));
+      expect(
+          manifest, isNot(contains('android.permission.SYSTEM_ALERT_WINDOW')));
+      expect(manifest,
+          isNot(contains('android.permission.FOREGROUND_SERVICE_SPECIAL_USE')));
       expect(manifest, isNot(contains('android:name=".ZameelOverlayService"')));
-      expect(manifest, isNot(contains('android:foregroundServiceType="specialUse"')));
+      expect(manifest,
+          isNot(contains('android:foregroundServiceType="specialUse"')));
       expect(manifest, contains('android:name=".ZameelBubbleReceiver"'));
     });
 
-    test('incoming messages and calls retain their notification paths without overlays', () {
-      final receiver = _read('android/app/src/main/kotlin/com/zameel/app/ZameelBubbleReceiver.kt');
-      expect(receiver, contains('ZameelIncomingCall.receive(appContext, extras)'));
-      expect(receiver, contains('postConversationFallback(appContext, extras)'));
+    test(
+        'incoming messages and calls retain their notification paths without overlays',
+        () {
+      final receiver = _read(
+          'android/app/src/main/kotlin/com/zameel/app/ZameelBubbleReceiver.kt');
+      expect(
+          receiver, contains('ZameelIncomingCall.receive(appContext, extras)'));
+      expect(
+          receiver, contains('postConversationFallback(appContext, extras)'));
       expect(receiver, contains('super.onReceive(context, intent)'));
       expect(receiver, isNot(contains('ZameelOverlayService.showFromPush')));
-      expect(receiver, contains('notificationManager.notify(notificationId, builder.build())'));
+      expect(
+          receiver,
+          contains(
+              'notificationManager.notify(notificationId, builder.build())'));
     });
 
-    test('activity no longer requests overlay access and preserves incoming call handling', () {
-      final activity = _read('android/app/src/main/kotlin/com/zameel/app/MainActivity.kt');
+    test(
+        'activity no longer requests overlay access and preserves incoming call handling',
+        () {
+      final activity =
+          _read('android/app/src/main/kotlin/com/zameel/app/MainActivity.kt');
       expect(activity, isNot(contains('ACTION_MANAGE_OVERLAY_PERMISSION')));
       expect(activity, isNot(contains('maybeAskForOverlayPermission')));
-      expect(activity, isNot(contains('ACTION_APP_NOTIFICATION_BUBBLE_SETTINGS')));
+      expect(
+          activity, isNot(contains('ACTION_APP_NOTIFICATION_BUBBLE_SETTINGS')));
       expect(activity, contains('ZameelIncomingCall.setUser'));
       expect(activity, contains('ZameelIncomingCall.dismiss'));
       expect(activity, contains('canUseFullScreenIntent()'));
@@ -298,12 +317,15 @@ void main() {
       expect(rawSignOutFiles, isEmpty);
     });
 
-    test('message notification opens its conversation without bubble metadata', () {
-      final receiver = _read('android/app/src/main/kotlin/com/zameel/app/ZameelBubbleReceiver.kt');
+    test('message notification opens its conversation without bubble metadata',
+        () {
+      final receiver = _read(
+          'android/app/src/main/kotlin/com/zameel/app/ZameelBubbleReceiver.kt');
       expect(receiver, isNot(contains('Notification.BubbleMetadata')));
       expect(receiver, isNot(contains('setBubbleMetadata')));
       expect(receiver, contains('.authority("chat")'));
-      expect(receiver, contains('.appendQueryParameter("conversation_id", conversationId)'));
+      expect(receiver,
+          contains('.appendQueryParameter("conversation_id", conversationId)'));
       expect(receiver, contains('MainActivity::class.java'));
       expect(receiver, contains('.setContentIntent(contentPendingIntent)'));
     });
@@ -389,6 +411,7 @@ void main() {
         'lib/services/social_daily_file_service_io.dart',
         'lib/services/shorts_video_preparer_io.dart',
         'lib/services/voice_recording_file_io.dart',
+        'lib/services/background_publish156_io.dart',
       };
       final directIoImports = Directory('lib')
           .listSync(recursive: true)

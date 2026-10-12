@@ -1,3 +1,6 @@
+import 'services/background_publish156.dart';
+import 'widgets/mention_field156.dart';
+import 'services/header_occasion_156.dart';
 import 'widgets/media_description_dialog.dart';
 import 'widgets/global_navigation_swipe.dart';
 import 'widgets/copyable_text.dart';
@@ -107,6 +110,7 @@ import 'platform/local_image_provider.dart';
 
 part 'features/auth_app.dart';
 part 'features/university.dart';
+part 'features/shared_activity156.dart';
 part 'features/academic_catalog_150.dart';
 part 'features/home_feed.dart';
 part 'features/arc_menu.dart';
@@ -134,6 +138,28 @@ Future<void> _openZameelDeepLink(Uri uri) async {
   final nav = await _waitForZameelNavigator();
   if (nav == null) return;
 
+  if (uri.host == 'post' && uri.pathSegments.isNotEmpty) {
+    await _handlePushNavigationData(
+        {'type': 'post_like', 'post_id': uri.pathSegments.first});
+    return;
+  }
+  if (uri.host == 'clip' && uri.pathSegments.isNotEmpty) {
+    if (!await FeatureControl.instance.check(nav.context, 'clips')) return;
+    final clip = await Supabase.instance.client
+        .from('clips')
+        .select()
+        .eq('id', uri.pathSegments.first)
+        .maybeSingle();
+    if (clip != null)
+      nav.push(MaterialPageRoute(
+          builder: (_) => VerticalClipsViewer(
+              clips: [Map<String, dynamic>.from(clip)], initialIndex: 0)));
+    return;
+  }
+  if (uri.host == 'uploads') {
+    nav.push(MaterialPageRoute(builder: (_) => const UploadTasks156()));
+    return;
+  }
   if (uri.host == 'notification') {
     await _handlePushNavigationData(
         {...uri.queryParameters, 'type': 'post_like'});
@@ -232,11 +258,25 @@ Future<void> _handlePushNavigationData(Map<String, dynamic> data) async {
   final type = (data['notification_type'] ?? data['type'])?.toString() ?? '';
   final nav = await _waitForZameelNavigator();
   if (nav == null) return;
+  if (type == 'upload_complete' && data['clip_id'] != null) {
+    final clip = await Supabase.instance.client
+        .from('clips')
+        .select()
+        .eq('id', data['clip_id'])
+        .maybeSingle();
+    if (clip != null)
+      nav.push(MaterialPageRoute(
+          builder: (_) => VerticalClipsViewer(
+              clips: [Map<String, dynamic>.from(clip)], initialIndex: 0)));
+    return;
+  }
   if (type == 'account_verification_review') {
     nav.push(MaterialPageRoute(builder: (_) => const ProfileScreen()));
     return;
   }
-  if (type == 'post_promotion_approved' ||
+  if (type == 'post_mention' ||
+      (type == 'upload_complete' && data['post_id'] != null) ||
+      type == 'post_promotion_approved' ||
       type == 'post_comment' ||
       type == 'comment' ||
       type == 'post_like' ||

@@ -1,9 +1,11 @@
+import 'mention_field156.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
 class MediaDescriptionDialog extends StatefulWidget {
   const MediaDescriptionDialog(
-      {super.key, required this.mediaCount, this.arabic = true});
+      {super.key, required this.mediaCount, this.arabic = true, this.onMentions});
+  final void Function(List<String>)? onMentions;
   final int mediaCount;
   final bool arabic;
 
@@ -12,7 +14,7 @@ class MediaDescriptionDialog extends StatefulWidget {
 }
 
 class _MediaDescriptionDialogState extends State<MediaDescriptionDialog> {
-  final _controller = TextEditingController();
+  final _controller = MentionController156();
 
   @override
   void dispose() {
@@ -36,7 +38,7 @@ class _MediaDescriptionDialogState extends State<MediaDescriptionDialog> {
                     : '${widget.mediaCount} media selected. Optional description appears above the media.',
                 style: TextStyle(color: AppTheme.adaptiveText)),
             const SizedBox(height: 12),
-            TextField(
+            MentionTextField156(
               key: const ValueKey('home_media_description'),
               controller: _controller,
               minLines: 3,
@@ -55,7 +57,7 @@ class _MediaDescriptionDialogState extends State<MediaDescriptionDialog> {
               onPressed: () => Navigator.pop(context),
               child: Text(widget.arabic ? 'إلغاء' : 'Cancel')),
           FilledButton(
-            onPressed: () => Navigator.pop(context, _controller.text.trim()),
+            onPressed: () {widget.onMentions?.call(_controller.mentionIds);Navigator.pop(context, _controller.text.trim());},
             child: Text(widget.arabic ? 'نشر' : 'Publish'),
           ),
         ],
