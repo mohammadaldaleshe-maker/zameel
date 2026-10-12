@@ -1,3 +1,4 @@
+import 'content_editor155.dart';
 import '../theme/app_theme.dart';
 import '../theme/appearance_controller.dart';
 import 'package:flutter/material.dart';
@@ -87,6 +88,8 @@ class MediaReportButton extends StatelessWidget {
 
 class PostReportMenu extends StatelessWidget {
   final String postId;
+  final Map<String, dynamic>? post;
+  final ValueChanged<Map<String, dynamic>>? onEdited;
   final String? authorId;
   final bool ar;
   final bool canDelete;
@@ -95,6 +98,8 @@ class PostReportMenu extends StatelessWidget {
   const PostReportMenu({
     super.key,
     required this.postId,
+    this.post,
+    this.onEdited,
     required this.authorId,
     required this.ar,
     required this.canDelete,
@@ -109,11 +114,20 @@ class PostReportMenu extends StatelessWidget {
     return PopupMenuButton<String>(
       tooltip: ar ? 'خيارات المنشور' : 'Post options',
       icon: Icon(Icons.more_horiz, color: AppTheme.legacySecondary),
-      onSelected: (value) {
+      onSelected: (value) async {
+        if (value == 'edit') {
+          final row = await editOwnedContent155(context, 'posts', postId);
+          if (row != null) {
+            post?.addAll(row);
+            onEdited?.call(row);
+          }
+        }
         if (value == 'delete') onDelete();
         if (value == 'report') showPostReportDialog(context, postId, ar);
       },
       itemBuilder: (_) => [
+        if (uid != null && uid == authorId)
+          const PopupMenuItem(value: 'edit', child: Text('تعديل المنشور')),
         if (canReport)
           PopupMenuItem(
             value: 'report',

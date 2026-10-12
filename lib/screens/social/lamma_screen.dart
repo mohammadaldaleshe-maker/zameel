@@ -136,11 +136,17 @@ class _LammaScreenState extends State<LammaScreen>
                         Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                                color: AppTheme.primaryLight,
+                                color:
+                                    Theme.of(ctx).colorScheme.primaryContainer,
                                 borderRadius: BorderRadius.circular(12)),
-                            child: Text(_ar
-                                ? 'اختياري وسري. لن تظهر هنا إلا لمن فعّل الميزة، والدردشة لا تُفتح إلا بعد قبول متبادل. للبالغين 18+ فقط.'
-                                : 'Optional and private. Chat opens only after mutual interest. Adults 18+ only.')),
+                            child: Text(
+                                _ar
+                                    ? 'اختياري وسري. لن تظهر هنا إلا لمن فعّل الميزة، والدردشة لا تُفتح إلا بعد قبول متبادل. للبالغين 18+ فقط.'
+                                    : 'Optional and private. Chat opens only after mutual interest. Adults 18+ only.',
+                                style: TextStyle(
+                                    color: Theme.of(ctx)
+                                        .colorScheme
+                                        .onPrimaryContainer))),
                         const SizedBox(height: 12),
                         DropdownButtonFormField(
                             value: intent,
@@ -213,6 +219,9 @@ class _LammaScreenState extends State<LammaScreen>
                       ]))),
                   actions: [
                     TextButton(
+                        style: TextButton.styleFrom(
+                            foregroundColor:
+                                Theme.of(ctx).colorScheme.onSurface),
                         onPressed: () => Navigator.pop(ctx, false),
                         child: Text(_ar ? 'إلغاء' : 'Cancel')),
                     FilledButton(

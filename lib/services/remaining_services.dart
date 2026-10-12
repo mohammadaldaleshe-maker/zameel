@@ -99,7 +99,8 @@ class RemainingServices {
     return result?.toString() ?? 'joined';
   }
 
-  static Future<List<Map<String, dynamic>>> groupJoinRequests(String groupId) async {
+  static Future<List<Map<String, dynamic>>> groupJoinRequests(
+      String groupId) async {
     if (uid == null || groupId.isEmpty) return [];
     final rows = await _db.rpc(
       'get_community_group_join_requests',
@@ -124,18 +125,21 @@ class RemainingServices {
 
   static Future<void> leaveGroup(String groupId) async {
     if (uid == null || groupId.isEmpty) return;
-    await _db.rpc('leave_community_group', params: {'target_group_id': groupId});
+    await _db
+        .rpc('leave_community_group', params: {'target_group_id': groupId});
   }
 
   static Future<void> deleteGroup(String groupId) async {
     if (uid == null || groupId.isEmpty) return;
-    await _db.rpc('delete_community_group', params: {'target_group_id': groupId});
+    await _db
+        .rpc('delete_community_group', params: {'target_group_id': groupId});
   }
 
-  static Future<List<Map<String, dynamic>>> groupMessages(String groupId) async {
+  static Future<List<Map<String, dynamic>>> groupMessages(
+      String groupId) async {
     if (uid == null || groupId.isEmpty) return [];
     final rows = await _db.rpc(
-      'get_community_group_messages',
+      'get_community_group_messages_155',
       params: {'target_group_id': groupId},
     );
     return _maps(rows);
@@ -152,23 +156,23 @@ class RemainingServices {
   }
 
   static RealtimeChannel subscribeToGroupMessages(
-    String groupId,
-    void Function() onChange,
-  ) {
-    return _db
-        .channel('community_group_messages:$groupId')
-        .onPostgresChanges(
-          event: PostgresChangeEvent.insert,
+      String groupId, void Function() onChange) {
+    final channel = _db.channel('community_group_messages:$groupId');
+    for (final event in [
+      PostgresChangeEvent.insert,
+      PostgresChangeEvent.update
+    ]) {
+      channel.onPostgresChanges(
+          event: event,
           schema: 'public',
           table: 'community_group_messages',
           filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'group_id',
-            value: groupId,
-          ),
-          callback: (_) => onChange(),
-        )
-        .subscribe();
+              type: PostgresChangeFilterType.eq,
+              column: 'group_id',
+              value: groupId),
+          callback: (_) => onChange());
+    }
+    return channel.subscribe();
   }
 
   static Future<void> removeChannel(RealtimeChannel? channel) async {
@@ -186,7 +190,8 @@ class RemainingServices {
     if (uid == null) return;
     await _db.rpc('create_poll', params: {
       'target_question': question.trim(),
-      'target_options': options.map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
+      'target_options':
+          options.map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
     });
   }
 
@@ -205,23 +210,29 @@ class RemainingServices {
 
   static Future<List<Map<String, dynamic>>> anonymousMessages() async {
     if (uid == null) return [];
-    final rows = await _db.rpc('get_anonymous_messages', params: {'result_limit': 100});
+    final rows =
+        await _db.rpc('get_anonymous_messages', params: {'result_limit': 100});
     return _maps(rows);
   }
 
   static Future<void> sendAnonymousMessage(String content) async {
     if (uid == null || content.trim().isEmpty) return;
-    await _db.rpc('send_anonymous_message', params: {'target_content': content.trim()});
+    await _db.rpc('send_anonymous_message',
+        params: {'target_content': content.trim()});
   }
 
   static Future<List<Map<String, dynamic>>> partners() async {
     if (uid == null) return [];
     final output = <Map<String, dynamic>>[];
-    for (var offset = 0; ; offset += 200) {
-      final rows = await _db.from('business_partners')
-          .select('id,name,category,tag,description,website_url,logo_url,is_approved,created_at,latitude,longitude,contact_phone,contact_email')
-          .eq('is_approved', true).eq('is_active', true)
-          .order('created_at', ascending: false).order('id')
+    for (var offset = 0;; offset += 200) {
+      final rows = await _db
+          .from('business_partners')
+          .select(
+              'id,name,category,tag,description,website_url,logo_url,is_approved,created_at,latitude,longitude,contact_phone,contact_email')
+          .eq('is_approved', true)
+          .eq('is_active', true)
+          .order('created_at', ascending: false)
+          .order('id')
           .range(offset, offset + 199);
       output.addAll(_maps(rows));
       if (rows.length < 200) break;
@@ -231,7 +242,8 @@ class RemainingServices {
 
   static Future<bool> canManagePartners() async {
     if (uid == null) return false;
-    final result = await _db.rpc('is_zameel_owner', params: {'target_user_id': uid});
+    final result =
+        await _db.rpc('is_zameel_owner', params: {'target_user_id': uid});
     return result == true;
   }
 
@@ -255,7 +267,8 @@ class RemainingServices {
 
   static Future<void> deletePartner(String partnerId) async {
     if (uid == null || partnerId.isEmpty) return;
-    await _db.rpc('admin_delete_business_partner', params: {'target_partner_id': partnerId});
+    await _db.rpc('admin_delete_business_partner',
+        params: {'target_partner_id': partnerId});
   }
 
   static Future<Map<String, dynamic>> activityStats() async {
@@ -283,7 +296,10 @@ class RemainingServices {
       final row = Map<String, dynamic>.from(raw);
       final post = row['posts'];
       if (post is Map) {
-        result.add({...Map<String, dynamic>.from(post), 'saved_at': row['created_at']});
+        result.add({
+          ...Map<String, dynamic>.from(post),
+          'saved_at': row['created_at']
+        });
       }
     }
     await SecureMediaService.resolvePosts(result);
@@ -293,12 +309,19 @@ class RemainingServices {
   static Future<void> unsavePost(String postId) async {
     final me = uid;
     if (me == null || postId.isEmpty) return;
-    await _db.from('saved_posts').delete().eq('user_id', me).eq('post_id', postId);
+    await _db
+        .from('saved_posts')
+        .delete()
+        .eq('user_id', me)
+        .eq('post_id', postId);
   }
 
   static List<Map<String, dynamic>> _maps(dynamic value) {
     if (value is! List) return [];
-    return value.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+    return value
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
   }
 
   static String _dateOnly(DateTime value) {

@@ -1,3 +1,4 @@
+import '../../widgets/content_editor155.dart';
 import 'package:zameel/widgets/copyable_text.dart';
 import '../../widgets/post_media_frame.dart';
 import 'package:zameel/theme/appearance_controller.dart';
@@ -1406,13 +1407,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildSectionHeader(bool ar) => Padding(
         padding: const EdgeInsets.fromLTRB(18, 8, 18, 10),
         child: Row(children: [
-          Text(
-              isMe
-                  ? (ar ? 'منشوراتي ومشاركاتي' : 'My posts & shares')
-                  : (ar ? 'المنشورات العامة' : 'Visible posts'),
-              style:
-                  const TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
-          const Spacer(),
+          Expanded(
+              child: Text(
+                  isMe
+                      ? (ar ? 'منشوراتي ومشاركاتي' : 'My posts & shares')
+                      : (ar ? 'المنشورات العامة' : 'Visible posts'),
+                  style: const TextStyle(
+                      fontSize: 19, fontWeight: FontWeight.w800))),
+          if (isMe)
+            IconButton(
+                onPressed: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const MyContent155())),
+                tooltip: 'تعديل محتواي',
+                icon: const Icon(Icons.edit_note_rounded)),
           if (isMe)
             IconButton.filledTonal(
               onPressed: () => _composePost(ar),

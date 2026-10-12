@@ -1,10 +1,13 @@
 import 'package:zameel/widgets/copyable_text.dart';
 import 'package:zameel/theme/appearance_controller.dart';
 import 'package:zameel/widgets/verified_name.dart';
+
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+
 import '../../services/feature_control.dart';
+
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -29,10 +32,12 @@ class CommentsScreen extends StatefulWidget {
   State<CommentsScreen> createState() => _CommentsScreenState();
 }
 
-class _CommentsScreenState extends State<CommentsScreen> {
+class _CommentsScreenState extends State<CommentsScreen>
+    with WidgetsBindingObserver {
   final TextEditingController _commentController = TextEditingController();
   final FocusNode _composerFocus = FocusNode();
 
+  bool _keyboardSeenForFocus = false;
   bool _loading = true;
   bool _sending = false;
   List<Map<String, dynamic>> _comments = <Map<String, dynamic>>[];
@@ -46,12 +51,30 @@ class _CommentsScreenState extends State<CommentsScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _composerFocus.addListener(_composerChanged);
     _loadComments();
+  }
+
+  void _composerChanged() {
+    if (!_composerFocus.hasFocus) _keyboardSeenForFocus = false;
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void didChangeMetrics() {
+    if (!mounted) return;
+    if (View.of(context).viewInsets.bottom > 0) {
+      _keyboardSeenForFocus = true;
+    }
+    setState(() {});
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _commentController.dispose();
+    _composerFocus.removeListener(_composerChanged);
     _composerFocus.dispose();
     super.dispose();
   }
@@ -112,8 +135,10 @@ class _CommentsScreenState extends State<CommentsScreen> {
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text(
-                FeatureControl.errorMessage(error, 'تعذر تحميل التعليقات'))),
+          content: Text(
+            FeatureControl.errorMessage(error, 'تعذر تحميل التعليقات'),
+          ),
+        ),
       );
     }
   }
@@ -138,8 +163,10 @@ class _CommentsScreenState extends State<CommentsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(
-                  FeatureControl.errorMessage(error, 'تعذر إضافة التعليق'))),
+            content: Text(
+              FeatureControl.errorMessage(error, 'تعذر إضافة التعليق'),
+            ),
+          ),
         );
       }
     } finally {
@@ -165,8 +192,10 @@ class _CommentsScreenState extends State<CommentsScreen> {
       } else {
         _likedCommentIds.add(commentId);
       }
-      comment['likes_count'] =
-          (previousCount + (wasLiked ? -1 : 1)).clamp(0, 999999);
+      comment['likes_count'] = (previousCount + (wasLiked ? -1 : 1)).clamp(
+        0,
+        999999,
+      );
     });
 
     try {
@@ -194,16 +223,15 @@ class _CommentsScreenState extends State<CommentsScreen> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content:
-                Text(FeatureControl.errorMessage(error, 'تعذر تحديث الإعجاب'))),
+          content: Text(
+            FeatureControl.errorMessage(error, 'تعذر تحديث الإعجاب'),
+          ),
+        ),
       );
     }
   }
 
-  Future<void> _editComment(
-    Map<String, dynamic> comment,
-    bool isArabic,
-  ) async {
+  Future<void> _editComment(Map<String, dynamic> comment, bool isArabic) async {
     if (comment['user_id']?.toString() != uid) return;
     final controller = TextEditingController(
       text: comment['content']?.toString() ?? '',
@@ -224,10 +252,8 @@ class _CommentsScreenState extends State<CommentsScreen> {
             child: Text(isArabic ? 'إلغاء' : 'Cancel'),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(
-              dialogContext,
-              controller.text.trim(),
-            ),
+            onPressed: () =>
+                Navigator.pop(dialogContext, controller.text.trim()),
             child: Text(isArabic ? 'حفظ' : 'Save'),
           ),
         ],
@@ -250,8 +276,10 @@ class _CommentsScreenState extends State<CommentsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(
-                  FeatureControl.errorMessage(error, 'تعذر تعديل التعليق'))),
+            content: Text(
+              FeatureControl.errorMessage(error, 'تعذر تعديل التعليق'),
+            ),
+          ),
         );
       }
     }
@@ -300,8 +328,10 @@ class _CommentsScreenState extends State<CommentsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content:
-                  Text(FeatureControl.errorMessage(error, 'تعذر حذف التعليق'))),
+            content: Text(
+              FeatureControl.errorMessage(error, 'تعذر حذف التعليق'),
+            ),
+          ),
         );
       }
     }
@@ -375,181 +405,200 @@ class _CommentsScreenState extends State<CommentsScreen> {
           centerTitle: true,
         ),
         body: Padding(
-            padding: EdgeInsets.zero,
-            child: Column(
-              children: [
-                if (MediaQuery.viewInsetsOf(context).bottom == 0)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppTheme.adaptiveBackground,
-                      border: Border(
-                        bottom:
-                            BorderSide(color: AppTheme.adaptiveMuted.shade200),
+          padding: EdgeInsets.zero,
+          child: Column(
+            children: [
+              if (!(_composerFocus.hasFocus && !_keyboardSeenForFocus) &&
+                  MediaQuery.viewInsetsOf(context).bottom == 0)
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.sizeOf(context).height * .35,
+                  ),
+                  child: SingleChildScrollView(
+                    key: const ValueKey('comment-post-preview'),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppTheme.adaptiveBackground,
+                        border: Border(
+                          bottom: BorderSide(
+                            color: AppTheme.adaptiveMuted.shade200,
+                          ),
+                        ),
                       ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (postText.toString().trim().isNotEmpty)
-                          Text(
-                            postText.toString(),
-                            style: const TextStyle(fontSize: 15, height: 1.5),
-                          ),
-                        if (hasOrderedMedia) ...[
-                          const SizedBox(height: 10),
-                          PostMediaGallery(
-                            post: widget.post,
-                            height: 210,
-                          ),
-                        ] else if ((widget.post['image_url']?.toString() ?? '')
-                            .isNotEmpty) ...[
-                          const SizedBox(height: 10),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(14),
-                            child: Image.network(
-                              widget.post['image_url'].toString(),
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) =>
-                                  const SizedBox.shrink(),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (postText.toString().trim().isNotEmpty)
+                            Text(
+                              postText.toString(),
+                              style: const TextStyle(fontSize: 15, height: 1.5),
                             ),
-                          ),
+                          if (hasOrderedMedia) ...[
+                            const SizedBox(height: 10),
+                            PostMediaGallery(post: widget.post, height: 210),
+                          ] else if ((widget.post['image_url']?.toString() ??
+                                  '')
+                              .isNotEmpty) ...[
+                            const SizedBox(height: 10),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(14),
+                              child: Image.network(
+                                widget.post['image_url'].toString(),
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) =>
+                                    const SizedBox.shrink(),
+                              ),
+                            ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
                   ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+                ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 18,
+                      backgroundImage: _imageForPost(widget.post),
+                      child: _imageForPost(widget.post) == null
+                          ? const Icon(Icons.person_outline)
+                          : null,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: VerifiedName(
+                        userId: widget.post['user_id']?.toString(),
+                        child: Text(
+                          ownerName.toString(),
+                          style: const TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                    ),
+                    Text('${_comments.length}'),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: _loading
+                    ? const Center(child: CircularProgressIndicator())
+                    : threaded.isEmpty
+                        ? Center(
+                            child: Text(
+                              isArabic
+                                  ? 'لا توجد تعليقات بعد\nكن أول من يعلق!'
+                                  : 'No comments yet\nBe the first to comment!',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: AppTheme.adaptiveMuted.shade600,
+                              ),
+                            ),
+                          )
+                        : RefreshIndicator(
+                            onRefresh: _loadComments,
+                            child: ListView.builder(
+                              padding: const EdgeInsets.all(12),
+                              itemCount: threaded.length,
+                              itemBuilder: (_, index) {
+                                final entry = threaded[index];
+                                return _commentCard(
+                                  entry.comment,
+                                  entry.depth,
+                                  isArabic,
+                                );
+                              },
+                            ),
+                          ),
+              ),
+              if (_replyingTo != null)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
+                  color: AppTheme.adaptiveHighlight,
                   child: Row(
                     children: [
-                      CircleAvatar(
-                        radius: 18,
-                        backgroundImage: _imageForPost(widget.post),
-                        child: _imageForPost(widget.post) == null
-                            ? const Icon(Icons.person_outline)
-                            : null,
-                      ),
-                      const SizedBox(width: 10),
+                      const Icon(Icons.reply_rounded, size: 18),
+                      const SizedBox(width: 8),
                       Expanded(
-                        child: VerifiedName(
-                            userId: widget.post['user_id']?.toString(),
-                            child: Text(
-                              ownerName.toString(),
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.w800),
-                            )),
+                        child: Text(
+                          isArabic
+                              ? 'الرد على ${_commenterName(_replyingTo!)}'
+                              : 'Replying to ${_commenterName(_replyingTo!)}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                      Text('${_comments.length}'),
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () => setState(() => _replyingTo = null),
+                        icon: const Icon(Icons.close_rounded, size: 18),
+                      ),
                     ],
                   ),
                 ),
-                Expanded(
-                  child: _loading
-                      ? const Center(child: CircularProgressIndicator())
-                      : threaded.isEmpty
-                          ? Center(
-                              child: Text(
-                                isArabic
-                                    ? 'لا توجد تعليقات بعد\nكن أول من يعلق!'
-                                    : 'No comments yet\nBe the first to comment!',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                    color: AppTheme.adaptiveMuted.shade600),
-                              ),
-                            )
-                          : RefreshIndicator(
-                              onRefresh: _loadComments,
-                              child: ListView.builder(
-                                padding: const EdgeInsets.all(12),
-                                itemCount: threaded.length,
-                                itemBuilder: (_, index) {
-                                  final entry = threaded[index];
-                                  return _commentCard(
-                                    entry.comment,
-                                    entry.depth,
-                                    isArabic,
-                                  );
-                                },
-                              ),
+              SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          key: const ValueKey('comment-composer'),
+                          groupId: _composerFocus,
+                          focusNode: _composerFocus,
+                          onEditingComplete: () {},
+                          controller: _commentController,
+                          minLines: 1,
+                          maxLines: 4,
+                          style: TextStyle(color: AppTheme.adaptiveText),
+                          decoration: InputDecoration(
+                            hintText: _replyingTo == null
+                                ? (isArabic
+                                    ? 'اكتب تعليقك...'
+                                    : 'Write a comment...')
+                                : (isArabic
+                                    ? 'اكتب ردك...'
+                                    : 'Write a reply...'),
+                            filled: true,
+                            fillColor: AppTheme.adaptiveMuted.shade100,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(24),
+                              borderSide: BorderSide.none,
                             ),
-                ),
-                if (_replyingTo != null)
-                  Container(
-                    width: double.infinity,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    color: AppTheme.adaptiveHighlight,
-                    child: Row(
-                      children: [
-                        const Icon(Icons.reply_rounded, size: 18),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            isArabic
-                                ? 'الرد على ${_commenterName(_replyingTo!)}'
-                                : 'Replying to ${_commenterName(_replyingTo!)}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
+                          onSubmitted: (_) => _addComment(),
                         ),
-                        IconButton(
-                          visualDensity: VisualDensity.compact,
-                          onPressed: () => setState(() => _replyingTo = null),
-                          icon: const Icon(Icons.close_rounded, size: 18),
-                        ),
-                      ],
-                    ),
-                  ),
-                SafeArea(
-                  top: false,
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            focusNode: _composerFocus,
-                            controller: _commentController,
-                            minLines: 1,
-                            maxLines: 4,
-                            style: TextStyle(color: AppTheme.adaptiveText),
-                            decoration: InputDecoration(
-                              hintText: _replyingTo == null
-                                  ? (isArabic
-                                      ? 'اكتب تعليقك...'
-                                      : 'Write a comment...')
-                                  : (isArabic
-                                      ? 'اكتب ردك...'
-                                      : 'Write a reply...'),
-                              filled: true,
-                              fillColor: AppTheme.adaptiveMuted.shade100,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(24),
-                                borderSide: BorderSide.none,
-                              ),
-                            ),
-                            onSubmitted: (_) => _addComment(),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        FloatingActionButton.small(
+                      ),
+                      const SizedBox(width: 8),
+                      TextFieldTapRegion(
+                        groupId: _composerFocus,
+                        child: FloatingActionButton.small(
                           onPressed: _sending ? null : _addComment,
                           child: _sending
                               ? const SizedBox(
                                   width: 18,
                                   height: 18,
-                                  child:
-                                      CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
                                 )
                               : const Icon(Icons.send_rounded),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            )),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -576,11 +625,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
     return url == null ? null : NetworkImage(url);
   }
 
-  Widget _commentCard(
-    Map<String, dynamic> comment,
-    int depth,
-    bool isArabic,
-  ) {
+  Widget _commentCard(Map<String, dynamic> comment, int depth, bool isArabic) {
     final user = comment['users'] is Map
         ? Map<String, dynamic>.from(comment['users'] as Map)
         : <String, dynamic>{};
@@ -597,10 +642,12 @@ class _CommentsScreenState extends State<CommentsScreen> {
     final likesCount = (comment['likes_count'] as num?)?.toInt() ?? 0;
     final created =
         DateTime.tryParse(comment['created_at']?.toString() ?? '')?.toLocal();
-    final createdRaw =
-        DateTime.tryParse(comment['created_at']?.toString() ?? '');
-    final updatedRaw =
-        DateTime.tryParse(comment['updated_at']?.toString() ?? '');
+    final createdRaw = DateTime.tryParse(
+      comment['created_at']?.toString() ?? '',
+    );
+    final updatedRaw = DateTime.tryParse(
+      comment['updated_at']?.toString() ?? '',
+    );
     final edited = createdRaw != null &&
         updatedRaw != null &&
         updatedRaw.difference(createdRaw).inSeconds.abs() > 1;
@@ -644,13 +691,14 @@ class _CommentsScreenState extends State<CommentsScreen> {
                             child: Padding(
                               padding: const EdgeInsets.symmetric(vertical: 2),
                               child: VerifiedName(
-                                  userId: comment['user_id']?.toString(),
-                                  child: Text(
-                                    name,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  )),
+                                userId: comment['user_id']?.toString(),
+                                child: Text(
+                                  name,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                         ),

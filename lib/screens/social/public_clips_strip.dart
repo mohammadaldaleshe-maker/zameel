@@ -1,3 +1,4 @@
+import '../../widgets/content_editor155.dart';
 import '../../widgets/cached_media_image.dart';
 import '../../services/watermarked_download_service.dart';
 import '../../services/video_preload_service.dart';
@@ -178,7 +179,7 @@ class _PublicClipsStripState extends State<PublicClipsStrip>
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => _VerticalClipsViewer(
+        builder: (_) => VerticalClipsViewer(
           clips: _clips,
           initialIndex: initialIndex < 0 ? 0 : initialIndex,
         ),
@@ -382,13 +383,13 @@ class _PublicClipsStripState extends State<PublicClipsStrip>
   }
 }
 
-class _VerticalClipsViewer extends StatefulWidget {
+class VerticalClipsViewer extends StatefulWidget {
   final List<Map<String, dynamic>> clips;
   final int initialIndex;
   final String? authorId;
   final bool savedOnly;
 
-  const _VerticalClipsViewer({
+  const VerticalClipsViewer({
     required this.clips,
     required this.initialIndex,
     this.authorId,
@@ -396,10 +397,10 @@ class _VerticalClipsViewer extends StatefulWidget {
   });
 
   @override
-  State<_VerticalClipsViewer> createState() => _VerticalClipsViewerState();
+  State<VerticalClipsViewer> createState() => VerticalClipsViewerState();
 }
 
-class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
+class VerticalClipsViewerState extends State<VerticalClipsViewer> {
   late final PageController _pageController;
   late List<Map<String, dynamic>> _clips;
   late int _currentIndex;
@@ -536,6 +537,12 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
       String action, Map<String, dynamic> clip, bool ar) async {
     final db = Supabase.instance.client;
     try {
+      if (action == 'edit') {
+        final row =
+            await editOwnedContent155(context, 'clips', '${clip['id']}');
+        if (row != null && mounted) setState(() => clip.addAll(row));
+        return;
+      }
       if (action == 'download') {
         await WatermarkedDownloadService.download(context,
             type: 'clip', id: '${clip['id']}');
@@ -720,52 +727,56 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
           final image = owner['profile_image']?.toString() ?? '';
           final mine = ownerId != null && ownerId == me;
           return SafeArea(
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Center(
-                  child: index == _currentIndex
-                      ? VerticalAutoplayVideoPlayer(
-                          key: ValueKey(clip['id']),
-                          videoUrl: clip['video_url']?.toString() ?? '',
-                          posterUrl: clip['cover_url']?.toString(),
-                          onCompleted: () => _advanceCompleted(index),
-                          initialMuted: _shortMuted,
-                          tapToPause: true,
-                          onMuteChanged: _rememberMute,
-                          onWatchedSeconds: (seconds) =>
-                              _watched(clip, seconds),
-                          onControlsVisibilityChanged: (visible) {
-                            if (mounted && _controlsVisible != visible)
-                              setState(() => _controlsVisible = visible);
-                          },
-                        )
-                      : const ColoredBox(
-                          color: Colors.black,
-                          child: Center(
-                            child: Icon(
-                              Icons.play_circle_outline_rounded,
-                              color: Colors.white38,
-                              size: 54,
+            child: Column(children: [
+              Expanded(
+                  child: Stack(
+                key: const ValueKey('short-video-area'),
+                fit: StackFit.expand,
+                children: [
+                  Center(
+                    child: index == _currentIndex
+                        ? VerticalAutoplayVideoPlayer(
+                            key: ValueKey(clip['id']),
+                            videoUrl: clip['video_url']?.toString() ?? '',
+                            posterUrl: clip['cover_url']?.toString(),
+                            onCompleted: () => _advanceCompleted(index),
+                            initialMuted: _shortMuted,
+                            tapToPause: true,
+                            onMuteChanged: _rememberMute,
+                            onWatchedSeconds: (seconds) =>
+                                _watched(clip, seconds),
+                            onControlsVisibilityChanged: (visible) {
+                              if (mounted && _controlsVisible != visible)
+                                setState(() => _controlsVisible = visible);
+                            },
+                          )
+                        : const ColoredBox(
+                            color: Colors.black,
+                            child: Center(
+                              child: Icon(
+                                Icons.play_circle_outline_rounded,
+                                color: Colors.white38,
+                                size: 54,
+                              ),
                             ),
                           ),
-                        ),
-                ),
-                if (_controlsVisible)
-                  Positioned(
-                    top: 8,
-                    left: 8,
-                    child: IconButton.filledTonal(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close_rounded),
-                    ),
                   ),
-                if (_controlsVisible)
-                  Positioned(
-                    left: 12,
-                    right: 12,
-                    bottom: 16,
+                  if (_controlsVisible)
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: IconButton.filledTonal(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+                    ),
+                ],
+              )),
+              if (_controlsVisible)
+                Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
                     child: Container(
+                      key: const ValueKey('short-details'),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: Colors.black.withAlpha(185),
@@ -833,6 +844,10 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
                                           ar ? 'حظر الحساب' : 'Block account')),
                                 ],
                                 if (mine)
+                                  const PopupMenuItem(
+                                      value: 'edit',
+                                      child: Text('تعديل الشورت')),
+                                if (mine)
                                   PopupMenuItem(
                                       value: 'delete',
                                       child: Text(ar ? 'حذف' : 'Delete')),
@@ -857,6 +872,10 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
                               TextButton.icon(
+                                style: TextButton.styleFrom(
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 12)),
                                 onPressed: () => _like(clip),
                                 icon: Icon(
                                   clip['liked'] == true
@@ -869,11 +888,19 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
                                 label: Text('${clip['likes_count'] ?? 0}'),
                               ),
                               TextButton.icon(
+                                style: TextButton.styleFrom(
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 12)),
                                 onPressed: () => _comment(clip),
                                 icon: const Icon(Icons.chat_bubble_outline),
                                 label: Text('${clip['comments_count'] ?? 0}'),
                               ),
                               TextButton.icon(
+                                style: TextButton.styleFrom(
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 12)),
                                 onPressed: () => _share(clip),
                                 icon: const Icon(Icons.share_outlined),
                                 label: Text(ar ? 'مشاركة' : 'Share'),
@@ -882,10 +909,8 @@ class _VerticalClipsViewerState extends State<_VerticalClipsViewer> {
                           ),
                         ],
                       ),
-                    ),
-                  ),
-              ],
-            ),
+                    )),
+            ]),
           );
         },
       ),
@@ -899,7 +924,9 @@ class ClipPreview extends StatefulWidget {
   final String coverUrl;
   final bool priority;
   const ClipPreview(
-      {required this.url, required this.autoplay, required this.coverUrl,
+      {required this.url,
+      required this.autoplay,
+      required this.coverUrl,
       this.priority = false});
   @override
   State<ClipPreview> createState() => ClipPreviewState();
@@ -936,13 +963,15 @@ class ClipPreviewState extends State<ClipPreview> {
   static final _previewQueue = PreviewTaskQueue();
   Future<void> _prepare() {
     if ((!_coverFailed && widget.coverUrl.isNotEmpty) ||
-        widget.url.isEmpty || !widget.autoplay) {
+        widget.url.isEmpty ||
+        !widget.autoplay) {
       if (widget.url.isEmpty) _failed = true;
       return Future<void>.value();
     }
     final requested = _generation;
     return _previewQueue.add(() async {
-      if (mounted && requested == _generation &&
+      if (mounted &&
+          requested == _generation &&
           (ModalRoute.of(context)?.isCurrent ?? true)) {
         await _prepareLegacy();
       } else if (mounted && requested == _generation) {
@@ -969,7 +998,8 @@ class ClipPreviewState extends State<ClipPreview> {
       if (!mounted || generation != _generation) return;
       setState(() => _failed = false);
       await Future<void>.delayed(const Duration(milliseconds: 400));
-      if (mounted && generation == _generation) await c.pause().timeout(const Duration(seconds: 3));
+      if (mounted && generation == _generation)
+        await c.pause().timeout(const Duration(seconds: 3));
     } catch (_) {
       if (generation == _generation) {
         _controller = null;
@@ -1003,22 +1033,24 @@ class ClipPreviewState extends State<ClipPreview> {
           onError: _coverError,
           fallback: const ColoredBox(
               color: Color(0xFF193B54),
-              child: Center(child: Icon(Icons.play_circle_outline,
-                  color: Colors.white, size: 38))));
+              child: Center(
+                  child: Icon(Icons.play_circle_outline,
+                      color: Colors.white, size: 38))));
     }
     final c = _controller;
     if (c == null || !c.value.isInitialized) {
       return ColoredBox(
           color: const Color(0xFF193B54),
-          child: Center(child: _failed
-              ? IconButton(
-                  tooltip: 'إعادة محاولة المعاينة',
-                  onPressed: () {
-                    setState(() => _failed = false);
-                    _prepare();
-                  },
-                  icon: const Icon(Icons.refresh, color: Colors.white))
-              : const CircularProgressIndicator(color: Colors.white70)));
+          child: Center(
+              child: _failed
+                  ? IconButton(
+                      tooltip: 'إعادة محاولة المعاينة',
+                      onPressed: () {
+                        setState(() => _failed = false);
+                        _prepare();
+                      },
+                      icon: const Icon(Icons.refresh, color: Colors.white))
+                  : const CircularProgressIndicator(color: Colors.white70)));
     }
     return FittedBox(
         fit: BoxFit.cover,
@@ -1036,7 +1068,7 @@ Future<void> openShortsViewer(
   await Navigator.of(context).push(MaterialPageRoute<void>(
       builder: (_) => FeatureControl.instance.page(
           'clips',
-          _VerticalClipsViewer(
+          VerticalClipsViewer(
               clips: clips,
               initialIndex: index,
               authorId: authorId,

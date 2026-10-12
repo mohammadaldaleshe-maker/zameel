@@ -321,6 +321,10 @@ class _ImagePostState extends State<_ImagePost> {
             // MORE / DELETE
             // --------------------------------------------------
             PostReportMenu(
+              onEdited: (row) {
+                if (mounted) setState(() => widget.post.addAll(row));
+              },
+              post: widget.post,
               postId: widget.post['id']?.toString() ?? '',
               authorId: widget.post['user_id']?.toString(),
               ar: isArabic,
@@ -642,6 +646,10 @@ class _VideoPostState extends State<_VideoPost> {
               ),
             ),
             PostReportMenu(
+              onEdited: (row) {
+                if (mounted) setState(() => widget.post.addAll(row));
+              },
+              post: widget.post,
               postId: widget.post['id']?.toString() ?? '',
               authorId: widget.post['user_id']?.toString(),
               ar: isArabic,
@@ -1701,6 +1709,10 @@ class _TextPostState extends State<_TextPost> {
             ),
             // زر "..." مع قائمة منبثقة
             PostReportMenu(
+              onEdited: (row) {
+                if (mounted) setState(() => widget.post.addAll(row));
+              },
+              post: widget.post,
               postId: widget.post['id']?.toString() ?? '',
               authorId: widget.post['user_id']?.toString(),
               ar: isArabic,

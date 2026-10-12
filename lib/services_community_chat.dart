@@ -41,7 +41,7 @@ class ZameelCommunityChatService {
   static Future<List<Map<String, dynamic>>> listMessages(
       CommunityScope scope) async {
     var query = db.from('community_messages').select(
-        'id,scope,university,college,department,user_id,content,created_at,users(name,profile_image)');
+        'id,scope,university,college,department,user_id,content,created_at,edited_at,users(name,profile_image)');
     query = query.eq('scope', scope.scope);
     if (scope.university == null) {
       query = query
@@ -78,7 +78,7 @@ class ZameelCommunityChatService {
           'content': content.trim(),
         })
         .select(
-            'id,scope,university,college,department,user_id,content,created_at,users(name,profile_image)')
+            'id,scope,university,college,department,user_id,content,created_at,edited_at,users(name,profile_image)')
         .single();
     return Map<String, dynamic>.from(row);
   }

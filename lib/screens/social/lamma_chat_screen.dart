@@ -1,3 +1,4 @@
+import '../../widgets/keep_keyboard_send_button.dart';
 import '../../widgets/chat_timestamp.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -8,7 +9,8 @@ class LammaChatScreen extends StatefulWidget {
   final String lammaId;
   final String title;
 
-  const LammaChatScreen({super.key, required this.lammaId, required this.title});
+  const LammaChatScreen(
+      {super.key, required this.lammaId, required this.title});
 
   @override
   State<LammaChatScreen> createState() => _LammaChatScreenState();
@@ -16,6 +18,7 @@ class LammaChatScreen extends StatefulWidget {
 
 class _LammaChatScreenState extends State<LammaChatScreen> {
   final _message = TextEditingController();
+  final _composerFocus = FocusNode();
   final _scroll = ScrollController();
   final _db = Supabase.instance.client;
   bool _sending = false;
@@ -23,6 +26,7 @@ class _LammaChatScreenState extends State<LammaChatScreen> {
   @override
   void dispose() {
     _message.dispose();
+    _composerFocus.dispose();
     _scroll.dispose();
     super.dispose();
   }
@@ -42,7 +46,8 @@ class _LammaChatScreenState extends State<LammaChatScreen> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تعذر إرسال الرسالة. تأكد أنك عضو في اللّمّة.')),
+          const SnackBar(
+              content: Text('تعذر إرسال الرسالة. تأكد أنك عضو في اللّمّة.')),
         );
       }
     } finally {
@@ -69,14 +74,16 @@ class _LammaChatScreenState extends State<LammaChatScreen> {
                 stream: stream,
                 builder: (context, snapshot) {
                   if (snapshot.hasError) {
-                    return const Center(child: Text('تعذر تحميل دردشة اللّمّة.'));
+                    return const Center(
+                        child: Text('تعذر تحميل دردشة اللّمّة.'));
                   }
                   if (!snapshot.hasData) {
                     return const Center(child: CircularProgressIndicator());
                   }
                   final messages = chatDatedRows(snapshot.data!);
                   if (messages.isEmpty) {
-                    return const Center(child: Text('ابدأوا الحديث في اللّمّة 👋'));
+                    return const Center(
+                        child: Text('ابدأوا الحديث في اللّمّة 👋'));
                   }
                   return ListView.builder(
                     controller: _scroll,
@@ -84,23 +91,42 @@ class _LammaChatScreenState extends State<LammaChatScreen> {
                     itemCount: messages.length,
                     itemBuilder: (_, index) {
                       final item = messages[index];
-                      if (item['date_separator'] == true) return ChatDateSeparator(value: item['created_at']);
+                      if (item['date_separator'] == true)
+                        return ChatDateSeparator(value: item['created_at']);
                       final mine = item['sender_id'] == uid;
                       return Align(
-                        alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
+                        alignment:
+                            mine ? Alignment.centerRight : Alignment.centerLeft,
                         child: Container(
                           constraints: const BoxConstraints(maxWidth: 310),
                           margin: const EdgeInsets.only(bottom: 8),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 10),
                           decoration: BoxDecoration(
-                            color: mine ? AppTheme.primary : Theme.of(context).colorScheme.surfaceContainerHighest,
+                            color: mine
+                                ? AppTheme.primary
+                                : Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                            Text(item['body']?.toString() ?? '', style: TextStyle(color: mine ? Colors.white : null)),
-                            Text(chatTime(item['created_at']), textDirection: TextDirection.ltr,
-                              style: TextStyle(fontSize: 11, color: mine ? Colors.white70 : Theme.of(context).colorScheme.onSurfaceVariant)),
-                          ]),
+                          child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(item['body']?.toString() ?? '',
+                                    style: TextStyle(
+                                        color: mine ? Colors.white : null)),
+                                Text(
+                                    '${chatTime(item['created_at'])}${item['edited_at'] != null ? ' • تم التعديل' : ''}',
+                                    textDirection: TextDirection.ltr,
+                                    style: TextStyle(
+                                        fontSize: 11,
+                                        color: mine
+                                            ? Colors.white70
+                                            : Theme.of(context)
+                                                .colorScheme
+                                                .onSurfaceVariant)),
+                              ]),
                         ),
                       );
                     },
@@ -117,20 +143,23 @@ class _LammaChatScreenState extends State<LammaChatScreen> {
                     Expanded(
                       child: TextField(
                         controller: _message,
+                        focusNode: _composerFocus,
+                        groupId: _composerFocus,
+                        onEditingComplete: () {},
                         minLines: 1,
                         maxLines: 4,
                         maxLength: 1000,
                         textInputAction: TextInputAction.newline,
-                        decoration: const InputDecoration(counterText: '', hintText: 'اكتب رسالة للّمّة...'),
+                        decoration: const InputDecoration(
+                            counterText: '', hintText: 'اكتب رسالة للّمّة...'),
                       ),
                     ),
                     const SizedBox(width: 8),
-                    IconButton.filled(
-                      onPressed: _sending ? null : _send,
-                      icon: _sending
-                          ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                          : const Icon(Icons.send_rounded),
-                    ),
+                    KeepKeyboardSendButton(
+                        composerFocus: _composerFocus,
+                        onSend: _send,
+                        enabled: !_sending,
+                        busy: _sending),
                   ],
                 ),
               ),

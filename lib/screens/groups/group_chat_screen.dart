@@ -1,3 +1,4 @@
+import '../../widgets/keep_keyboard_send_button.dart';
 import '../../widgets/chat_timestamp.dart';
 import 'package:zameel/theme/appearance_controller.dart';
 import 'package:zameel/widgets/verified_name.dart';
@@ -24,6 +25,7 @@ class GroupChatScreen extends StatefulWidget {
 
 class _GroupChatScreenState extends State<GroupChatScreen> {
   final _controller = TextEditingController();
+  final _composerFocus = FocusNode();
   final _scrollController = ScrollController();
   List<Map<String, dynamic>> _messages = [];
   bool _loading = true;
@@ -84,6 +86,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
   void dispose() {
     RemainingServices.removeChannel(_channel);
     _controller.dispose();
+    _composerFocus.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -107,7 +110,9 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                         itemCount: _messages.length,
                         itemBuilder: (context, index) {
                           final message = _messages[index];
-                          if (message['date_separator'] == true) return ChatDateSeparator(value: message['created_at']);
+                          if (message['date_separator'] == true)
+                            return ChatDateSeparator(
+                                value: message['created_at']);
                           final isMe = message['user_id']?.toString() == me;
                           final name = message['sender_name']
                                       ?.toString()
@@ -168,8 +173,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                                   if (created != null) ...[
                                     const SizedBox(height: 4),
                                     Text(
-                                      DateFormat('dd/MM/yyyy • HH:mm')
-                                          .format(created),
+                                      '${DateFormat('dd/MM/yyyy • HH:mm').format(created)}${message['edited_at'] != null ? ' • تم التعديل' : ''}',
                                       style: TextStyle(
                                         color: isMe
                                             ? Colors.white70
@@ -194,6 +198,9 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                   Expanded(
                     child: TextField(
                       controller: _controller,
+                      focusNode: _composerFocus,
+                      groupId: _composerFocus,
+                      onEditingComplete: () {},
                       style: TextStyle(color: AppTheme.adaptiveText),
                       minLines: 1,
                       maxLines: 4,
@@ -211,16 +218,11 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  IconButton.filled(
-                    onPressed: _sending ? null : _send,
-                    icon: _sending
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.send_rounded),
-                  ),
+                  KeepKeyboardSendButton(
+                      composerFocus: _composerFocus,
+                      onSend: _send,
+                      enabled: !_sending,
+                      busy: _sending),
                 ],
               ),
             ),

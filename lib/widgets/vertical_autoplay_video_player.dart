@@ -400,7 +400,7 @@ class _VerticalAutoplayVideoPlayerState
             ),
             Positioned(
               right: 8,
-              bottom: 42,
+              top: 8,
               child: AnimatedOpacity(
                 opacity: _controlsVisible ? 1 : 0,
                 duration: const Duration(milliseconds: 180),
@@ -430,28 +430,30 @@ class _VerticalAutoplayVideoPlayerState
                       color: Colors.black.withAlpha(190),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Row(
-                      children: [
-                        Text(_time(controller.value.position),
-                            style: const TextStyle(
-                                color: Colors.white, fontSize: 11)),
-                        Expanded(
-                          child: VideoProgressIndicator(
-                            controller,
-                            allowScrubbing: true,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 12),
-                            colors: const VideoProgressColors(
-                                playedColor: Colors.deepPurpleAccent,
-                                bufferedColor: Colors.white38,
-                                backgroundColor: Colors.white24),
-                          ),
-                        ),
-                        Text('-${_time(_remaining(controller))}',
-                            style: const TextStyle(
-                                color: Colors.white, fontSize: 11)),
-                      ],
-                    ),
+                    child: Directionality(
+                        textDirection: TextDirection.ltr,
+                        child: Row(
+                          children: [
+                            Text(_time(controller.value.position),
+                                style: const TextStyle(
+                                    color: Colors.white, fontSize: 11)),
+                            Expanded(
+                              child: VideoProgressIndicator(
+                                controller,
+                                allowScrubbing: true,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 12),
+                                colors: const VideoProgressColors(
+                                    playedColor: Colors.deepPurpleAccent,
+                                    bufferedColor: Colors.white38,
+                                    backgroundColor: Colors.white24),
+                              ),
+                            ),
+                            Text('-${_time(_remaining(controller))}',
+                                style: const TextStyle(
+                                    color: Colors.white, fontSize: 11)),
+                          ],
+                        )),
                   ),
                 ),
               ),

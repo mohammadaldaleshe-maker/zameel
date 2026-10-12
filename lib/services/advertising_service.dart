@@ -40,6 +40,27 @@ class AdvertisingService {
     return ads;
   }
 
+  static Future<List<Map<String, dynamic>>> partnerPosts(
+      String partnerId) async {
+    if (!FeatureControl.instance.enabled('partner_advertising')) return [];
+    final rows = <Map<String, dynamic>>[];
+    for (var offset = 0; offset <= 100000; offset += 50) {
+      final response = await _db.functions.invoke('advertising-console', body: {
+        'action': 'partner_posts155',
+        'partner_id': partnerId,
+        'offset': offset,
+      });
+      final data = response.data;
+      if (data is! Map || data['rows'] is! List)
+        throw StateError('تعذر تحميل منشورات الشريك');
+      rows.addAll((data['rows'] as List)
+          .whereType<Map>()
+          .map((row) => Map<String, dynamic>.from(row)));
+      if (data['has_more'] != true) break;
+    }
+    return rows;
+  }
+
   static Future<void> _warmImage(String url) async {
     try {
       await MediaCacheService.localPathForUrl(url);

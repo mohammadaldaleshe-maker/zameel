@@ -33,11 +33,25 @@ class PostPublishService {
   static const int maxPostMediaBytes = 150 * 1024 * 1024;
 
   static const List<String> allowedExtensions = <String>[
-    'jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif',
-    'mp4', 'mov', 'm4v', 'webm',
+    'jpg',
+    'jpeg',
+    'png',
+    'webp',
+    'gif',
+    'heic',
+    'heif',
+    'mp4',
+    'mov',
+    'm4v',
+    'webm',
   ];
 
-  static const Set<String> _videoExtensions = <String>{'mp4', 'mov', 'm4v', 'webm'};
+  static const Set<String> _videoExtensions = <String>{
+    'mp4',
+    'mov',
+    'm4v',
+    'webm'
+  };
 
   static bool isVideoFile(PickedPostMedia file) =>
       _videoExtensions.contains(_extension(file.name));
@@ -49,7 +63,8 @@ class PostPublishService {
     int limit = maxMediaItems,
   }) async {
     if (limit <= 0) return const <PickedPostMedia>[];
-    final picked = await ImagePicker().pickMultiImage(imageQuality: 90, limit: limit);
+    final picked =
+        await ImagePicker().pickMultiImage(imageQuality: 90, limit: limit);
     return _wrapXFiles(picked, limit: limit, onlyVideos: false);
   }
 
@@ -65,7 +80,8 @@ class PostPublishService {
     int limit = maxMediaItems,
   }) async {
     if (limit <= 0) return const <PickedPostMedia>[];
-    final picked = await ImagePicker().pickMultipleMedia(imageQuality: 90, limit: limit);
+    final picked =
+        await ImagePicker().pickMultipleMedia(imageQuality: 90, limit: limit);
     return _wrapXFiles(picked, limit: limit);
   }
 
@@ -76,12 +92,31 @@ class PostPublishService {
   }) async {
     final selected = <PickedPostMedia>[];
     for (final source in picked.take(limit)) {
-      final item = PickedPostMedia(source: source, byteSize: await source.length());
+      final item =
+          PickedPostMedia(source: source, byteSize: await source.length());
       if (!isSupportedFile(item)) continue;
       if (onlyVideos != null && isVideoFile(item) != onlyVideos) continue;
       selected.add(item);
     }
     return selected;
+  }
+
+  static Future<List<Map<String, dynamic>>> uploadForEdit155(
+      Map<String, dynamic> row, List<PickedPostMedia> media) async {
+    _validateSelection(media);
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) throw StateError('not_signed_in');
+    final result = <Map<String, dynamic>>[];
+    for (var i = 0; i < media.length; i++) {
+      final file = await _uploadMedia(
+          file: media[i],
+          userId: user.id,
+          postId: '${row['id']}',
+          audience: row['audience']?.toString() ?? 'public',
+          index: i);
+      result.add(file.dbItem);
+    }
+    return result;
   }
 
   static Future<Map<String, dynamic>> publishPost({
@@ -95,7 +130,8 @@ class PostPublishService {
 
     final cleanText = text.trim();
     final selected = media.where(isSupportedFile).take(maxMediaItems).toList();
-    if (cleanText.isEmpty && selected.isEmpty) throw ArgumentError('empty_post');
+    if (cleanText.isEmpty && selected.isEmpty)
+      throw ArgumentError('empty_post');
     _validateSelection(selected);
     if (selected.length > 1) {
       await FeatureControl.instance.refresh(force: true);
@@ -107,18 +143,24 @@ class PostPublishService {
     // Create the RLS-protected entity before private uploads so Storage policy
     // can authorize the owner and later viewers against this exact post id.
     final draft = Map<String, dynamic>.from(
-      await db.from('posts').insert(<String, dynamic>{
-        'user_id': user.id,
-        'type': selected.isEmpty ? 'text' : (isVideoFile(selected.first) ? 'video' : 'image'),
-        'text_ar': cleanText,
-        'text_en': cleanText,
-        'image_url': null,
-        'video_url': null,
-        'media_items': const <dynamic>[],
-        'likes_count': 0,
-        'comments_count': 0,
-        'audience': audience,
-      }).select().single(),
+      await db
+          .from('posts')
+          .insert(<String, dynamic>{
+            'user_id': user.id,
+            'type': selected.isEmpty
+                ? 'text'
+                : (isVideoFile(selected.first) ? 'video' : 'image'),
+            'text_ar': cleanText,
+            'text_en': cleanText,
+            'image_url': null,
+            'video_url': null,
+            'media_items': const <dynamic>[],
+            'likes_count': 0,
+            'comments_count': 0,
+            'audience': audience,
+          })
+          .select()
+          .single(),
     );
     final postId = draft['id']?.toString() ?? '';
     if (postId.isEmpty) throw StateError('post_id_missing');
@@ -144,19 +186,29 @@ class PostPublishService {
       final firstImage = firstUrl('image');
       final firstVideo = firstUrl('video');
       final updated = Map<String, dynamic>.from(
-        await db.from('posts').update(<String, dynamic>{
-          'image_url': firstImage.isEmpty ? null : firstImage,
-          'video_url': firstVideo.isEmpty ? null : firstVideo,
-          'media_items': items,
-        }).eq('id', postId).eq('user_id', user.id).select().single(),
+        await db
+            .from('posts')
+            .update(<String, dynamic>{
+              'image_url': firstImage.isEmpty ? null : firstImage,
+              'video_url': firstVideo.isEmpty ? null : firstVideo,
+              'media_items': items,
+            })
+            .eq('id', postId)
+            .eq('user_id', user.id)
+            .select()
+            .single(),
       );
       await SecureMediaService.resolvePost(updated);
       return updated;
     } catch (_) {
       for (final item in uploaded) {
-        try { await db.storage.from(item.bucket).remove(<String>[item.storagePath]); } catch (_) {}
+        try {
+          await db.storage.from(item.bucket).remove(<String>[item.storagePath]);
+        } catch (_) {}
       }
-      try { await db.from('posts').delete().eq('id', postId).eq('user_id', user.id); } catch (_) {}
+      try {
+        await db.from('posts').delete().eq('id', postId).eq('user_id', user.id);
+      } catch (_) {}
       rethrow;
     }
   }
@@ -168,10 +220,12 @@ class PostPublishService {
       final perFileLimit = isVideo ? maxVideoBytes : maxImageBytes;
       if (item.byteSize <= 0) throw StateError('media_bytes_unavailable');
       if (item.byteSize > perFileLimit) {
-        throw StateError(isVideo ? 'video_too_large_80mb' : 'image_too_large_12mb');
+        throw StateError(
+            isVideo ? 'video_too_large_80mb' : 'image_too_large_12mb');
       }
       selectedBytes += item.byteSize;
-      if (selectedBytes > maxPostMediaBytes) throw StateError('post_media_too_large_150mb');
+      if (selectedBytes > maxPostMediaBytes)
+        throw StateError('post_media_too_large_150mb');
     }
   }
 
@@ -179,7 +233,8 @@ class PostPublishService {
     final db = Supabase.instance.client;
     final user = db.auth.currentUser;
     if (user == null || postId.trim().isEmpty) return;
-    final row = await db.from('posts')
+    final row = await db
+        .from('posts')
         .select('id,user_id,image_url,video_url,media_items')
         .eq('id', postId)
         .maybeSingle();
@@ -195,7 +250,8 @@ class PostPublishService {
     final db = Supabase.instance.client;
     final user = db.auth.currentUser;
     if (user == null) throw StateError('not_signed_in');
-    final rowRaw = await db.from('posts')
+    final rowRaw = await db
+        .from('posts')
         .select('id,user_id,audience,image_url,video_url,media_items')
         .eq('id', postId)
         .eq('user_id', user.id)
@@ -206,16 +262,24 @@ class PostPublishService {
         !SecureMediaService.isPublicAudience(newAudience)) {
       await _migrateExistingPostToPrivate(row);
     }
-    await db.from('posts').update({'audience': newAudience}).eq('id', postId).eq('user_id', user.id);
+    await db
+        .from('posts')
+        .update({'audience': newAudience})
+        .eq('id', postId)
+        .eq('user_id', user.id);
   }
 
-  static Future<void> _migrateExistingPostToPrivate(Map<String, dynamic> row) async {
+  static Future<void> _migrateExistingPostToPrivate(
+      Map<String, dynamic> row) async {
     final db = Supabase.instance.client;
     final user = db.auth.currentUser!;
     final postId = row['id'].toString();
     final rawItems = row['media_items'];
     final items = rawItems is List
-        ? rawItems.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList()
+        ? rawItems
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList()
         : <Map<String, dynamic>>[];
     if (items.isEmpty) return;
 
@@ -228,28 +292,42 @@ class PostPublishService {
         migrated.add(item);
         continue;
       }
-      final bytes = await db.storage.from('posts').download(_publicPostsPath(oldUrl));
+      final bytes =
+          await db.storage.from('posts').download(_publicPostsPath(oldUrl));
       final ext = _extension(item['name']?.toString() ?? 'media.bin');
       final safeExt = ext.isEmpty ? 'bin' : ext;
-      final newPath = 'posts/$postId/${user.id}/${DateTime.now().microsecondsSinceEpoch}_$i.$safeExt';
+      final newPath =
+          'posts/$postId/${user.id}/${DateTime.now().microsecondsSinceEpoch}_$i.$safeExt';
       await db.storage.from(SecureMediaService.privateBucket).uploadBinary(
-        newPath,
-        bytes,
-        fileOptions: FileOptions(contentType: _contentType(safeExt, isVideo: item['type'] == 'video'), upsert: false),
-      );
+            newPath,
+            bytes,
+            fileOptions: FileOptions(
+                contentType:
+                    _contentType(safeExt, isVideo: item['type'] == 'video'),
+                upsert: false),
+          );
       oldRefs.add(oldUrl);
-      migrated.add(<String, dynamic>{...item, 'url': SecureMediaService.privateReference(newPath)});
+      migrated.add(<String, dynamic>{
+        ...item,
+        'url': SecureMediaService.privateReference(newPath)
+      });
     }
     String firstOf(String type) => migrated
         .where((e) => e['type'] == type)
         .map((e) => e['url']?.toString() ?? '')
         .firstWhere((e) => e.isNotEmpty, orElse: () => '');
-    await db.from('posts').update({
-      'media_items': migrated,
-      'image_url': firstOf('image').isEmpty ? null : firstOf('image'),
-      'video_url': firstOf('video').isEmpty ? null : firstOf('video'),
-    }).eq('id', postId).eq('user_id', user.id);
-    for (final ref in oldRefs) { await SecureMediaService.removeReference(ref); }
+    await db
+        .from('posts')
+        .update({
+          'media_items': migrated,
+          'image_url': firstOf('image').isEmpty ? null : firstOf('image'),
+          'video_url': firstOf('video').isEmpty ? null : firstOf('video'),
+        })
+        .eq('id', postId)
+        .eq('user_id', user.id);
+    for (final ref in oldRefs) {
+      await SecureMediaService.removeReference(ref);
+    }
   }
 
   static String _publicPostsPath(String url) {
@@ -313,25 +391,37 @@ class PostPublishService {
   static String _safeFileName(String name) {
     final sanitized = name.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
     if (sanitized.isEmpty) return 'media.bin';
-    return sanitized.length > 90 ? sanitized.substring(sanitized.length - 90) : sanitized;
+    return sanitized.length > 90
+        ? sanitized.substring(sanitized.length - 90)
+        : sanitized;
   }
 
   static String _contentType(String ext, {required bool isVideo}) {
     if (isVideo) {
       switch (ext) {
-        case 'mov': return 'video/quicktime';
-        case 'm4v': return 'video/x-m4v';
-        case 'webm': return 'video/webm';
-        default: return 'video/mp4';
+        case 'mov':
+          return 'video/quicktime';
+        case 'm4v':
+          return 'video/x-m4v';
+        case 'webm':
+          return 'video/webm';
+        default:
+          return 'video/mp4';
       }
     }
     switch (ext) {
-      case 'png': return 'image/png';
-      case 'webp': return 'image/webp';
-      case 'gif': return 'image/gif';
-      case 'heic': return 'image/heic';
-      case 'heif': return 'image/heif';
-      default: return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'webp':
+        return 'image/webp';
+      case 'gif':
+        return 'image/gif';
+      case 'heic':
+        return 'image/heic';
+      case 'heif':
+        return 'image/heif';
+      default:
+        return 'image/jpeg';
     }
   }
 }

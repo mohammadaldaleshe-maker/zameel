@@ -55,7 +55,7 @@ class AdvertisementCard extends StatelessWidget {
                             context,
                             MaterialPageRoute<void>(
                                 builder: (_) => PartnerAdsScreen(
-                                      partner: {'id': partnerId, 'name': name},
+                                      partner: {if (partner is Map) ...Map<String, dynamic>.from(partner), 'id': partnerId, 'name': name},
                                       isArabic: isArabic,
                                     )),
                           ),

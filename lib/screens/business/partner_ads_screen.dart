@@ -1,5 +1,6 @@
 import 'package:zameel/theme/appearance_controller.dart';
 import 'package:flutter/material.dart';
+import '../../widgets/cached_media_image.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../theme/app_theme.dart';
@@ -24,10 +25,7 @@ class _PartnerAdsScreenState extends State<PartnerAdsScreen> {
 
   Future<List<Map<String, dynamic>>> _load() async {
     await FeatureControl.instance.refresh(force: true);
-    return AdvertisingService.liveAds(
-      partnerId: widget.partner['id'].toString(),
-      limit: 50,
-    );
+    return AdvertisingService.partnerPosts(widget.partner['id'].toString());
   }
 
   Future<void> _refresh() async {
@@ -61,11 +59,45 @@ class _PartnerAdsScreenState extends State<PartnerAdsScreen> {
                     child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          if ((partner['logo_url']?.toString() ?? '')
+                              .isNotEmpty)
+                            SizedBox(
+                                height: 90,
+                                child: CachedMediaImage(
+                                    url: partner['logo_url'].toString(),
+                                    fit: BoxFit.contain,
+                                    fallback: const Icon(
+                                        Icons.apartment_rounded,
+                                        size: 48))),
                           Text(partner['name']?.toString() ?? '',
                               style: const TextStyle(
                                   fontSize: 22, fontWeight: FontWeight.bold)),
                           const SizedBox(height: 8),
                           Text(partner['description']?.toString() ?? ''),
+                          if (partner['category'] != null)
+                            Text((const {
+                                  'offers': 'عروض',
+                                  'education': 'تعليم',
+                                  'career': 'وظائف',
+                                  'services': 'خدمات',
+                                  'entertainment': 'ترفيه',
+                                  'humanitarian': 'أعمال إنسانية',
+                                  'other': 'أخرى'
+                                })[partner['category']] ??
+                                partner['category'].toString()),
+                          if ((partner['contact_phone']?.toString() ?? '')
+                              .isNotEmpty)
+                            TextButton.icon(
+                                onPressed: () => launchUrl(Uri(
+                                    scheme: 'tel',
+                                    path: partner['contact_phone'].toString())),
+                                icon: const Icon(Icons.phone_outlined),
+                                label:
+                                    Text(partner['contact_phone'].toString())),
+                          if (partner['latitude'] != null &&
+                              partner['longitude'] != null)
+                            Text(
+                                '${partner['latitude']}, ${partner['longitude']}'),
                           if ((partner['website_url']?.toString() ?? '')
                               .isNotEmpty)
                             TextButton.icon(
@@ -86,7 +118,7 @@ class _PartnerAdsScreenState extends State<PartnerAdsScreen> {
                         ]),
                   )),
                   const SizedBox(height: 12),
-                  Text(ar ? 'إعلانات الشريك' : 'Partner ads',
+                  Text(ar ? 'منشورات الشريك' : 'Partner ads',
                       style: Theme.of(context).textTheme.titleLarge),
                   if (snapshot.connectionState == ConnectionState.waiting)
                     const Center(
@@ -106,7 +138,8 @@ class _PartnerAdsScreenState extends State<PartnerAdsScreen> {
                             ? 'لا توجد إعلانات منشورة حالياً'
                             : 'No published ads yet'))
                   else
-                    ...ads.map((ad) => AdvertisementCard(ad: ad, isArabic: ar)),
+                    ...ads.map((ad) => AdvertisementCard(
+                        ad: ad, isArabic: ar, openOnTap: false)),
                 ],
               );
             },

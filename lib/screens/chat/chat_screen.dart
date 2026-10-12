@@ -1,3 +1,4 @@
+import '../../widgets/content_editor155.dart';
 import '../../widgets/chat_timestamp.dart';
 import 'package:zameel/widgets/chat_presence_label.dart';
 import 'package:zameel/widgets/typing_message_bubble.dart';
@@ -419,6 +420,7 @@ class CommunityChatDetailScreen extends StatefulWidget {
 
 class _CommunityChatDetailScreenState extends State<CommunityChatDetailScreen> {
   final _controller = TextEditingController();
+  final _composerFocus = FocusNode();
   final _scroll = ScrollController();
   List<Map<String, dynamic>> _messages = [];
   bool _loading = true;
@@ -451,32 +453,40 @@ class _CommunityChatDetailScreenState extends State<CommunityChatDetailScreen> {
   void _subscribe() {
     final db = Supabase.instance.client;
     _channel = db.channel('zameel-community:${widget.scope.key}');
-    _channel!
-        .onPostgresChanges(
-            event: PostgresChangeEvent.insert,
-            schema: 'public',
-            table: 'community_messages',
-            callback: (payload) {
-              final row = Map<String, dynamic>.from(payload.newRecord);
-              if (row['scope'] != widget.scope.scope ||
-                  row['university']?.toString() != widget.scope.university ||
-                  row['college']?.toString() != widget.scope.college ||
-                  row['department']?.toString() != widget.scope.department)
-                return;
-              if (!mounted ||
-                  _messages
-                      .any((m) => m['id']?.toString() == row['id']?.toString()))
-                return;
-              setState(() => _messages.add(row));
-              _scrollToEnd();
-            })
-        .subscribe();
+    for (final event in [
+      PostgresChangeEvent.insert,
+      PostgresChangeEvent.update
+    ]) {
+      _channel!.onPostgresChanges(
+          event: event,
+          schema: 'public',
+          table: 'community_messages',
+          callback: (payload) {
+            final row = Map<String, dynamic>.from(payload.newRecord);
+            if (row['scope'] != widget.scope.scope ||
+                row['university']?.toString() != widget.scope.university ||
+                row['college']?.toString() != widget.scope.college ||
+                row['department']?.toString() != widget.scope.department)
+              return;
+            if (!mounted) return;
+            final index = _messages.indexWhere(
+                (m) => m['id']?.toString() == row['id']?.toString());
+            if (index >= 0) {
+              setState(() => _messages[index].addAll(row));
+              return;
+            }
+            setState(() => _messages.add(row));
+            _scrollToEnd();
+          });
+    }
+    _channel!.subscribe();
   }
 
   @override
   void dispose() {
     _channel?.unsubscribe();
     _controller.dispose();
+    _composerFocus.dispose();
     _scroll.dispose();
     super.dispose();
   }
@@ -605,6 +615,9 @@ class _CommunityChatDetailScreenState extends State<CommunityChatDetailScreen> {
                       Expanded(
                           child: TextField(
                               controller: _controller,
+                              focusNode: _composerFocus,
+                              groupId: _composerFocus,
+                              onEditingComplete: () {},
                               minLines: 1,
                               maxLines: 4,
                               textInputAction: TextInputAction.newline,
@@ -620,15 +633,11 @@ class _CommunityChatDetailScreenState extends State<CommunityChatDetailScreen> {
                                       borderRadius: BorderRadius.circular(18),
                                       borderSide: BorderSide.none)))),
                       const SizedBox(width: 8),
-                      IconButton.filled(
-                          onPressed: _sending ? null : _send,
-                          icon: _sending
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child:
-                                      CircularProgressIndicator(strokeWidth: 2))
-                              : const Icon(Icons.send_rounded))
+                      KeepKeyboardSendButton(
+                          composerFocus: _composerFocus,
+                          onSend: _send,
+                          enabled: !_sending,
+                          busy: _sending)
                     ]))),
           ]),
         ));
@@ -1017,6 +1026,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                 ListTile(
                     title: const Text('نسخ النص'),
                     onTap: () => Navigator.pop(c, 'copy')),
+              if (m['sender_id'] == uid && m['deleted'] != true)
+                ListTile(
+                    title: const Text('تعديل الرسالة'),
+                    onTap: () => Navigator.pop(c, 'edit')),
               ListTile(
                   title: const Text('حذف لديّ'),
                   onTap: () => Navigator.pop(c, 'hide')),
@@ -1026,6 +1039,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                     onTap: () => Navigator.pop(c, 'delete_everyone')),
             ])));
     if (action == null || !mounted) return;
+    if (action == 'edit') {
+      final row = await editOwnedContent155(context, 'messages', '${m['id']}');
+      if (row != null && mounted) setState(() => m.addAll(row));
+      return;
+    }
     if (action == 'copy') {
       await Clipboard.setData(
           ClipboardData(text: m['content']?.toString() ?? ''));
@@ -1306,7 +1324,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
               'is_read': false,
             })
             .select(
-                'id,content,sender_id,created_at,media_url,media_type,is_read,delivered_at,read_at')
+                'id,content,sender_id,created_at,edited_at,media_url,media_type,is_read,delivered_at,read_at')
             .single();
       }
       if (mounted) {
@@ -1498,7 +1516,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
             'is_read': false,
           })
           .select(
-              'id,content,sender_id,created_at,media_url,media_type,is_read,delivered_at,read_at')
+              'id,content,sender_id,created_at,edited_at,media_url,media_type,is_read,delivered_at,read_at')
           .single();
       await db.from('chat_attachments').insert({
         'conversation_id': widget.conversationId,
@@ -2139,7 +2157,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                                 final m = timeline[
                                     timeline.length - 1 - messageIndex];
                                 if (m['date_separator'] == true) {
-                                  return ChatDateSeparator(value: m['created_at'], arabic: ar);
+                                  return ChatDateSeparator(
+                                      value: m['created_at'], arabic: ar);
                                 }
                                 if (m['call_event'] == true)
                                   return _callEvent(m);
@@ -2171,11 +2190,29 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                                             CrossAxisAlignment.end,
                                         children: [
                                           _messageContent(m, mine),
+                                          if (m['edited_at'] != null &&
+                                              (m['media_url']?.toString() ?? '')
+                                                  .isNotEmpty &&
+                                              (m['content']?.toString() ?? '')
+                                                  .isNotEmpty)
+                                            CopyableText(
+                                                m['content'].toString(),
+                                                style: TextStyle(
+                                                    color: mine
+                                                        ? Colors.white
+                                                        : AppTheme
+                                                            .adaptiveText)),
                                           _reactionBar(m, mine),
-                                          Text(chatTime(m['created_at']),
-                                              textDirection: ui.TextDirection.ltr,
-                                              style: TextStyle(fontSize: 11,
-                                                  color: mine ? Colors.white70 : AppTheme.adaptiveSecondary)),
+                                          Text(
+                                              '${chatTime(m['created_at'])}${m['edited_at'] != null ? ' • تم التعديل' : ''}',
+                                              textDirection:
+                                                  ui.TextDirection.ltr,
+                                              style: TextStyle(
+                                                  fontSize: 11,
+                                                  color: mine
+                                                      ? Colors.white70
+                                                      : AppTheme
+                                                          .adaptiveSecondary)),
                                           if (mine) ...[
                                             const SizedBox(height: 3),
                                             Icon(
