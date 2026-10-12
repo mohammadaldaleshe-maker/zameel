@@ -6,11 +6,15 @@ import {spawnSync} from 'node:child_process';
 const data=JSON.parse(await readFile('docs/academic_catalog_150.json','utf8'));
 assert.equal(data.raw_record_count,2342);assert.equal(new Set(data.programs.map(x=>x.sequence)).size,2342);
 const model=(await readFile('lib/features/university.dart','utf8')).split('// UNIVERSITY SCREEN')[0].replace(/^part .*;\r?\n/, '');
+// Compile the offline catalog data without the runtime Supabase refresh helper.
+const runtimeRefresh156=/^Future<void> refreshAcademicCatalog156\(\) async \{[\s\S]*?^\}\r?\n/m;
+assert(runtimeRefresh156.test(model),'dynamic refresh helper boundary changed');
+const offlineModel156=model.replace(runtimeRefresh156,'');
 const catalog=(await readFile('lib/features/academic_catalog_150.dart','utf8')).replace(/^part .*;\r?\n/,'');
 const temp=await mkdtemp(path.join(tmpdir(),'zameel-academic-'));
 try {
  const file=path.join(temp,'catalog.dart');
- await writeFile(file,`import 'dart:convert';\n${model}\n${catalog}\nvoid main(){
+ await writeFile(file,`import 'dart:convert';\n${offlineModel156}\n${catalog}\nvoid main(){
  for(final u in legacyUniversities){final merged=universities.singleWhere((x)=>x.name==u.name);for(final c in u.colleges){final mc=merged.colleges.singleWhere((x)=>x.name==c.name);if(!c.departments.every(mc.departments.contains))throw StateError('lost legacy major');}}
  if(universities.map((u)=>u.name).toSet().length!=universities.length)throw StateError('duplicate institution');
  print(jsonEncode([for(final u in officialJordanUniversities150) {'name':u.name,'colleges':[for(final c in u.colleges){'name':c.name,'programs':c.programDegrees}]}]));}
