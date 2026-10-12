@@ -591,9 +591,9 @@ class _VideoPostState extends State<_VideoPost> {
   Widget build(BuildContext context) {
     AppearanceScope.observe(context);
     final bool liked = widget.post['liked'] ?? false;
-    final String videoUrl = widget.post['video_url'] ??
-        'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4';
-    final bool hasOrderedMedia = _hasOrderedPostMedia(widget.post);
+    final String videoUrl = postVideoReference156(widget.post);
+    final bool hasOrderedMedia = _hasOrderedPostMedia(widget.post) &&
+        postMediaItems(widget.post).isNotEmpty;
     final languageProvider = Provider.of<LanguageProvider>(context);
     final isArabic = languageProvider.isArabic;
 
@@ -705,7 +705,15 @@ class _VideoPostState extends State<_VideoPost> {
               child: SizedBox(
                 height: postMediaHeight(context),
                 width: double.infinity,
-                child: VideoPlayerWidget(videoUrl: videoUrl),
+                child: videoUrl.isEmpty
+                    ? Center(
+                        child: Text(
+                            isArabic
+                                ? 'تعذر عرض الفيديو الأصلي'
+                                : 'Original video unavailable',
+                            style: TextStyle(color: AppTheme.legacyForeground),
+                            textAlign: TextAlign.center))
+                    : VideoPlayerWidget(videoUrl: videoUrl),
               ),
             ),
           ),
@@ -919,12 +927,9 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
   final FocusNode _commentFocus = FocusNode();
   final TransformationController _imageTransform = TransformationController();
 
-  String get _url =>
-      (widget.isVideo
-              ? (widget.post['video_url'] ?? widget.post['videoUrl'])
-              : (widget.post['image_url'] ?? widget.post['imageUrl']))
-          ?.toString() ??
-      '';
+  String get _url => widget.isVideo
+      ? postVideoReference156(widget.post)
+      : (widget.post['image_url'] ?? widget.post['imageUrl'])?.toString() ?? '';
 
   int _count(dynamic value) {
     if (value is num) return value.toInt();

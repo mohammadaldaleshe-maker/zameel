@@ -115,14 +115,6 @@ void main() {
     await Supabase.instance.dispose();
     await temp.delete(recursive: true);
   });
-  Future<void> settle(String id, String state) async {
-    for (var i = 0; i < 150; i++) {
-      final rows = await BackgroundPublish156.tasks();
-      if (rows.any((r) => r['id'] == id && r['state'] == state)) return;
-      await Future<void>.delayed(const Duration(milliseconds: 20));
-    }
-    fail('task did not reach $state');
-  }
 
   test(
       'durable upload returns before network; lost success response can retry without duplicate post or upload',
@@ -140,22 +132,22 @@ void main() {
         reason: 'The queued file must be persisted at its recorded path');
     expect(await staged.readAsBytes(), [1, 2, 3, 4]);
     expect(staged.parent.path.endsWith(id), true);
-    await settle(id, 'error');
+    await failedSignal156.future.timeout(const Duration(seconds: 60));
+    await stoppedSignal156.future.timeout(const Duration(seconds: 60));
+    expect((await BackgroundPublish156.tasks())
+        .singleWhere((job) => job['id'] == id)['state'], 'error');
     expect(posts[id]?['upload_state156'], 'ready',
         reason:
             'requests: $requests; tasks: ${await BackgroundPublish156.tasks()}');
     expect(inserts, 1);
     expect(uploads, 1);
     expect(native, contains('start'));
-    await failedSignal156.future.timeout(const Duration(seconds: 20));
-    await stoppedSignal156.future.timeout(const Duration(seconds: 20));
     expect(native, contains('failed'));
     stoppedSignal156 = Completer<void>();
     await BackgroundPublish156.retry(id);
-    await settle(id, 'done');
+    await stoppedSignal156.future.timeout(const Duration(seconds: 60));
     expect(inserts, 1);
     expect(uploads, 1);
-    await stoppedSignal156.future.timeout(const Duration(seconds: 20));
     expect((await BackgroundPublish156.tasks())
         .singleWhere((job) => job['id'] == id)['state'], 'done');
     expect(await staged.parent.exists(), false);

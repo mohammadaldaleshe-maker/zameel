@@ -83,6 +83,7 @@ jobs:
           flutter analyze
           flutter analyze --no-fatal-infos
           dart verification/sponsored_feed_150_test.dart
+          dart verification/video_reference_156_test.dart
           flutter test
 
       - uses: actions/setup-node@v4
