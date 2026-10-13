@@ -1,3 +1,5 @@
+import 'services/external_share156.dart';
+import 'services/post_presentation157.dart';
 import 'services/post_video_reference156.dart';
 import 'services/background_publish156.dart';
 import 'widgets/mention_field156.dart';
@@ -134,6 +136,16 @@ Future<NavigatorState?> _waitForZameelNavigator() async {
 }
 
 Future<void> _openZameelDeepLink(Uri uri) async {
+  if (uri.scheme == 'https' &&
+      const ['zameeljo.com', 'www.zameeljo.com'].contains(uri.host) &&
+      uri.pathSegments.length == 3 &&
+      uri.pathSegments.first == 's' &&
+      const ['post', 'clip'].contains(uri.pathSegments[1])) {
+    uri = Uri(
+        scheme: 'zameel',
+        host: uri.pathSegments[1],
+        path: '/${uri.pathSegments[2]}');
+  }
   if (uri.scheme != 'zameel') return;
 
   final nav = await _waitForZameelNavigator();

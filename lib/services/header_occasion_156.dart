@@ -78,17 +78,19 @@ class _HeaderOccasion156State extends State<HeaderOccasion156>
         ? (seconds % 10 < 5 ? '${row['emoji']}' : '${row['label']}')
         : 'Zameel';
     return SizedBox(
-        width: 150,
+        width: double.infinity,
         child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 200),
-            child: Text(label,
-                key: ValueKey(label),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                    color: active ? color : const Color(0xff3152e8),
-                    fontWeight: FontWeight.w900,
-                    fontSize: active && seconds % 10 < 5 ? 26 : 16))));
+            child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(label,
+                    key: ValueKey(label),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        color: active ? color : const Color(0xff3152e8),
+                        fontWeight: FontWeight.w900,
+                        fontSize: active && seconds % 10 < 5 ? 26 : 16)))));
   }
 }

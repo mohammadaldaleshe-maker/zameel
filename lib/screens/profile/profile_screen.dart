@@ -88,11 +88,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
+    SharedActivity156.revision.addListener(_refreshShares157);
     _load();
+  }
+
+  void _refreshShares157() {
+    if (mounted && _profile != null) {
+      unawaited(_loadPage(_profile!['id'].toString(), reset: true)
+          .catchError((Object error) {
+        if (mounted)
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text('تعذر تحديث المشاركات. اسحب لتحديث الصفحة.')));
+      }));
+    }
   }
 
   @override
   void dispose() {
+    SharedActivity156.revision.removeListener(_refreshShares157);
     _name.dispose();
     _username.dispose();
     _headline.dispose();
@@ -333,7 +346,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ...Map<String, dynamic>.from(r['posts']),
                 'shared_row_id': r['id'],
                 'shared_by_me': true,
-                'shared_at': r['created_at']
+                'shared_at': r['shared_at'],
+                'shared_name157': r['name'],
+                'shared_image157': r['profile_image']
               })
           .toList();
       // Media widgets resolve only visible items; signing is not a page barrier.
@@ -903,10 +918,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     sliver: SliverList.separated(
                       itemCount: _posts.length + _sharedPosts.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 12),
-                      itemBuilder: (_, i) => i < _posts.length
-                          ? _postCard(_posts[i], ar)
-                          : _sharedPostCard(
-                              _sharedPosts[i - _posts.length], ar),
+                      itemBuilder: (_, i) {
+                        final post = _profileTimeline157[i];
+                        return post.containsKey('shared_row_id')
+                            ? _sharedPostCard(post, ar)
+                            : _postCard(post, ar);
+                      },
                     ),
                   ),
                 if (_morePosts || _moreShared)
@@ -1634,8 +1651,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: _postAction(Icons.bookmark_border_rounded,
                           ar ? 'حفظ' : 'Save', false, () => _save(post))),
                 Expanded(
-                    child: _postAction(Icons.share_outlined,
-                        ar ? 'مشاركة' : 'Share', false, () => _share(post))),
+                    child: _postAction(
+                        Icons.share_outlined,
+                        ar ? 'مشاركة' : 'Share',
+                        false,
+                        () => showContentShare157(context,
+                            id: '${post['id']}',
+                            onProfile: () => _share(post)))),
               ],
             ),
           ],
@@ -1729,14 +1751,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   title: Text(ar ? 'مشاركة المنشور' : 'Share post'),
                   onTap: () {
                     Navigator.pop(sheetContext);
-                    _share(post);
-                  }),
-              ListTile(
-                  leading: const Icon(Icons.ios_share),
-                  title: const Text('مشاركة خارج التطبيق — واتساب وغيرها'),
-                  onTap: () {
-                    Navigator.pop(sheetContext);
-                    sharePostExternally156(context, '${post['id']}');
+                    showContentShare157(context,
+                        id: '${post['id']}', onProfile: () => _share(post));
                   }),
               if (!ownsPost)
                 ListTile(
@@ -2191,7 +2207,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (mounted) await BackgroundPublish156.notice(context);
       if (mounted)
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(ar ? 'جارٍ رفع الحالة في الخلفية' : 'Story upload queued')));
+            content: Text(
+                ar ? 'جارٍ رفع الحالة في الخلفية' : 'Story upload queued')));
     } catch (e) {
       if (mounted)
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -2393,6 +2410,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  List<Map<String, dynamic>> get _profileTimeline157 {
+    final rows = [..._posts, ..._sharedPosts];
+    rows.sort((a, b) {
+      DateTime stamp(Map<String, dynamic> row) =>
+          DateTime.tryParse('${row['shared_at'] ?? row['created_at']}') ??
+          DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
+      final order = stamp(b).compareTo(stamp(a));
+      return order != 0
+          ? order
+          : '${b['shared_row_id'] ?? b['id']}'
+              .compareTo('${a['shared_row_id'] ?? a['id']}');
+    });
+    return rows;
+  }
+
   Widget _sharedPostCard(Map<String, dynamic> post, bool ar) {
     return Material(
       color: Colors.transparent,
@@ -2400,16 +2432,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Container(
           padding: const EdgeInsets.fromLTRB(14, 12, 8, 4),
           child: Row(children: [
-            const Icon(Icons.repeat_rounded, color: AppTheme.primary, size: 20),
-            const SizedBox(width: 7),
+            CircleAvatar(
+                radius: 18,
+                backgroundImage: (post['shared_image157'] ??
+                            pString('profile_image'))
+                        .toString()
+                        .isEmpty
+                    ? null
+                    : NetworkImage(
+                        (post['shared_image157'] ?? pString('profile_image'))
+                            .toString()),
+                child: (post['shared_image157'] ?? pString('profile_image'))
+                        .toString()
+                        .isEmpty
+                    ? const Icon(Icons.person_outline)
+                    : null),
+            const SizedBox(width: 8),
             Expanded(
                 child: Text(
-                    ar
-                        ? 'منشور تمت مشاركته في ملفك'
-                        : 'Post shared to your profile',
-                    style: const TextStyle(
+                    '${post['shared_name157'] ?? pString('name')} ${ar ? 'أعاد مشاركة المنشور' : 'shared this post'}',
+                    style: TextStyle(
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.primaryDark))),
+                        color: Theme.of(context).colorScheme.onSurface))),
             if (isMe)
               IconButton(
                   onPressed: () => _unshare(post),

@@ -169,6 +169,7 @@ class SecureMediaService {
 
     add(post['image_url']);
     add(post['video_url']);
+    add(post['share_cover157']);
     final raw = post['media_items'];
     if (raw is List) {
       for (final item in raw) {

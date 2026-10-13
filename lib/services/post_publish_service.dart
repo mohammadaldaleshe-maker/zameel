@@ -4,6 +4,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'feature_control.dart';
+import 'post_presentation157.dart';
+import 'share_cover157.dart';
 import 'post_media_storage_uploader.dart';
 import 'secure_media_service.dart';
 
@@ -157,8 +159,9 @@ class PostPublishService {
             .eq('id', jobId)
             .eq('user_id', user.id)
             .maybeSingle();
-    if (existing?['upload_state156'] == 'ready')
-      return Map<String, dynamic>.from(existing!);
+    if (existing != null && completedMediaPost157(existing)) {
+      return Map<String, dynamic>.from(existing);
+    }
     final draft = existing == null
         ? Map<String, dynamic>.from(
             await db
@@ -208,6 +211,30 @@ class PostPublishService {
 
       final firstImage = firstUrl('image');
       final firstVideo = firstUrl('video');
+      String? shareCover;
+      if (firstImage.isNotEmpty) {
+        shareCover = firstImage;
+      } else if (firstVideo.isNotEmpty) {
+        final source = selected.firstWhere(isVideoFile);
+        final cover = await videoShareCover157(source.path);
+        if (cover != null) {
+          try {
+            final uploadedCover = await _uploadMedia(
+                file: PickedPostMedia(
+                    source: cover, byteSize: await cover.length()),
+                userId: user.id,
+                postId: postId,
+                audience: audience,
+                index: maxMediaItems);
+            uploaded.add(uploadedCover);
+            shareCover = uploadedCover.dbItem['url'] as String;
+          } catch (_) {
+            /* The original video still publishes if preview extraction/upload fails. */
+          } finally {
+            await removeShareCover157(cover);
+          }
+        }
+      }
       final updated = Map<String, dynamic>.from(
         await db
             .from('posts')
@@ -215,6 +242,7 @@ class PostPublishService {
               'image_url': firstImage.isEmpty ? null : firstImage,
               'video_url': firstVideo.isEmpty ? null : firstVideo,
               'media_items': items,
+              'share_cover157': shareCover,
               'upload_state156': 'ready',
             })
             .eq('id', postId)
@@ -222,6 +250,9 @@ class PostPublishService {
             .select()
             .single(),
       );
+      if (!completedMediaPost157(updated)) {
+        throw StateError('published_media_reference_missing');
+      }
       await SecureMediaService.resolvePost(updated);
       return updated;
     } catch (_) {
@@ -260,7 +291,7 @@ class PostPublishService {
     if (user == null || postId.trim().isEmpty) return;
     final row = await db
         .from('posts')
-        .select('id,user_id,image_url,video_url,media_items')
+        .select('id,user_id,image_url,video_url,media_items,share_cover157')
         .eq('id', postId)
         .maybeSingle();
     if (row == null) return;
@@ -277,7 +308,8 @@ class PostPublishService {
     if (user == null) throw StateError('not_signed_in');
     final rowRaw = await db
         .from('posts')
-        .select('id,user_id,audience,image_url,video_url,media_items')
+        .select(
+            'id,user_id,audience,image_url,video_url,media_items,share_cover157')
         .eq('id', postId)
         .eq('user_id', user.id)
         .single();
@@ -286,6 +318,13 @@ class PostPublishService {
     if (SecureMediaService.isPublicAudience(oldAudience) &&
         !SecureMediaService.isPublicAudience(newAudience)) {
       await _migrateExistingPostToPrivate(row);
+      final cover = row['share_cover157']?.toString() ?? '';
+      await db
+          .from('posts')
+          .update({'share_cover157': null})
+          .eq('id', postId)
+          .eq('user_id', user.id);
+      if (cover.isNotEmpty) await SecureMediaService.removeReference(cover);
     }
     await db
         .from('posts')

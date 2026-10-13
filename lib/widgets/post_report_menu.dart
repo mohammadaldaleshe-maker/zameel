@@ -1,4 +1,3 @@
-import '../services/external_share156.dart';
 import 'content_editor155.dart';
 import '../theme/app_theme.dart';
 import '../theme/appearance_controller.dart';
@@ -116,8 +115,6 @@ class PostReportMenu extends StatelessWidget {
       tooltip: ar ? 'خيارات المنشور' : 'Post options',
       icon: Icon(Icons.more_horiz, color: AppTheme.legacySecondary),
       onSelected: (value) async {
-        if (value == 'external_share')
-          await sharePostExternally156(context, postId);
         if (value == 'edit') {
           final row = await editOwnedContent155(context, 'posts', postId);
           if (row != null) {
@@ -129,9 +126,6 @@ class PostReportMenu extends StatelessWidget {
         if (value == 'report') showPostReportDialog(context, postId, ar);
       },
       itemBuilder: (_) => [
-        const PopupMenuItem(
-            value: 'external_share',
-            child: Text('مشاركة خارج التطبيق — واتساب وغيرها')),
         if (uid != null && uid == authorId)
           const PopupMenuItem(value: 'edit', child: Text('تعديل المنشور')),
         if (canReport)

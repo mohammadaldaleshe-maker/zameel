@@ -312,8 +312,7 @@ class _ImagePostState extends State<_ImagePost> {
                     ]),
                     const SizedBox(height: 3),
                     Text(
-                      '${isArabic ? (widget.post['department_ar'] ?? '') : (widget.post['department_en'] ?? '')} • '
-                      '${isArabic ? (widget.post['time_ar'] ?? '') : (widget.post['time_en'] ?? '')}',
+                      postMetadata157(widget.post, isArabic),
                       style: TextStyle(
                         color: AppTheme.legacySecondary,
                         fontSize: 12,
@@ -542,15 +541,12 @@ class _ImagePostState extends State<_ImagePost> {
               icon: Icons.share_outlined,
               text: isArabic ? 'مشاركة' : 'Share',
               color: AppTheme.legacySecondary,
-              onTap: () async {
+              onTap: () => showContentShare157(context,
+                  id: '${widget.post['id']}', onProfile: () async {
                 if (widget.onShareToProfile != null) {
                   await widget.onShareToProfile!(widget.post);
                 }
-                final text = isArabic
-                    ? (widget.post['text_ar'] ?? widget.post['text_en'] ?? '')
-                    : (widget.post['text_en'] ?? widget.post['text_ar'] ?? '');
-                await Clipboard.setData(ClipboardData(text: '$text'));
-              },
+              }),
             ),
           ],
         ),
@@ -640,8 +636,7 @@ class _VideoPostState extends State<_VideoPost> {
                     ]),
                     const SizedBox(height: 3),
                     Text(
-                      '${isArabic ? widget.post['department_ar'] : widget.post['department_en']} • '
-                      '${isArabic ? widget.post['time_ar'] : widget.post['time_en']}',
+                      postMetadata157(widget.post, isArabic),
                       style: TextStyle(
                         color: AppTheme.legacySecondary,
                         fontSize: 12,
@@ -803,17 +798,12 @@ class _VideoPostState extends State<_VideoPost> {
               icon: Icons.share_rounded,
               text: isArabic ? 'مشاركة' : 'Share',
               color: AppTheme.legacySecondary,
-              onTap: () async {
+              onTap: () => showContentShare157(context,
+                  id: '${widget.post['id']}', onProfile: () async {
                 if (widget.onShareToProfile != null) {
                   await widget.onShareToProfile!(widget.post);
                 }
-                final videoUrl =
-                    '${widget.post['video_url'] ?? widget.post['videoUrl'] ?? ''}';
-                await Clipboard.setData(ClipboardData(
-                    text: videoUrl.isNotEmpty
-                        ? videoUrl
-                        : '${widget.post['text_ar'] ?? widget.post['text_en'] ?? ''}'));
-              },
+              }),
             ),
           ],
         ),
@@ -1707,8 +1697,7 @@ class _TextPostState extends State<_TextPost> {
                     ]),
                     const SizedBox(height: 3),
                     Text(
-                      '${isArabic ? widget.post['department_ar'] : widget.post['department_en']} • '
-                      '${isArabic ? widget.post['time_ar'] : widget.post['time_en']}',
+                      postMetadata157(widget.post, isArabic),
                       style: TextStyle(
                         color: AppTheme.legacySecondary,
                         fontSize: 12,
@@ -1890,15 +1879,12 @@ class _TextPostState extends State<_TextPost> {
               icon: Icons.share_outlined,
               text: isArabic ? 'مشاركة' : 'Share',
               color: AppTheme.legacySecondary,
-              onTap: () async {
+              onTap: () => showContentShare157(context,
+                  id: '${widget.post['id']}', onProfile: () async {
                 if (widget.onShareToProfile != null) {
                   await widget.onShareToProfile!(widget.post);
                 }
-                final text = isArabic
-                    ? (widget.post['text_ar'] ?? widget.post['text_en'] ?? '')
-                    : (widget.post['text_en'] ?? widget.post['text_ar'] ?? '');
-                await Clipboard.setData(ClipboardData(text: '$text'));
-              },
+              }),
             ),
           ],
         ),

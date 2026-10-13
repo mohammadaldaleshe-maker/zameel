@@ -401,6 +401,12 @@ void main() {
       expect(_read('lib/services/voice_recording_file_stub.dart'),
           isNot(contains("import 'dart:io'")));
 
+      final coverFacade = _read('lib/services/share_cover157.dart');
+      expect(coverFacade, contains("if (dart.library.io) 'share_cover157_io.dart'"));
+      expect(coverFacade, isNot(contains("import 'dart:io'")));
+      expect(_read('lib/services/share_cover157_stub.dart'),
+          isNot(contains("import 'dart:io'")));
+
       const allowedIoFiles = <String>{
         'lib/platform/local_image_provider_io.dart',
         'lib/platform/local_image_widget_io.dart',
@@ -412,6 +418,7 @@ void main() {
         'lib/services/shorts_video_preparer_io.dart',
         'lib/services/voice_recording_file_io.dart',
         'lib/services/background_publish156_io.dart',
+        'lib/services/share_cover157_io.dart',
       };
       final directIoImports = Directory('lib')
           .listSync(recursive: true)

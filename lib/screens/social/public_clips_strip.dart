@@ -1,3 +1,4 @@
+import '../../services/external_share156.dart';
 import '../../widgets/content_editor155.dart';
 import '../../widgets/cached_media_image.dart';
 import '../../services/watermarked_download_service.dart';
@@ -8,7 +9,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter/material.dart';
 import '../../services/feature_control.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:video_player/video_player.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:provider/provider.dart';
@@ -150,11 +150,10 @@ class _PublicClipsStripState extends State<PublicClipsStrip>
   }
 
   Future<void> _share(Map<String, dynamic> clip) async {
-    await ZameelSocialService.shareClip(clip['id'].toString());
-    await SharePlus.instance.share(
-      ShareParams(
-          text: 'شاهد هذا المقطع على زميل: zameel://clip/${clip['id']}'),
-    );
+    await showContentShare157(context,
+        id: '${clip['id']}',
+        kind: 'clip',
+        onProfile: () => ZameelSocialService.shareClip('${clip['id']}'));
   }
 
   Future<void> _addClip() async {
@@ -668,11 +667,10 @@ class VerticalClipsViewerState extends State<VerticalClipsViewer> {
   }
 
   Future<void> _share(Map<String, dynamic> clip) async {
-    await ZameelSocialService.shareClip(clip['id'].toString());
-    await SharePlus.instance.share(
-      ShareParams(
-          text: 'شاهد هذا المقطع على زميل: zameel://clip/${clip['id']}'),
-    );
+    await showContentShare157(context,
+        id: '${clip['id']}',
+        kind: 'clip',
+        onProfile: () => ZameelSocialService.shareClip('${clip['id']}'));
   }
 
   Future<void> _comment(Map<String, dynamic> clip) async {

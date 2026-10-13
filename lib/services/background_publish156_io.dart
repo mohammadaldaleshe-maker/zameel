@@ -1,3 +1,4 @@
+import 'post_presentation157.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -132,11 +133,19 @@ Future<void> _pump156(void Function() changed) async {
         final db = Supabase.instance.client;
         final prior = await db
             .from(table)
-            .select('id,upload_state156')
+            .select()
             .eq('id', job['id'])
             .eq('user_id', user)
             .maybeSingle();
-        if (prior?['upload_state156'] != 'ready') {
+        final complete = prior != null &&
+            (kind == 'post'
+                ? completedMediaPost157(prior)
+                : prior['upload_state156'] == 'ready' &&
+                    '${prior[kind == 'clip' ? 'video_url' : 'media_url'] ?? ''}'
+                        .isNotEmpty &&
+                    !'${prior[kind == 'clip' ? 'video_url' : 'media_url'] ?? ''}'
+                        .startsWith('uploading://'));
+        if (!complete) {
           final files = [
             for (final f in job['files'] as List)
               XFile('${f['path']}', name: '${f['name']}')

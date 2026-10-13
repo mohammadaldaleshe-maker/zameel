@@ -51,6 +51,20 @@ class _SharedActivity156State extends State<SharedActivity156> {
           request != generation ||
           Supabase.instance.client.auth.currentUser?.id != viewer) return;
       final fresh = List<Map<String, dynamic>>.from(data as List);
+      final owners = fresh.map((r) => '${r['shared_by']}').toSet().toList();
+      if (owners.isNotEmpty) {
+        final users = await Supabase.instance.client
+            .from('users')
+            .select('id,name,profile_image')
+            .inFilter('id', owners);
+        if (!mounted || request != generation) return;
+        for (final row in fresh) {
+          for (final user in users) {
+            if (row['shared_by'] == user['id'])
+              row['profile_image'] = user['profile_image'];
+          }
+        }
+      }
       final ids = fresh
           .where((r) => r['posts'] is Map)
           .map((r) => r['posts']['id'].toString())
@@ -116,10 +130,19 @@ class _SharedActivity156State extends State<SharedActivity156> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Row(children: [
-                    const Icon(Icons.repeat, color: AppTheme.primary),
+                    CircleAvatar(
+                        radius: 18,
+                        backgroundImage:
+                            (row['profile_image'] ?? '').toString().isEmpty
+                                ? null
+                                : NetworkImage('${row['profile_image']}'),
+                        child: (row['profile_image'] ?? '').toString().isEmpty
+                            ? const Icon(Icons.person_outline)
+                            : null),
+                    const SizedBox(width: 8),
                     Expanded(
                         child: Text(
-                            '${row['name']} أعاد المشاركة — ${row['shared_at'].toString().substring(0, 16).replaceFirst('T', ' ')}',
+                            '${row['name'] ?? 'مستخدم'} أعاد مشاركة المنشور',
                             style:
                                 const TextStyle(fontWeight: FontWeight.w700))),
                     if (row['shared_by'] ==
@@ -146,7 +169,8 @@ class _SharedActivity156State extends State<SharedActivity156> {
                             'name_ar': user['name'],
                             'name_en': user['name'],
                             'profile_image': user['profile_image'],
-                            'time_ar': row['shared_at'],
+                            'time_ar': jordanPostDate157(post['created_at']),
+                            'time_en': jordanPostDate157(post['created_at']),
                             'likes': post['likes_count'],
                             'comments': post['comments_count'],
                             'shares': post['shares_count']

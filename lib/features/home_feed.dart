@@ -2391,6 +2391,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
               },
             ),
           ),
+          titleSpacing: 0,
           title: const HeaderOccasion156(),
           actions: [
             IconButton(
@@ -2763,14 +2764,6 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
           embedded: true,
         ),
       _buildCreateBox(),
-      Align(
-          alignment: AlignmentDirectional.centerEnd,
-          child: TextButton.icon(
-              onPressed: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const UploadTasks156())),
-              icon: const Icon(Icons.cloud_upload_outlined),
-              label: const Text('عمليات الرفع'))),
-      const SharedActivity156(),
       Padding(
         padding: const EdgeInsets.fromLTRB(14, 8, 14, 2),
         child: Row(

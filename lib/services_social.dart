@@ -81,7 +81,10 @@ class ZameelSocialService {
             .eq('id', jobId)
             .eq('user_id', id)
             .maybeSingle();
-    if (existing?['upload_state156'] == 'ready') return jobId;
+    if (existing?['upload_state156'] == 'ready' &&
+        (existing?['media_url']?.toString().isNotEmpty ?? false) &&
+        !(existing?['media_url']?.toString().startsWith('uploading://') ??
+            true)) return jobId;
     final row = existing ??
         await db
             .from('social_stories')
@@ -268,7 +271,10 @@ class ZameelSocialService {
             .eq('id', jobId)
             .eq('user_id', id)
             .maybeSingle();
-    if (existing?['upload_state156'] == 'ready') return jobId;
+    if (existing?['upload_state156'] == 'ready' &&
+        (existing?['video_url']?.toString().isNotEmpty ?? false) &&
+        !(existing?['video_url']?.toString().startsWith('uploading://') ??
+            true)) return jobId;
     final row = existing ??
         await db
             .from('clips')

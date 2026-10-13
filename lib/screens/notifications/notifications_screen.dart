@@ -425,7 +425,25 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                if (type != 'message' &&
+                                if (type == 'admin_broadcast' ||
+                                    type == 'admin_account_state')
+                                  Row(children: [
+                                    Image.asset(
+                                        'assets/branding/zameel_app_icon.png',
+                                        width: 22,
+                                        height: 22,
+                                        errorBuilder: (_, __, ___) =>
+                                            const Icon(
+                                                Icons.notifications_outlined,
+                                                size: 22)),
+                                    const SizedBox(width: 6),
+                                    const Text('زميل',
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.w700)),
+                                  ]),
+                                if (type != 'admin_broadcast' &&
+                                    type != 'admin_account_state' &&
+                                    type != 'message' &&
                                     n['actor'] is Map &&
                                     (n['actor'] as Map)['name']
                                             ?.toString()
