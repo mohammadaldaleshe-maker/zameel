@@ -255,6 +255,7 @@ class ZameelSocialService {
     required XFile file,
     XFile? cover,
     String caption = '',
+    List<String> mentions = const [],
     int durationSeconds = 1,
     required String audience,
     String? jobId,
@@ -285,6 +286,7 @@ class ZameelSocialService {
               'user_id': id,
               'video_url': 'uploading://pending',
               'caption': caption,
+              'mention_ids156': mentions,
               'duration_seconds': durationSeconds,
               'audience': audience,
             })
@@ -611,6 +613,7 @@ class ZameelSocialService {
     String clipId,
     String text, {
     String? parentCommentId,
+    List<String> mentions = const [],
   }) async {
     final id = uid;
     if (id == null || text.trim().isEmpty) return;
@@ -618,6 +621,7 @@ class ZameelSocialService {
       'clip_id': clipId,
       'user_id': id,
       'text': text.trim(),
+      'mention_ids156': mentions,
       'parent_comment_id': parentCommentId,
     });
   }

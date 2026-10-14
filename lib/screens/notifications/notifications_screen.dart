@@ -1,3 +1,4 @@
+import '../comments/clip_comments_screen.dart';
 import '../social/public_clips_strip.dart';
 import '../../main.dart' show ZameelMediaViewer;
 import 'package:zameel/theme/appearance_controller.dart';
@@ -198,13 +199,24 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Future<void> _openNotificationSource(Map<String, dynamic> n) async {
     final type = n['type']?.toString() ?? '';
     final data = _notificationData(n);
-    if (type == 'upload_complete' && data['clip_id'] != null) {
+    if (['upload_complete', 'clip_mention', 'clip_comment_mention']
+            .contains(type) &&
+        data['clip_id'] != null) {
       if (!await FeatureControl.instance.check(context, 'clips')) return;
       final clip = await db
           .from('clips')
           .select()
           .eq('id', data['clip_id'])
           .maybeSingle();
+      if (clip != null && mounted && data['comment_id'] != null) {
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (_) => ClipCommentsScreen(
+                    clip: Map<String, dynamic>.from(clip),
+                    highlightedCommentId: '${data['comment_id']}')));
+        return;
+      }
       if (clip != null && mounted)
         Navigator.push(
             context,
@@ -212,6 +224,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 builder: (_) => VerticalClipsViewer(
                     clips: [Map<String, dynamic>.from(clip)],
                     initialIndex: 0)));
+      return;
+    }
+    if (['friend_wall_post', 'upload_complete'].contains(type) &&
+        data['profile_id'] != null) {
+      if (mounted)
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (_) =>
+                    ProfileScreen(userId: '${data['profile_id']}')));
       return;
     }
     if (type == 'account_verification_review') {

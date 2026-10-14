@@ -5,8 +5,9 @@ import '../screens/profile/profile_screen.dart';
 
 class MentionController156 extends TextEditingController {
   final Map<String, String> selected = {};
+  bool get mentionEveryone => text.contains('@الجميع');
   List<String> get mentionIds => selected.entries
-      .where((e) => text.contains('@${e.value}'))
+      .where((e) => e.key != 'everyone' && text.contains('@${e.value}'))
       .map((e) => e.key)
       .toList();
 }
@@ -21,6 +22,10 @@ class MentionTextField156 extends StatefulWidget {
       this.autofocus = false,
       this.style,
       this.cursorColor,
+      this.focusNode,
+      this.groupId,
+      this.onEditingComplete,
+      this.onSubmitted,
       this.decoration = const InputDecoration()});
   final TextEditingController controller;
   final int? minLines, maxLines, maxLength;
@@ -28,6 +33,10 @@ class MentionTextField156 extends StatefulWidget {
   final TextStyle? style;
   final Color? cursorColor;
   final InputDecoration decoration;
+  final FocusNode? focusNode;
+  final Object? groupId;
+  final VoidCallback? onEditingComplete;
+  final ValueChanged<String>? onSubmitted;
   @override
   State<MentionTextField156> createState() => _MentionTextField156State();
 }
@@ -73,7 +82,11 @@ class _MentionTextField156State extends State<MentionTextField156> {
         final data = await Supabase.instance.client
             .rpc('zameel_mention_candidates_156', params: {'p_query': next});
         if (mounted && request == generation)
-          setState(() => rows = List<Map<String, dynamic>>.from(data as List));
+          setState(() => rows = [
+                if (next.isEmpty || 'الجميع'.contains(next))
+                  {'id': 'everyone', 'name': 'الجميع'},
+                ...List<Map<String, dynamic>>.from(data as List)
+              ]);
       } catch (_) {
         if (mounted && request == generation) setState(() => rows = []);
       }
@@ -101,6 +114,10 @@ class _MentionTextField156State extends State<MentionTextField156> {
       Column(mainAxisSize: MainAxisSize.min, children: [
         TextField(
             controller: widget.controller,
+            focusNode: widget.focusNode,
+            groupId: widget.groupId ?? EditableText,
+            onEditingComplete: widget.onEditingComplete,
+            onSubmitted: widget.onSubmitted,
             minLines: widget.minLines,
             maxLines: widget.maxLines,
             maxLength: widget.maxLength,

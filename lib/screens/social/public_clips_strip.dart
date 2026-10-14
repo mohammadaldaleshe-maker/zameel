@@ -1,3 +1,4 @@
+import '../../widgets/mention_content158.dart';
 import '../../services/external_share156.dart';
 import '../../widgets/content_editor155.dart';
 import '../../widgets/cached_media_image.dart';
@@ -804,8 +805,11 @@ class VerticalClipsViewerState extends State<VerticalClipsViewer> {
                             subtitle: (clip['caption']?.toString() ?? '')
                                     .isEmpty
                                 ? null
-                                : Text(
+                                : MentionContent158(
                                     clip['caption'].toString(),
+                                    kind: 'clip',
+                                    id: '${clip['id']}',
+                                    header: true,
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                     style:

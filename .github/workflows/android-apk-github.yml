@@ -85,6 +85,7 @@ jobs:
           dart verification/sponsored_feed_150_test.dart
           dart verification/video_reference_156_test.dart
           dart verification/maintenance157/presentation_test.dart
+          dart verification/maintenance158/member_time_test.dart
           flutter test --timeout 3m --concurrency 1
 
       - uses: actions/setup-node@v4

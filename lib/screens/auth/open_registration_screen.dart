@@ -1,3 +1,4 @@
+import '../../services/member_rules158.dart';
 import '../../services/jordan_phone.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -25,6 +26,7 @@ class _OpenRegistrationScreenState extends State<OpenRegistrationScreen> {
   final _phone = TextEditingController();
   final _number = TextEditingController();
   final _password = TextEditingController();
+  DateTime? _birth158;
   String _kind = 'general';
   String _gender = 'male';
   String _format = 'first_family';
@@ -100,6 +102,7 @@ class _OpenRegistrationScreenState extends State<OpenRegistrationScreen> {
           ? saved['academicDegree'].toString()
           : 'bachelor';
       _number.text = '${saved['studentNumber'] ?? ''}';
+      _birth158 = DateTime.tryParse('${saved['birthDate']}');
       _phone.text = '${saved['phone'] ?? ''}';
       _email.text = '${saved['email'] ?? ''}';
       for (final u in universities) {
@@ -201,6 +204,7 @@ class _OpenRegistrationScreenState extends State<OpenRegistrationScreen> {
             'fullDisplayName': names.values.join(' '),
             'role': _kind == 'student' ? 'student' : 'visitor',
             'accountType': _kind,
+            'birthDate': _birth158?.toIso8601String().substring(0, 10),
             'gender': _gender,
             'displayNameFormat': _format,
             'verificationMethod': 'email',
@@ -276,6 +280,50 @@ class _OpenRegistrationScreenState extends State<OpenRegistrationScreen> {
                                 'student': _t('طالب', 'Student'),
                               },
                               (v) => _kind = v),
+                          FormField<DateTime>(
+                              validator: (_) => birthdayError158(_birth158,
+                                  student: _kind == 'student'),
+                              builder: (field) => Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        ListTile(
+                                            title: Text(_t(
+                                                'تاريخ الميلاد — مطلوب',
+                                                'Date of birth — required')),
+                                            subtitle: Text(_birth158 == null
+                                                ? _t('اختر اليوم والشهر والسنة',
+                                                    'Choose your date of birth')
+                                                : _birth158!
+                                                    .toIso8601String()
+                                                    .substring(0, 10)),
+                                            trailing: const Icon(
+                                                Icons.calendar_month),
+                                            onTap: () async {
+                                              final now = DateTime.now();
+                                              final picked =
+                                                  await showDatePicker(
+                                                      context: context,
+                                                      initialDate: _birth158 ??
+                                                          DateTime(
+                                                              now.year - 18,
+                                                              now.month,
+                                                              now.day),
+                                                      firstDate: DateTime(1960),
+                                                      lastDate: now);
+                                              if (picked != null && mounted) {
+                                                setState(
+                                                    () => _birth158 = picked);
+                                                field.didChange(picked);
+                                              }
+                                            }),
+                                        if (field.hasError)
+                                          Text(field.errorText!,
+                                              style: TextStyle(
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .error)),
+                                      ])),
                           _field(_first, _t('الاسم الأول', 'First name')),
                           _field(_father, _t('اسم الأب', 'Father name')),
                           _field(_family, _t('اسم العائلة', 'Family name')),

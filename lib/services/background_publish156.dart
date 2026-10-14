@@ -25,10 +25,12 @@ class BackgroundPublish156 {
           {required XFile video,
           XFile? cover,
           required String caption,
+          List<String> mentions = const [],
           required int duration}) =>
       platform.enqueue156({
         'kind': 'clip',
         'text': caption,
+        'mentions': mentions,
         'audience': 'public',
         'duration': duration,
         'has_cover': cover != null
@@ -36,6 +38,12 @@ class BackgroundPublish156 {
         video,
         if (cover != null) cover
       ], () => revision.value++);
+  static Future<String> wall(
+          {required String owner,
+          required String text,
+          required List<XFile> files}) =>
+      platform.enqueue156({'kind': 'wall', 'owner': owner, 'text': text}, files,
+          () => revision.value++);
   static Future<String> story(
           {required XFile file,
           required String type,

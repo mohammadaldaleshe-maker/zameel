@@ -16,15 +16,15 @@ void main() {
   check(
       postMetadata157(
               {'department_ar': null, 'created_at': '2026-10-13T04:12:45Z'},
-              true) ==
-          '13/10/2026 · 07:12',
+              true, now: DateTime.parse('2026-10-13T04:13:45Z')) ==
+          'قبل دقيقة',
       'No null or separator');
   check(
       postMetadata157({
             'department_ar': 'الهندسة',
             'created_at': '2026-10-13T04:12:45Z'
-          }, true) ==
-          'الهندسة · 13/10/2026 · 07:12',
+          }, true, now: DateTime.parse('2026-10-13T04:13:45Z')) ==
+          'الهندسة · قبل دقيقة',
       'Readable metadata');
   check(
       !completedMediaPost157({

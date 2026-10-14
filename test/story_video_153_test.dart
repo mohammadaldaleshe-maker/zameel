@@ -12,6 +12,7 @@ class _VideoPlatform extends VideoPlayerPlatform {
   final disposed = <int>{};
   final plays = <int>[];
   bool defer = false;
+  final positions = <int, Duration>{};
   @override
   Future<void> init() async {}
   @override
@@ -62,12 +63,48 @@ class _VideoPlatform extends VideoPlayerPlatform {
   @override
   Future<void> seekTo(int playerId, Duration position) async {}
   @override
-  Future<Duration> getPosition(int playerId) async => Duration.zero;
+  Future<Duration> getPosition(int playerId) async =>
+      positions[playerId] ?? Duration.zero;
   @override
   Widget buildViewWithOptions(VideoViewOptions options) => const SizedBox();
 }
 
 void main() {
+  testWidgets('story progress tracks video position and completion fires once',
+      (tester) async {
+    final original = VideoPlayerPlatform.instance;
+    final fake = _VideoPlatform();
+    VideoPlayerPlatform.instance = fake;
+    addTearDown(() => VideoPlayerPlatform.instance = original);
+    var progress = 0.0, completed = 0;
+    await tester.pumpWidget(MaterialApp(
+        home: StoryVideoPlayer(
+            path: 'blob:progress',
+            onProgress: (value) => progress = value,
+            onCompleted: () => completed++)));
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 20));
+    }
+    fake.positions[1] = const Duration(seconds: 5);
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.pump();
+    expect(progress, closeTo(.25, .01));
+    fake.events[1]!.add(VideoEvent(eventType: VideoEventType.bufferingStart));
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(progress, closeTo(.25, .01));
+    expect(completed, 0);
+    fake.events[1]!.add(VideoEvent(eventType: VideoEventType.bufferingEnd));
+    fake.events[1]!.add(VideoEvent(eventType: VideoEventType.completed));
+    await tester.pump();
+    await tester.pump();
+    expect(progress, 1);
+    expect(completed, 1);
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(completed, 1);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump();
+  });
+
   testWidgets(
       'only active story plays; previous audio stops on switch and viewer disposal',
       (tester) async {

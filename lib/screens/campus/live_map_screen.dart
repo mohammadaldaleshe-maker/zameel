@@ -561,6 +561,7 @@ class _LiveMapScreenState extends State<LiveMapScreen>
                 points: _routePoints, color: AppTheme.primary, strokeWidth: 6)
           ]),
         MarkerLayer(markers: [
+          ..._partnerMarkers158(ar),
           for (final place in _places)
             Marker(
                 point: place.point,
@@ -619,6 +620,32 @@ class _LiveMapScreenState extends State<LiveMapScreen>
     );
   }
 
+  List<Marker> _partnerMarkers158(bool ar) => [
+        for (final partner in _partnerLocations)
+          Marker(
+            point: LatLng((partner['latitude'] as num).toDouble(),
+                (partner['longitude'] as num).toDouble()),
+            width: 150,
+            height: 104,
+            child: GestureDetector(
+              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                  builder: (_) =>
+                      PartnerAdsScreen(partner: partner, isArabic: ar))),
+              child: Card(
+                  child: Padding(
+                      padding: const EdgeInsets.all(6),
+                      child: Column(mainAxisSize: MainAxisSize.min, children: [
+                        const Icon(Icons.apartment_rounded,
+                            size: 42, color: AppTheme.primary),
+                        Text('${partner['name']}',
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis)
+                      ]))),
+            ),
+          ),
+      ];
+
   Widget _worldMap(bool ar) => FlutterMap(
         mapController: _map,
         options: MapOptions(
@@ -639,31 +666,7 @@ class _LiveMapScreenState extends State<LiveMapScreen>
                   points: _routePoints, color: AppTheme.primary, strokeWidth: 5)
             ]),
           MarkerLayer(markers: [
-            for (final partner in _partnerLocations)
-              Marker(
-                point: LatLng((partner['latitude'] as num).toDouble(),
-                    (partner['longitude'] as num).toDouble()),
-                width: 150,
-                height: 104,
-                child: GestureDetector(
-                  onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                          builder: (_) => PartnerAdsScreen(
-                              partner: partner, isArabic: ar))),
-                  child: Card(
-                      child: Padding(
-                          padding: const EdgeInsets.all(6),
-                          child:
-                              Column(mainAxisSize: MainAxisSize.min, children: [
-                            const Icon(Icons.apartment_rounded,
-                                size: 42, color: AppTheme.primary),
-                            Text('${partner['name']}',
-                                textAlign: TextAlign.center,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis)
-                          ]))),
-                ),
-              ),
+            ..._partnerMarkers158(ar),
             for (final ad in _partnerAdvertisements.where((ad) =>
                 !_partnerLocations.any((p) => p['id'] == ad['partner_id'])))
               Marker(

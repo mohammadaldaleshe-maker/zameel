@@ -173,12 +173,7 @@ class _PostCard extends StatelessWidget {
     AppearanceScope.observe(context);
     final String type = post['type'] ?? 'text';
 
-    Widget withMentions(Widget child) => (post['mention_ids156'] is List &&
-            (post['mention_ids156'] as List).isNotEmpty)
-        ? Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [child, MentionLinks156(postId: '${post['id']}')])
-        : child;
+    Widget withMentions(Widget child) => child;
     if (type == 'video') {
       return withMentions(_VideoPost(
         post: post,
@@ -348,9 +343,10 @@ class _ImagePostState extends State<_ImagePost> {
             .isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
-            child: CopyableText(
+            child: MentionContent158(
               (isArabic ? widget.post['text_ar'] : widget.post['text_en'])
                   .toString(),
+              kind: 'post', id: '${widget.post['id']}', header: true,
               style: TextStyle(
                 color: AppTheme.legacyForeground,
                 fontSize: 16,
@@ -662,8 +658,9 @@ class _VideoPostState extends State<_VideoPost> {
           ],
         ),
         const SizedBox(height: 10),
-        CopyableText(
+        MentionContent158(
           isArabic ? widget.post['text_ar'] : widget.post['text_en'],
+          kind: 'post', id: '${widget.post['id']}', header: true,
           style: TextStyle(
             color: AppTheme.legacyForeground,
             fontSize: 14,
@@ -1740,8 +1737,9 @@ class _TextPostState extends State<_TextPost> {
             );
             if (mounted) setState(() {});
           },
-          child: CopyableText(
+          child: MentionContent158(
             isArabic ? widget.post['text_ar'] : widget.post['text_en'],
+            kind: 'post', id: '${widget.post['id']}', header: true,
             style: TextStyle(
               color: AppTheme.legacyForeground,
               fontSize: 16,

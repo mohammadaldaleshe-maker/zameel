@@ -180,6 +180,7 @@ class _ContactVerificationScreenState extends State<ContactVerificationScreen> {
           'father_name': names['fatherName'],
           'family_name': names['familyName'],
           'account_type': widget.userData['accountType'] ?? 'general',
+          'birth_date': widget.userData['birthDate'],
           'display_name_format':
               widget.userData['displayNameFormat'] ?? 'first_family',
           'gender': widget.userData['gender'],

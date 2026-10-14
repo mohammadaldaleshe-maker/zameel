@@ -1,3 +1,4 @@
+import 'friend_wall_service158.dart';
 import 'post_presentation157.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -131,26 +132,36 @@ Future<void> _pump156(void Function() changed) async {
                     ? 'clips'
                     : 'social_stories';
         final db = Supabase.instance.client;
-        final prior = await db
-            .from(table)
-            .select()
-            .eq('id', job['id'])
-            .eq('user_id', user)
-            .maybeSingle();
-        final complete = prior != null &&
-            (kind == 'post'
-                ? completedMediaPost157(prior)
-                : prior['upload_state156'] == 'ready' &&
-                    '${prior[kind == 'clip' ? 'video_url' : 'media_url'] ?? ''}'
-                        .isNotEmpty &&
-                    !'${prior[kind == 'clip' ? 'video_url' : 'media_url'] ?? ''}'
-                        .startsWith('uploading://'));
+        final prior = kind == 'wall'
+            ? null
+            : await db
+                .from(table)
+                .select()
+                .eq('id', job['id'])
+                .eq('user_id', user)
+                .maybeSingle();
+        final complete = kind == 'wall'
+            ? await FriendWallService158.complete('${job['id']}')
+            : prior != null &&
+                (kind == 'post'
+                    ? completedMediaPost157(prior)
+                    : prior['upload_state156'] == 'ready' &&
+                        '${prior[kind == 'clip' ? 'video_url' : 'media_url'] ?? ''}'
+                            .isNotEmpty &&
+                        !'${prior[kind == 'clip' ? 'video_url' : 'media_url'] ?? ''}'
+                            .startsWith('uploading://'));
         if (!complete) {
           final files = [
             for (final f in job['files'] as List)
               XFile('${f['path']}', name: '${f['name']}')
           ];
-          if (kind == 'post') {
+          if (kind == 'wall') {
+            await FriendWallService158.publish(
+                id: '${job['id']}',
+                owner: '${job['owner']}',
+                text: '${job['text']}',
+                files: files);
+          } else if (kind == 'post') {
             await PostPublishService.publishPost(
                 text: '${job['text']}',
                 audience: '${job['audience']}',
@@ -168,6 +179,7 @@ Future<void> _pump156(void Function() changed) async {
                   file: prepared.video,
                   cover: prepared.cover,
                   caption: '${job['text']}',
+                  mentions: List<String>.from(job['mentions'] ?? []),
                   durationSeconds: job['duration'] as int,
                   audience: '${job['audience']}',
                   jobId: '${job['id']}');

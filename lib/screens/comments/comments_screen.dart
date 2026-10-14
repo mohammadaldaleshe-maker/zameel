@@ -1,3 +1,5 @@
+import '../../widgets/mention_field156.dart';
+import '../../widgets/mention_content158.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../services/comment_images156.dart';
 import '../../platform/local_image_widget.dart';
@@ -38,7 +40,7 @@ class CommentsScreen extends StatefulWidget {
 
 class _CommentsScreenState extends State<CommentsScreen>
     with WidgetsBindingObserver {
-  final TextEditingController _commentController = TextEditingController();
+  final MentionController156 _commentController = MentionController156();
   final FocusNode _composerFocus = FocusNode();
 
   final _pickedImages156 = <XFile>[];
@@ -186,6 +188,7 @@ class _CommentsScreenState extends State<CommentsScreen>
         'post_id': postId,
         'user_id': user.id,
         'content': text.isEmpty ? '📷' : text,
+        'mention_ids156': _commentController.mentionIds,
         'image_paths156': paths,
         'parent_comment_id': _replyingTo?['id']?.toString(),
       });
@@ -625,7 +628,7 @@ class _CommentsScreenState extends State<CommentsScreen>
                                   child: const Icon(
                                       Icons.add_photo_alternate_outlined)))),
                       Expanded(
-                        child: TextField(
+                        child: MentionTextField156(
                           key: const ValueKey('comment-composer'),
                           groupId: _composerFocus,
                           focusNode: _composerFocus,
@@ -802,7 +805,8 @@ class _CommentsScreenState extends State<CommentsScreen>
                       ],
                     ),
                     const SizedBox(height: 3),
-                    CopyableText(body),
+                    MentionContent158(body,
+                        kind: 'post_comment', id: '${comment['id']}'),
                     if (comment['image_urls156'] is List)
                       Wrap(spacing: 6, runSpacing: 6, children: [
                         for (final url in comment['image_urls156'])

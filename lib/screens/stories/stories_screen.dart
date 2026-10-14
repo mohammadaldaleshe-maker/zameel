@@ -868,6 +868,8 @@ class StoryVideoPlayer extends StatefulWidget {
   final bool pausedForReport;
   final bool active;
   final Uint8List? bytes;
+  final ValueChanged<double>? onProgress;
+  final VoidCallback? onCompleted;
 
   const StoryVideoPlayer({
     super.key,
@@ -875,6 +877,8 @@ class StoryVideoPlayer extends StatefulWidget {
     this.pausedForReport = false,
     this.active = true,
     this.bytes,
+    this.onProgress,
+    this.onCompleted,
   });
 
   @override
@@ -884,6 +888,24 @@ class StoryVideoPlayer extends StatefulWidget {
 class StoryVideoPlayerState extends State<StoryVideoPlayer>
     with WidgetsBindingObserver {
   bool _userPaused = false;
+  bool _completed158 = false;
+  void _videoProgress158() {
+    final value = _controller?.value;
+    if (value == null ||
+        !value.isInitialized ||
+        value.duration.inMilliseconds <= 0) return;
+    widget.onProgress?.call(
+        (value.position.inMilliseconds / value.duration.inMilliseconds)
+            .clamp(0.0, 1.0));
+    if (!_completed158 &&
+        _shouldPlay &&
+        !value.isBuffering &&
+        value.position >= value.duration) {
+      _completed158 = true;
+      widget.onCompleted?.call();
+    }
+  }
+
   bool _foreground = true;
   int _generation = 0;
   Future<void> _playbackOperations = Future.value();
@@ -935,6 +957,7 @@ class StoryVideoPlayerState extends State<StoryVideoPlayer>
       final previous = _controller;
       _controller = null;
       _userPaused = false;
+      _completed158 = false;
       if (previous != null) unawaited(_stopAndDispose(previous));
       _initialize();
     } else {
@@ -943,6 +966,7 @@ class StoryVideoPlayerState extends State<StoryVideoPlayer>
   }
 
   Future<void> _stopAndDispose(VideoPlayerController controller) async {
+    controller.removeListener(_videoProgress158);
     try {
       await controller.setVolume(0);
       await controller.pause();
@@ -984,12 +1008,13 @@ class StoryVideoPlayerState extends State<StoryVideoPlayer>
         return;
       }
       await candidate.initialize();
-      await candidate.setLooping(true);
+      await candidate.setLooping(widget.onCompleted == null);
       if (!mounted || generation != _generation) {
         await candidate.dispose();
         return;
       }
       _controller = candidate;
+      candidate.addListener(_videoProgress158);
       _applyPlayback();
       setState(() => _error = null);
     } catch (e) {
@@ -1173,6 +1198,7 @@ class StoryViewScreen extends StatefulWidget {
 class _StoryViewScreenState extends State<StoryViewScreen>
     with WidgetsBindingObserver, RouteAware {
   ModalRoute<dynamic>? _playbackRoute;
+  final _progress158 = ValueNotifier<double>(0);
   bool _routeVisible = true;
   bool _foreground = true;
   @override
@@ -1266,6 +1292,7 @@ class _StoryViewScreenState extends State<StoryViewScreen>
     WidgetsBinding.instance.removeObserver(this);
     chatRouteObserver.unsubscribe(this);
     _pageController.dispose();
+    _progress158.dispose();
     super.dispose();
   }
 
@@ -1605,6 +1632,7 @@ class _StoryViewScreenState extends State<StoryViewScreen>
             itemCount: widget.stories.length,
             onPageChanged: (index) {
               setState(() => _currentIndex = index);
+              _progress158.value = 0;
               _prefetchAround(index);
               widget.onStoryViewed(index);
               _recordCurrentView();
@@ -1664,6 +1692,14 @@ class _StoryViewScreenState extends State<StoryViewScreen>
                               key: ValueKey(
                                   'story-video-${story['id'] ?? index}'),
                               path: videoPath,
+                              onProgress: (value) {
+                                if (mounted && index == _currentIndex)
+                                  _progress158.value = value;
+                              },
+                              onCompleted: () {
+                                if (mounted && index == _currentIndex)
+                                  _goNext();
+                              },
                               active: index == _currentIndex &&
                                   _routeVisible &&
                                   _foreground,
@@ -1777,16 +1813,19 @@ class _StoryViewScreenState extends State<StoryViewScreen>
                 final absoluteIndex = groupStart + index;
                 final viewed = widget.stories[absoluteIndex]['viewed'] == true;
                 return Expanded(
-                  child: Container(
-                    height: 3,
-                    margin: const EdgeInsets.symmetric(horizontal: 2),
-                    decoration: BoxDecoration(
-                      color: index == localIndex
-                          ? Colors.white
-                          : viewed
-                              ? Colors.white54
-                              : Colors.white24,
-                      borderRadius: BorderRadius.circular(2),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    child: ValueListenableBuilder<double>(
+                      valueListenable: _progress158,
+                      builder: (_, progress, __) => LinearProgressIndicator(
+                        minHeight: 4,
+                        value: index == localIndex
+                            ? progress
+                            : (viewed || index < localIndex ? 1 : 0),
+                        backgroundColor: Colors.white24,
+                        valueColor:
+                            const AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
                     ),
                   ),
                 );

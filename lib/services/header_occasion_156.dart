@@ -22,13 +22,17 @@ class HeaderOccasion156 extends StatefulWidget {
 }
 
 class _HeaderOccasion156State extends State<HeaderOccasion156>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
   Map<String, dynamic> row = {};
+  late final AnimationController scroll158;
   Timer? tick;
+  bool _foreground158 = true;
   int seconds = 0;
   @override
   void initState() {
     super.initState();
+    scroll158 =
+        AnimationController(vsync: this, duration: const Duration(seconds: 12));
     WidgetsBinding.instance.addObserver(this);
     _load();
     tick = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -47,12 +51,18 @@ class _HeaderOccasion156State extends State<HeaderOccasion156>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _load();
+    _foreground158 = state == AppLifecycleState.resumed;
+    if (_foreground158) {
+      _load();
+    } else {
+      scroll158.stop();
+    }
   }
 
   @override
   void dispose() {
     tick?.cancel();
+    scroll158.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -74,23 +84,54 @@ class _HeaderOccasion156State extends State<HeaderOccasion156>
     final theme = Theme.of(context);
     final color = occasionTextColor156(requested,
         theme.appBarTheme.backgroundColor ?? theme.scaffoldBackgroundColor);
-    final label = active
-        ? (seconds % 10 < 5 ? '${row['emoji']}' : '${row['label']}')
-        : 'Zameel';
-    return SizedBox(
-        width: double.infinity,
-        child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(label,
-                    key: ValueKey(label),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                        color: active ? color : const Color(0xff3152e8),
-                        fontWeight: FontWeight.w900,
-                        fontSize: active && seconds % 10 < 5 ? 26 : 16)))));
+    if (!active) {
+      scroll158.stop();
+      return const FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text('Zameel',
+              style: TextStyle(
+                  color: Color(0xff3152e8),
+                  fontWeight: FontWeight.w900,
+                  fontSize: 16)));
+    }
+    final text = '${row['emoji'] ?? ''}    ${row['label'] ?? ''}    ';
+    final style =
+        TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 18);
+    return LayoutBuilder(builder: (context, constraints) {
+      final painter = TextPainter(
+          text: TextSpan(text: text, style: style),
+          textDirection: TextDirection.rtl,
+          textScaler: MediaQuery.textScalerOf(context))
+        ..layout();
+      final width = painter.width;
+      painter.dispose();
+      if (width <= 0) return const SizedBox.shrink();
+      // Fixed physical speed, independent of language direction and label length.
+      final duration = Duration(
+          milliseconds: (width / 28 * 1000).round().clamp(1000, 60000));
+      if (scroll158.duration != duration) {
+        scroll158.duration = duration;
+      }
+      if (_foreground158 && !scroll158.isAnimating) scroll158.repeat();
+      final copies = (constraints.maxWidth / width).ceil() + 2;
+      return SizedBox(
+          height: 32,
+          child: ClipRect(
+              child: AnimatedBuilder(
+            animation: scroll158,
+            builder: (_, __) => Stack(children: [
+              for (var i = 0; i < copies; i++)
+                Positioned(
+                    left: (i - 1 + scroll158.value) * width,
+                    top: 2,
+                    width: width,
+                    child: Text(text,
+                        textDirection: TextDirection.rtl,
+                        textScaler: MediaQuery.textScalerOf(context),
+                        maxLines: 1,
+                        style: style)),
+            ]),
+          )));
+    });
   }
 }

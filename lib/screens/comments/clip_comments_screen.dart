@@ -1,3 +1,5 @@
+import '../../widgets/mention_field156.dart';
+import '../../widgets/mention_content158.dart';
 import 'package:zameel/widgets/copyable_text.dart';
 import 'package:zameel/theme/appearance_controller.dart';
 import 'package:zameel/widgets/verified_name.dart';
@@ -15,15 +17,17 @@ import '../profile/profile_screen.dart';
 
 class ClipCommentsScreen extends StatefulWidget {
   final Map<String, dynamic> clip;
+  final String? highlightedCommentId;
 
-  const ClipCommentsScreen({super.key, required this.clip});
+  const ClipCommentsScreen(
+      {super.key, required this.clip, this.highlightedCommentId});
 
   @override
   State<ClipCommentsScreen> createState() => _ClipCommentsScreenState();
 }
 
 class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
-  final TextEditingController _controller = TextEditingController();
+  final MentionController156 _controller = MentionController156();
   final FocusNode _focusNode = FocusNode();
 
   bool _loading = true;
@@ -92,6 +96,7 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
         clipId,
         text,
         parentCommentId: _replyingTo?['id']?.toString(),
+        mentions: _controller.mentionIds,
       );
       _controller.clear();
       if (mounted) setState(() => _replyingTo = null);
@@ -316,11 +321,21 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
                               child: ListView.builder(
                                 padding: const EdgeInsets.all(12),
                                 itemCount: threaded.length,
-                                itemBuilder: (_, index) => _card(
-                                  threaded[index].comment,
-                                  threaded[index].depth,
-                                  ar,
-                                ),
+                                itemBuilder: (_, index) {
+                                  final ordered =
+                                      widget.highlightedCommentId == null
+                                          ? threaded
+                                          : [
+                                              ...threaded.where((entry) =>
+                                                  entry.comment['id'] ==
+                                                  widget.highlightedCommentId),
+                                              ...threaded.where((entry) =>
+                                                  entry.comment['id'] !=
+                                                  widget.highlightedCommentId),
+                                            ];
+                                  return _card(ordered[index].comment,
+                                      ordered[index].depth, ar);
+                                },
                               ),
                             ),
                 ),
@@ -356,7 +371,7 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
                     child: Row(
                       children: [
                         Expanded(
-                          child: TextField(
+                          child: MentionTextField156(
                             controller: _controller,
                             focusNode: _focusNode,
                             minLines: 1,
@@ -426,6 +441,9 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
     return Padding(
       padding: EdgeInsetsDirectional.only(start: (depth * 22).toDouble()),
       child: Card(
+        color: id == widget.highlightedCommentId
+            ? Theme.of(context).colorScheme.primaryContainer
+            : null,
         margin: const EdgeInsets.only(bottom: 8),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(10, 10, 8, 8),
@@ -492,7 +510,8 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
                       ],
                     ),
                     const SizedBox(height: 3),
-                    CopyableText(comment['text']?.toString() ?? ''),
+                    MentionContent158(comment['text']?.toString() ?? '',
+                        kind: 'clip_comment', id: '${comment['id']}'),
                     const SizedBox(height: 7),
                     Wrap(
                       spacing: 8,

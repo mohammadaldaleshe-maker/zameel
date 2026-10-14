@@ -17,8 +17,7 @@ void main() {
         url: 'https://fixture.test',
         anonKey: 'fixture',
         debug: false,
-        authOptions:
-            const FlutterAuthClientOptions(detectSessionInUri: false),
+        authOptions: const FlutterAuthClientOptions(detectSessionInUri: false),
         httpClient: MockClient((r) async => http.Response(
             jsonEncode({
               'enabled': true,
@@ -48,8 +47,7 @@ void main() {
           greaterThanOrEqualTo(4.5));
     }
   });
-  testWidgets(
-      'flag five seconds, label five seconds, then expiry restores Zameel',
+  testWidgets('continuous rightward ticker and expiry restores Zameel',
       (tester) async {
     await tester.pumpWidget(MaterialApp(
         home: Scaffold(
@@ -58,15 +56,17 @@ void main() {
         () async => Future<void>.delayed(const Duration(milliseconds: 30)));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 250));
-    expect(find.text('🇯🇴'), findsOneWidget);
-    await tester.pump(const Duration(seconds: 4));
-    expect(find.text('🇯🇴'), findsOneWidget);
-    await tester.pump(const Duration(seconds: 1));
-    await tester.pump(const Duration(milliseconds: 250));
-    expect(find.text('عيد الاستقلال'), findsOneWidget);
-    await tester.pump(const Duration(seconds: 5));
-    await tester.pump(const Duration(milliseconds: 250));
-    expect(find.text('🇯🇴'), findsOneWidget);
+    expect(find.textContaining('🇯🇴    عيد الاستقلال'), findsWidgets);
+    final positions = find.byWidgetPredicate((w) =>
+        w is Positioned &&
+        w.width != null &&
+        w.child is Text &&
+        ((w.child as Text).data ?? '').contains('عيد الاستقلال'));
+    final before = tester.widget<Positioned>(positions.first).left!;
+    await tester.pump(const Duration(milliseconds: 300));
+    final after = tester.widget<Positioned>(positions.first).left!;
+    expect(after, greaterThan(before));
+    expect(tester.takeException(), isNull);
     now = start.add(const Duration(days: 2));
     await tester.pump(const Duration(seconds: 1));
     await tester.pump(const Duration(milliseconds: 250));

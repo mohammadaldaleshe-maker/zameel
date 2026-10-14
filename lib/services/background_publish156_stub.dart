@@ -1,3 +1,4 @@
+import 'friend_wall_service158.dart';
 import 'dart:async';
 import 'dart:math';
 import 'package:image_picker/image_picker.dart';
@@ -21,7 +22,13 @@ Future<void> _run156(Map<String, dynamic> task, void Function() changed) async {
   changed();
   final files = _files156[task['id']]!;
   try {
-    if (task['kind'] == 'post') {
+    if (task['kind'] == 'wall') {
+      await FriendWallService158.publish(
+          id: '${task['id']}',
+          owner: '${task['owner']}',
+          text: '${task['text']}',
+          files: files);
+    } else if (task['kind'] == 'post') {
       await PostPublishService.publishPost(
           text: '${task['text']}',
           audience: '${task['audience']}',
@@ -36,6 +43,7 @@ Future<void> _run156(Map<String, dynamic> task, void Function() changed) async {
           file: files.first,
           cover: files.length > 1 ? files[1] : null,
           caption: '${task['text']}',
+          mentions: List<String>.from(task['mentions'] ?? []),
           durationSeconds: task['duration'] as int,
           audience: '${task['audience']}',
           jobId: '${task['id']}');

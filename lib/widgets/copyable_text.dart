@@ -2,18 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/gestures.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../screens/profile/profile_screen.dart';
 
 /// Copy/selection behavior is retained; only explicit HTTP(S) links open externally.
 class CopyableText extends StatefulWidget {
   const CopyableText(this.data,
       {super.key,
       this.style,
+      this.mentions = const {},
       this.onTap,
       this.onOptions,
       this.maxLines,
       this.overflow,
       this.textAlign});
   final String? data;
+  final Map<String, String> mentions;
   final TextStyle? style;
   final VoidCallback? onTap, onOptions;
   final int? maxLines;
@@ -91,18 +94,56 @@ class _CopyableTextState extends State<CopyableText> {
     _clear();
     final text = widget.data ?? '', spans = <InlineSpan>[];
     int cursor = 0;
-    for (final match in RegExp(r'https?://[^\s<>]+', caseSensitive: false)
-        .allMatches(text)) {
-      var link = match.group(0)!.replaceFirst(RegExp(r'[.,،؛!?]+$'), '');
-      for (final pair in ['()', '[]']) {
-        while (link.endsWith(pair[1]) &&
-            pair[1].allMatches(link).length > pair[0].allMatches(link).length) {
-          link = link.substring(0, link.length - 1);
+    final names = widget.mentions.keys.toList()
+      ..sort((a, b) => b.length.compareTo(a.length));
+    final mentionPattern =
+        names.map((name) => RegExp.escape('@$name')).join('|');
+    final pattern = RegExp(
+        r'https?://[^\s<>]+' +
+            (names.isEmpty
+                ? ''
+                : '|(?:$mentionPattern)(?![\\w\\u0600-\\u06ff])'),
+        caseSensitive: false);
+    for (final match in pattern.allMatches(text)) {
+      var link = match.group(0)!;
+      final mentionId =
+          link.startsWith('@') ? widget.mentions[link.substring(1)] : null;
+      if (mentionId == null && link.startsWith('@')) continue;
+      if (mentionId == null) {
+        link = link.replaceFirst(RegExp(r'[.,،؛!?]+$'), '');
+        for (final pair in ['()', '[]']) {
+          while (link.endsWith(pair[1]) &&
+              pair[1].allMatches(link).length >
+                  pair[0].allMatches(link).length) {
+            link = link.substring(0, link.length - 1);
+          }
         }
       }
       if (link.isEmpty) continue;
       spans.add(TextSpan(text: text.substring(cursor, match.start)));
-      final r = TapGestureRecognizer()..onTap = () => _open(link);
+      final r = TapGestureRecognizer()
+        ..onTap = () {
+          if (mentionId == '*') {
+            showDialog<void>(
+                context: context,
+                builder: (c) => AlertDialog(
+                        title: const Text('@الجميع'),
+                        content: const Text(
+                            'تشمل الإشارة الأصدقاء والمتابعين المسموح لهم بمشاهدة هذا المحتوى.'),
+                        actions: [
+                          TextButton(
+                              onPressed: () => Navigator.pop(c),
+                              child: const Text('إغلاق'))
+                        ]));
+          } else if (mentionId != null) {
+            Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => ProfileScreen(userId: mentionId)));
+          } else {
+            _open(link);
+          }
+        };
       _recognizers.add(r);
       spans.add(TextSpan(
           text: link,

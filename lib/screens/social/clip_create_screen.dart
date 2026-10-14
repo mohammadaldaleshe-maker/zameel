@@ -1,3 +1,5 @@
+import '../../widgets/mention_field156.dart';
+import '../../widgets/mention_content158.dart';
 import '../../services/background_publish156.dart';
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
@@ -246,7 +248,7 @@ class _ClipPreviewPublishScreen extends StatefulWidget {
 }
 
 class _ClipPreviewPublishScreenState extends State<_ClipPreviewPublishScreen> {
-  final TextEditingController _caption = TextEditingController();
+  final MentionController156 _caption = MentionController156();
   XFile? _cover;
   VideoPlayerController? _video;
   bool _initializing = true;
@@ -342,6 +344,7 @@ class _ClipPreviewPublishScreenState extends State<_ClipPreviewPublishScreen> {
           video: widget.file,
           cover: _cover,
           caption: _caption.text.trim(),
+          mentions: _caption.mentionIds,
           duration: _durationSeconds);
       if (mounted) await BackgroundPublish156.notice(context);
     } catch (error) {
@@ -422,7 +425,7 @@ class _ClipPreviewPublishScreenState extends State<_ClipPreviewPublishScreen> {
                 style: TextStyle(color: AppTheme.adaptiveMuted.shade600),
               ),
               const SizedBox(height: 16),
-              TextField(
+              MentionTextField156(
                 controller: _caption,
                 maxLength: 300,
                 maxLines: 3,

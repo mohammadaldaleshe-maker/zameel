@@ -1,3 +1,6 @@
+import '../../widgets/mention_content158.dart';
+import '../../services/post_presentation157.dart';
+import '../../widgets/friend_wall158.dart';
 import '../../services/external_share156.dart';
 import '../../services/background_publish156.dart';
 import '../../widgets/mention_field156.dart';
@@ -899,6 +902,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         savedOnly: isMe && _showSavedShorts))
               else ...[
                 SliverToBoxAdapter(child: _buildSectionHeader(ar)),
+                SliverToBoxAdapter(
+                    child: FriendWall158(
+                        key: ValueKey(
+                            'wall-${widget.userId ?? Supabase.instance.client.auth.currentUser?.id}'),
+                        owner: widget.userId ??
+                            Supabase.instance.client.auth.currentUser!.id)),
                 if (!_showShorts)
                   SliverToBoxAdapter(
                       child: SharedActivity156(
@@ -1536,6 +1545,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         fontWeight: FontWeight.w800)))),
                         const SizedBox.shrink()
                       ]),
+                      Text(relativePostTime158(post['created_at'], arabic: ar),
+                          style: TextStyle(
+                              color: AppTheme.adaptiveSecondary, fontSize: 11)),
                       Text(_profile?['university']?.toString() ?? '',
                           style: TextStyle(
                               color: AppTheme.adaptiveSecondary, fontSize: 11)),
@@ -1554,13 +1566,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 padding: const EdgeInsets.only(top: 12),
                 child: InkWell(
                   onTap: () => _openPost(post),
-                  child: CopyableText(text,
+                  child: MentionContent158(text,
+                      kind: 'post',
+                      id: '${post['id']}',
+                      header: true,
                       style: const TextStyle(fontSize: 15, height: 1.55)),
                 ),
               ),
-            if (post['mention_ids156'] is List &&
-                (post['mention_ids156'] as List).isNotEmpty)
-              MentionLinks156(postId: '${post['id']}'),
             if (hasOrderedMedia)
               Padding(
                 padding: const EdgeInsets.only(top: 12),

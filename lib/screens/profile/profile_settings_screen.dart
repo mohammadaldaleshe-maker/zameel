@@ -1,3 +1,4 @@
+import '../../services/member_rules158.dart';
 import '../../main.dart' show universities;
 import 'package:flutter/services.dart';
 import 'account_verification_screen.dart';
@@ -48,6 +49,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   bool _callSoundsEnabled = true;
   bool _notificationSoundsEnabled = true;
   bool _showOnlineStatus = true;
+  DateTime? _birth158;
+  bool _showBirth158 = false, _allowFriendPosts158 = false;
   bool _loading = true;
   bool _saving = false;
 
@@ -73,8 +76,14 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
           .eq('id', widget.userId)
           .maybeSingle();
 
+      final member158 = await Supabase.instance.client.rpc(
+          'zameel_member_settings_read158',
+          params: {'p_owner': widget.userId});
       if (!mounted) return;
       setState(() {
+        _birth158 = DateTime.tryParse('${member158['birth_date']}');
+        _showBirth158 = member158['show_birthday'] == true;
+        _allowFriendPosts158 = member158['allow_friend_posts'] == true;
         _name.text = row?['name']?.toString() ?? '';
         _email.text = row?['email']?.toString() ??
             Supabase.instance.client.auth.currentUser?.email ??
@@ -141,8 +150,23 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
 
   Future<void> _save() async {
     if (!_isOwner) return;
+    if (_birth158 != null) {
+      final error =
+          birthdayError158(_birth158, student: _academicStatus == 'student');
+      if (error != null) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(error)));
+        return;
+      }
+    }
     setState(() => _saving = true);
     try {
+      await Supabase.instance.client
+          .rpc('zameel_member_settings_save158', params: {
+        'p_birth': _birth158?.toIso8601String().substring(0, 10),
+        'p_show': _showBirth158,
+        'p_allow': _allowFriendPosts158
+      });
       await Supabase.instance.client.from('users').update({
         'name': _name.text.trim().isEmpty ? 'مستخدم' : _name.text.trim(),
         'email': _email.text.trim(),
@@ -483,6 +507,34 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
             Card(
               child: Column(
                 children: [
+                  ListTile(
+                      title: Text(ar ? 'تاريخ الميلاد' : 'Date of birth'),
+                      subtitle: Text(
+                          _birth158?.toIso8601String().substring(0, 10) ?? '—'),
+                      trailing: const Icon(Icons.calendar_month),
+                      onTap: () async {
+                        final now = DateTime.now();
+                        final date = await showDatePicker(
+                            context: context,
+                            initialDate: _birth158 ?? DateTime(now.year - 18),
+                            firstDate: DateTime(1960),
+                            lastDate: now);
+                        if (date != null && mounted)
+                          setState(() => _birth158 = date);
+                      }),
+                  SwitchListTile(
+                      value: _showBirth158,
+                      onChanged: (v) => setState(() => _showBirth158 = v),
+                      title: Text(ar
+                          ? 'إظهار تاريخ الميلاد في ملفي'
+                          : 'Show birthday on my profile')),
+                  SwitchListTile(
+                      value: _allowFriendPosts158,
+                      onChanged: (v) =>
+                          setState(() => _allowFriendPosts158 = v),
+                      title: Text(ar
+                          ? 'السماح للأصدقاء بالنشر على صفحتي'
+                          : 'Allow friends to post on my profile')),
                   SwitchListTile(
                     value: _showOnlineStatus,
                     onChanged: (v) => setState(() => _showOnlineStatus = v),
