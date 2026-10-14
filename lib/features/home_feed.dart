@@ -2394,21 +2394,6 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
           titleSpacing: 0,
           title: const HeaderOccasion156(),
           actions: [
-            IconButton(
-              key: const ValueKey('homeAccountSettings'),
-              tooltip: isArabic ? 'إعدادات الحساب' : 'Account settings',
-              icon: const Icon(Icons.manage_accounts_outlined),
-              onPressed: () {
-                final userId = Supabase.instance.client.auth.currentUser?.id;
-                if (userId == null) return;
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => ProfileSettingsScreen(userId: userId),
-                  ),
-                );
-              },
-            ),
             if (FeatureControl.instance.visible('direct_calls'))
               IconButton(
                 tooltip: isArabic ? 'اتصال' : 'Call',

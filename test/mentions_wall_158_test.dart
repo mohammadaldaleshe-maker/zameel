@@ -9,6 +9,15 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:zameel/widgets/mention_content158.dart';
 import 'package:zameel/widgets/friend_wall158.dart';
 import 'package:zameel/widgets/mention_field156.dart';
+import 'package:zameel/screens/profile/profile_screen.dart';
+
+class _Routes159 extends NavigatorObserver {
+  Route<dynamic>? last;
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    last = route;
+  }
+}
 
 void main() {
   var allow = false;
@@ -32,10 +41,13 @@ void main() {
         }));
   });
   tearDownAll(() async => Supabase.instance.dispose());
-  testWidgets('header names and inline mention links retain ordinary text',
+  testWidgets(
+      'post mentions appear once in header and open the correct profile',
       (tester) async {
-    await tester.pumpWidget(const MaterialApp(
-        home: Scaffold(
+    final routes = _Routes159();
+    await tester.pumpWidget(MaterialApp(
+        navigatorObservers: [routes],
+        home: const Scaffold(
             body: MentionContent158('مرحبا أنا محمد @أسامة',
                 kind: 'post', id: 'post-id', header: true))));
     await tester
@@ -43,16 +55,41 @@ void main() {
     await tester.pump();
     expect(find.text('مع '), findsOneWidget);
     expect(find.text('أسامة'), findsOneWidget);
+    expect(find.text('مرحبا أنا محمد'), findsOneWidget);
+    expect(find.textContaining('@أسامة', findRichText: true), findsNothing);
+    final context = tester.element(find.byType(MentionContent158));
+    await tester.tap(find.text('أسامة'));
+    final page = routes.last as MaterialPageRoute<dynamic>;
+    final profile = page.builder(context) as ProfileScreen;
+    expect(profile.userId, 'friend-id');
+    await tester.pumpWidget(const SizedBox());
+  });
+  testWidgets('comments keep inline clickable mentions', (tester) async {
+    await tester.pumpWidget(const MaterialApp(
+        home: Scaffold(
+            body: MentionContent158('مرحبًا @أسامة',
+                kind: 'post_comment', id: 'comment-id'))));
+    await tester
+        .runAsync(() => Future<void>.delayed(const Duration(milliseconds: 30)));
+    await tester.pump();
+    Iterable<TextSpan> spans(InlineSpan span) sync* {
+      if (span is TextSpan) {
+        yield span;
+        for (final child in span.children ?? <InlineSpan>[]) {
+          yield* spans(child);
+        }
+      }
+    }
+
     final rich = tester
         .widgetList<RichText>(find.byType(RichText))
-        .firstWhere((w) => w.text.toPlainText() == 'مرحبا أنا محمد @أسامة');
-    Iterable<TextSpan> spans(InlineSpan span) sync* {
-      if (span is TextSpan) {yield span;for(final child in span.children ?? <InlineSpan>[]) {yield* spans(child);}}
-    }
-    final links = spans(rich.text).where((span) => span.text == '@أسامة');
-    expect(links.single.recognizer, isA<TapGestureRecognizer>());
-    expect((links.single.recognizer as TapGestureRecognizer).onTap, isNotNull);
-    expect(find.text('@أسامة'), findsNothing);
+        .firstWhere((w) => w.text.toPlainText() == 'مرحبًا @أسامة');
+    expect(
+        spans(rich.text)
+            .singleWhere((span) => span.text == '@أسامة')
+            .recognizer,
+        isA<TapGestureRecognizer>());
+    expect(find.text('مع '), findsNothing);
     await tester.pumpWidget(const SizedBox());
   });
   testWidgets('friend wall composer follows owner permission', (tester) async {

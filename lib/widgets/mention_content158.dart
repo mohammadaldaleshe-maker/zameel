@@ -1,3 +1,4 @@
+import '../services/mention_display159.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'copyable_text.dart';
@@ -80,14 +81,19 @@ class _MentionContent158State extends State<MentionContent158> {
               ]),
             if (widget.header && (widget.text ?? '').contains('@الجميع'))
               const Text('مع الأصدقاء والمتابعين'),
-            CopyableText(widget.text,
-                mentions: {
-                  ...names,
-                  if ((widget.text ?? '').contains('@الجميع')) 'الجميع': '*'
-                },
-                style: widget.style,
-                onTap: widget.onTap,
-                maxLines: widget.maxLines,
-                overflow: widget.overflow),
+            if (!widget.header ||
+                mentionBody159(widget.text ?? '', names.keys).isNotEmpty)
+              CopyableText(
+                  widget.header
+                      ? mentionBody159(widget.text ?? '', names.keys)
+                      : widget.text,
+                  mentions: {
+                    ...names,
+                    if ((widget.text ?? '').contains('@الجميع')) 'الجميع': '*'
+                  },
+                  style: widget.style,
+                  onTap: widget.onTap,
+                  maxLines: widget.maxLines,
+                  overflow: widget.overflow),
           ]);
 }
