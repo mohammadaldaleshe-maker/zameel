@@ -1,3 +1,4 @@
+import '../../services/device_trust160.dart';
 import '../../services/jordan_phone.dart';
 import 'dart:async';
 
@@ -170,6 +171,8 @@ class _ContactVerificationScreenState extends State<ContactVerificationScreen> {
   }
 
   Future<void> _finish(User user) async {
+    if (!await DeviceTrust160.ready())
+      throw StateError('device_verification_required');
     final raw = widget.userData['fullName'];
     final names = raw is Map ? raw : <String, dynamic>{};
     await Supabase.instance.client.rpc(

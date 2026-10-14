@@ -1,3 +1,4 @@
+import 'device_trust160.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'push_notification_service.dart';
@@ -16,6 +17,7 @@ class AuthSessionService {
   AuthSessionService._();
 
   static Future<void> signOut() async {
+    DeviceTrust160.approvedUser = null;
     final userId = Supabase.instance.client.auth.currentUser?.id;
     try {
       await PushNotificationService.instance.unregisterCurrentDevice();

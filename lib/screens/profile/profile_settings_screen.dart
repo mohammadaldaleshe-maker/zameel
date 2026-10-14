@@ -1,3 +1,4 @@
+import '../security/devices_screen160.dart';
 import '../../services/member_rules158.dart';
 import '../../main.dart' show universities;
 import 'package:flutter/services.dart';
@@ -268,6 +269,15 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         body: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            Card(
+                child: ListTile(
+                    leading: const Icon(Icons.phonelink_lock),
+                    title: const Text('الأجهزة والجلسات'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const DevicesScreen160())))),
             Card(
                 child: ListTile(
                     leading:

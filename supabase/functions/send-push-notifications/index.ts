@@ -223,11 +223,18 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      const { data: tokens, error: tokenError } = await supabase
+      const { data: registeredTokens, error: tokenError } = await supabase
         .from("push_device_tokens")
         .select("id,token,locale,platform")
         .eq("user_id", notification.user_id);
       if (tokenError) throw tokenError;
+      const {data: allowedTokens,error: trustError}=await supabase.rpc('zameel_push_allowed160',{
+        p_user:notification.user_id,p_tokens:(registeredTokens??[]).map(device=>device.token),
+      });
+      if(trustError)throw trustError;
+      const allowedSet=new Set(allowedTokens??[]);
+      const tokens=(registeredTokens??[]).filter(device=>allowedSet.has(device.token));
+
       if (!tokens?.length) {
         await supabase.from("push_notification_queue").update({
           status: "failed", last_error: "no_registered_devices", processed_at: null,

@@ -1,3 +1,4 @@
+import {deviceAllowed160} from '../_shared/device_gate160.mjs';
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { AccessToken, RoomServiceClient } from "npm:livekit-server-sdk@2.19.0";
 
@@ -54,6 +55,7 @@ Deno.serve(async (req) => {
   const user = authData.user;
   if (authError || !user) return reply({ error: "not_authenticated" }, 401);
 
+  if (!await deviceAllowed160(authClient)) return reply({error: "device_verification_required"},403);
   const body = await req.json().catch(() => ({}));
   const action = String(body?.action ?? "token").trim().toLowerCase();
   const roomCode = String(body?.room_code ?? "").trim().toUpperCase();

@@ -1,3 +1,4 @@
+import {deviceAllowed160} from '../_shared/device_gate160.mjs';
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -72,6 +73,7 @@ serve(async (req) => {
   const user = authData.user;
   if (!user) return response({ error: "not_authenticated", message: "يرجى تسجيل الدخول." }, 401);
 
+  if (!await deviceAllowed160(authClient)) return response({error: "device_verification_required"},403);
   const body = await req.json().catch(() => ({}));
   const mode = ["assistant", "summary", "explain"].includes(body?.mode) ? body.mode : "assistant";
   const rawMessage = String(body?.message ?? "").trim();

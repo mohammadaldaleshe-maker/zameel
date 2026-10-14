@@ -1,3 +1,4 @@
+import '../../services/device_trust160.dart';
 import 'package:zameel/theme/appearance_controller.dart';
 import 'dart:async';
 import 'dart:ui' as ui;
@@ -434,6 +435,9 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
         );
       }
 
+      if (!await DeviceTrust160.ready())
+        throw StateError('device_verification_required');
+      if (!mounted) return;
       // ========================================================
       // PREPARE FULL NAME SAFELY
       // ========================================================

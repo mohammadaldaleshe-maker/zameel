@@ -29,6 +29,12 @@ class _AuthGateState extends State<AuthGate> {
           (data.event == AuthChangeEvent.tokenRefreshed ||
               data.event == AuthChangeEvent.initialSession ||
               data.event == AuthChangeEvent.signedIn)) return;
+      if (_userId != null && next != _userId) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          zameelNavigatorKey.currentState?.popUntil((route) => route.isFirst);
+        });
+      }
+      DeviceTrust160.approvedUser = null;
       _userId = next;
       if (next == null) unawaited(NativeIncomingCallService.setUser(null));
       setState(() => _initialScreen = _getInitialScreen());
@@ -85,15 +91,56 @@ class _AuthGateState extends State<AuthGate> {
         }
       }
     }
-    for(final old in _mergeJordanUniversities()){if(old.name==universityName){for(final college in old.colleges){if(college.name==collegeName)return HomeFeedScreen(university:old,college:college,department:departmentName);}}}
+    for (final old in _mergeJordanUniversities()) {
+      if (old.name == universityName) {
+        for (final college in old.colleges) {
+          if (college.name == collegeName)
+            return HomeFeedScreen(
+                university: old, college: college, department: departmentName);
+        }
+      }
+    }
     // A renamed or removed catalog option must not reset an existing account.
-    return HomeFeedScreen(university:University(name:universityName,type:'خاصة',city:'',colleges:const []),college:College(name:collegeName,departments:[departmentName]),department:departmentName);
+    return HomeFeedScreen(
+        university: University(
+            name: universityName, type: 'خاصة', city: '', colleges: const []),
+        college: College(name: collegeName, departments: [departmentName]),
+        department: departmentName);
   }
 
   Future<Widget> _getInitialScreen() async {
     final generation = ++_generation;
     final userId = Supabase.instance.client.auth.currentUser?.id;
     if (userId == null) return const WelcomeScreen();
+    try {
+      if (!await DeviceTrust160.ready()) {
+        if (Supabase.instance.client.auth.currentUser?.id != userId)
+          return const WelcomeScreen();
+        return DeviceVerification160(onVerified: () {
+          if (mounted) setState(() => _initialScreen = _getInitialScreen());
+        });
+      }
+    } catch (_) {
+      return Scaffold(
+          body: Center(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const Text(
+            'تعذر التحقق من أمان الجهاز. تحقق من الإنترنت وأعد المحاولة.'),
+        TextButton(
+            onPressed: () {
+              if (mounted) setState(() => _initialScreen = _getInitialScreen());
+            },
+            child: const Text('إعادة المحاولة')),
+        TextButton(
+            onPressed: () async {
+              await AuthSessionService.signOut();
+            },
+            child: const Text('تسجيل الخروج')),
+      ])));
+    }
+    if (Supabase.instance.client.auth.currentUser?.id != userId)
+      return const WelcomeScreen();
+    unawaited(PushNotificationService.instance.registerForCurrentUser());
     final cached = await HomeSnapshotService.read(userId, 'profile');
     if (cached.isNotEmpty && cached.first['onboarding_complete'] == true) {
       // Cached routing data contains no roles/permissions. AccountAccessMonitor
@@ -300,7 +347,10 @@ class ZameelApp extends StatelessWidget {
         builder: (context, languageProvider, child) {
           return MaterialApp(
             navigatorKey: zameelNavigatorKey,
-            navigatorObservers: [GlobalNavigationMenu.observer, chatRouteObserver],
+            navigatorObservers: [
+              GlobalNavigationMenu.observer,
+              chatRouteObserver
+            ],
             debugShowCheckedModeBanner: false,
             title: 'Zameel',
             locale: languageProvider.currentLocale,
@@ -328,7 +378,8 @@ class ZameelApp extends StatelessWidget {
                 ),
                 child: AppReleaseGate(
                   child: SelectionArea(
-                    child: AccountAccessMonitor(
+                    child: DeviceSessionMonitor160(
+                        child: AccountAccessMonitor(
                       child: Listener(
                         behavior: HitTestBehavior.translucent,
                         onPointerDown: (_) =>
@@ -336,12 +387,16 @@ class ZameelApp extends StatelessWidget {
                         child: BottomSystemInset(
                           child: GlobalNavigationSwipe(
                             navigatorKey: zameelNavigatorKey,
-                            canOpen: () => Supabase.instance.client.auth.currentUser != null,
+                            canOpen: () =>
+                                DeviceTrust160.approvedUser ==
+                                    Supabase
+                                        .instance.client.auth.currentUser?.id &&
+                                DeviceTrust160.approvedUser != null,
                             child: child ?? const SizedBox.shrink(),
                           ),
                         ),
                       ),
-                    ),
+                    )),
                   ),
                 ),
               ),

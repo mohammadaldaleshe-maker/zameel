@@ -27,6 +27,7 @@ class MainActivity : FlutterActivity() {
     }
     override fun configureFlutterEngine(engine: io.flutter.embedding.engine.FlutterEngine) {
         super.configureFlutterEngine(engine)
+        DeviceTrust160.register(this, engine.dartExecutor.binaryMessenger)
         SharePreview157.register(this, engine.dartExecutor.binaryMessenger)
         io.flutter.plugin.common.MethodChannel(engine.dartExecutor.binaryMessenger, "zameel/uploads156").setMethodCallHandler { call, result ->
             try {

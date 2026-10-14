@@ -1,3 +1,4 @@
+import {deviceAllowed160} from '../_shared/device_gate160.mjs';
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -71,6 +72,7 @@ serve(async (req) => {
       });
     }
 
+    if (!await deviceAllowed160(authClient)) return new Response(JSON.stringify({error:"device_verification_required"}), {status:403,headers:jsonHeaders});
     const gateAdmin = createClient(gateUrl, gateServiceKey, {
       auth: { persistSession: false },
     });

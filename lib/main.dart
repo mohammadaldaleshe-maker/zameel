@@ -1,3 +1,6 @@
+import 'services/device_trust160.dart';
+import 'services/device_session_monitor160.dart';
+import 'screens/security/device_verification160.dart';
 import 'widgets/mention_content158.dart';
 import 'services/external_share156.dart';
 import 'services/post_presentation157.dart';
@@ -269,6 +272,11 @@ Future<void> _initAppLinks() async {
 final Set<String> _openingCallRooms = <String>{};
 
 Future<void> _handlePushNavigationData(Map<String, dynamic> data) async {
+  try {
+    if (!await DeviceTrust160.ready()) return;
+  } catch (_) {
+    return;
+  }
   final type = (data['notification_type'] ?? data['type'])?.toString() ?? '';
   final nav = await _waitForZameelNavigator();
   if (nav == null) return;

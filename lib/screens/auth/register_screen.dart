@@ -1,3 +1,4 @@
+import '../../services/device_trust160.dart';
 import 'package:zameel/theme/appearance_controller.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -503,6 +504,9 @@ class _EmailOtpScreenState extends State<EmailOtpScreen> {
       if (response.user != null) {
         if (!mounted) return;
 
+        if (!await DeviceTrust160.ready())
+          throw StateError('device_verification_required');
+        if (!mounted) return;
         Fluttertoast.showToast(
           msg: '✅ تم التحقق من البريد الإلكتروني بنجاح!',
           toastLength: Toast.LENGTH_LONG,

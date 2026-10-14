@@ -1,3 +1,4 @@
+import {deviceAllowed160} from '../_shared/device_gate160.mjs';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { verifyWithGoogle } from './purchase_validation.mjs';
 import { googleAccessToken, providerRequest, seal, unseal, sha256 } from './google_provider.mjs';
@@ -57,6 +58,7 @@ Deno.serve(async(req:Request)=>{
   const auth=await db.auth.getUser(authorization.slice(7));if(auth.error||!auth.data.user)return result(401,{ok:false,error:'authentication_required'});
   const uid=auth.data.user.id;
   const userDb=createClient(env('SUPABASE_URL'),env('SUPABASE_ANON_KEY'),{global:{headers:{Authorization:authorization}},auth:{persistSession:false}});
+  if(!await deviceAllowed160(userDb))return result(403,{ok:false,error:"device_verification_required"});
   if(body.action==='create') {
    let request;
    if(body.kind==='verification') request=requireData(await userDb.rpc('zameel_play_request_verification'));

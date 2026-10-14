@@ -1,3 +1,4 @@
+import {deviceAllowed160} from '../_shared/device_gate160.mjs';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { PDFDocument } from 'https://esm.sh/pdf-lib@1.17.1';
 
@@ -18,6 +19,7 @@ Deno.serve(async (request) => {
     const { data: userData, error: userError } = await client.auth.getUser();
     if (userError || !userData.user) return new Response('Unauthorized', { status: 401, headers: corsHeaders });
 
+    if (!await deviceAllowed160(client)) return new Response("device_verification_required", {status:403,headers:corsHeaders});
     const body = await request.json();
     const storagePath = String(body.storage_path ?? '');
     const logoBase64 = String(body.logo_base64 ?? '');
