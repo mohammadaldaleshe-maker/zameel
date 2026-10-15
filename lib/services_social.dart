@@ -371,6 +371,32 @@ class ZameelSocialService {
         .order('created_at', ascending: false)
         .limit(40);
     var stories = List<Map<String, dynamic>>.from(raw);
+    final sharedIds = stories
+        .where((row) => row['shared_source_kind161'] != null)
+        .map((row) => row['id'])
+        .toList();
+    if (sharedIds.isNotEmpty) {
+      final sources = Map<String, dynamic>.from(await db.rpc(
+          'zameel_shared_story_sources161',
+          params: {'p_ids': sharedIds}) as Map);
+      stories = stories.where((row) {
+        if (row['shared_source_kind161'] == null) return true;
+        final source = sources['${row['id']}'];
+        if (source is! Map) return false;
+        final media = source['media'] as List? ?? [];
+        final index = (row['shared_index161'] as num?)?.toInt() ?? 0;
+        if (media.isNotEmpty && (index < 0 || index >= media.length))
+          return false;
+        final item = media.isEmpty ? null : media[index] as Map;
+        row['media_url'] = item?['url'];
+        row['media_type'] = item?['type'] ?? 'text';
+        row['caption'] = source['text'] ?? '';
+        row['source_author_id161'] = source['author_id'];
+        row['source_author_name161'] = source['author_name'];
+        row['source_author_image161'] = source['author_image'];
+        return true;
+      }).toList();
+    }
 
     final userIds = <String>{
       id,
@@ -714,13 +740,9 @@ class ZameelSocialService {
   }
 
   static Future<void> deleteClipComment(String commentId) async {
-    final id = uid;
-    if (id == null) return;
-    await db
-        .from('clip_comments')
-        .delete()
-        .eq('id', commentId)
-        .eq('user_id', id);
+    if (uid == null) return;
+    await db.rpc('zameel_delete_comment161',
+        params: {'p_kind': 'clip', 'p_id': commentId});
   }
 
   static Future<Map<String, dynamic>?> loadClipEngagement(String clipId) async {

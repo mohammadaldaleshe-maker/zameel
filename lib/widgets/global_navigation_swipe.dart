@@ -192,6 +192,10 @@ class _GlobalNavigationSwipeState extends State<GlobalNavigationSwipe>
       _cancel();
       return;
     }
+    // Selection-handle drags and taps near the edge belong to the active
+    // editor. Opening a route here would steal its input connection.
+    final editing = FocusManager.instance.primaryFocus?.context;
+    if (editing?.findAncestorWidgetOfExactType<EditableText>() != null) return;
     if (!widget.canOpen() ||
         GlobalNavigationMenu.builder == null ||
         GlobalNavigationMenu.open ||

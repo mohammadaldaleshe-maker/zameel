@@ -1,3 +1,4 @@
+import '../../widgets/keep_keyboard_send_button.dart';
 import '../../widgets/mention_field156.dart';
 import '../../widgets/mention_content158.dart';
 import 'package:zameel/widgets/copyable_text.dart';
@@ -192,7 +193,7 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
   }
 
   Future<void> _delete(Map<String, dynamic> comment, bool ar) async {
-    if (comment['user_id']?.toString() != uid) return;
+    if (widget.clip['user_id']?.toString() != uid) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -374,6 +375,8 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
                           child: MentionTextField156(
                             controller: _controller,
                             focusNode: _focusNode,
+                            groupId: _focusNode,
+                            onEditingComplete: () {},
                             minLines: 1,
                             maxLines: 4,
                             style: TextStyle(color: AppTheme.adaptiveText),
@@ -390,20 +393,14 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
                                 borderSide: BorderSide.none,
                               ),
                             ),
-                            onSubmitted: (_) => _send(),
                           ),
                         ),
                         const SizedBox(width: 8),
-                        FloatingActionButton.small(
-                          onPressed: _sending ? null : _send,
-                          child: _sending
-                              ? const SizedBox.square(
-                                  dimension: 18,
-                                  child:
-                                      CircularProgressIndicator(strokeWidth: 2),
-                                )
-                              : const Icon(Icons.send_rounded),
-                        ),
+                        KeepKeyboardSendButton(
+                            composerFocus: _focusNode,
+                            onSend: _send,
+                            busy: _sending,
+                            enabled: !_sending),
                       ],
                     ),
                   ),
@@ -486,7 +483,7 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
                             ),
                           ),
                         ),
-                        if (mine)
+                        if (mine || widget.clip['user_id']?.toString() == uid)
                           PopupMenuButton<String>(
                             padding: EdgeInsets.zero,
                             onSelected: (value) {
@@ -497,14 +494,16 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
                               }
                             },
                             itemBuilder: (_) => [
-                              PopupMenuItem(
-                                value: 'edit',
-                                child: Text(ar ? 'تعديل' : 'Edit'),
-                              ),
-                              PopupMenuItem(
-                                value: 'delete',
-                                child: Text(ar ? 'حذف' : 'Delete'),
-                              ),
+                              if (mine)
+                                PopupMenuItem(
+                                  value: 'edit',
+                                  child: Text(ar ? 'تعديل' : 'Edit'),
+                                ),
+                              if (widget.clip['user_id']?.toString() == uid)
+                                PopupMenuItem(
+                                  value: 'delete',
+                                  child: Text(ar ? 'حذف' : 'Delete'),
+                                ),
                             ],
                           ),
                       ],

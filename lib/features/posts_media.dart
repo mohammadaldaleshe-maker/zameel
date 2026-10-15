@@ -1,5 +1,9 @@
 part of '../main.dart';
 
+int _actionCount161(dynamic value) => value is num
+    ? value.toInt().clamp(0, 2147483647)
+    : (int.tryParse('$value') ?? 0).clamp(0, 2147483647);
+
 bool _hasOrderedPostMedia(Map<String, dynamic> post) {
   final raw = post['media_items'];
   return raw is List && raw.isNotEmpty;
@@ -346,7 +350,9 @@ class _ImagePostState extends State<_ImagePost> {
             child: MentionContent158(
               (isArabic ? widget.post['text_ar'] : widget.post['text_en'])
                   .toString(),
-              kind: 'post', id: '${widget.post['id']}', header: true,
+              kind: 'post',
+              id: '${widget.post['id']}',
+              header: true,
               style: TextStyle(
                 color: AppTheme.legacyForeground,
                 fontSize: 16,
@@ -387,7 +393,6 @@ class _ImagePostState extends State<_ImagePost> {
               },
               child: SizedBox(
                 width: double.infinity,
-                height: postMediaHeight(context),
                 child: CachedMediaImage(
                   url: imageUrl,
                   fit: BoxFit.contain,
@@ -409,61 +414,26 @@ class _ImagePostState extends State<_ImagePost> {
         // COUNTERS
         // ------------------------------------------------------
         Row(
-          children: [
-            Icon(
-              Icons.favorite_rounded,
-              size: 17,
-              color: liked ? accentColor : AppTheme.legacySecondary,
-            ),
-            const SizedBox(width: 5),
-            InkWell(
-              onTap: () => _showPostLikesDialog(context, widget.post, isArabic),
-              child: Text('${widget.post['likes'] ?? 0}',
-                  style: TextStyle(
-                      color: AppTheme.legacySecondary,
-                      fontWeight: FontWeight.w700)),
-            ),
-            const SizedBox(width: 14),
-            Icon(Icons.repeat_rounded,
-                size: 16, color: AppTheme.legacySecondary),
-            const SizedBox(width: 4),
-            Text('${widget.post['shares'] ?? 0}',
-                style: TextStyle(color: AppTheme.legacySecondary)),
-            const Spacer(),
-            Text(
-              '${widget.post['comments'] ?? 0} '
-              '${Translations.translate(
-                'comments_title',
-                languageProvider.currentLanguage,
-              )}',
-              style: TextStyle(
-                color: AppTheme.legacySecondary,
-              ),
-            ),
-          ],
-        ),
-        Divider(
-          color: AppTheme.adaptiveGlassBorder,
-          height: 25,
-        ),
-        // ------------------------------------------------------
-        // ACTIONS
-        // ------------------------------------------------------
-        Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             // LIKE
             _PostAction(
+              count: _actionCount161(
+                  widget.post['likes'] ?? widget.post['likes_count']),
               icon: liked
                   ? Icons.favorite_rounded
                   : Icons.favorite_border_rounded,
               text: isArabic ? 'إعجاب' : 'Like',
+              onCountTap: () =>
+                  _showPostLikesDialog(context, widget.post, isArabic),
               active: liked,
               onTap: widget.onLike,
               color: AppTheme.legacySecondary,
             ),
             // COMMENTS
             _PostAction(
+              count: _actionCount161(
+                  widget.post['comments'] ?? widget.post['comments_count']),
               icon: Icons.comment_outlined,
               text: Translations.translate(
                 'comments_title',
@@ -534,6 +504,8 @@ class _ImagePostState extends State<_ImagePost> {
               ),
             // SHARE
             _PostAction(
+              count: _actionCount161(
+                  widget.post['shares'] ?? widget.post['shares_count']),
               icon: Icons.share_outlined,
               text: isArabic ? 'مشاركة' : 'Share',
               color: AppTheme.legacySecondary,
@@ -546,6 +518,7 @@ class _ImagePostState extends State<_ImagePost> {
             ),
           ],
         ),
+        Divider(color: AppTheme.adaptiveGlassBorder, height: 20),
       ],
     );
   }
@@ -660,7 +633,9 @@ class _VideoPostState extends State<_VideoPost> {
         const SizedBox(height: 10),
         MentionContent158(
           isArabic ? widget.post['text_ar'] : widget.post['text_en'],
-          kind: 'post', id: '${widget.post['id']}', header: true,
+          kind: 'post',
+          id: '${widget.post['id']}',
+          header: true,
           style: TextStyle(
             color: AppTheme.legacyForeground,
             fontSize: 14,
@@ -710,42 +685,25 @@ class _VideoPostState extends State<_VideoPost> {
             ),
           ),
         const SizedBox(height: 10),
-        Row(children: [
-          InkWell(
-              onTap: () => _showPostLikesDialog(context, widget.post, isArabic),
-              child: Row(children: [
-                Icon(Icons.favorite_rounded,
-                    size: 16, color: AppTheme.legacySecondary),
-                const SizedBox(width: 4),
-                Text('${widget.post['likes'] ?? 0}',
-                    style: TextStyle(
-                        color: AppTheme.legacySecondary,
-                        fontWeight: FontWeight.w700))
-              ])),
-          const SizedBox(width: 14),
-          Icon(Icons.repeat_rounded, size: 16, color: AppTheme.legacySecondary),
-          const SizedBox(width: 4),
-          Text('${widget.post['shares'] ?? 0}',
-              style: TextStyle(color: AppTheme.legacySecondary)),
-          const Spacer(),
-          Text(
-              '${widget.post['comments'] ?? 0} ${Translations.translate('comments_title', languageProvider.currentLanguage)}',
-              style: TextStyle(color: AppTheme.legacySecondary)),
-        ]),
-        Divider(color: AppTheme.adaptiveGlassBorder, height: 22),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             _PostAction(
+              count: _actionCount161(
+                  widget.post['likes'] ?? widget.post['likes_count']),
               icon: liked
                   ? Icons.favorite_rounded
                   : Icons.favorite_border_rounded,
-              text: '${widget.post['likes'] ?? 0}',
+              text: isArabic ? 'إعجاب' : 'Like',
+              onCountTap: () =>
+                  _showPostLikesDialog(context, widget.post, isArabic),
               active: liked,
               onTap: widget.onLike,
               color: AppTheme.legacySecondary,
             ),
             _PostAction(
+              count: _actionCount161(
+                  widget.post['comments'] ?? widget.post['comments_count']),
               icon: Icons.comment_rounded,
               text: '${widget.post['comments']}',
               onTap: () async {
@@ -792,6 +750,8 @@ class _VideoPostState extends State<_VideoPost> {
                 },
               ),
             _PostAction(
+              count: _actionCount161(
+                  widget.post['shares'] ?? widget.post['shares_count']),
               icon: Icons.share_rounded,
               text: isArabic ? 'مشاركة' : 'Share',
               color: AppTheme.legacySecondary,
@@ -804,6 +764,7 @@ class _VideoPostState extends State<_VideoPost> {
             ),
           ],
         ),
+        Divider(color: AppTheme.adaptiveGlassBorder, height: 20),
       ],
     );
   }
@@ -1024,40 +985,18 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
 
   Future<void> _share() async {
     final user = Supabase.instance.client.auth.currentUser;
-    final postId = widget.post['id'];
-    if (user != null && postId != null && widget.post['is_demo'] != true) {
-      try {
-        await Supabase.instance.client.from('shared_posts').upsert({
-          'post_id': postId,
-          'shared_by': user.id,
-        }, onConflict: 'post_id,shared_by');
-      } catch (_) {}
-    }
-    final currentShares =
-        _count(widget.post['shares_count'] ?? widget.post['shares']);
-    if (mounted) {
-      setState(() {
-        widget.post['shares_count'] = currentShares + 1;
-        widget.post['shares'] = currentShares + 1;
-      });
-    }
-    await SharePlus.instance.share(
-      ShareParams(
-        text:
-            '${widget.post['text_ar'] ?? widget.post['text_en'] ?? ''}${_url.isEmpty ? '' : '\n$_url'}',
-        subject: 'Zameel',
-      ),
-    );
-  }
-
-  Future<void> _copyLink() async {
-    if (_url.isEmpty) return;
-    await Clipboard.setData(ClipboardData(text: _url));
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تم نسخ الرابط ✓')),
-      );
-    }
+    final postId = widget.post['id']?.toString();
+    if (postId == null || user == null || widget.post['is_demo'] == true)
+      return;
+    await showContentShare157(context, id: postId, onProfile: () async {
+      await Supabase.instance.client.from('shared_posts').upsert(
+          {'post_id': postId, 'shared_by': user.id},
+          onConflict: 'post_id,shared_by');
+      SharedActivity156.refresh();
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('تمت المشاركة على صفحتك الشخصية')));
+    });
   }
 
   Future<void> _addComment(bool isArabic) async {
@@ -1370,13 +1309,6 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
                                 color: saved ? accentColor : Colors.white,
                               ),
                             ),
-                          if (hasMedia)
-                            IconButton(
-                              tooltip: isArabic ? 'نسخ الرابط' : 'Copy link',
-                              onPressed: _copyLink,
-                              icon:
-                                  Icon(Icons.link_rounded, color: Colors.white),
-                            ),
                         ],
                       ),
                       Row(
@@ -1385,11 +1317,13 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
                             child: TextField(
                               controller: _commentController,
                               focusNode: _commentFocus,
+                              groupId: _commentFocus,
                               minLines: 1,
                               maxLines: 3,
                               style: TextStyle(color: Colors.white),
-                              textInputAction: TextInputAction.send,
-                              onSubmitted: (_) => _addComment(isArabic),
+                              keyboardType: TextInputType.multiline,
+                              textInputAction: TextInputAction.newline,
+                              onEditingComplete: () {},
                               decoration: InputDecoration(
                                 hintText: isArabic
                                     ? 'اكتب تعليقًا...'
@@ -1407,19 +1341,11 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
                             ),
                           ),
                           const SizedBox(width: 6),
-                          IconButton.filled(
-                            onPressed: _sendingComment
-                                ? null
-                                : () => _addComment(isArabic),
-                            icon: _sendingComment
-                                ? const SizedBox(
-                                    width: 17,
-                                    height: 17,
-                                    child: CircularProgressIndicator(
-                                        strokeWidth: 2),
-                                  )
-                                : const Icon(Icons.send_rounded),
-                          ),
+                          KeepKeyboardSendButton(
+                              composerFocus: _commentFocus,
+                              onSend: () => _addComment(isArabic),
+                              enabled: !_sendingComment,
+                              busy: _sendingComment),
                         ],
                       ),
                       Align(
@@ -1569,10 +1495,14 @@ class _PostAction extends StatelessWidget {
   final bool active;
   final VoidCallback? onTap;
   final Color? color;
+  final int? count;
+  final VoidCallback? onCountTap;
 
   const _PostAction({
     required this.icon,
     required this.text,
+    this.count,
+    this.onCountTap,
     this.active = false,
     this.onTap,
     this.color,
@@ -1581,26 +1511,13 @@ class _PostAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     AppearanceScope.observe(context);
-    return InkWell(
-      onTap: onTap,
-      child: Row(
-        children: [
-          Icon(
-            icon,
-            color: active ? accentColor : (color ?? AppTheme.legacySecondary),
-            size: 22,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            text,
-            style: TextStyle(
-              color: active ? accentColor : (color ?? AppTheme.legacySecondary),
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-    );
+    return PostAction161(
+        icon: icon,
+        label: text,
+        color: active ? accentColor : (color ?? AppTheme.legacySecondary),
+        countText: count?.toString(),
+        onPressed: onTap,
+        onCountTap: onCountTap);
   }
 }
 
@@ -1739,7 +1656,9 @@ class _TextPostState extends State<_TextPost> {
           },
           child: MentionContent158(
             isArabic ? widget.post['text_ar'] : widget.post['text_en'],
-            kind: 'post', id: '${widget.post['id']}', header: true,
+            kind: 'post',
+            id: '${widget.post['id']}',
+            header: true,
             style: TextStyle(
               color: AppTheme.legacyForeground,
               fontSize: 16,
@@ -1764,50 +1683,24 @@ class _TextPostState extends State<_TextPost> {
         ],
         const SizedBox(height: 12),
         Row(
-          children: [
-            Icon(
-              Icons.favorite_rounded,
-              size: 17,
-              color: liked ? accentColor : AppTheme.legacySecondary,
-            ),
-            const SizedBox(width: 5),
-            InkWell(
-              onTap: () => _showPostLikesDialog(context, widget.post, isArabic),
-              child: Text('${widget.post['likes'] ?? 0}',
-                  style: TextStyle(
-                      color: AppTheme.legacySecondary,
-                      fontWeight: FontWeight.w700)),
-            ),
-            const SizedBox(width: 20),
-            Icon(Icons.repeat_rounded,
-                size: 16, color: AppTheme.legacySecondary),
-            const SizedBox(width: 4),
-            Text('${widget.post['shares'] ?? 0}',
-                style: TextStyle(color: AppTheme.legacySecondary)),
-            const SizedBox(width: 20),
-            Text(
-              '${widget.post['comments'] ?? 0} ${Translations.translate('comments_title', languageProvider.currentLanguage)}',
-              style: TextStyle(color: AppTheme.legacySecondary),
-            ),
-          ],
-        ),
-        Divider(
-          color: AppTheme.adaptiveGlassBorder,
-          height: 25,
-        ),
-        Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             _PostAction(
+              count: _actionCount161(
+                  widget.post['likes'] ?? widget.post['likes_count']),
               icon: liked
                   ? Icons.favorite_rounded
                   : Icons.favorite_border_rounded,
               text: isArabic ? 'إعجاب' : 'Like',
+              onCountTap: () =>
+                  _showPostLikesDialog(context, widget.post, isArabic),
               active: liked,
               onTap: widget.onLike,
               color: AppTheme.legacySecondary,
             ),
             _PostAction(
+              count: _actionCount161(
+                  widget.post['comments'] ?? widget.post['comments_count']),
               icon: Icons.comment_outlined,
               text: Translations.translate(
                 'comments_title',
@@ -1874,6 +1767,8 @@ class _TextPostState extends State<_TextPost> {
                 },
               ),
             _PostAction(
+              count: _actionCount161(
+                  widget.post['shares'] ?? widget.post['shares_count']),
               icon: Icons.share_outlined,
               text: isArabic ? 'مشاركة' : 'Share',
               color: AppTheme.legacySecondary,
@@ -1886,6 +1781,7 @@ class _TextPostState extends State<_TextPost> {
             ),
           ],
         ),
+        Divider(color: AppTheme.adaptiveGlassBorder, height: 20),
       ],
     );
   }

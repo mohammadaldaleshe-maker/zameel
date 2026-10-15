@@ -1,3 +1,4 @@
+import 'measure_content161.dart';
 import '../main.dart' show MixedPostMediaViewer;
 import 'package:zameel/theme/appearance_controller.dart';
 import 'package:flutter/material.dart';
@@ -80,6 +81,20 @@ class PostMediaGallery extends StatefulWidget {
 class _PostMediaGalleryState extends State<PostMediaGallery> {
   final PageController _controller = PageController();
   int _index = 0;
+  final Map<String, double> _imageHeights = {};
+
+  @override
+  void didUpdateWidget(covariant PostMediaGallery oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final items = postMediaItems(widget.post);
+    final next = items.isEmpty ? 0 : _index.clamp(0, items.length - 1);
+    if (next != _index) {
+      _index = next;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _controller.hasClients) _controller.jumpToPage(_index);
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -110,7 +125,10 @@ class _PostMediaGalleryState extends State<PostMediaGallery> {
           borderRadius: widget.borderRadius,
           border: Border.all(color: AppTheme.adaptiveGlassBorder, width: 1.5)),
       child: SizedBox(
-        height: widget.height,
+        height: items[_index.clamp(0, items.length - 1)].isVideo
+            ? widget.height
+            : (_imageHeights[items[_index.clamp(0, items.length - 1)].url] ??
+                widget.height),
         child: Stack(
           children: [
             PageView.builder(
@@ -161,19 +179,34 @@ class _PostMediaGalleryState extends State<PostMediaGallery> {
                               ),
                             ],
                           )
-                        : CachedMediaImage(
-                            url: item.url,
-                            fit: BoxFit.contain,
-                            fallback: Container(
-                              alignment: Alignment.center,
-                              color: AppTheme.adaptiveSurfaceAlt,
-                              child: Icon(
-                                Icons.broken_image_outlined,
-                                color: AppTheme.adaptiveSecondary,
-                                size: 50,
-                              ),
-                            ),
-                          ),
+                        : OverflowBox(
+                            alignment: Alignment.topCenter,
+                            minHeight: 0,
+                            maxHeight: double.infinity,
+                            child: MeasureContent161(
+                                onSize: (size) {
+                                  if (mounted &&
+                                      size.height > 50 &&
+                                      _imageHeights[item.url] != size.height) {
+                                    setState(() =>
+                                        _imageHeights[item.url] = size.height);
+                                  }
+                                },
+                                child: SizedBox(
+                                    width: double.infinity,
+                                    child: CachedMediaImage(
+                                      url: item.url,
+                                      fit: BoxFit.contain,
+                                      fallback: Container(
+                                        alignment: Alignment.center,
+                                        color: AppTheme.adaptiveSurfaceAlt,
+                                        child: Icon(
+                                          Icons.broken_image_outlined,
+                                          color: AppTheme.adaptiveSecondary,
+                                          size: 50,
+                                        ),
+                                      ),
+                                    )))),
                   ),
                 );
               },

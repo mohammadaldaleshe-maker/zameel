@@ -59,9 +59,9 @@ class ZameelMediaMaintenance(private val activity: MainActivity) {
                     target = uri
                     activity.contentResolver.openOutputStream(uri).use { out -> requireNotNull(out); source.inputStream().use { it.copyTo(out) } }
                     values.clear(); values.put(MediaStore.MediaColumns.IS_PENDING, 0)
-                    activity.contentResolver.update(uri, values, null, null)
+                    require(activity.contentResolver.update(uri, values, null, null) == 1)
                     activity.runOnUiThread { result.success(uri.toString()) }
-                } else activity.runOnUiThread { activity.saveExportWithPicker(source, mime, name, result) {} }
+                } else activity.runOnUiThread { activity.saveToGallery161(source, mime, name, result) {} }
             } catch (error: Exception) {
                 target?.let { activity.contentResolver.delete(it, null, null) }
                 activity.runOnUiThread { result.error("save_failed", error.message, null) }

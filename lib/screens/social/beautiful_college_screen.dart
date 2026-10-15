@@ -1,3 +1,5 @@
+import 'dart:async';
+import '../comments/college_comments161.dart';
 import 'package:zameel/theme/appearance_controller.dart';
 import 'package:zameel/widgets/verified_name.dart';
 import 'package:flutter/foundation.dart';
@@ -17,7 +19,10 @@ class BeautifulCollegeScreen extends StatefulWidget {
   State<BeautifulCollegeScreen> createState() => _BeautifulCollegeScreenState();
 }
 
-class _BeautifulCollegeScreenState extends State<BeautifulCollegeScreen> {
+class _BeautifulCollegeScreenState extends State<BeautifulCollegeScreen>
+    with WidgetsBindingObserver {
+  Timer? _cycleTimer;
+  bool _accepting = false;
   final _picker = ImagePicker();
   List<Map<String, dynamic>> _entries = [];
   Set<String> _liked = {};
@@ -28,53 +33,52 @@ class _BeautifulCollegeScreenState extends State<BeautifulCollegeScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _load();
+    _cycleTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (mounted && ModalRoute.of(context)?.isCurrent == true) _load();
+    });
+  }
+
+  @override
+  void dispose() {
+    _cycleTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) _load();
   }
 
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
       final client = Supabase.instance.client;
-      final rows = await client
-          .from('zameel_college_entries')
-          .select(
-              'id,user_id,image_path,caption,place_name,university,like_count,cycle_day,created_at,users!zameel_college_entries_user_id_fkey(name,profile_image)')
-          .order('like_count', ascending: false)
-          .order('created_at');
+      var snapshot = Map<String, dynamic>.from(
+          await client.rpc('zameel_college_snapshot161') as Map);
+      if (snapshot['selection_due'] == true && snapshot['winner_id'] == null) {
+        await client.rpc('zameel_select_college_winner',
+            params: {'p_cycle': snapshot['cycle_day']});
+        snapshot = Map<String, dynamic>.from(
+            await client.rpc('zameel_college_snapshot161') as Map);
+      }
+      final rows = List<Map<String, dynamic>>.from(snapshot['entries'] as List);
       final likes = await client
           .from('zameel_college_likes')
           .select('entry_id')
           .eq('user_id', client.auth.currentUser!.id);
-      Map<String, dynamic>? winner;
-      final today = _cycleDay();
-      final winners = await client
-          .from('zameel_college_winners')
-          .select('entry_id')
-          .eq('cycle_day', today)
-          .limit(1);
-      if ((winners as List).isNotEmpty) {
-        final id = winners.first['entry_id'].toString();
-        for (final raw in rows as List) {
-          final entry = Map<String, dynamic>.from(raw as Map);
-          if (entry['id'].toString() == id) winner = entry;
-        }
-      } else if (DateTime.now().hour >= 20) {
-        try {
-          await client
-              .rpc('zameel_select_college_winner', params: {'p_cycle': today});
-          await _load();
-          return;
-        } catch (_) {}
-      }
-      if (mounted) {
+      if (mounted)
         setState(() {
-          _entries = List<Map<String, dynamic>>.from(rows);
-          _liked = {
-            for (final row in likes as List) row['entry_id'].toString()
-          };
-          _winner = winner;
+          _entries = rows;
+          _accepting = snapshot['accepting'] == true;
+          _liked = {for (final row in likes) '${row['entry_id']}'};
+          _winner = null;
+          for (final row in rows) {
+            if (row['id'] == snapshot['winner_id']) _winner = row;
+          }
         });
-      }
     } catch (error) {
       debugPrint('BeautifulCollege load failed: $error');
       _notice('تعذر تحميل صور التحدي. حاول مرة أخرى.');
@@ -83,14 +87,8 @@ class _BeautifulCollegeScreenState extends State<BeautifulCollegeScreen> {
     }
   }
 
-  String _cycleDay() {
-    final now = DateTime.now();
-    final day = now.hour < 7 ? now.subtract(const Duration(days: 1)) : now;
-    return '${day.year.toString().padLeft(4, '0')}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}';
-  }
-
   Future<void> _createEntry() async {
-    if (DateTime.now().hour < 7 || DateTime.now().hour >= 20) {
+    if (!_accepting) {
       _notice('استقبال الصور متاح يوميًا من 7 صباحًا حتى 8 مساءً.');
       return;
     }
@@ -113,6 +111,9 @@ class _BeautifulCollegeScreenState extends State<BeautifulCollegeScreen> {
                     const InputDecoration(labelText: 'اسم الكلية أو المكان')),
             TextField(
                 controller: caption,
+                minLines: 1,
+                maxLines: 4,
+                keyboardType: TextInputType.multiline,
                 maxLength: 240,
                 decoration:
                     const InputDecoration(labelText: 'وصف قصير (اختياري)')),
@@ -231,11 +232,11 @@ class _BeautifulCollegeScreenState extends State<BeautifulCollegeScreen> {
     try {
       final response = await http.get(Uri.parse(_url(entry)));
       if (response.statusCode != 200) throw Exception('download failed');
-      final path = await SocialDailyFileService.saveDownload(
+      await SocialDailyFileService.saveDownload(
         'zameel_college_${entry['id']}.jpg',
         Uint8List.fromList(response.bodyBytes),
       );
-      _notice('تم تنزيل الصورة داخل ملفات Zameel: $path', success: true);
+      _notice('تم حفظ الصورة في الاستديو', success: true);
     } catch (_) {
       _notice('تعذر تنزيل الصورة.');
     }
@@ -247,6 +248,33 @@ class _BeautifulCollegeScreenState extends State<BeautifulCollegeScreen> {
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(
           content: Text(text), backgroundColor: success ? Colors.green : null));
+  }
+
+  Future<void> _deleteEntry(Map<String, dynamic> entry) async {
+    if (entry['user_id'] != Supabase.instance.client.auth.currentUser?.id)
+      return;
+    final ok = await showDialog<bool>(
+        context: context,
+        builder: (dialog) =>
+            AlertDialog(title: const Text('حذف مشاركتك؟'), actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(dialog, false),
+                  child: const Text('إلغاء')),
+              FilledButton(
+                  onPressed: () => Navigator.pop(dialog, true),
+                  child: const Text('حذف'))
+            ]));
+    if (ok != true || !mounted) return;
+    try {
+      await Supabase.instance.client
+          .from('zameel_college_entries')
+          .delete()
+          .eq('id', entry['id'])
+          .eq('user_id', Supabase.instance.client.auth.currentUser!.id);
+      await _load();
+    } catch (_) {
+      _notice('تعذر حذف المشاركة.');
+    }
   }
 
   Widget _entryCard(Map<String, dynamic> entry, {bool winner = false}) {
@@ -298,7 +326,22 @@ class _BeautifulCollegeScreenState extends State<BeautifulCollegeScreen> {
                             liked ? Icons.favorite : Icons.favorite_border,
                             color: liked ? Colors.red : null)),
                     Text('${entry['like_count'] ?? 0}'),
+                    IconButton(
+                        tooltip: 'التعليقات',
+                        icon: const Icon(Icons.comment_outlined),
+                        onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => CollegeComments161(
+                                    entryId: '${entry['id']}',
+                                    ownerId: '${entry['user_id']}')))),
                     const Spacer(),
+                    if (entry['user_id'] ==
+                        Supabase.instance.client.auth.currentUser?.id)
+                      IconButton(
+                          tooltip: 'حذف مشاركتي',
+                          icon: const Icon(Icons.delete_outline),
+                          onPressed: () => _deleteEntry(entry)),
                     IconButton(
                         tooltip: 'تنزيل',
                         onPressed: () => _download(entry),

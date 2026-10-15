@@ -189,9 +189,9 @@ Deno.serve(async (req) => {
           .eq("room_id", roomId)
           .maybeSingle();
         if (sessionError) throw sessionError;
-        const { data: caller } = await supabase.from("users").select("name")
+        const { data: caller } = await supabase.from("users").select("name,profile_image")
           .eq("id", session?.caller_id ?? notification.actor_id).maybeSingle();
-        nativeCallData = incomingCallData(session, notification, caller?.name);
+        nativeCallData = incomingCallData(session, notification, caller?.name, Date.now(), caller?.profile_image);
         const created = Date.parse(String(session?.created_at ?? ""));
         if (!nativeCallData || !session || session.status !== "ringing" ||
             session.callee_id !== notification.user_id ||

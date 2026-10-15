@@ -25,20 +25,4 @@ class NativeIncomingCallService {
       await _channel.invokeMethod<void>('finishDecline');
     } catch (_) {}
   }
-
-  static Future<bool> canFullScreen() async {
-    if (!supported) return true;
-    try {
-      return await _channel.invokeMethod<bool>('canFullScreen') ?? false;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  static Future<void> requestFullScreen() async {
-    if (!supported) return;
-    try {
-      await _channel.invokeMethod<void>('requestFullScreen');
-    } catch (_) {}
-  }
 }

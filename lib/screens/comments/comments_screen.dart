@@ -1,3 +1,4 @@
+import '../../widgets/keep_keyboard_send_button.dart';
 import '../../widgets/mention_field156.dart';
 import '../../widgets/mention_content158.dart';
 import 'package:image_picker/image_picker.dart';
@@ -329,7 +330,7 @@ class _CommentsScreenState extends State<CommentsScreen>
     Map<String, dynamic> comment,
     bool isArabic,
   ) async {
-    if (comment['user_id']?.toString() != uid) return;
+    if (widget.post['user_id']?.toString() != uid) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -354,11 +355,8 @@ class _CommentsScreenState extends State<CommentsScreen>
     if (confirmed != true || uid == null) return;
 
     try {
-      await db
-          .from('post_comments')
-          .delete()
-          .eq('id', comment['id'])
-          .eq('user_id', uid!);
+      await db.rpc('zameel_delete_comment161',
+          params: {'p_kind': 'post', 'p_id': comment['id']});
       if (_replyingTo?['id']?.toString() == comment['id']?.toString() &&
           mounted) {
         setState(() => _replyingTo = null);
@@ -652,24 +650,16 @@ class _CommentsScreenState extends State<CommentsScreen>
                               borderSide: BorderSide.none,
                             ),
                           ),
-                          onSubmitted: (_) => _addComment(),
                         ),
                       ),
                       const SizedBox(width: 8),
                       TextFieldTapRegion(
                         groupId: _composerFocus,
-                        child: FloatingActionButton.small(
-                          onPressed: _sending ? null : _addComment,
-                          child: _sending
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Icon(Icons.send_rounded),
-                        ),
+                        child: KeepKeyboardSendButton(
+                            composerFocus: _composerFocus,
+                            onSend: _addComment,
+                            busy: _sending,
+                            enabled: !_sending),
                       ),
                     ],
                   ),
@@ -781,7 +771,7 @@ class _CommentsScreenState extends State<CommentsScreen>
                             ),
                           ),
                         ),
-                        if (mine)
+                        if (mine || widget.post['user_id']?.toString() == uid)
                           PopupMenuButton<String>(
                             padding: EdgeInsets.zero,
                             onSelected: (value) {
@@ -792,14 +782,16 @@ class _CommentsScreenState extends State<CommentsScreen>
                               }
                             },
                             itemBuilder: (_) => [
-                              PopupMenuItem(
-                                value: 'edit',
-                                child: Text(isArabic ? 'تعديل' : 'Edit'),
-                              ),
-                              PopupMenuItem(
-                                value: 'delete',
-                                child: Text(isArabic ? 'حذف' : 'Delete'),
-                              ),
+                              if (mine)
+                                PopupMenuItem(
+                                  value: 'edit',
+                                  child: Text(isArabic ? 'تعديل' : 'Edit'),
+                                ),
+                              if (widget.post['user_id']?.toString() == uid)
+                                PopupMenuItem(
+                                  value: 'delete',
+                                  child: Text(isArabic ? 'حذف' : 'Delete'),
+                                ),
                             ],
                           ),
                       ],

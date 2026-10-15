@@ -1,3 +1,5 @@
+import '../../widgets/keep_keyboard_send_button.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:zameel/theme/appearance_controller.dart';
 import 'package:zameel/theme/app_theme.dart';
 import 'package:flutter/material.dart';
@@ -55,7 +57,12 @@ class AdvertisementCard extends StatelessWidget {
                             context,
                             MaterialPageRoute<void>(
                                 builder: (_) => PartnerAdsScreen(
-                                      partner: {if (partner is Map) ...Map<String, dynamic>.from(partner), 'id': partnerId, 'name': name},
+                                      partner: {
+                                        if (partner is Map)
+                                          ...Map<String, dynamic>.from(partner),
+                                        'id': partnerId,
+                                        'name': name
+                                      },
                                       isArabic: isArabic,
                                     )),
                           ),
@@ -190,6 +197,7 @@ class AdvertisementDetails extends StatefulWidget {
 
 class _AdvertisementDetailsState extends State<AdvertisementDetails> {
   final controller = TextEditingController();
+  final _composerFocus161 = FocusNode();
   bool liked = false;
   bool submitting = false;
   List<Map<String, dynamic>> comments = [];
@@ -225,6 +233,7 @@ class _AdvertisementDetailsState extends State<AdvertisementDetails> {
 
   @override
   void dispose() {
+    _composerFocus161.dispose();
     controller.dispose();
     super.dispose();
   }
@@ -283,16 +292,61 @@ class _AdvertisementDetailsState extends State<AdvertisementDetails> {
           ...comments.map((comment) => ListTile(
                 leading: const Icon(Icons.person_outline),
                 title: Text(comment['body']?.toString() ?? ''),
+                trailing: comment['can_delete161'] == true
+                    ? IconButton(
+                        tooltip: 'حذف التعليق',
+                        icon: const Icon(Icons.delete_outline),
+                        onPressed: () async {
+                          final ok = await showDialog<bool>(
+                              context: context,
+                              builder: (dialog) => AlertDialog(
+                                      title: const Text('حذف التعليق؟'),
+                                      actions: [
+                                        TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(dialog, false),
+                                            child: const Text('إلغاء')),
+                                        FilledButton(
+                                            onPressed: () =>
+                                                Navigator.pop(dialog, true),
+                                            child: const Text('حذف'))
+                                      ]));
+                          if (ok != true || !mounted) return;
+                          try {
+                            await Supabase.instance.client
+                                .rpc('zameel_delete_comment161', params: {
+                              'p_kind': 'advertisement',
+                              'p_id': comment['id']
+                            });
+                            final fresh = await AdvertisingService.comments(id);
+                            if (mounted) setState(() => comments = fresh);
+                          } catch (_) {
+                            if (mounted)
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content: Text('تعذر حذف التعليق')));
+                          }
+                        })
+                    : null,
               )),
           Row(children: [
             Expanded(
                 child: TextField(
                     controller: controller,
+                    focusNode: _composerFocus161,
+                    groupId: _composerFocus161,
+                    minLines: 1,
+                    maxLines: 5,
+                    keyboardType: TextInputType.multiline,
+                    textInputAction: TextInputAction.newline,
+                    onEditingComplete: () {},
                     decoration: InputDecoration(
                         hintText: ar ? 'اكتب تعليقاً' : 'Write a comment'))),
-            IconButton(
-                onPressed: submitting ? null : _comment,
-                icon: const Icon(Icons.send_rounded)),
+            KeepKeyboardSendButton(
+                composerFocus: _composerFocus161,
+                onSend: _comment,
+                enabled: !submitting,
+                busy: submitting),
           ]),
         ]),
       ),

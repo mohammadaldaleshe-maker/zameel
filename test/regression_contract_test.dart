@@ -142,7 +142,8 @@ void main() {
           activity, isNot(contains('ACTION_APP_NOTIFICATION_BUBBLE_SETTINGS')));
       expect(activity, contains('ZameelIncomingCall.setUser'));
       expect(activity, contains('ZameelIncomingCall.dismiss'));
-      expect(activity, contains('canUseFullScreenIntent()'));
+      expect(activity, isNot(contains('ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT')));
+      expect(activity, contains('finishDecline'));
     });
 
     test('cold-start chat deep links wait for the Flutter navigator', () {
@@ -364,11 +365,19 @@ void main() {
       expect(social, contains('uploadPickedPostMedia'));
     });
 
-    test('bubble removal preserves full-screen incoming call declarations', () {
+    test(
+        'incoming calls retain native notification actions without duplicate full-screen UI',
+        () {
       final manifest = _read('android/app/src/main/AndroidManifest.xml');
       expect(manifest, isNot(contains('PROPERTY_SPECIAL_USE_FGS_SUBTYPE')));
       expect(manifest, isNot(contains('android:name=".ZameelBubbleActivity"')));
-      expect(manifest, contains('android.permission.USE_FULL_SCREEN_INTENT'));
+      expect(manifest,
+          isNot(contains('android.permission.USE_FULL_SCREEN_INTENT')));
+      final native = _read(
+          'android/app/src/main/kotlin/com/zameel/app/ZameelIncomingCall.kt');
+      expect(native, contains('CallStyle.forIncomingCall'));
+      expect(native, isNot(contains('setFullScreenIntent(')));
+      expect(native, isNot(contains('setContentView(layout)')));
       expect(manifest, contains('android:name=".ZameelIncomingCallActivity"'));
       expect(manifest, contains('android.permission.FOREGROUND_SERVICE"'));
     });
@@ -402,7 +411,8 @@ void main() {
           isNot(contains("import 'dart:io'")));
 
       final coverFacade = _read('lib/services/share_cover157.dart');
-      expect(coverFacade, contains("if (dart.library.io) 'share_cover157_io.dart'"));
+      expect(coverFacade,
+          contains("if (dart.library.io) 'share_cover157_io.dart'"));
       expect(coverFacade, isNot(contains("import 'dart:io'")));
       expect(_read('lib/services/share_cover157_stub.dart'),
           isNot(contains("import 'dart:io'")));
@@ -488,7 +498,13 @@ void main() {
       expect(migration, contains('zameel_lamma_creator_member'));
       expect(radio, contains('onPlayerComplete'));
       expect(radio, contains('zameel_remove_radio_post'));
-      expect(college, contains('users!zameel_college_entries_user_id_fkey'));
+      expect(college, contains('zameel_college_snapshot161'));
+      final currentCycle =
+          _read('supabase/migrations/20261015050001_161_comments_college.sql');
+      expect(
+          currentCycle, contains('left join public.users u on u.id=e.user_id'));
+      expect(currentCycle,
+          contains('e.cycle_day=public.zameel_jordan_cycle_day()'));
       expect(lamma, contains('LammaChatScreen'));
       expect(lammaChat, contains('social_lamma_messages'));
       expect(video, contains('VideoProgressIndicator'));

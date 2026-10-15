@@ -15,13 +15,19 @@ class ChatMediaSaveService {
       messenger.showSnackBar(const SnackBar(content: Text('جارٍ حفظ الملف…')));
       final path = await MediaCacheService.localPathForUrl(url);
       if (path == null) throw StateError('download_failed');
-      await channel
+      final saved = await channel
           .invokeMethod<String>('saveOriginal', {'path': path, 'type': type});
+      if (saved == null || !saved.startsWith('content://'))
+        throw StateError('gallery_save_not_confirmed');
+      messenger.hideCurrentSnackBar();
       messenger.showSnackBar(SnackBar(
           content: Text(type == 'audio'
               ? 'تم حفظ الصوت في ملفات الصوت على الهاتف'
-              : 'تم الحفظ في الاستوديو')));
+              : type == 'video'
+                  ? 'تم حفظ الفيديو في الاستديو'
+                  : 'تم حفظ الصورة في الاستديو')));
     } catch (_) {
+      messenger.hideCurrentSnackBar();
       messenger.showSnackBar(const SnackBar(
           content: Text(
               'تعذر حفظ الملف على الهاتف. الحفظ متاح حاليًا على أندرويد.')));

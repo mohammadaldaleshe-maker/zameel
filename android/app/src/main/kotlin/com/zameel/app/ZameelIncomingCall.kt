@@ -6,11 +6,17 @@ import android.media.AudioAttributes
 import android.net.Uri
 import android.os.*
 import android.graphics.Color
+import android.graphics.BitmapFactory
+import android.graphics.drawable.Icon
+import java.net.HttpURLConnection
+import java.net.URL
+import java.util.concurrent.Executors
 import android.widget.*
 
 /** Native incoming UI works before Flutter has started. No microphone/camera
  * is opened until the user answers and Flutter validates the live session. */
 object ZameelIncomingCall {
+    private val imageWorker161 = Executors.newSingleThreadExecutor()
     private const val CHANNEL = "zameel_incoming_calls_v3"
     private const val SILENT = "zameel_incoming_calls_silent_v3"
     private fun prefs(c: Context) = c.getSharedPreferences("zameel_calls", Context.MODE_PRIVATE)
@@ -70,8 +76,10 @@ object ZameelIncomingCall {
                 .appendQueryParameter("video", video.toString())
                 .appendQueryParameter("caller_id", b.getString("caller_id"))
                 .appendQueryParameter("caller_name", name).build()
-            val target = if (action == "ring") ZameelIncomingCallActivity::class.java else MainActivity::class.java
-            val intent = Intent(Intent.ACTION_VIEW, uri, c, target).apply {
+            // Tapping the banner opens the app; only the explicit answer button accepts.
+            val intent = if (action == "ring") Intent(c, MainActivity::class.java).setAction(Intent.ACTION_MAIN)
+                else Intent(Intent.ACTION_VIEW, uri, c, MainActivity::class.java)
+            intent.apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
             }
             return PendingIntent.getActivity(c, id(room) xor action.hashCode(), intent,
@@ -85,11 +93,11 @@ object ZameelIncomingCall {
         builder.setSmallIcon(R.mipmap.ic_launcher).setContentTitle(name)
             .setContentText(if (video) "مكالمة فيديو واردة" else "مكالمة صوتية واردة")
             .setCategory(Notification.CATEGORY_CALL).setVisibility(Notification.VISIBILITY_PUBLIC)
-            .setOngoing(true).setContentIntent(ring).setFullScreenIntent(ring, true)
+            .setOngoing(true).setContentIntent(ring)
             .setOnlyAlertOnce(true)
         if (Build.VERSION.SDK_INT >= 26) builder.setTimeoutAfter(expires - now)
         if (Build.VERSION.SDK_INT >= 31) {
-            val person = Person.Builder().setName(name).setImportant(true).build()
+            val person = Person.Builder().setName(name).setImportant(true).setIcon(Icon.createWithResource(c, android.R.drawable.ic_menu_myplaces)).build()
             builder.setStyle(Notification.CallStyle.forIncomingCall(person, decline, answer).setIsVideo(video))
         } else {
             builder.addAction(Notification.Action.Builder(android.graphics.drawable.Icon.createWithResource(c, R.mipmap.ic_launcher), "رفض", decline).build())
@@ -103,85 +111,54 @@ object ZameelIncomingCall {
         if (sound) notification.flags = notification.flags or Notification.FLAG_INSISTENT
         try { manager.notify(id(room), notification) }
         catch (_: SecurityException) { dismiss(c, room) }
-        if (MainActivity.isVisible && isActive(c, room)) {
-            try { ring.send() } catch (_: PendingIntent.CanceledException) {}
+        val image = b.getString("caller_image").orEmpty()
+        if (image.isNotEmpty()) imageWorker161.execute {
+            if (!isActive(c, room)) return@execute
+            val avatar = loadCallerImage161(image)
+            if (avatar != null && isActive(c, room) && prefs(c).getString("user", null) == recipient) {
+                builder.setLargeIcon(avatar).setOnlyAlertOnce(true)
+                if (Build.VERSION.SDK_INT >= 31) {
+                    val person = Person.Builder().setName(name).setImportant(true).setIcon(Icon.createWithBitmap(avatar)).build()
+                    builder.setStyle(Notification.CallStyle.forIncomingCall(person, decline, answer).setIsVideo(video))
+                }
+                if (Build.VERSION.SDK_INT >= 26) builder.setTimeoutAfter((expires - System.currentTimeMillis()).coerceAtLeast(1))
+                val updated = builder.build()
+                if (sound) updated.flags = updated.flags or Notification.FLAG_INSISTENT
+                try { manager.notify(id(room), updated) } catch (_: SecurityException) { }
+            }
         }
         return true
     }
+    private fun loadCallerImage161(value: String): android.graphics.Bitmap? {
+        var connection: HttpURLConnection? = null
+        return try {
+            val url = URL(value)
+            if (url.protocol != "https" || url.host != "jwuqyykjmltroneqtjoc.supabase.co" || !url.path.startsWith("/storage/v1/object/") || url.userInfo != null || value.length > 1800) return null
+            connection = url.openConnection() as HttpURLConnection
+            connection.connectTimeout = 2000; connection.readTimeout = 3000
+            connection.instanceFollowRedirects = false
+            if (connection.responseCode != 200 || connection.contentLengthLong > 2_000_000L) return null
+            val bytes = connection.inputStream.use { input ->
+                val output = java.io.ByteArrayOutputStream()
+                val buffer = ByteArray(8192)
+                while (output.size() <= 2_000_000) {
+                    val read = input.read(buffer)
+                    if (read < 0) break
+                    output.write(buffer, 0, read)
+                }
+                output.toByteArray()
+            }
+            if (bytes.size > 2_000_000) return null
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+            val options = BitmapFactory.Options().apply { inSampleSize = 1 }
+            while (bounds.outWidth / options.inSampleSize > 256 || bounds.outHeight / options.inSampleSize > 256) options.inSampleSize *= 2
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+        } catch (_: Exception) { null } finally {connection?.disconnect()}
+    }
+
 }
 
 class ZameelIncomingCallActivity : Activity() {
-    private val handler = Handler(Looper.getMainLooper())
-    private var room = ""
-    private val monitor = object : Runnable {
-        override fun run() {
-            if (!ZameelIncomingCall.isActive(this@ZameelIncomingCallActivity, room)) {
-                ZameelIncomingCall.dismiss(this@ZameelIncomingCallActivity, room)
-                finish()
-            } else handler.postDelayed(this, 500)
-        }
-    }
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        if (Build.VERSION.SDK_INT >= 27) { setShowWhenLocked(true); setTurnScreenOn(true) }
-        else window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-            android.view.WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON)
-        room = intent.data?.getQueryParameter("room_id").orEmpty()
-        if (!ZameelIncomingCall.isActive(this, room)) { finish(); return }
-        val layout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = android.view.Gravity.CENTER
-            setPadding(36, 48, 36, 48)
-            setBackgroundColor(Color.rgb(18, 32, 64))
-        }
-        fun label(value: String, size: Float) = TextView(this).apply {
-            text = value; textSize = size; setTextColor(Color.WHITE)
-            gravity = android.view.Gravity.CENTER
-            setPadding(8, 24, 8, 24)
-        }
-        layout.addView(label("Zameel — زميل", 24f))
-        layout.addView(label(intent.data?.getQueryParameter("caller_name") ?: "زميل", 30f))
-        layout.addView(label(if (intent.data?.getQueryParameter("video") == "true")
-            "مكالمة فيديو واردة" else "مكالمة صوتية واردة", 20f))
-        val actions = LinearLayout(this).apply { gravity = android.view.Gravity.CENTER }
-        for ((title, action) in listOf("رفض" to "decline", "رد" to "accept")) {
-            val button = Button(this).apply {
-                text = title; textSize = 20f
-                setOnClickListener { respond(action) }
-            }
-            actions.addView(button, LinearLayout.LayoutParams(0, 90, 1f).apply { setMargins(12, 24, 12, 24) })
-        }
-        layout.addView(actions, LinearLayout.LayoutParams(-1, -2))
-        setContentView(layout)
-        handler.post(monitor)
-    }
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        setIntent(intent)
-        recreate()
-    }
-    private fun respond(action: String) {
-        if (!ZameelIncomingCall.isActive(this, room)) { finish(); return }
-        handler.removeCallbacksAndMessages(null)
-        ZameelIncomingCall.dismiss(this, room)
-        val uri = intent.data?.buildUpon()?.clearQuery()
-            ?.appendQueryParameter("room_id", room)
-            ?.appendQueryParameter("action", action)
-            ?.appendQueryParameter("video", intent.data?.getQueryParameter("video"))
-            ?.appendQueryParameter("caller_id", intent.data?.getQueryParameter("caller_id"))
-            ?.appendQueryParameter("caller_name", intent.data?.getQueryParameter("caller_name"))?.build()
-        val launch = Intent(Intent.ACTION_VIEW, uri, this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-        }
-        // Answer requires unlocking before accessing microphone/camera/session.
-        val keyguard = getSystemService(KeyguardManager::class.java)
-        if (action == "accept" && Build.VERSION.SDK_INT >= 26 && keyguard?.isKeyguardLocked == true) {
-            keyguard.requestDismissKeyguard(this, object : KeyguardManager.KeyguardDismissCallback() {
-                override fun onDismissSucceeded() { startActivity(launch); finish() }
-                override fun onDismissCancelled() { finish() }
-                override fun onDismissError() { finish() }
-            })
-        } else { startActivity(launch); finish() }
-    }
-    override fun onDestroy() { handler.removeCallbacksAndMessages(null); super.onDestroy() }
+    override fun onCreate(savedInstanceState: Bundle?) { super.onCreate(savedInstanceState); finish() }
 }

@@ -2170,6 +2170,11 @@ class _MeetingRoomScreenState extends State<MeetingRoomScreen> {
                             Expanded(
                               child: TextField(
                                 controller: _chatController,
+                                minLines: 1,
+                                maxLines: 5,
+                                keyboardType: TextInputType.multiline,
+                                textInputAction: TextInputAction.newline,
+                                onEditingComplete: () {},
                                 decoration: const InputDecoration(
                                   hintText: 'رسالة...',
                                 ),

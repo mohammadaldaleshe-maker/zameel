@@ -52,14 +52,20 @@ class WatermarkedDownloadService {
       if (path == null)
         throw StateError('تعذر تنزيل الملف؛ تحقق من اتصال الإنترنت');
       if (actor == null || actor != db.auth.currentUser?.id) return;
-      await _channel.invokeMethod<String>('export', {
+      final saved = await _channel.invokeMethod<String>('export', {
         'path': path,
         'video': media['type'] == 'video',
         'owner': media['owner'],
       });
-      if (context.mounted)
-        messenger.showSnackBar(const SnackBar(
-            content: Text('تم حفظ الملف بعلامة زميل واسم صاحب المحتوى')));
+      if (saved == null || !saved.startsWith('content://'))
+        throw StateError('gallery_save_not_confirmed');
+      if (context.mounted) {
+        messenger.hideCurrentSnackBar();
+        messenger.showSnackBar(SnackBar(
+            content: Text(media['type'] == 'video'
+                ? 'تم حفظ الفيديو في الاستديو'
+                : 'تم حفظ الصورة في الاستديو')));
+      }
     } catch (e) {
       if (context.mounted)
         messenger.showSnackBar(SnackBar(

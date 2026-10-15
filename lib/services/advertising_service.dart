@@ -118,7 +118,19 @@ class AdvertisingService {
         .eq('advertisement_id', id)
         .order('created_at', ascending: true)
         .limit(100);
-    return List<Map<String, dynamic>>.from(rows);
+    final comments = List<Map<String, dynamic>>.from(rows);
+    if (comments.isNotEmpty) {
+      final rights = await _db.rpc('zameel_comment_delete_rights161', params: {
+        'p_kind': 'advertisement',
+        'p_ids': comments.map((row) => row['id']).toList()
+      });
+      final allowed =
+          Set<String>.from((rights as List).map((value) => '$value'));
+      for (final row in comments) {
+        row['can_delete161'] = allowed.contains(row['id']);
+      }
+    }
+    return comments;
   }
 
   static Future<void> comment(String id, String body) async {

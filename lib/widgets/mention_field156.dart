@@ -53,6 +53,19 @@ class _MentionTextField156State extends State<MentionTextField156> {
   }
 
   @override
+  void didUpdateWidget(covariant MentionTextField156 oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_changed);
+      widget.controller.addListener(_changed);
+      generation++;
+      debounce?.cancel();
+      query = null;
+      rows = [];
+    }
+  }
+
+  @override
   void dispose() {
     generation++;
     debounce?.cancel();
@@ -62,7 +75,7 @@ class _MentionTextField156State extends State<MentionTextField156> {
 
   RegExpMatch? _match() {
     final pos = widget.controller.selection.baseOffset;
-    if (pos < 0) return null;
+    if (pos < 0 || pos > widget.controller.text.length) return null;
     return RegExp(r'(^|\s)@([^\s@]*)$')
         .firstMatch(widget.controller.text.substring(0, pos));
   }
@@ -118,7 +131,14 @@ class _MentionTextField156State extends State<MentionTextField156> {
             groupId: widget.groupId ?? EditableText,
             onEditingComplete: widget.onEditingComplete,
             onSubmitted: widget.onSubmitted,
-            minLines: widget.minLines,
+            keyboardType: widget.maxLines == 1
+                ? TextInputType.text
+                : TextInputType.multiline,
+            textInputAction: widget.maxLines == 1
+                ? TextInputAction.done
+                : TextInputAction.newline,
+            enableInteractiveSelection: true,
+            minLines: widget.minLines ?? 1,
             maxLines: widget.maxLines,
             maxLength: widget.maxLength,
             autofocus: widget.autofocus,

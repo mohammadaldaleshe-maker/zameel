@@ -7,8 +7,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// These values are verified against pubspec by the release contract test.
-const zameelVersion = '2.0.22';
-const zameelBuild = 31;
+const zameelVersion = '2.0.23';
+const zameelBuild = 32;
 
 class AppReleaseGate extends StatefulWidget {
   const AppReleaseGate({super.key, required this.child});

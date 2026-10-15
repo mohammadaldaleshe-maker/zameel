@@ -618,6 +618,10 @@ class _ChatDetailScreenState extends State<_ChatDetailScreen> {
                   Expanded(
                     child: TextField(
                       controller: _messageController,
+                      minLines: 1,
+                      maxLines: 5,
+                      keyboardType: TextInputType.multiline,
+                      textInputAction: TextInputAction.newline,
                       decoration: InputDecoration(
                         hintText:
                             isArabic ? 'اكتب رسالة...' : 'Type a message...',

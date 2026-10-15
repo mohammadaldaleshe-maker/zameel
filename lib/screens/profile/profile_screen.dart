@@ -1,3 +1,4 @@
+import '../../widgets/post_action161.dart';
 import '../../widgets/mention_content158.dart';
 import '../../services/post_presentation157.dart';
 import '../../widgets/friend_wall158.dart';
@@ -1589,9 +1590,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(14),
                   child: InkWell(
-                    onTap: () => _openImage(image),
+                    onTap: () => _openImage(image, post: post),
                     child: SizedBox(
-                      height: postMediaHeight(context),
+                      width: double.infinity,
                       child: CachedMediaImage(
                           url: image,
                           fit: BoxFit.contain,
@@ -1615,49 +1616,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 10),
             Row(
               children: [
-                Icon(Icons.favorite_rounded,
-                    size: 16,
-                    color:
-                        liked ? AppTheme.accent : AppTheme.adaptiveSecondary),
-                const SizedBox(width: 5),
-                InkWell(
-                  onTap: () => _showLikes(post, ar),
-                  child: Text('${post['likes_count'] ?? 0}',
-                      style: TextStyle(
-                          color: AppTheme.adaptiveSecondary,
-                          fontWeight: FontWeight.w700)),
-                ),
-                const SizedBox(width: 15),
-                Icon(Icons.chat_bubble_outline_rounded,
-                    size: 16, color: AppTheme.adaptiveSecondary),
-                const SizedBox(width: 5),
-                Text('${post['comments_count'] ?? 0}',
-                    style: TextStyle(color: AppTheme.adaptiveSecondary)),
-                const SizedBox(width: 15),
-                Icon(Icons.repeat_rounded,
-                    size: 16, color: AppTheme.adaptiveSecondary),
-                const SizedBox(width: 5),
-                Text('${post['shares_count'] ?? 0}',
-                    style: TextStyle(color: AppTheme.adaptiveSecondary)),
-                const Spacer(),
-                Text(_formatDate(post['created_at']),
-                    style: TextStyle(
-                        fontSize: 11, color: AppTheme.adaptiveSecondary)),
-              ],
-            ),
-            const Divider(height: 18),
-            Row(
-              children: [
                 Expanded(
                     child: _postAction(Icons.favorite_border_rounded,
-                        ar ? 'إعجاب' : 'Like', liked, () => _toggleLike(post))),
+                        ar ? 'إعجاب' : 'Like', liked, () => _toggleLike(post),
+                        count: post['likes_count'],
+                        onCountTap: () => _showLikes(post, ar))),
                 if (FeatureControl.instance.visible('comments'))
                   Expanded(
                       child: _postAction(
                           Icons.chat_bubble_outline_rounded,
                           ar ? 'تعليق' : 'Comment',
                           false,
-                          () => _openPost(post))),
+                          () => _openPost(post),
+                          count: post['comments_count'])),
                 if (FeatureControl.instance.visible('saved_posts'))
                   Expanded(
                       child: _postAction(Icons.bookmark_border_rounded,
@@ -1668,10 +1639,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ar ? 'مشاركة' : 'Share',
                         false,
                         () => showContentShare157(context,
-                            id: '${post['id']}',
-                            onProfile: () => _share(post)))),
+                            id: '${post['id']}', onProfile: () => _share(post)),
+                        count: post['shares_count'])),
               ],
             ),
+            const Divider(height: 18),
           ],
         ),
       ),
@@ -1679,25 +1651,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _postAction(
-          IconData icon, String label, bool active, VoidCallback onTap) =>
-      InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(10),
-          child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Column(children: [
-                Icon(active ? Icons.favorite_rounded : icon,
-                    size: 20,
-                    color:
-                        active ? AppTheme.accent : AppTheme.adaptiveSecondary),
-                const SizedBox(height: 3),
-                Text(label,
-                    style: TextStyle(
-                        fontSize: 11,
-                        color: active
-                            ? AppTheme.accent
-                            : AppTheme.adaptiveSecondary))
-              ])));
+          IconData icon, String label, bool active, VoidCallback onTap,
+          {dynamic count, VoidCallback? onCountTap}) =>
+      PostAction161(
+          icon: active ? Icons.favorite_rounded : icon,
+          label: label,
+          color: active ? AppTheme.accent : AppTheme.adaptiveSecondary,
+          countText: count?.toString(),
+          onPressed: onTap,
+          onCountTap: onCountTap,
+          iconSize: 20,
+          fontSize: 11,
+          padding: const EdgeInsets.symmetric(vertical: 12));
 
   void _openPost(Map<String, dynamic> post) => FeatureControl.instance
       .open(context, 'comments', () => CommentsScreen(post: post));
@@ -1706,13 +1671,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
       post['user_id']?.toString() ==
       Supabase.instance.client.auth.currentUser?.id;
 
-  void _openImage(String imageUrl) => Navigator.push(
+  void _openImage(String imageUrl, {Map<String, dynamic>? post}) =>
+      Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => Scaffold(
             backgroundColor: Colors.black,
             appBar: AppBar(
-                backgroundColor: Colors.black, foregroundColor: Colors.white),
+                backgroundColor: Colors.black,
+                foregroundColor: Colors.white,
+                actions: [
+                  if (post != null)
+                    IconButton(
+                        tooltip: 'مشاركة',
+                        icon: const Icon(Icons.share_outlined),
+                        onPressed: () => showContentShare157(context,
+                            id: '${post['id']}', onProfile: () => _share(post)))
+                ]),
             body: Center(
               child: InteractiveViewer(
                 minScale: .8,

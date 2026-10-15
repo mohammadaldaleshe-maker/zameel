@@ -18,7 +18,7 @@ class _DeviceSessionMonitor160State extends State<DeviceSessionMonitor160>
     with WidgetsBindingObserver {
   Timer? _timer;
   bool _checking = false, _wasApproved = false;
-  String? _user;
+  String? _user, _session161;
   @override
   void initState() {
     super.initState();
@@ -30,15 +30,18 @@ class _DeviceSessionMonitor160State extends State<DeviceSessionMonitor160>
   Future<void> _check() async {
     if (_checking) return;
     final user = Supabase.instance.client.auth.currentUser?.id;
-    if (user != _user) {
+    final session = DeviceTrust160.sessionIdentity161;
+    if (user != _user || session != _session161) {
       _user = user;
+      _session161 = session;
       _wasApproved = false;
     }
     if (user == null) return;
     _checking = true;
     try {
       final status = await DeviceTrust160.status();
-      if (Supabase.instance.client.auth.currentUser?.id != user) return;
+      if (Supabase.instance.client.auth.currentUser?.id != user ||
+          DeviceTrust160.sessionIdentity161 != session) return;
       if (status['approved'] == true) {
         _wasApproved = true;
       } else if (_wasApproved || DeviceTrust160.approvedUser == user) {

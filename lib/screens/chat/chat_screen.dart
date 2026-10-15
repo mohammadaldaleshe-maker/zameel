@@ -793,7 +793,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
 
   bool get _nearEnd => !_scroll.hasClients || _scroll.offset < 140;
   void _settleAtEnd() {
-    if (_nearEnd) _scrollToEnd(immediate: true);
+    if (!_composerFocus.hasFocus && _nearEnd) _scrollToEnd(immediate: true);
   }
 
   List<Map<String, dynamic>> get _timeline => [..._messages, ..._calls]
@@ -957,7 +957,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   Future<void> _syncChat() async {
     if (_syncing || !mounted) return;
     _syncing = true;
-    final atEnd = _nearEnd;
+    final atEnd = _nearEnd && !_composerFocus.hasFocus;
     try {
       await _reconcilePersistedMessages();
       final raw = await db.rpc('zameel_chat_calls',
@@ -968,7 +968,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                 {...Map<String, dynamic>.from(row as Map), 'call_event': true}
             ]);
       await _markRead();
-      if (atEnd) _scrollToEnd(immediate: true);
+      if (atEnd && !_composerFocus.hasFocus && _nearEnd) _scrollToEnd(immediate: true);
     } catch (_) {
       /* Realtime stays active; reconnect polling retries. */
     } finally {
@@ -1166,11 +1166,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
       return !persisted
           .any((saved) => _pendingMatchesPersisted(message, saved));
     }).toList();
-    final preserve = !_nearEnd;
-    final oldExtent =
-        _scroll.hasClients ? _scroll.position.maxScrollExtent : 0.0;
-    setState(() => _messages = [...persisted, ...localPending]);
-    if (preserve) _preserveReadingPosition(oldExtent);
+    final next = [...persisted, ...localPending];
+    // A periodic identical snapshot must not rebuild or adjust an active editor.
+    if (next.toString() == _messages.toString()) return;
+    setState(() => _messages = next);
   }
 
   void _subscribe() {
@@ -2208,9 +2207,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                                               textDirection:
                                                   ui.TextDirection.ltr,
                                               style: TextStyle(
-                                                  fontSize: 11,
+                                                  fontSize: 12,
                                                   color: mine
-                                                      ? Colors.white70
+                                                      ? Colors.white
                                                       : AppTheme
                                                           .adaptiveSecondary)),
                                           if (mine) ...[
@@ -2221,10 +2220,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                                                   : m['delivered_at'] != null
                                                       ? Icons.done_all_rounded
                                                       : Icons.done_rounded,
-                                              size: 15,
+                                              size: 16,
                                               color: m['read_at'] != null
                                                   ? Colors.cyanAccent
-                                                  : Colors.white70,
+                                                  : Colors.white,
                                             ),
                                           ],
                                         ],
@@ -2250,63 +2249,71 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
               padding: const EdgeInsets.all(10),
               child: Row(
                 children: [
-                  IconButton(
-                    tooltip: ar
-                        ? 'إرفاق صورة أو فيديو أو ملف'
-                        : 'Attach image, video or file',
-                    onPressed: _uploading ? null : _chooseAttachment,
-                    icon: _uploading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Icon(Icons.attach_file_rounded),
+                  PopupMenuButton<String>(
+                    tooltip: ar ? 'أدوات الرسالة' : 'Message tools',
+                    enabled: !_uploading,
+                    icon: const Icon(Icons.add_circle_outline_rounded),
+                    onSelected: (tool) async {
+                      if (tool == 'attachment') await _chooseAttachment();
+                      if (tool == 'voice') await _recordVoice();
+                      if (tool == 'emoji')
+                        await (() async {
+                          final emoji = await showModalBottomSheet<String>(
+                              context: context,
+                              builder: (c) => SafeArea(
+                                      child: Wrap(
+                                          children: [
+                                    '😀',
+                                    '😂',
+                                    '😍',
+                                    '🥰',
+                                    '😎',
+                                    '🤔',
+                                    '😢',
+                                    '❤️',
+                                    '👍',
+                                    '👏',
+                                    '🎉',
+                                    '🇯🇴'
+                                  ]
+                                              .map((e) => TextButton(
+                                                  onPressed: () =>
+                                                      Navigator.pop(c, e),
+                                                  child: Text(e,
+                                                      style: const TextStyle(
+                                                          fontSize: 28))))
+                                              .toList())));
+                          if (emoji == null || !mounted) return;
+                          final selection = _controller.selection;
+                          final start = selection.isValid
+                              ? selection.start
+                              : _controller.text.length;
+                          final end = selection.isValid ? selection.end : start;
+                          _controller.value = TextEditingValue(
+                              text: _controller.text
+                                  .replaceRange(start, end, emoji),
+                              selection: TextSelection.collapsed(
+                                  offset: start + emoji.length));
+                        })();
+                    },
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(
+                          value: 'attachment',
+                          child: ListTile(
+                              leading: Icon(Icons.attach_file_rounded),
+                              title: Text('صورة أو فيديو أو ملف'))),
+                      PopupMenuItem(
+                          value: 'voice',
+                          child: ListTile(
+                              leading: Icon(Icons.mic_rounded),
+                              title: Text('رسالة صوتية'))),
+                      PopupMenuItem(
+                          value: 'emoji',
+                          child: ListTile(
+                              leading: Icon(Icons.emoji_emotions_outlined),
+                              title: Text('إيموجي'))),
+                    ],
                   ),
-                  IconButton(
-                      tooltip: 'رسالة صوتية',
-                      onPressed: _uploading ? null : _recordVoice,
-                      icon: const Icon(Icons.mic_rounded)),
-                  IconButton(
-                      tooltip: 'إيموجي',
-                      icon: const Icon(Icons.emoji_emotions_outlined),
-                      onPressed: () async {
-                        final emoji = await showModalBottomSheet<String>(
-                            context: context,
-                            builder: (c) => SafeArea(
-                                    child: Wrap(
-                                        children: [
-                                  '😀',
-                                  '😂',
-                                  '😍',
-                                  '🥰',
-                                  '😎',
-                                  '🤔',
-                                  '😢',
-                                  '❤️',
-                                  '👍',
-                                  '👏',
-                                  '🎉',
-                                  '🇯🇴'
-                                ]
-                                            .map((e) => TextButton(
-                                                onPressed: () =>
-                                                    Navigator.pop(c, e),
-                                                child: Text(e,
-                                                    style: const TextStyle(
-                                                        fontSize: 28))))
-                                            .toList())));
-                        if (emoji == null || !mounted) return;
-                        final selection = _controller.selection;
-                        final start = selection.isValid
-                            ? selection.start
-                            : _controller.text.length;
-                        final end = selection.isValid ? selection.end : start;
-                        _controller.value = TextEditingValue(
-                            text: _controller.text
-                                .replaceRange(start, end, emoji),
-                            selection: TextSelection.collapsed(
-                                offset: start + emoji.length));
-                      }),
                   Expanded(
                     child: TextField(
                       controller: _controller,
@@ -2314,12 +2321,14 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                       groupId: _composerFocus,
                       focusNode: _composerFocus,
                       onChanged: _typingChanged,
-                      textInputAction: TextInputAction.send,
+                      keyboardType: TextInputType.multiline,
+                      minLines: 1,
+                      maxLines: 5,
+                      textInputAction: TextInputAction.newline,
                       onEditingComplete: () {},
                       enableInteractiveSelection: true,
                       style: TextStyle(color: AppTheme.adaptiveText),
                       cursorColor: AppTheme.primary,
-                      onSubmitted: (_) => _send(),
                       decoration: InputDecoration(
                         hintText: ar ? 'اكتب رسالة...' : 'Type a message...',
                         hintStyle: TextStyle(color: AppTheme.adaptiveSecondary),

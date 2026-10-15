@@ -1,3 +1,4 @@
+import '../../widgets/keep_keyboard_send_button.dart';
 import 'package:zameel/theme/app_theme.dart';
 import 'package:zameel/widgets/verified_name.dart';
 import 'package:flutter/material.dart';
@@ -20,6 +21,7 @@ class ProfilePhotoScreen extends StatefulWidget {
 
 class _ProfilePhotoScreenState extends State<ProfilePhotoScreen> {
   final _text = TextEditingController();
+  final _composerFocus161 = FocusNode();
   String? _photoId, _error;
   bool _loading = true,
       _busy = false,
@@ -38,6 +40,7 @@ class _ProfilePhotoScreenState extends State<ProfilePhotoScreen> {
 
   @override
   void dispose() {
+    _composerFocus161.dispose();
     _text.dispose();
     super.dispose();
   }
@@ -206,7 +209,41 @@ class _ProfilePhotoScreenState extends State<ProfilePhotoScreen> {
                                 ? user['name']?.toString() ??
                                     (arabic ? 'زميل' : 'User')
                                 : (arabic ? 'زميل' : 'User'))),
-                        subtitle: Text(c['content'].toString()));
+                        subtitle: Text(c['content'].toString()),
+                        trailing: widget.ownerId == db.auth.currentUser?.id
+                            ? IconButton(
+                                tooltip: 'حذف التعليق',
+                                icon: const Icon(Icons.delete_outline),
+                                onPressed: () async {
+                                  final confirmed = await showDialog<bool>(
+                                      context: context,
+                                      builder: (dialog) => AlertDialog(
+                                              title: const Text('حذف التعليق؟'),
+                                              actions: [
+                                                TextButton(
+                                                    onPressed: () =>
+                                                        Navigator.pop(
+                                                            dialog, false),
+                                                    child: const Text('إلغاء')),
+                                                FilledButton(
+                                                    onPressed: () =>
+                                                        Navigator.pop(
+                                                            dialog, true),
+                                                    child: const Text('حذف'))
+                                              ]));
+                                  if (confirmed != true || !mounted) return;
+                                  try {
+                                    await db.rpc('zameel_delete_comment161',
+                                        params: {
+                                          'p_kind': 'photo',
+                                          'p_id': c['id']
+                                        });
+                                    await _loadComments(reset: true);
+                                  } catch (_) {
+                                    _failure();
+                                  }
+                                })
+                            : null);
                   }),
               if (_more)
                 SliverToBoxAdapter(
@@ -232,6 +269,9 @@ class _ProfilePhotoScreenState extends State<ProfilePhotoScreen> {
                             Expanded(
                                 child: TextField(
                                     controller: _text,
+                                    focusNode: _composerFocus161,
+                                    groupId: _composerFocus161,
+                                    onEditingComplete: () {},
                                     maxLength: 2000,
                                     minLines: 1,
                                     maxLines: 3,
@@ -240,9 +280,11 @@ class _ProfilePhotoScreenState extends State<ProfilePhotoScreen> {
                                             ? 'اكتب تعليقًا…'
                                             : 'Write a comment…',
                                         counterText: ''))),
-                            IconButton(
-                                onPressed: _busy ? null : _comment,
-                                icon: const Icon(Icons.send))
+                            KeepKeyboardSendButton(
+                                composerFocus: _composerFocus161,
+                                onSend: _comment,
+                                enabled: !_busy,
+                                busy: _busy)
                           ])))
                   : null,
         ));

@@ -707,7 +707,11 @@ class _LiveKitMeetingRoomScreenState extends State<LiveKitMeetingRoomScreen> {
                 Expanded(
                   child: TextField(
                     controller: _chatController,
-                    onSubmitted: (_) => _sendChat(),
+                    minLines: 1,
+                    maxLines: 5,
+                    keyboardType: TextInputType.multiline,
+                    textInputAction: TextInputAction.newline,
+                    onEditingComplete: () {},
                     decoration: InputDecoration(
                       hintText:
                           ar ? 'رسالة للاجتماع...' : 'Message the meeting...',

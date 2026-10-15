@@ -106,7 +106,9 @@ class _StoriesWidgetState extends State<StoriesWidget>
     final userId = ZameelSocialService.uid;
     if (userId == null || widget.friendsOnly) return;
     await _loadSeen();
-    final cached = await HomeSnapshotService.read(userId, 'stories');
+    final cached = (await HomeSnapshotService.read(userId, 'stories'))
+        .where((row) => row['shared_source_kind161'] == null)
+        .toList();
     for (final story in cached) {
       story['viewed'] = _seenIds.contains('${story['id']}');
     }
@@ -1240,6 +1242,7 @@ class _StoryViewScreenState extends State<StoryViewScreen>
   }
 
   late final PageController _pageController;
+  bool _paused161 = false;
   late int _currentIndex;
   bool _deleting = false;
   final Set<String> _reactedStories = <String>{};
@@ -1700,7 +1703,8 @@ class _StoryViewScreenState extends State<StoryViewScreen>
                                 if (mounted && index == _currentIndex)
                                   _goNext();
                               },
-                              active: index == _currentIndex &&
+                              active: !_paused161 &&
+                                  index == _currentIndex &&
                                   _routeVisible &&
                                   _foreground,
                               pausedForReport: _reporting,
@@ -1873,6 +1877,58 @@ class _StoryViewScreenState extends State<StoryViewScreen>
               ]),
             ),
           ),
+          if (current['source_author_id161'] != null)
+            Positioned(
+              top: MediaQuery.paddingOf(context).top + 78,
+              left: 16,
+              right: 70,
+              child: Material(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(14),
+                child: InkWell(
+                    onTap: () async {
+                      if (mounted) setState(() => _paused161 = true);
+                      try {
+                        await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => ProfileScreen(
+                                    userId:
+                                        '${current['source_author_id161']}')));
+                      } finally {
+                        if (mounted) setState(() => _paused161 = false);
+                      }
+                    },
+                    child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Row(children: [
+                          CircleAvatar(
+                              radius: 17,
+                              backgroundImage: (current[
+                                                  'source_author_image161']
+                                              ?.toString() ??
+                                          '')
+                                      .isEmpty
+                                  ? null
+                                  : NetworkImage(
+                                      '${current['source_author_image161']}'),
+                              child: (current['source_author_image161']
+                                              ?.toString() ??
+                                          '')
+                                      .isEmpty
+                                  ? const Icon(Icons.person)
+                                  : null),
+                          const SizedBox(width: 8),
+                          Expanded(
+                              child: Text(
+                                  'منشور ${current['source_author_name161'] ?? 'زميل'}',
+                                  maxLines: 2,
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold)))
+                        ]))),
+              ),
+            ),
           Positioned(
             top: MediaQuery.paddingOf(context).top + 22,
             right: 14,

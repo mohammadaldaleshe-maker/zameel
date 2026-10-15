@@ -94,12 +94,12 @@ class WatermarkedMediaExporter(private val activity: MainActivity) {
                         try {
                             activity.contentResolver.openOutputStream(uri)!!.use { dest -> output.inputStream().use { it.copyTo(dest) } }
                             values.clear(); values.put(MediaStore.MediaColumns.IS_PENDING, 0)
-                            activity.contentResolver.update(uri, values, null, null)
+                            require(activity.contentResolver.update(uri, values, null, null) == 1)
                         } catch (e: Throwable) { activity.contentResolver.delete(uri, null, null); throw e }
                         output.delete()
                         main.post { busy = false; result.success(uri.toString()) }
                     } else {
-                        main.post { activity.saveExportWithPicker(output, if(video) "video/mp4" else "image/jpeg", name, result) { busy = false } }
+                        main.post { activity.saveToGallery161(output, if(video) "video/mp4" else "image/jpeg", name, result) { busy = false } }
                     }
                 } catch (e: Throwable) { main.post { failure(e) } }
             }

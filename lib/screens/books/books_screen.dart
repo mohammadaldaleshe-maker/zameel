@@ -537,7 +537,8 @@ class _BooksScreenState extends State<BooksScreen> {
       if (!mounted || row == null) return;
       setState(() {
         _accountType = row['account_type']?.toString();
-        if (_accountType == 'graduate' || _accountType == 'general') _bookScope = 'all';
+        if (_accountType == 'graduate' || _accountType == 'general')
+          _bookScope = 'all';
         _myUniversity = row['university']?.toString().trim() ?? '';
         _myCollege = row['college']?.toString().trim() ?? '';
         _myDepartment = row['department']?.toString().trim() ?? '';
@@ -1311,12 +1312,17 @@ class _BooksScreenState extends State<BooksScreen> {
                     DropdownButton<String>(
                       value: _bookScope,
                       items: [
-                        if (_accountType != 'graduate' && _accountType != 'general') DropdownMenuItem(
-                            value: 'college',
-                            child: Text(isArabic ? 'كليتي' : 'My college')),
-                        if (_accountType != 'graduate' && _accountType != 'general') DropdownMenuItem(
-                            value: 'university',
-                            child: Text(isArabic ? 'جامعتي' : 'My university')),
+                        if (_accountType != 'graduate' &&
+                            _accountType != 'general')
+                          DropdownMenuItem(
+                              value: 'college',
+                              child: Text(isArabic ? 'كليتي' : 'My college')),
+                        if (_accountType != 'graduate' &&
+                            _accountType != 'general')
+                          DropdownMenuItem(
+                              value: 'university',
+                              child:
+                                  Text(isArabic ? 'جامعتي' : 'My university')),
                         DropdownMenuItem(
                             value: 'all',
                             child: Text(isArabic ? 'الكل' : 'All')),
@@ -2561,6 +2567,11 @@ class _BookExchangeChatScreenState extends State<BookExchangeChatScreen> {
                     Expanded(
                         child: TextField(
                             controller: _controller,
+                            minLines: 1,
+                            maxLines: 5,
+                            keyboardType: TextInputType.multiline,
+                            textInputAction: TextInputAction.newline,
+                            onEditingComplete: () {},
                             decoration: InputDecoration(
                                 hintText: ar
                                     ? 'اكتب للتنسيق حول التسليم…'

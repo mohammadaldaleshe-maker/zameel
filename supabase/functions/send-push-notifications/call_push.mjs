@@ -1,10 +1,16 @@
-export function incomingCallData(session, notification, callerName, now = Date.now()) {
+export function incomingCallData(session, notification, callerName, now = Date.now(), callerImage = '') {
   const created = Date.parse(String(session?.created_at ?? ''));
   if (!session || session.status !== 'ringing' ||
       session.callee_id !== notification.user_id ||
       String(session.room_id) !== String(notification.data?.room_id) ||
       !Number.isFinite(created) || created > now || now - created >= 45_000) return null;
+  let image = '';
+  try {
+    const url = new URL(String(callerImage));
+    if (url.protocol === 'https:' && url.hostname.endsWith('.supabase.co') && !url.username && !url.password && url.pathname.startsWith('/storage/v1/object/') && url.href.length <= 1800) image = url.href;
+  } catch (_) { /* Missing photo uses the native default avatar. */ }
   return {
+    ...(image ? {caller_image: image} : {}),
     recipient_id: String(session.callee_id),
     caller_id: String(session.caller_id),
     caller_name: String(callerName || 'زميل').slice(0, 80),

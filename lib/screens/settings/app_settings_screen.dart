@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/language_provider.dart';
@@ -61,17 +62,18 @@ class AppSettingsScreen extends StatelessWidget {
               title:
                   Text(ar ? 'عرض المكالمات الواردة' : 'Incoming call display'),
               subtitle: Text(ar
-                  ? 'السماح بظهور شاشة الرد أثناء قفل الهاتف'
-                  : 'Allow the answer screen on the lock screen'),
+                  ? 'إشعار باسم وصورة المتصل مع الرد والرفض'
+                  : 'Caller notification with answer and decline'),
               onTap: () async {
-                final allowed = await NativeIncomingCallService.canFullScreen();
-                if (!allowed) {
-                  await NativeIncomingCallService.requestFullScreen();
-                } else if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: Text(ar
-                          ? 'عرض المكالمات بملء الشاشة مسموح'
-                          : 'Full-screen incoming calls are allowed')));
+                try {
+                  await const MethodChannel('zameel/notification_settings')
+                      .invokeMethod<void>('open');
+                } catch (_) {
+                  if (context.mounted)
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text(ar
+                            ? 'افتح إعدادات إشعارات زميل من إعدادات الهاتف'
+                            : 'Open Zameel notifications in phone settings')));
                 }
               },
             )),

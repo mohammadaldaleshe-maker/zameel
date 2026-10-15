@@ -398,6 +398,11 @@ class _TrustGameScreenState extends State<TrustGameScreen>
                 Expanded(
                   child: TextField(
                     controller: _message,
+                    minLines: 1,
+                    maxLines: 5,
+                    keyboardType: TextInputType.multiline,
+                    textInputAction: TextInputAction.newline,
+                    onEditingComplete: () {},
                     maxLength: 500,
                     onChanged: (_) {
                       if (_pendingMessageId != null) _pendingMessageId = null;

@@ -1,7 +1,19 @@
+import 'dart:math';
+import 'feature_control.dart';
+import 'background_publish156.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+String shareRequestId161() {
+  final random = Random.secure();
+  final bytes = List<int>.generate(16, (_) => random.nextInt(256));
+  bytes[6] = (bytes[6] & 15) | 64;
+  bytes[8] = (bytes[8] & 63) | 128;
+  final h = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+  return '${h.substring(0, 8)}-${h.substring(8, 12)}-${h.substring(12, 16)}-${h.substring(16, 20)}-${h.substring(20)}';
+}
 
 String publicContentLink157(String kind, String id) {
   if (!const ['post', 'clip'].contains(kind) ||
@@ -12,7 +24,7 @@ String publicContentLink157(String kind, String id) {
   return 'https://zameeljo.com/s/$kind/${id.toLowerCase()}';
 }
 
-Future<String> _checkedLink157(String kind, String id) async {
+Future<String> checkedContentLink161(String kind, String id) async {
   final link = publicContentLink157(kind, id);
   final row = await Supabase.instance.client
       .from(kind == 'clip' ? 'clips' : 'posts')
@@ -51,6 +63,10 @@ Future<void> showContentShare157(
           title: const Text('على صفحتي الشخصية'),
           onTap: () => Navigator.pop(sheet, 'profile')),
       ListTile(
+          leading: const Icon(Icons.auto_stories_outlined),
+          title: const Text('المشاركة إلى حالتي'),
+          onTap: () => Navigator.pop(sheet, 'story')),
+      ListTile(
           leading: const Icon(Icons.share_outlined),
           title: const Text('المشاركة خارج التطبيق'),
           onTap: () => Navigator.pop(sheet, 'external')),
@@ -66,7 +82,20 @@ Future<void> showContentShare157(
       await onProfile();
       return;
     }
-    final link = await _checkedLink157(kind, id);
+    if (choice == 'story') {
+      if (!await FeatureControl.instance.check(context, 'stories')) return;
+      await Supabase.instance.client.rpc('zameel_share_story161', params: {
+        'p_kind': kind,
+        'p_id': id,
+        'p_request': shareRequestId161()
+      });
+      BackgroundPublish156.revision.value++;
+      if (context.mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('تمت المشاركة إلى حالتك')));
+      return;
+    }
+    final link = await checkedContentLink161(kind, id);
     if (!context.mounted) return;
     if (choice == 'copy') {
       await Clipboard.setData(ClipboardData(text: link));

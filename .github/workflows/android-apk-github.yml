@@ -100,6 +100,7 @@ jobs:
           node --test verification/play_provider_146_test.mjs verification/play_purchase_146_test.mjs
           npm ci --prefix verification --ignore-scripts
           npm run test:153 --prefix verification
+          node verification/call_avatar_161_test.mjs
 
       - name: Build universal and device-specific APKs
         shell: bash
