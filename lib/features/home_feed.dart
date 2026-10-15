@@ -28,7 +28,8 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
   List<Map<String, dynamic>> savedPosts = [];
   List<Map<String, dynamic>> posts = [];
   List<Map<String, dynamic>> _promotedPosts = [];
-  Timer? _promotionExpiry;
+  bool _promotionsReady162 = false, _adsReady162 = false;
+  int _campaignBatch162 = 0;
   int _postsRequestVersion = 0;
   bool _networkFeedShown = false;
   List<Map<String, dynamic>> _advertisements = [];
@@ -81,8 +82,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
     // Starting both at once caused fast responses to discard the snapshot and
     // left users staring at the loading indicator on every app launch.
     _openFeed();
-    _loadAdvertisements();
-    _loadPromotions();
+    _loadCampaigns162();
     _loadUnreadNotifications();
     _subscribeToNotifications();
     _subscribeToFeedUpdates();
@@ -107,8 +107,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
 
   void _onFeatureChange() {
     if (mounted) setState(() {});
-    _loadAdvertisements();
-    _loadPromotions();
+    _loadCampaigns162();
   }
 
   void _startFeedRefreshTimer() {
@@ -119,8 +118,6 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
       const Duration(minutes: 10),
       (_) {
         _loadPosts(silent: true);
-        _loadAdvertisements();
-        _loadPromotions();
       },
     );
   }
@@ -136,7 +133,11 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
     }
   }
 
-  Future<void> _loadAdvertisements() {
+  Future<void> _loadAdvertisements({bool refresh = false}) {
+    if (_adsReady162 &&
+        !refresh &&
+        FeatureControl.instance.enabled('partner_advertising'))
+      return Future<void>.value();
     return _adsPending ??= _refreshAdvertisements().whenComplete(
       () => _adsPending = null,
     );
@@ -146,6 +147,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
     final userId = Supabase.instance.client.auth.currentUser?.id;
     if (userId == null) return;
     if (!FeatureControl.instance.enabled('partner_advertising')) {
+      _adsReady162 = false;
       if (mounted && _advertisements.isNotEmpty)
         setState(() => _advertisements = []);
       return;
@@ -161,9 +163,10 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
       }
     }
     try {
-      final loaded = await AdvertisingService.liveAds(limit: 12)
+      final loaded = await AdvertisingService.liveAds(limit: 50)
           .timeout(const Duration(seconds: 15));
       if (mounted && Supabase.instance.client.auth.currentUser?.id == userId) {
+        _adsReady162 = true;
         setState(
           () => _advertisements =
               FeatureControl.instance.enabled('partner_advertising')
@@ -584,13 +587,47 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
     if (result != null && result.isNotEmpty) await _saveArcShortcuts(result);
   }
 
+  Future<void>? _campaignPending162;
+  List<String> _campaignOrder162 = [];
+  Future<void> _loadCampaigns162({bool refresh = false}) {
+    if (!refresh &&
+        _promotionsReady162 &&
+        _adsReady162 &&
+        FeatureControl.instance.enabled('post_promotions') &&
+        FeatureControl.instance.enabled('partner_advertising'))
+      return Future<void>.value();
+    return _campaignPending162 ??= _refreshCampaigns162(refresh)
+        .whenComplete(() => _campaignPending162 = null);
+  }
+
+  Future<void> _refreshCampaigns162(bool refresh) async {
+    final db = Supabase.instance.client;
+    final actor = db.auth.currentUser?.id;
+    if (actor == null) return;
+    try {
+      final order = await db
+          .rpc('zameel_campaign_order162')
+          .timeout(const Duration(seconds: 10));
+      if (!mounted || db.auth.currentUser?.id != actor) return;
+      _campaignOrder162 = List<String>.from(order as List);
+      await Future.wait([
+        _loadAdvertisements(refresh: refresh),
+        _loadPromotions(refresh: refresh)
+      ]);
+    } catch (_) {/* Retain the current visible batch on network failures. */}
+  }
+
   bool _promotionsLoading = false;
 
-  Future<void> _loadPromotions() async {
+  Future<void> _loadPromotions({bool refresh = false}) async {
+    if (_promotionsReady162 &&
+        !refresh &&
+        FeatureControl.instance.enabled('post_promotions')) return;
     if (_promotionsLoading) return;
     final db = Supabase.instance.client;
     final user = db.auth.currentUser?.id;
     if (user == null || !FeatureControl.instance.enabled('post_promotions')) {
+      _promotionsReady162 = false;
       if (mounted) setState(() => _promotedPosts = []);
       return;
     }
@@ -614,34 +651,21 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
                   .or('is_hidden.eq.false,is_hidden.is.null')
                   .timeout(const Duration(seconds: 8)),
             );
+      await hydratePostLikes161(db, user, rows)
+          .timeout(const Duration(seconds: 8));
       if (!mounted || db.auth.currentUser?.id != user) return;
-      final expiry = {
-        for (final r in active) r['post_id'].toString(): r['ends_at'],
-      };
-      setState(
-        () => _promotedPosts = [
-          for (final row in rows)
-            {...row, 'promotion_ends_at': expiry[row['id'].toString()]},
-        ],
-      );
-      _promotionExpiry?.cancel();
-      final deadlines = active
-          .map((r) => DateTime.tryParse('${r['ends_at']}'))
-          .whereType<DateTime>()
-          .toList()
-        ..sort();
-      if (deadlines.isNotEmpty) {
-        final delay = deadlines.first.difference(DateTime.now());
-        _promotionExpiry = Timer(delay.isNegative ? Duration.zero : delay, () {
-          if (mounted) {
-            setState(() {});
-            _loadPromotions();
-          }
-        });
-      }
+      final byId = {for (final row in rows) '${row['id']}': row};
+      _promotionsReady162 = true;
+      setState(() => _promotedPosts = [
+            for (final campaign in active)
+              if (byId['${campaign['post_id']}'] != null)
+                {
+                  ...byId['${campaign['post_id']}']!,
+                  'promotion_ends_at': campaign['ends_at']
+                },
+          ]);
     } catch (_) {
-      if (mounted && db.auth.currentUser?.id == user)
-        setState(() => _promotedPosts = []);
+      // A transient request failure must not remove an already displayed batch.
     } finally {
       _promotionsLoading = false;
     }
@@ -650,20 +674,13 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
   List<Map<String, dynamic>> get _visiblePosts {
     final promoted = FeatureControl.instance.enabled('post_promotions')
         ? _promotedPosts
-            .where(
-              (r) =>
-                  DateTime.tryParse('${r['promotion_ends_at']}')
-                      ?.isAfter(DateTime.now()) ==
-                  true,
-            )
-            .toList()
+        : <Map<String, dynamic>>[];
+    final partnerAds = FeatureControl.instance.enabled('partner_advertising')
+        ? _advertisements
         : <Map<String, dynamic>>[];
     if (_feedScope == 'global') {
-      return arrangeSponsoredFeed(
-        posts,
-        promoted,
-        Supabase.instance.client.auth.currentUser?.id,
-      );
+      return arrangeCampaignFeed162(posts, promoted, partnerAds,
+          order: _campaignOrder162);
     }
     final university = widget.university.name.trim().toLowerCase();
     final college = widget.college.name.trim().toLowerCase();
@@ -690,11 +707,8 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
           department.isNotEmpty &&
           postDepartment == department;
     }).toList();
-    return arrangeSponsoredFeed(
-      scoped,
-      promoted,
-      Supabase.instance.client.auth.currentUser?.id,
-    );
+    return arrangeCampaignFeed162(scoped, promoted, partnerAds,
+        order: _campaignOrder162);
   }
 
   void _uploadChanged156() {
@@ -713,7 +727,6 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
     _notificationsChannel?.unsubscribe();
     _feedReloadDebounce?.cancel();
     _feedRefreshTimer?.cancel();
-    _promotionExpiry?.cancel();
     _postsChannel?.unsubscribe();
     BackgroundPublish156.revision.removeListener(_uploadChanged156);
     _feedScrollController.dispose();
@@ -732,7 +745,6 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
         state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached) {
       _feedRefreshTimer?.cancel();
-      _promotionExpiry?.cancel();
     }
   }
 
@@ -764,7 +776,16 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
           event: PostgresChangeEvent.all,
           schema: 'public',
           table: 'posts',
-          callback: (_) {
+          callback: (payload) {
+            final row = payload.newRecord;
+            final id = row['id'] ?? payload.oldRecord['id'];
+            if (payload.eventType == PostgresChangeEvent.delete ||
+                row['is_hidden'] == true ||
+                (row.containsKey('audience') && row['audience'] != 'public')) {
+              if (mounted)
+                setState(
+                    () => _promotedPosts.removeWhere((p) => p['id'] == id));
+            }
             _feedReloadDebounce?.cancel();
             _feedReloadDebounce = Timer(
               const Duration(milliseconds: 350),
@@ -772,6 +793,37 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
             );
           },
         )
+        .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'advertisements',
+            callback: (payload) {
+              final row = payload.newRecord;
+              final id = row['id'] ?? payload.oldRecord['id'];
+              if (payload.eventType == PostgresChangeEvent.delete ||
+                  row['is_hidden'] == true ||
+                  row['deleted_at'] != null ||
+                  ['stopped', 'deleted'].contains(row['status'])) {
+                if (mounted)
+                  setState(() =>
+                      _advertisements.removeWhere((ad) => ad['id'] == id));
+              }
+            })
+        .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'business_partners',
+            callback: (payload) {
+              final row = payload.newRecord;
+              final id = row['id'] ?? payload.oldRecord['id'];
+              if (payload.eventType == PostgresChangeEvent.delete ||
+                  row['is_active'] == false ||
+                  row['deleted_at'] != null) {
+                if (mounted)
+                  setState(() => _advertisements
+                      .removeWhere((ad) => ad['partner_id'] == id));
+              }
+            })
         .subscribe();
   }
 
@@ -1016,7 +1068,6 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
   }
 
   Future<void> _loadPosts({bool silent = false}) {
-    unawaited(_loadPromotions());
     return _postsPending ??=
         _fetchPosts(silent: silent).whenComplete(() => _postsPending = null);
   }
@@ -1388,6 +1439,8 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
   // الإعجاب بمنشور
   // ============================================================
 
+  final Set<String> _likeRequests161 = <String>{};
+
   Future<void> _toggleLike(
     int index, {
     Map<String, dynamic>? postOverride,
@@ -1398,6 +1451,8 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
     final postId = post['id'];
     if (user == null || postId == null) return;
 
+    final key161 = '$postId';
+    if (!_likeRequests161.add(key161)) return;
     final wasLiked = post['liked'] == true;
     final oldCount = ((post['likes_count'] ?? 0) as num).toInt();
 
@@ -1408,19 +1463,21 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
           wasLiked ? (oldCount > 0 ? oldCount - 1 : 0) : oldCount + 1;
     });
 
-    if (post['is_demo'] == true) return;
+    if (post['is_demo'] == true) {
+      _likeRequests161.remove(key161);
+      return;
+    }
 
     try {
       final db = Supabase.instance.client;
-      if (wasLiked) {
-        await db
-            .from('likes')
-            .delete()
-            .eq('user_id', user.id)
-            .eq('post_id', postId);
-      } else {
-        await db.from('likes').upsert({'user_id': user.id, 'post_id': postId});
-      }
+      final result = await setPostLike161(db,
+          userId: user.id, postId: '$postId', liked: !wasLiked);
+      if (!mounted) return;
+      setState(() {
+        post['liked'] = !wasLiked;
+        post['likes_count'] = result.displayCount(oldCount, liked: !wasLiked);
+        post['likes'] = post['likes_count'];
+      });
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -1432,6 +1489,8 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
           content: Text(FeatureControl.errorMessage(e, 'تعذر تحديث الإعجاب')),
         ),
       );
+    } finally {
+      _likeRequests161.remove(key161);
     }
   }
 
@@ -2805,11 +2864,25 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
         ),
       );
     } else {
-      var ordinaryAdSlots = 0;
-      var partnerAdIndex = 0;
       for (var postIndex = 0; postIndex < visiblePosts.length; postIndex++) {
         final post = visiblePosts[postIndex];
-        final promoted = post['promotion_ends_at'] != null;
+        if (post['_partner_campaign162'] == true) {
+          children.add(AdvertisementCard(
+            key: ValueKey('ad_${_campaignBatch162}_${post['id']}'),
+            ad: post,
+            isArabic: isArabic,
+            onHide: () async {
+              await AdvertisingService.hide('${post['id']}');
+              final user = Supabase.instance.client.auth.currentUser?.id;
+              if (user != null)
+                await HomeSnapshotService.clear(user, section: 'ads');
+              if (mounted)
+                setState(() =>
+                    _advertisements.removeWhere((a) => a['id'] == post['id']));
+            },
+          ));
+          continue;
+        }
         final userData = post['users'] is Map
             ? Map<String, dynamic>.from(post['users'])
             : {};
@@ -2819,21 +2892,22 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: CompactPost(
             child: _PostCard(
-              post: {
-                ...post,
-                'name_ar': userData['name'] ?? 'مستخدم',
-                'name_en': userData['name'] ?? 'User',
-                'department_ar': userData['department'] ?? widget.department,
-                'department_en': userData['department'] ?? widget.department,
-                'time_ar': _formatTime(post['created_at']?.toString()),
-                'time_en': _formatTime(post['created_at']?.toString()),
-                'likes': post['likes_count'] ?? 0,
-                'comments': post['comments_count'] ?? 0,
-                'shares': post['shares_count'] ?? 0,
-                'profile_image': userData['profile_image'],
-                'verification_expires_at': userData['verification_expires_at'],
-                'liked': isLiked,
-              },
+              post: post
+                ..addAll({
+                  'name_ar': userData['name'] ?? 'مستخدم',
+                  'name_en': userData['name'] ?? 'User',
+                  'department_ar': userData['department'] ?? widget.department,
+                  'department_en': userData['department'] ?? widget.department,
+                  'time_ar': _formatTime(post['created_at']?.toString()),
+                  'time_en': _formatTime(post['created_at']?.toString()),
+                  'likes': post['likes_count'] ?? 0,
+                  'comments': post['comments_count'] ?? 0,
+                  'shares': post['shares_count'] ?? 0,
+                  'profile_image': userData['profile_image'],
+                  'verification_expires_at':
+                      userData['verification_expires_at'],
+                  'liked': isLiked,
+                }),
               onLike: () =>
                   _toggleLike(posts.indexOf(post), postOverride: post),
               savedPosts: savedPosts,
@@ -2847,7 +2921,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
         if (post['promotion_ends_at'] != null) {
           children.add(
             SponsoredExposure(
-              key: ValueKey('sponsored_${post['id']}'),
+              key: ValueKey('sponsored_${_campaignBatch162}_${post['id']}'),
               postId: post['id'].toString(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2863,38 +2937,6 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
           );
         } else {
           children.add(postCard);
-        }
-        if (!promoted) ordinaryAdSlots++;
-        final nextIsSponsored = postIndex + 1 < visiblePosts.length &&
-            _promotedPosts
-                .any((p) => p['id'] == visiblePosts[postIndex + 1]['id']);
-        if (!promoted &&
-            ordinaryAdSlots % 6 == 0 &&
-            !nextIsSponsored &&
-            FeatureControl.instance.enabled('partner_advertising')) {
-          final adIndex = partnerAdIndex++;
-          if (adIndex < _advertisements.length) {
-            final ad = _advertisements[adIndex];
-            children.add(
-              AdvertisementCard(
-                key: ValueKey('ad_${ad['id']}'),
-                ad: ad,
-                isArabic: isArabic,
-                onHide: () async {
-                  await AdvertisingService.hide(ad['id'].toString());
-                  final userId = Supabase.instance.client.auth.currentUser?.id;
-                  if (userId != null)
-                    await HomeSnapshotService.clear(userId, section: 'ads');
-                  if (mounted)
-                    setState(
-                      () => _advertisements.removeWhere(
-                        (item) => item['id'] == ad['id'],
-                      ),
-                    );
-                },
-              ),
-            );
-          }
         }
         if (postIndex == 4 && visiblePosts.length >= 5) {
           if (FeatureControl.instance.visible('suggested_colleagues')) {
@@ -2914,10 +2956,11 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
       children: [
         RefreshIndicator(
           onRefresh: () async {
+            setState(() => _campaignBatch162++);
             await Future.wait([
               _loadUnreadNotifications(),
               FeatureControl.instance.refresh(force: true),
-              _loadAdvertisements(),
+              _loadCampaigns162(refresh: true),
               _loadPosts(),
             ]);
           },

@@ -912,22 +912,13 @@ class _ZameelMediaViewerState extends State<ZameelMediaViewer> {
 
     setState(() => _busy = true);
     try {
-      if (liked) {
-        await Supabase.instance.client
-            .from('likes')
-            .delete()
-            .eq('user_id', user.id)
-            .eq('post_id', postId);
-      } else {
-        await Supabase.instance.client
-            .from('likes')
-            .upsert({'user_id': user.id, 'post_id': postId});
-      }
+      final result = await setPostLike161(Supabase.instance.client,
+          userId: user.id, postId: '$postId', liked: !liked);
       if (!mounted) return;
       setState(() {
         widget.post['liked'] = !liked;
         widget.post['likes_count'] =
-            liked ? (oldCount > 0 ? oldCount - 1 : 0) : oldCount + 1;
+            result.displayCount(oldCount, liked: !liked);
         widget.post['likes'] = widget.post['likes_count'];
       });
       widget.onLikeChanged?.call();

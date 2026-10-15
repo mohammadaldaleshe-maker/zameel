@@ -5,14 +5,18 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Counts an exposure only after at least half the card is visible for a second.
-/// The server binds the actor, enforces the daily cap and deduplicates retries.
+/// Each return to the card is a new exposure; retries retain one event identity.
 class SponsoredExposure extends StatefulWidget {
   final String postId;
   final Widget child;
+  final bool partner;
+  final DateTime Function()? now;
   const SponsoredExposure({
     super.key,
     required this.postId,
     required this.child,
+    this.partner = false,
+    this.now,
   });
   @override
   State<SponsoredExposure> createState() => _SponsoredExposureState();
@@ -25,27 +29,42 @@ class _SponsoredExposureState extends State<SponsoredExposure> {
   Offset? _pointerStart;
   DateTime? _pointerTime;
   late final String _actor;
-  late final String _event;
+  late String _event;
   @override
   void initState() {
     super.initState();
     _actor = Supabase.instance.client.auth.currentUser?.id ?? '';
+    _event = _newEvent();
+    _timer = Timer.periodic(const Duration(milliseconds: 500), (_) => _check());
+  }
+
+  String _newEvent() {
     final random = Random.secure();
     final bytes = List.generate(16, (_) => random.nextInt(256));
     bytes[6] = (bytes[6] & 15) | 64;
     bytes[8] = (bytes[8] & 63) | 128;
     final hex = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
-    _event =
-        '${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
-    _timer = Timer.periodic(const Duration(milliseconds: 500), (_) => _check());
+    return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
   }
 
+  void _endVisit() {
+    _visibleSince = null;
+    if (!_busy && (_recorded || _denied)) {
+      _recorded = false;
+      _denied = false;
+      _clicked = false;
+      _event = _newEvent();
+    }
+  }
+
+  DateTime _now() => widget.now?.call() ?? DateTime.now();
+
   void _check() {
-    if (!mounted || _denied || _recorded || _busy) return;
+    if (!mounted) return;
     if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed ||
         ModalRoute.of(context)?.isCurrent != true ||
         Supabase.instance.client.auth.currentUser?.id != _actor) {
-      _visibleSince = null;
+      _endVisit();
       return;
     }
     final object = context.findRenderObject();
@@ -63,12 +82,12 @@ class _SponsoredExposureState extends State<SponsoredExposure> {
         visible.height <= 0 ||
         visible.width <= 0 ||
         visible.width * visible.height < rect.width * rect.height * .5) {
-      _visibleSince = null;
+      _endVisit();
       return;
     }
-    _visibleSince ??= DateTime.now();
-    if (DateTime.now().difference(_visibleSince!) >=
-        const Duration(seconds: 1)) {
+    if (_denied || _recorded || _busy) return;
+    _visibleSince ??= _now();
+    if (_now().difference(_visibleSince!) >= const Duration(seconds: 1)) {
       unawaited(_record());
     }
   }
@@ -77,11 +96,16 @@ class _SponsoredExposureState extends State<SponsoredExposure> {
     _busy = true;
     try {
       final accepted = await Supabase.instance.client.rpc(
-        'zameel_record_promotion',
+        widget.partner
+            ? 'zameel_record_advertisement162'
+            : 'zameel_record_promotion',
         params: {
-          'p_post': widget.postId,
+          if (widget.partner)
+            'p_ad': widget.postId
+          else
+            'p_post': widget.postId,
           'p_event': _event,
-          'p_click': false,
+          if (!widget.partner) 'p_click': false,
         },
       ).timeout(const Duration(seconds: 8));
       if (!mounted) return;
@@ -89,7 +113,6 @@ class _SponsoredExposureState extends State<SponsoredExposure> {
         _recorded = accepted == true;
         _denied = !_recorded;
       });
-      _timer?.cancel();
     } catch (_) {
       // Retry the same event identity; failed requests never inflate counters.
       _visibleSince = null;
@@ -99,7 +122,8 @@ class _SponsoredExposureState extends State<SponsoredExposure> {
   }
 
   Future<void> _click() async {
-    if (!_recorded ||
+    if (widget.partner ||
+        !_recorded ||
         _clicked ||
         Supabase.instance.client.auth.currentUser?.id != _actor) return;
     _clicked = true;
@@ -124,28 +148,26 @@ class _SponsoredExposureState extends State<SponsoredExposure> {
   }
 
   @override
-  Widget build(BuildContext context) => _denied
-      ? const SizedBox.shrink()
-      : Listener(
-          onPointerDown: (event) {
-            _pointerStart = event.position;
-            _pointerTime = DateTime.now();
-          },
-          onPointerCancel: (_) {
-            _pointerStart = null;
-          },
-          onPointerUp: (event) {
-            final start = _pointerStart;
-            final time = _pointerTime;
-            _pointerStart = null;
-            if (start != null &&
-                time != null &&
-                (event.position - start).distance < 8 &&
-                DateTime.now().difference(time) <
-                    const Duration(milliseconds: 500)) {
-              unawaited(_click());
-            }
-          },
-          child: widget.child,
-        );
+  Widget build(BuildContext context) => Listener(
+        onPointerDown: (event) {
+          _pointerStart = event.position;
+          _pointerTime = DateTime.now();
+        },
+        onPointerCancel: (_) {
+          _pointerStart = null;
+        },
+        onPointerUp: (event) {
+          final start = _pointerStart;
+          final time = _pointerTime;
+          _pointerStart = null;
+          if (start != null &&
+              time != null &&
+              (event.position - start).distance < 8 &&
+              DateTime.now().difference(time) <
+                  const Duration(milliseconds: 500)) {
+            unawaited(_click());
+          }
+        },
+        child: widget.child,
+      );
 }

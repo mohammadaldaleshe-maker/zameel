@@ -1,3 +1,4 @@
+import '../../widgets/sponsored_exposure.dart';
 import '../../widgets/keep_keyboard_send_button.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:zameel/theme/appearance_controller.dart';
@@ -29,83 +30,91 @@ class AdvertisementCard extends StatelessWidget {
     final partner = ad['business_partners'];
     final name = partner is Map ? partner['name']?.toString() ?? '' : '';
     final partnerId = ad['partner_id']?.toString() ?? '';
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-      child: InkWell(
-        onTap: openOnTap
-            ? () => Navigator.push(
-                context,
-                MaterialPageRoute<void>(
-                  builder: (_) =>
-                      AdvertisementDetails(ad: ad, isArabic: isArabic),
-                ))
-            : null,
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              const Icon(Icons.campaign_outlined, color: Color(0xFF08736D)),
-              const SizedBox(width: 8),
-              Expanded(
-                  child: Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: TextButton(
-                  onPressed: partnerId.isEmpty
-                      ? null
-                      : () => Navigator.push(
-                            context,
-                            MaterialPageRoute<void>(
-                                builder: (_) => PartnerAdsScreen(
-                                      partner: {
-                                        if (partner is Map)
-                                          ...Map<String, dynamic>.from(partner),
-                                        'id': partnerId,
-                                        'name': name
-                                      },
-                                      isArabic: isArabic,
-                                    )),
-                          ),
-                  child: Text(name,
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              )),
-              Text(isArabic ? 'إعلان' : 'Ad',
-                  style: const TextStyle(color: Color(0xFF08736D))),
-            ]),
-            const SizedBox(height: 9),
-            Text(ad['title']?.toString() ?? '',
-                style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 5),
-            Text(ad['body']?.toString() ?? '',
-                maxLines: openOnTap ? 8 : null,
-                overflow: openOnTap ? TextOverflow.ellipsis : null),
-            _AdMedia(media: ad['media'], preview: openOnTap),
-            const SizedBox(height: 8),
-            Text(
-                '${ad['view_count'] ?? 0} ${isArabic ? 'مشاهدة' : 'views'}   ·   ${ad['likes_count'] ?? 0} ${isArabic ? 'إعجاب' : 'likes'}   ·   ${ad['comments_count'] ?? 0} ${isArabic ? 'تعليق' : 'comments'}',
-                style: TextStyle(color: AppTheme.adaptiveSecondary)),
-            if (onHide != null)
-              TextButton(
-                onPressed: () async {
-                  try {
-                    await onHide!();
-                  } catch (error) {
-                    if (context.mounted)
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                            content: Text(FeatureControl.errorMessage(
-                                error, 'تعذر إخفاء الإعلان'))),
-                      );
-                  }
-                },
-                child:
-                    Text(isArabic ? 'لا يهمني هذا الإعلان' : 'Not interested'),
-              ),
-          ]),
-        ),
-      ),
-    );
+    return SponsoredExposure(
+        postId: '${ad['id']}',
+        partner: true,
+        child: Card(
+          margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          child: InkWell(
+            onTap: openOnTap
+                ? () => Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) =>
+                          AdvertisementDetails(ad: ad, isArabic: isArabic),
+                    ))
+                : null,
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [
+                      const Icon(Icons.campaign_outlined,
+                          color: Color(0xFF08736D)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                          child: Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: TextButton(
+                          onPressed: partnerId.isEmpty
+                              ? null
+                              : () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute<void>(
+                                        builder: (_) => PartnerAdsScreen(
+                                              partner: {
+                                                if (partner is Map)
+                                                  ...Map<String, dynamic>.from(
+                                                      partner),
+                                                'id': partnerId,
+                                                'name': name
+                                              },
+                                              isArabic: isArabic,
+                                            )),
+                                  ),
+                          child: Text(name,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                      )),
+                      Text(isArabic ? 'إعلان' : 'Ad',
+                          style: const TextStyle(color: Color(0xFF08736D))),
+                    ]),
+                    const SizedBox(height: 9),
+                    Text(ad['title']?.toString() ?? '',
+                        style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: 5),
+                    Text(ad['body']?.toString() ?? '',
+                        maxLines: openOnTap ? 8 : null,
+                        overflow: openOnTap ? TextOverflow.ellipsis : null),
+                    _AdMedia(media: ad['media'], preview: openOnTap),
+                    const SizedBox(height: 8),
+                    Text(
+                        '${ad['likes_count'] ?? 0} ${isArabic ? 'إعجاب' : 'likes'}   ·   ${ad['comments_count'] ?? 0} ${isArabic ? 'تعليق' : 'comments'}',
+                        style: TextStyle(color: AppTheme.adaptiveSecondary)),
+                    if (onHide != null)
+                      TextButton(
+                        onPressed: () async {
+                          try {
+                            await onHide!();
+                          } catch (error) {
+                            if (context.mounted)
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                    content: Text(FeatureControl.errorMessage(
+                                        error, 'تعذر إخفاء الإعلان'))),
+                              );
+                          }
+                        },
+                        child: Text(isArabic
+                            ? 'لا يهمني هذا الإعلان'
+                            : 'Not interested'),
+                      ),
+                  ]),
+            ),
+          ),
+        ));
   }
 }
 
@@ -199,6 +208,7 @@ class _AdvertisementDetailsState extends State<AdvertisementDetails> {
   final controller = TextEditingController();
   final _composerFocus161 = FocusNode();
   bool liked = false;
+  bool _likeBusy162 = false;
   bool submitting = false;
   List<Map<String, dynamic>> comments = [];
 
@@ -212,7 +222,6 @@ class _AdvertisementDetailsState extends State<AdvertisementDetails> {
 
   Future<void> _load() async {
     try {
-      await AdvertisingService.recordView(id);
       final results = await Future.wait([
         AdvertisingService.isLiked(id),
         AdvertisingService.comments(id),
@@ -239,15 +248,26 @@ class _AdvertisementDetailsState extends State<AdvertisementDetails> {
   }
 
   Future<void> _like() async {
+    if (_likeBusy162) return;
+    _likeBusy162 = true;
+    final target = !liked;
+    final previous = (widget.ad['likes_count'] as num?)?.toInt() ?? 0;
     try {
-      await AdvertisingService.setLiked(id, liked: !liked);
-      if (mounted) setState(() => liked = !liked);
+      final result = await AdvertisingService.setLiked(id, liked: target);
+      if (mounted)
+        setState(() {
+          liked = target;
+          widget.ad['likes_count'] =
+              result.displayCount(previous, liked: target);
+        });
     } catch (error) {
       if (mounted)
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content:
               Text(FeatureControl.errorMessage(error, 'تعذر تسجيل الإعجاب')),
         ));
+    } finally {
+      _likeBusy162 = false;
     }
   }
 
@@ -285,7 +305,6 @@ class _AdvertisementDetailsState extends State<AdvertisementDetails> {
                 onPressed: _like,
                 icon: Icon(liked ? Icons.favorite : Icons.favorite_border),
                 label: Text(ar ? 'إعجاب' : 'Like')),
-            Text('${widget.ad['view_count'] ?? 0} ${ar ? 'مشاهدة' : 'views'}'),
           ]),
           Text(ar ? 'التعليقات' : 'Comments',
               style: Theme.of(context).textTheme.titleMedium),

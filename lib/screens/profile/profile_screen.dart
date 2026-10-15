@@ -1,3 +1,4 @@
+import '../../services/post_like161.dart';
 import '../../widgets/post_action161.dart';
 import '../../widgets/mention_content158.dart';
 import '../../services/post_presentation157.dart';
@@ -118,6 +119,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _college.dispose();
     _department.dispose();
     _promotionBadgeExpiry?.cancel();
+    _ownerViewsTimer162?.cancel();
     super.dispose();
   }
 
@@ -127,6 +129,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _morePosts = false, _moreShared = false;
   bool _loadingMore = false;
   int _postOffset = 0, _sharedOffset = 0;
+  final Map<String, int> _ownerViews162 = {};
+  Timer? _ownerViewsTimer162;
+  bool _viewsLoading162 = false;
+  Future<void> _loadOwnerViews162() async {
+    final db = Supabase.instance.client;
+    final actor = db.auth.currentUser?.id;
+    if (_viewsLoading162 || actor == null || _profile?['id'] != actor || !isMe)
+      return;
+    _viewsLoading162 = true;
+    try {
+      final ids = _posts.map((p) => '${p['id']}').toList();
+      final counts = <String, int>{};
+      for (var i = 0; i < ids.length; i += 100) {
+        final batch = ids.sublist(i, (i + 100).clamp(0, ids.length));
+        final rows = await db.rpc('zameel_owner_post_views162',
+            params: {'p_posts': batch}).timeout(const Duration(seconds: 10));
+        for (final row in rows as List) {
+          counts['${row['post_id']}'] = (row['views'] as num).toInt();
+        }
+      }
+      if (!mounted ||
+          db.auth.currentUser?.id != actor ||
+          _profile?['id'] != actor) return;
+      setState(() {
+        _ownerViews162
+          ..clear()
+          ..addAll(counts);
+      });
+      _ownerViewsTimer162 ??= Timer.periodic(const Duration(seconds: 30), (_) {
+        if (mounted &&
+            WidgetsBinding.instance.lifecycleState ==
+                AppLifecycleState.resumed &&
+            ModalRoute.of(context)?.isCurrent == true) _loadOwnerViews162();
+      });
+    } catch (_) {
+      // Unavailable analytics must not prevent reading the profile.
+    } finally {
+      _viewsLoading162 = false;
+    }
+  }
+
   final Map<String, DateTime> _promotionEnds = {};
   Timer? _promotionBadgeExpiry;
   void _schedulePromotionBadgeExpiry() {
@@ -372,6 +415,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _likedStateLoaded = false;
         _contentLoading = false;
       });
+      unawaited(_loadOwnerViews162());
     } finally {
       _loadingMore = false;
       if (mounted) setState(() {});
@@ -764,11 +808,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  final Set<String> _likeRequests161 = <String>{};
+
   Future<void> _toggleLike(Map<String, dynamic> post) async {
     final me = Supabase.instance.client.auth.currentUser;
     final id = post['id'];
     if (me == null || id == null) return;
     if (post['user_id'] == _profile?['id']) post['users'] ??= _profile;
+    final key161 = '$id';
+    if (!_likeRequests161.add(key161)) return;
     final liked = post['liked'] == true;
     final oldCount = ((post['likes_count'] ?? 0) as num).toInt();
     setState(() {
@@ -777,17 +825,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           liked ? (oldCount > 0 ? oldCount - 1 : 0) : oldCount + 1;
     });
     try {
-      if (liked) {
-        await Supabase.instance.client
-            .from('likes')
-            .delete()
-            .eq('user_id', me.id)
-            .eq('post_id', id);
-      } else {
-        await Supabase.instance.client
-            .from('likes')
-            .upsert({'user_id': me.id, 'post_id': id});
-      }
+      final result = await setPostLike161(Supabase.instance.client,
+          userId: me.id, postId: '$id', liked: !liked);
+      if (!mounted) return;
+      setState(() {
+        post['liked'] = !liked;
+        post['likes_count'] = result.displayCount(oldCount, liked: !liked);
+        post['likes'] = post['likes_count'];
+      });
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -796,6 +841,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       });
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('تعذر تسجيل الإعجاب: $e')));
+    } finally {
+      _likeRequests161.remove(key161);
     }
   }
 
@@ -1505,6 +1552,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (isMe &&
+                _profile?['id'] ==
+                    Supabase.instance.client.auth.currentUser?.id &&
+                _ownerViews162.containsKey('${post['id']}'))
+              Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Text(
+                    ar
+                        ? '${_ownerViews162['${post['id']}']} مشاهدة للترويج'
+                        : '${_ownerViews162['${post['id']}']} promotion views',
+                    style: TextStyle(
+                        fontSize: 12, color: AppTheme.adaptiveSecondary),
+                  )),
             if (FeatureControl.instance.enabled('post_promotions') &&
                 (_promotionEnds[post['id'].toString()]
                         ?.isAfter(DateTime.now()) ??

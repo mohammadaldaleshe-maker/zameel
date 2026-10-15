@@ -26,3 +26,43 @@ List<Map<String, dynamic>> arrangeSponsoredFeed(
   }
   return result;
 }
+
+/// One frozen batch across both campaign types, without duplicate placements.
+List<Map<String, dynamic>> arrangeCampaignFeed162(
+  List<Map<String, dynamic>> ordinary,
+  List<Map<String, dynamic>> promotions,
+  List<Map<String, dynamic>> partnerAds, {
+  List<String> order = const [],
+}) {
+  final queue = <Map<String, dynamic>>[];
+  final ids = <String>{};
+  for (var i = 0; i < promotions.length || i < partnerAds.length; i++) {
+    if (i < promotions.length && ids.add('post:${promotions[i]['id']}')) {
+      queue.add(promotions[i]);
+    }
+    if (i < partnerAds.length && ids.add('ad:${partnerAds[i]['id']}')) {
+      queue.add({...partnerAds[i], '_partner_campaign162': true});
+    }
+  }
+  if (order.isNotEmpty) {
+    final ranks = {for (var i = 0; i < order.length; i++) order[i]: i};
+    String identity(Map<String, dynamic> row) =>
+        '${row['_partner_campaign162'] == true ? 'ad' : 'post'}:${row['id']}';
+    queue.sort((a, b) => (ranks[identity(a)] ?? order.length)
+        .compareTo(ranks[identity(b)] ?? order.length));
+  }
+  final postAds = promotions.map((r) => '${r['id']}').toSet();
+  final result = <Map<String, dynamic>>[];
+  final ordinarySeen = <String>{};
+  var count = 0, next = 0;
+  for (final post in ordinary) {
+    if (postAds.contains('${post['id']}') || !ordinarySeen.add('${post['id']}'))
+      continue;
+    result.add(post);
+    if (++count % 6 == 0 && next < queue.length) result.add(queue[next++]);
+  }
+  while (next < queue.length) {
+    result.add(queue[next++]);
+  }
+  return result;
+}

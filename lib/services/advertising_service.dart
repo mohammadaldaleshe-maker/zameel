@@ -1,3 +1,4 @@
+import 'post_like161.dart';
 import 'dart:async';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -94,21 +95,37 @@ class AdvertisingService {
     return row != null;
   }
 
-  static Future<void> setLiked(String id, {required bool liked}) async {
+  static Future<PostLikeResult161> setLiked(String id,
+      {required bool liked}) async {
     final uid = _db.auth.currentUser?.id;
-    if (uid == null) return;
+    if (uid == null) throw StateError('not_authenticated');
+    final List<dynamic> affected;
     if (liked) {
-      await _db.from('advertisement_likes').insert({
+      affected = await _db.from('advertisement_likes').upsert({
         'advertisement_id': id,
         'user_id': uid,
-      });
+      },
+          onConflict: 'advertisement_id,user_id',
+          ignoreDuplicates: true).select('user_id');
     } else {
-      await _db
+      affected = await _db
           .from('advertisement_likes')
           .delete()
           .eq('advertisement_id', id)
-          .eq('user_id', uid);
+          .eq('user_id', uid)
+          .select('user_id');
     }
+    int? count;
+    try {
+      final row = await _db
+          .from('advertisements')
+          .select('likes_count')
+          .eq('id', id)
+          .maybeSingle();
+      if (row?['likes_count'] is num)
+        count = (row!['likes_count'] as num).toInt();
+    } catch (_) {}
+    return PostLikeResult161(affected.isNotEmpty, count);
   }
 
   static Future<List<Map<String, dynamic>>> comments(String id) async {

@@ -11,6 +11,8 @@ class SharedActivity156 extends StatefulWidget {
 }
 
 class _SharedActivity156State extends State<SharedActivity156> {
+  final Set<String> _likeRequests161 = <String>{};
+
   List<Map<String, dynamic>> rows = [];
   final _saved156 = <Map<String, dynamic>>[];
   int offset = 0;
@@ -181,24 +183,23 @@ class _SharedActivity156State extends State<SharedActivity156> {
                             final db = Supabase.instance.client,
                                 me = Supabase.instance.client.auth.currentUser;
                             if (me == null) return;
-                            final liked = await db
-                                .from('likes')
-                                .select('id')
-                                .eq('user_id', me.id)
-                                .eq('post_id', post['id'])
-                                .maybeSingle();
-                            if (liked != null) {
-                              await db
+                            final key161 = '${post['id']}';
+                            if (!_likeRequests161.add(key161)) return;
+                            try {
+                              final liked = await db
                                   .from('likes')
-                                  .delete()
+                                  .select('id')
                                   .eq('user_id', me.id)
-                                  .eq('post_id', post['id']);
-                            } else {
-                              await db.from('likes').upsert(
-                                  {'user_id': me.id, 'post_id': post['id']},
-                                  onConflict: 'user_id,post_id');
+                                  .eq('post_id', post['id'])
+                                  .maybeSingle();
+                              await setPostLike161(db,
+                                  userId: me.id,
+                                  postId: '${post['id']}',
+                                  liked: liked == null);
+                              SharedActivity156.refresh();
+                            } finally {
+                              _likeRequests161.remove(key161);
                             }
-                            SharedActivity156.refresh();
                           },
                           onDelete: () async {
                             if (await showDialog<bool>(
