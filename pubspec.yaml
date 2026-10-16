@@ -1,12 +1,13 @@
 name: zameel
 description: "Zameel - Social Platform for Students"
 publish_to: 'none'
-version: 2.0.24+33
+version: 2.0.25+34
 
 environment:
   sdk: ^3.6.0
 
 dependencies:
+  collection: ^1.19.1
   flutter:
     sdk: flutter
 

@@ -142,7 +142,7 @@ void main() {
           activity, isNot(contains('ACTION_APP_NOTIFICATION_BUBBLE_SETTINGS')));
       expect(activity, contains('ZameelIncomingCall.setUser'));
       expect(activity, contains('ZameelIncomingCall.dismiss'));
-      expect(activity, isNot(contains('ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT')));
+      expect(activity, contains('ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT'));
       expect(activity, contains('finishDecline'));
     });
 
@@ -366,18 +366,18 @@ void main() {
     });
 
     test(
-        'incoming calls retain native notification actions without duplicate full-screen UI',
+        'incoming calls retain cold-start native entrypoint and notification actions',
         () {
       final manifest = _read('android/app/src/main/AndroidManifest.xml');
       expect(manifest, isNot(contains('PROPERTY_SPECIAL_USE_FGS_SUBTYPE')));
       expect(manifest, isNot(contains('android:name=".ZameelBubbleActivity"')));
       expect(manifest,
-          isNot(contains('android.permission.USE_FULL_SCREEN_INTENT')));
+          contains('android.permission.USE_FULL_SCREEN_INTENT'));
       final native = _read(
           'android/app/src/main/kotlin/com/zameel/app/ZameelIncomingCall.kt');
       expect(native, contains('CallStyle.forIncomingCall'));
-      expect(native, isNot(contains('setFullScreenIntent(')));
-      expect(native, isNot(contains('setContentView(layout)')));
+      expect(native, contains('setFullScreenIntent('));
+      expect(native, contains('setContentView(layout)'));
       expect(manifest, contains('android:name=".ZameelIncomingCallActivity"'));
       expect(manifest, contains('android.permission.FOREGROUND_SERVICE"'));
     });
@@ -417,7 +417,16 @@ void main() {
       expect(_read('lib/services/share_cover157_stub.dart'),
           isNot(contains("import 'dart:io'")));
 
+      final dimensionsFacade = _read('lib/services/media_dimensions163.dart');
+      expect(dimensionsFacade,
+          contains("if (dart.library.io) 'media_dimensions163_io.dart'"));
+      expect(dimensionsFacade, contains("'media_dimensions163_stub.dart'"));
+      expect(dimensionsFacade, isNot(contains("import 'dart:io'")));
+      expect(_read('lib/services/media_dimensions163_stub.dart'),
+          isNot(contains("import 'dart:io'")));
+
       const allowedIoFiles = <String>{
+        'lib/services/media_dimensions163_io.dart',
         'lib/platform/local_image_provider_io.dart',
         'lib/platform/local_image_widget_io.dart',
         'lib/platform/video_controller_factory_io.dart',

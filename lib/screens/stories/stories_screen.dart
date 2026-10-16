@@ -1,3 +1,4 @@
+import '../../widgets/visibility_pulse163.dart';
 import '../../services/background_publish156.dart';
 import 'package:zameel/services/story_seen_store.dart';
 import '../../services/story_order_service.dart';
@@ -651,7 +652,7 @@ class _StoryGroupCard extends StatelessWidget {
                   padding: const EdgeInsets.all(2),
                   child: ClipOval(
                     child: stories.isNotEmpty
-                        ? _StoryCirclePreview(
+                        ? StoryCirclePreview163(
                             key: ValueKey(first['id']), story: first)
                         : ColoredBox(
                             color: AppTheme.primaryLight,
@@ -718,49 +719,136 @@ class _StoryGroupCard extends StatelessWidget {
   }
 }
 
-class _StoryCirclePreview extends StatefulWidget {
+class StoryCirclePreview163 extends StatefulWidget {
   final Map<String, dynamic> story;
-  const _StoryCirclePreview({super.key, required this.story});
+  const StoryCirclePreview163({super.key, required this.story});
 
   @override
-  State<_StoryCirclePreview> createState() => _StoryCirclePreviewState();
+  State<StoryCirclePreview163> createState() => _StoryCirclePreviewState();
 }
 
-class _StoryCirclePreviewState extends State<_StoryCirclePreview> {
+class _StoryCirclePreviewState extends State<StoryCirclePreview163> {
+  static _StoryCirclePreviewState? _owner;
+  static bool _busy = false;
   VideoPlayerController? _controller;
   Timer? _timer;
+  bool _attempted = false;
+  int _generation = 0;
 
   @override
   void initState() {
     super.initState();
-    final video = widget.story['videoPath']?.toString() ?? '';
-    if (video.isNotEmpty) _prepareVideo(video).catchError((Object _) {});
+    VisibilityPulse163.add(_checkPreview);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkPreview());
+  }
+
+  @override
+  void didUpdateWidget(covariant StoryCirclePreview163 oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.story['videoPath'] != widget.story['videoPath']) {
+      unawaited(_release());
+      _attempted = false;
+      VisibilityPulse163.add(_checkPreview);
+    }
+  }
+
+  void _checkPreview() {
+    if (!mounted) return;
+    final box = context.findRenderObject();
+    var visible = false;
+    if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed &&
+        ModalRoute.of(context)?.isCurrent == true &&
+        box is RenderBox &&
+        box.hasSize) {
+      final rect = box.localToGlobal(Offset.zero) & box.size;
+      final overlap = rect.intersect(Offset.zero & MediaQuery.sizeOf(context));
+      visible = !overlap.isEmpty &&
+          overlap.width * overlap.height >= rect.width * rect.height * .5;
+    }
+    if (!visible) {
+      if (identical(_owner, this)) unawaited(_release());
+      return;
+    }
+    final url = widget.story['videoPath']?.toString() ?? '';
+    if (!_attempted && !_busy && url.isNotEmpty) {
+      _attempted = true;
+      _busy = true;
+      unawaited(_prepareVideo(url));
+    }
+  }
+
+  Future<void> _release({bool transferring = false}) async {
+    _generation++;
+    _timer?.cancel();
+    if (identical(_owner, this)) {
+      _owner = null;
+      if (!transferring) _busy = false;
+    }
+    final controller = _controller;
+    _controller = null;
+    if (mounted) setState(() {});
+    try {
+      await controller?.dispose();
+    } catch (_) {}
   }
 
   Future<void> _prepareVideo(String url) async {
-    final controller = await VideoSourceService.controller(url);
-    if (!mounted) {
-      await controller.dispose();
-      return;
-    }
-    _controller = controller;
+    final generation = ++_generation;
+    VideoPlayerController? created;
     try {
-      await controller.initialize();
-      if (!mounted || _controller != controller) return;
+      final previous = _owner;
+      if (previous != null && !identical(previous, this))
+        await previous._release(transferring: true);
+      if (!mounted || generation != _generation) {
+        _busy = false;
+        return;
+      }
+      _owner = this;
+      _busy = true;
+      final controller = await VideoSourceService.controller(url);
+      created = controller;
+      if (!mounted || generation != _generation || !identical(_owner, this)) {
+        await controller.dispose();
+        return;
+      }
+      _controller = controller;
+      await controller.initialize().timeout(const Duration(seconds: 15));
+      if (!mounted || generation != _generation || !identical(_owner, this))
+        return;
       await controller.setVolume(0);
       await controller.seekTo(Duration.zero);
       await controller.play();
-      if (!mounted || _controller != controller) return;
+      if (!mounted || generation != _generation || !identical(_owner, this))
+        return;
       _timer = Timer(const Duration(milliseconds: 1500), () {
-        if (mounted && _controller == controller) controller.pause();
+        if (mounted && identical(_owner, this)) {
+          unawaited(controller.pause());
+          _busy = false;
+        }
       });
+      setState(() {});
+    } catch (_) {
+      if (identical(_controller, created)) _controller = null;
+      try {
+        await created?.dispose();
+      } catch (_) {}
+      if (_owner == null || identical(_owner, this)) {
+        _owner = null;
+        _busy = false;
+      }
       if (mounted) setState(() {});
-    } catch (_) {}
+    }
   }
 
   @override
   void dispose() {
+    VisibilityPulse163.remove(_checkPreview);
+    ++_generation;
     _timer?.cancel();
+    if (identical(_owner, this)) {
+      _owner = null;
+      _busy = false;
+    }
     _controller?.dispose();
     super.dispose();
   }
@@ -1009,7 +1097,7 @@ class StoryVideoPlayerState extends State<StoryVideoPlayer>
         await candidate.dispose();
         return;
       }
-      await candidate.initialize();
+      await candidate.initialize().timeout(const Duration(seconds: 15));
       await candidate.setLooping(widget.onCompleted == null);
       if (!mounted || generation != _generation) {
         await candidate.dispose();

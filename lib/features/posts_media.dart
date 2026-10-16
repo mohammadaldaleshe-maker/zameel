@@ -5,8 +5,7 @@ int _actionCount161(dynamic value) => value is num
     : (int.tryParse('$value') ?? 0).clamp(0, 2147483647);
 
 bool _hasOrderedPostMedia(Map<String, dynamic> post) {
-  final raw = post['media_items'];
-  return raw is List && raw.isNotEmpty;
+  return postMediaItems(post).isNotEmpty;
 }
 
 void _openOrderedPostMedia(
@@ -775,11 +774,7 @@ Future<void> _showPostLikesDialog(
   final postId = post['id'];
   if (postId == null) return;
   try {
-    final rows = await Supabase.instance.client
-        .from('likes')
-        .select('user_id, users(name, profile_image)')
-        .eq('post_id', postId)
-        .order('created_at', ascending: false);
+    final rows = await loadPostLikers163('$postId');
     if (!context.mounted) return;
     showModalBottomSheet(
         context: context,

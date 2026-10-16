@@ -46,10 +46,22 @@ void main() {
     expect(size.height, closeTo((size.width - 3) / 2 + 3, 5));
     expect(tester.widget<Image>(find.byType(Image)).fit, BoxFit.contain);
     await tester.pumpWidget(const SizedBox());
+    await tester.pumpAndSettle();
     PaintingBinding.instance.imageCache.clear();
+    PaintingBinding.instance.imageCache.clearLiveImages();
     await tester.runAsync(() async {
       await cache.configureMediaCacheForTesting();
-      await directory.delete(recursive: true);
+      for (var attempt = 0; ; attempt++) {
+        try {
+          await directory.delete(recursive: true);
+          break;
+        } on FileSystemException catch (error) {
+          if (!Platform.isWindows ||
+              !const [32, 33].contains(error.osError?.errorCode) ||
+              attempt >= 49) rethrow;
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+        }
+      }
     });
   });
 }

@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import '../../widgets/content_editor155.dart';
 import '../../widgets/chat_timestamp.dart';
 import 'package:zameel/widgets/chat_presence_label.dart';
@@ -792,8 +793,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   }
 
   bool get _nearEnd => !_scroll.hasClients || _scroll.offset < 140;
+  bool get _userScrolling =>
+      _scroll.hasClients && _scroll.position.isScrollingNotifier.value;
+  bool get _canFollow => _nearEnd && !_userScrolling;
+  int _messageRevision163 = 0;
   void _settleAtEnd() {
-    if (!_composerFocus.hasFocus && _nearEnd) _scrollToEnd(immediate: true);
+    if (!_composerFocus.hasFocus && _canFollow) _scrollToEnd(immediate: true);
   }
 
   List<Map<String, dynamic>> get _timeline => [..._messages, ..._calls]
@@ -824,7 +829,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
           next.putIfAbsent(r['message_id'].toString(), () => []).add(r);
         }
       }
-      if (mounted)
+      if (mounted && !const DeepCollectionEquality().equals(next, _reactions))
         setState(() {
           _reactions
             ..clear()
@@ -947,8 +952,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
       await db.rpc('touch_my_presence');
       final raw = await db.rpc('zameel_chat_presence',
           params: {'p_conversation': widget.conversationId});
-      if (mounted)
-        setState(() => _partnerOnline = (raw as Map?)?['is_online'] == true);
+      final online = (raw as Map?)?['is_online'] == true;
+      if (mounted && _partnerOnline != online)
+        setState(() => _partnerOnline = online);
     } catch (_) {
       if (mounted) setState(() => _partnerOnline = false);
     }
@@ -957,18 +963,25 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   Future<void> _syncChat() async {
     if (_syncing || !mounted) return;
     _syncing = true;
-    final atEnd = _nearEnd && !_composerFocus.hasFocus;
+    final beforeTimeline =
+        _timeline.map((row) => Map<String, dynamic>.from(row)).toList();
+    final atEnd = _canFollow && !_composerFocus.hasFocus;
     try {
       await _reconcilePersistedMessages();
       final raw = await db.rpc('zameel_chat_calls',
           params: {'p_conversation': widget.conversationId});
-      if (mounted)
-        setState(() => _calls = [
-              for (final row in raw as List)
-                {...Map<String, dynamic>.from(row as Map), 'call_event': true}
-            ]);
+      final calls = [
+        for (final row in raw as List)
+          {...Map<String, dynamic>.from(row as Map), 'call_event': true}
+      ];
+      if (mounted && !const DeepCollectionEquality().equals(calls, _calls)) {
+        setState(() => _calls = calls);
+      }
       await _markRead();
-      if (atEnd && !_composerFocus.hasFocus && _nearEnd) _scrollToEnd(immediate: true);
+      if (!const DeepCollectionEquality().equals(beforeTimeline, _timeline) &&
+          atEnd &&
+          !_composerFocus.hasFocus &&
+          _canFollow) _scrollToEnd(immediate: true);
     } catch (_) {
       /* Realtime stays active; reconnect polling retries. */
     } finally {
@@ -1115,6 +1128,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
 
   void _mergePersistedMessage(Map<String, dynamic> row) {
     if (!mounted) return;
+    _messageRevision163++;
     final savedId = row['id']?.toString();
     final savedIndex =
         _messages.indexWhere((message) => message['id']?.toString() == savedId);
@@ -1140,7 +1154,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
 
   void _preserveReadingPosition(double extent) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !_scroll.hasClients) return;
+      if (!mounted || !_scroll.hasClients || _userScrolling) return;
       final delta = _scroll.position.maxScrollExtent - extent;
       if (delta > 0)
         _scroll.jumpTo((_scroll.offset + delta)
@@ -1148,19 +1162,21 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
     });
   }
 
-  Future<List<Map<String, dynamic>>> _fetchPersistedMessages() async {
-    try {
-      final result = await db.rpc('zameel_chat_messages',
-          params: {'p_conversation': widget.conversationId});
-      return List<Map<String, dynamic>>.from(result as List? ?? const []);
-    } catch (_) {
-      rethrow;
-    }
+  Future<List<Map<String, dynamic>>>? _snapshotFlight163;
+  Future<List<Map<String, dynamic>>> _fetchPersistedMessages() {
+    return _snapshotFlight163 ??= db
+        .rpc('zameel_chat_messages',
+            params: {'p_conversation': widget.conversationId})
+        .then((result) =>
+            List<Map<String, dynamic>>.from(result as List? ?? const []))
+        .whenComplete(() => _snapshotFlight163 = null);
   }
 
   Future<void> _reconcilePersistedMessages() async {
+    final revision = _messageRevision163;
     final persisted = await _fetchPersistedMessages();
-    if (!mounted) return;
+    // A realtime event received during this request is newer than its snapshot.
+    if (!mounted || revision != _messageRevision163) return;
     final localPending = _messages.where((message) {
       if (message['id']?.toString().startsWith('local-') != true) return false;
       return !persisted
@@ -1168,7 +1184,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
     }).toList();
     final next = [...persisted, ...localPending];
     // A periodic identical snapshot must not rebuild or adjust an active editor.
-    if (next.toString() == _messages.toString()) return;
+    if (const DeepCollectionEquality().equals(next, _messages)) return;
     setState(() => _messages = next);
   }
 
@@ -1190,7 +1206,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
             final sentByMe = row['sender_id']?.toString() == uid;
             _mergePersistedMessage(row);
             if (!sentByMe) _markRead();
-            if (_nearEnd || sentByMe) _scrollToEnd();
+            if (_canFollow || sentByMe) _scrollToEnd();
           },
         )
         .onPostgresChanges(
@@ -1206,7 +1222,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
             final row = Map<String, dynamic>.from(payload.newRecord);
             final index = _messages.indexWhere(
                 (m) => m['id']?.toString() == row['id']?.toString());
-            if (mounted && index >= 0) setState(() => _messages[index] = row);
+            if (mounted && index >= 0) {
+              _messageRevision163++;
+              setState(() => _messages[index] = row);
+            }
           },
         )
         .subscribe((status, error) {
@@ -1679,7 +1698,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
       final next = rows is List && rows.isNotEmpty
           ? Map<String, dynamic>.from(rows.first as Map)
           : null;
-      if (mounted) setState(() => _activeMeet = next);
+      if (mounted && !const DeepCollectionEquality().equals(next, _activeMeet))
+        setState(() => _activeMeet = next);
     } catch (e) {
       if (!silent && mounted) debugPrint('Meet status: $e');
     }
@@ -1791,7 +1811,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
 
   void _scrollToEnd({bool immediate = false}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_scroll.hasClients) return;
+      if (!mounted || !_scroll.hasClients || _userScrolling) return;
       const target = 0.0;
       if (immediate) {
         _scroll.jumpTo(target);
@@ -2063,6 +2083,15 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
     AppearanceScope.observe(context);
     final ar = Provider.of<LanguageProvider>(context).isArabic;
     final timeline = chatDatedRows(_timeline);
+    String rowKey(Map<String, dynamic> row) => row['date_separator'] == true
+        ? 'date:${row['created_at']}'
+        : row['call_event'] == true
+            ? 'call:${row['room_id'] ?? row['id']}'
+            : 'message:${row['id']}';
+    final rowIndexes = {
+      for (var i = 0; i < timeline.length; i++)
+        rowKey(timeline[i]): timeline.length - 1 - i + (_partnerTyping ? 1 : 0)
+    };
     return Directionality(
       textDirection: ar ? ui.TextDirection.rtl : ui.TextDirection.ltr,
       child: Scaffold(
@@ -2145,6 +2174,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                           : ListView.builder(
                               controller: _scroll,
                               reverse: true,
+                              findChildIndexCallback: (key) =>
+                                  key is ValueKey<String>
+                                      ? rowIndexes[key.value]
+                                      : null,
                               padding: const EdgeInsets.all(14),
                               itemCount:
                                   timeline.length + (_partnerTyping ? 1 : 0),
@@ -2157,14 +2190,18 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                                     timeline.length - 1 - messageIndex];
                                 if (m['date_separator'] == true) {
                                   return ChatDateSeparator(
-                                      value: m['created_at'], arabic: ar);
+                                      key: ValueKey(rowKey(m)),
+                                      value: m['created_at'],
+                                      arabic: ar);
                                 }
                                 if (m['call_event'] == true)
-                                  return _callEvent(m);
+                                  return KeyedSubtree(
+                                      key: ValueKey(rowKey(m)),
+                                      child: _callEvent(m));
 
                                 final mine = m['sender_id'] == uid;
                                 return Align(
-                                  key: ValueKey(m['id']),
+                                  key: ValueKey(rowKey(m)),
                                   alignment: mine
                                       ? Alignment.centerRight
                                       : Alignment.centerLeft,

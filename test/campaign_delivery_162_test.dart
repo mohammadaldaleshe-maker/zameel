@@ -30,11 +30,11 @@ void main() {
         .where((p) =>
             p['_partner_campaign162'] == true || '${p['id']}'.startsWith('s'))
         .toList();
-    expect(sponsored.map((p) => p['id']), ['a2', 's2', 'a1', 's1']);
+    expect(sponsored.map((p) => p['id']), ['a2', 's2', 'a1']);
     expect(feed[6]['id'], 'a2');
     expect(feed[13]['id'], 's2');
-    expect(feed.length, 22);
-    expect(arrangeCampaignFeed162([], promotions, ads, order: order).length, 4);
+    expect(feed.length, 21);
+    expect(arrangeCampaignFeed162([], promotions, ads, order: order).length, 1);
     expect(
         arrangeCampaignFeed162(ordinary, promotions, ads, order: order), feed);
   });

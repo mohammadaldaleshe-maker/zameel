@@ -80,7 +80,8 @@ class _VerticalAutoplayVideoPlayerState
       _controller?.setVolume(_muted ? 0 : 1);
     }
     if (MediaCacheService.identity(oldWidget.videoUrl) !=
-        MediaCacheService.identity(widget.videoUrl)) {
+            MediaCacheService.identity(widget.videoUrl) ||
+        (_error != null && oldWidget.videoUrl != widget.videoUrl)) {
       _replaceController();
     }
   }

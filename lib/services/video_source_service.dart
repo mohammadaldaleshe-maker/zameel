@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:video_player/video_player.dart';
 
@@ -25,7 +26,7 @@ class VideoSourceService {
           ? Future<String?>.value(null)
           : MediaCacheService.localPathForUrl(url, downloadIfMissing: false),
       resolveRemote: SecureMediaService.resolve,
-    );
+    ).timeout(const Duration(seconds: 12));
     if (source.isLocal) return videoControllerFromLocalPath(source.value);
     return VideoPlayerController.networkUrl(Uri.parse(source.value));
   }

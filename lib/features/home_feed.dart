@@ -2706,11 +2706,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
     if (postId == null) return;
     final ar = Provider.of<LanguageProvider>(context, listen: false).isArabic;
     try {
-      final rows = await Supabase.instance.client
-          .from('likes')
-          .select('user_id, created_at, users(name, profile_image)')
-          .eq('post_id', postId)
-          .order('created_at', ascending: false);
+      final rows = await loadPostLikers163('$postId');
       if (!mounted) return;
       showModalBottomSheet(
         context: context,

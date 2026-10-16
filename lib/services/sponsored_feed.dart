@@ -61,8 +61,7 @@ List<Map<String, dynamic>> arrangeCampaignFeed162(
     result.add(post);
     if (++count % 6 == 0 && next < queue.length) result.add(queue[next++]);
   }
-  while (next < queue.length) {
-    result.add(queue[next++]);
-  }
+  // Preserve unseen candidates for the next refresh; never append fifty cards.
+  if (next == 0 && queue.isNotEmpty) result.add(queue.first);
   return result;
 }

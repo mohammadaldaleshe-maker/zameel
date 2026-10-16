@@ -1,3 +1,4 @@
+import 'visibility_pulse163.dart';
 import 'dart:async';
 import 'dart:math';
 
@@ -23,7 +24,6 @@ class SponsoredExposure extends StatefulWidget {
 }
 
 class _SponsoredExposureState extends State<SponsoredExposure> {
-  Timer? _timer;
   DateTime? _visibleSince;
   bool _busy = false, _recorded = false, _denied = false, _clicked = false;
   Offset? _pointerStart;
@@ -35,7 +35,7 @@ class _SponsoredExposureState extends State<SponsoredExposure> {
     super.initState();
     _actor = Supabase.instance.client.auth.currentUser?.id ?? '';
     _event = _newEvent();
-    _timer = Timer.periodic(const Duration(milliseconds: 500), (_) => _check());
+    VisibilityPulse163.add(_check);
   }
 
   String _newEvent() {
@@ -109,10 +109,8 @@ class _SponsoredExposureState extends State<SponsoredExposure> {
         },
       ).timeout(const Duration(seconds: 8));
       if (!mounted) return;
-      setState(() {
-        _recorded = accepted == true;
-        _denied = !_recorded;
-      });
+      _recorded = accepted == true;
+      _denied = !_recorded;
     } catch (_) {
       // Retry the same event identity; failed requests never inflate counters.
       _visibleSince = null;
@@ -143,7 +141,7 @@ class _SponsoredExposureState extends State<SponsoredExposure> {
 
   @override
   void dispose() {
-    _timer?.cancel();
+    VisibilityPulse163.remove(_check);
     super.dispose();
   }
 

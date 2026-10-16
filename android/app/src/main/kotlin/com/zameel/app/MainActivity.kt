@@ -1,5 +1,8 @@
 package com.zameel.app
 
+import android.app.NotificationManager
+
+import android.app.NotificationManager
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -9,8 +12,8 @@ import io.flutter.embedding.android.FlutterActivity
 
 @androidx.annotation.OptIn(markerClass = [androidx.media3.common.util.UnstableApi::class])
 class MainActivity : FlutterActivity() {
-    private val galleryWriter161 by lazy { GalleryWriter161(this) }
     private var playBilling: ZameelPlayBilling? = null
+    private var pendingExport: Triple<java.io.File, io.flutter.plugin.common.MethodChannel.Result, () -> Unit>? = null
     override fun onResume() {
         super.onResume()
         ZameelChatVisibility.setForeground(this, true)
@@ -72,6 +75,22 @@ class MainActivity : FlutterActivity() {
                         ZameelIncomingCall.dismiss(this, call.argument<String>("roomId").orEmpty())
                         result.success(null)
                     }
+                    "canFullScreen" -> result.success(Build.VERSION.SDK_INT < 34 ||
+                        getSystemService(NotificationManager::class.java)?.canUseFullScreenIntent() == true)
+                    "requestFullScreen" -> {
+                        if (Build.VERSION.SDK_INT >= 34) startActivity(Intent(
+                            Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT,
+                            Uri.parse("package:$packageName")))
+                        result.success(null)
+                    }
+                    "canFullScreen" -> result.success(Build.VERSION.SDK_INT < 34 ||
+                        getSystemService(NotificationManager::class.java)?.canUseFullScreenIntent() == true)
+                    "requestFullScreen" -> {
+                        if (Build.VERSION.SDK_INT >= 34) startActivity(Intent(
+                            Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT,
+                            Uri.parse("package:$packageName")))
+                        result.success(null)
+                    }
                     "finishDecline" -> {
                         result.success(null)
                         if (getSystemService(android.app.KeyguardManager::class.java)?.isKeyguardLocked == true) finish()
@@ -126,13 +145,33 @@ class MainActivity : FlutterActivity() {
                 }
             }
     }
-    fun saveToGallery161(file: java.io.File, mime: String, name: String,
+    fun saveExportWithPicker(file: java.io.File, mime: String, name: String,
         result: io.flutter.plugin.common.MethodChannel.Result, done: () -> Unit) {
-        galleryWriter161.save(file, mime, name, result, done)
+        pendingExport = Triple(file, result, done)
+        try {
+            startActivityForResult(Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE); type = mime; putExtra(Intent.EXTRA_TITLE, name)
+            }, 138)
+        } catch (e: Exception) {
+            pendingExport = null; file.delete(); done(); result.error("save_unavailable", e.message, null)
+        }
     }
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        galleryWriter161.permission(requestCode, grantResults)
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if(requestCode != 138) return
+        val pending = pendingExport ?: return
+        pendingExport = null
+        val uri = data?.data
+        if(resultCode != RESULT_OK || uri == null) {
+            pending.first.delete(); pending.third(); pending.second.error("cancelled", "تم إلغاء الحفظ", null); return
+        }
+        Thread {
+            try {
+                contentResolver.openOutputStream(uri)!!.use { out -> pending.first.inputStream().use { it.copyTo(out) } }
+                runOnUiThread { pending.second.success(uri.toString()) }
+            } catch(e: Exception) { runOnUiThread { pending.second.error("save_failed", e.message, null) } }
+            finally { pending.first.delete(); runOnUiThread { pending.third() } }
+        }.start()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

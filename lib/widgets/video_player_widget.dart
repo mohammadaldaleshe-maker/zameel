@@ -1,3 +1,4 @@
+import 'visibility_pulse163.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -27,7 +28,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
   bool _visible = false;
   bool _active = true;
   bool _starting = false;
-  Timer? _visibilityTimer;
+  Timer? _releaseTimer;
+  Duration _resumeAt = Duration.zero;
   bool _controlsVisible = true;
   Timer? _controlsTimer;
   int _generation = 0;
@@ -37,8 +39,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkVisibility());
-    _visibilityTimer = Timer.periodic(
-        const Duration(milliseconds: 300), (_) => _checkVisibility());
+    VisibilityPulse163.add(_checkVisibility);
   }
 
   void _checkVisibility() {
@@ -50,13 +51,29 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
         box is RenderBox &&
         box.hasSize) {
       final rect = box.localToGlobal(Offset.zero) & box.size;
-      final viewport = Offset.zero & MediaQuery.sizeOf(context);
+      var viewport = Offset.zero & MediaQuery.sizeOf(context);
+      final scroll = Scrollable.maybeOf(context)?.context.findRenderObject();
+      if (scroll is RenderBox && scroll.hasSize) {
+        viewport =
+            viewport.intersect(scroll.localToGlobal(Offset.zero) & scroll.size);
+      }
       final overlap = rect.intersect(viewport);
       visible = rect.height > 0 &&
           rect.width > 0 &&
           !overlap.isEmpty &&
-          overlap.height >= rect.height * .55 &&
-          overlap.width >= rect.width * .55;
+          overlap.height >=
+              (rect.height < viewport.height ? rect.height : viewport.height) *
+                  .55 &&
+          overlap.width >=
+              (rect.width < viewport.width ? rect.width : viewport.width) * .55;
+    }
+    if (visible) {
+      _releaseTimer?.cancel();
+      _releaseTimer = null;
+    } else {
+      _releaseTimer ??= Timer(const Duration(seconds: 2), () {
+        if (mounted && !_visible) _releaseOffscreen();
+      });
     }
     if (_visible != visible) {
       _visible = visible;
@@ -83,7 +100,21 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
     VideoPlayerController? created;
     try {
       final rawUrl = widget.videoUrl.trim();
-      final controller = await VideoSourceService.controller(rawUrl);
+      var expired = false;
+      final allocation =
+          VideoSourceService.controller(rawUrl).then((controller) {
+        // Future.timeout does not cancel allocation; release a late controller.
+        if (expired || !mounted || generation != _generation) {
+          unawaited(controller.dispose());
+          throw StateError('video_request_cancelled');
+        }
+        return controller;
+      });
+      final controller =
+          await allocation.timeout(const Duration(seconds: 15), onTimeout: () {
+        expired = true;
+        throw TimeoutException('video_source_timeout');
+      });
       created = controller;
       if (!mounted || generation != _generation) {
         await controller.dispose();
@@ -93,6 +124,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
       await controller.initialize().timeout(const Duration(seconds: 15));
       await controller.setVolume(_muted ? 0 : 1);
       await controller.setLooping(true);
+      if (_resumeAt > Duration.zero && _resumeAt < controller.value.duration) {
+        await controller.seekTo(_resumeAt);
+      }
       controller.addListener(_refreshProgress);
       if (!mounted || generation != _generation || _controller != controller)
         return;
@@ -104,6 +138,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
         await controller.play();
       }
       _scheduleControlsHide();
+      if (!_visible && _releaseTimer != null && !_releaseTimer!.isActive) {
+        _releaseOffscreen();
+      }
     } catch (e) {
       created?.removeListener(_refreshProgress);
       await created?.dispose();
@@ -115,11 +152,33 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
     }
   }
 
+  void _releaseOffscreen() {
+    final controller = _controller;
+    if (controller == null) return;
+    _resumeAt = controller.value.position;
+    setState(() {
+      _controller = null;
+      _isInitialized = false;
+    });
+    _starting = false;
+    _generation++;
+    _controlsTimer?.cancel();
+    controller.removeListener(_refreshProgress);
+    unawaited(controller.dispose());
+  }
+
   @override
   void didUpdateWidget(covariant VideoPlayerWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (MediaCacheService.identity(oldWidget.videoUrl) ==
-        MediaCacheService.identity(widget.videoUrl)) return;
+        MediaCacheService.identity(widget.videoUrl)) {
+      if (_error != null && oldWidget.videoUrl != widget.videoUrl) {
+        _error = null;
+        _checkVisibility();
+      }
+      return;
+    }
+    _resumeAt = Duration.zero;
     _generation++;
     _starting = false;
     _pausedByUser = false;
@@ -136,7 +195,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
   void dispose() {
     _generation++;
     WidgetsBinding.instance.removeObserver(this);
-    _visibilityTimer?.cancel();
+    VisibilityPulse163.remove(_checkVisibility);
+    _releaseTimer?.cancel();
     _controlsTimer?.cancel();
     _controller?.removeListener(_refreshProgress);
     _controller?.dispose();
@@ -167,6 +227,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
   void _refreshProgress() {
     final refreshAt = DateTime.now();
     if (mounted &&
+        _visible &&
+        _active &&
         (_lastUiRefresh == null ||
             refreshAt.difference(_lastUiRefresh!) >=
                 const Duration(milliseconds: 200))) {

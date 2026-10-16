@@ -1,3 +1,4 @@
+import '../../services/post_likers163.dart';
 import '../../services/post_like161.dart';
 import '../../widgets/post_action161.dart';
 import '../../widgets/mention_content158.dart';
@@ -2333,11 +2334,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final postId = post['id'];
     if (postId == null) return;
     try {
-      final rows = await Supabase.instance.client
-          .from('likes')
-          .select('user_id, created_at, users(name, profile_image)')
-          .eq('post_id', postId)
-          .order('created_at', ascending: false);
+      final rows = await loadPostLikers163('$postId');
       if (!mounted) return;
       showModalBottomSheet(
         context: context,

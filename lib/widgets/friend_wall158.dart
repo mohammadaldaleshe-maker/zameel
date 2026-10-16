@@ -256,23 +256,47 @@ class _WallVideo158 extends StatefulWidget {
 
 class _WallVideo158State extends State<_WallVideo158> {
   VideoPlayerController? controller;
+  bool _failed = false;
+  int _generation = 0;
   @override
   void initState() {
     super.initState();
     _load();
   }
 
+  @override
+  void didUpdateWidget(covariant _WallVideo158 oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.url != widget.url) {
+      _generation++;
+      controller?.dispose();
+      controller = null;
+      _failed = false;
+      _load();
+    }
+  }
+
   Future<void> _load() async {
-    final c = await VideoSourceService.controller(widget.url);
+    final generation = ++_generation;
+    VideoPlayerController? candidate;
     try {
-      await c.initialize();
-      if (!mounted) {
-        await c.dispose();
+      candidate = await VideoSourceService.controller(widget.url);
+      if (!mounted || generation != _generation) {
+        await candidate.dispose();
         return;
       }
-      setState(() => controller = c);
+      await candidate.initialize().timeout(const Duration(seconds: 15));
+      if (!mounted || generation != _generation) {
+        await candidate.dispose();
+        return;
+      }
+      setState(() {
+        controller = candidate;
+        _failed = false;
+      });
     } catch (_) {
-      await c.dispose();
+      await candidate?.dispose();
+      if (mounted && generation == _generation) setState(() => _failed = true);
     }
   }
 
@@ -285,6 +309,16 @@ class _WallVideo158State extends State<_WallVideo158> {
   @override
   Widget build(BuildContext context) {
     final c = controller;
+    if (c == null && _failed)
+      return SizedBox(
+          height: 120,
+          child: Center(
+              child: TextButton(
+                  onPressed: () {
+                    setState(() => _failed = false);
+                    _load();
+                  },
+                  child: const Text('تعذر تشغيل الفيديو، حاول مجددًا'))));
     if (c == null)
       return const SizedBox(
           height: 120, child: Center(child: Text('جارٍ تجهيز الفيديو')));
