@@ -16,11 +16,77 @@ import android.widget.*
 /** Native incoming UI works before Flutter has started. No microphone/camera
  * is opened until the user answers and Flutter validates the live session. */
 object ZameelIncomingCall {
+    private val notifications = mutableMapOf<String, Notification>()
+    private var visibleRoom: String? = null
+    private val imageLoadLock = Any()
+    private val avatars = android.util.LruCache<String, android.graphics.Bitmap>(6)
+    private const val COVERED = "zameel_call_screen_visible_v1"
     private val images = Executors.newSingleThreadExecutor()
     private const val CHANNEL = "zameel_incoming_calls_v3"
     private const val SILENT = "zameel_incoming_calls_silent_v3"
     private fun prefs(c: Context) = c.getSharedPreferences("zameel_calls", Context.MODE_PRIVATE)
     private fun id(room: String) = ("call:$room").hashCode() and 0x7fffffff
+    fun isLocked(c: Context): Boolean =
+        c.getSystemService(KeyguardManager::class.java)?.isKeyguardLocked == true
+
+    fun fallbackAvatar(name: String): android.graphics.Bitmap {
+        val bitmap = android.graphics.Bitmap.createBitmap(128, 128, android.graphics.Bitmap.Config.ARGB_8888)
+        val canvas = android.graphics.Canvas(bitmap)
+        canvas.drawColor(Color.rgb(183, 227, 241))
+        val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.rgb(20, 22, 27); textSize = 60f; textAlign = android.graphics.Paint.Align.CENTER
+        }
+        val letter = name.trim().take(1).ifBlank { "ز" }
+        canvas.drawText(letter, 64f, 64f - (paint.ascent() + paint.descent()) / 2, paint)
+        return bitmap
+    }
+
+    @Synchronized
+    private fun publish(c: Context, room: String, notification: Notification) {
+        if (!isActive(c, room)) return
+        notifications[room] = notification
+        val manager = c.getSystemService(NotificationManager::class.java) ?: return
+        val shown = if (visibleRoom == room) {
+            val quiet = Notification.Builder.recoverBuilder(c, notification)
+                .setFullScreenIntent(null, false).setOnlyAlertOnce(true)
+            if (Build.VERSION.SDK_INT >= 26) quiet.setChannelId(COVERED)
+            else quiet.setPriority(Notification.PRIORITY_LOW).setSound(null).setVibrate(null)
+            quiet.build().apply { flags = flags and Notification.FLAG_INSISTENT.inv() }
+        } else notification
+        try { manager.notify(id(room), shown) } catch (_: SecurityException) { }
+    }
+
+    @Synchronized
+    fun screenVisible(c: Context, room: String) {
+        if (!isActive(c, room) || visibleRoom == room) return
+        val manager = c.getSystemService(NotificationManager::class.java)
+        if (!notifications.containsKey(room)) {
+            manager?.activeNotifications?.firstOrNull { it.id == id(room) }
+                ?.notification?.let { notifications[room] = it }
+        }
+        visibleRoom = room
+        // Remove the existing heads-up card before replacing it on a quiet channel.
+        c.getSystemService(NotificationManager::class.java)?.cancel(id(room))
+        notifications[room]?.let { publish(c, room, it) }
+    }
+
+    @Synchronized
+    fun screenHidden(c: Context, room: String) {
+        if (visibleRoom != room) return
+        visibleRoom = null
+        if (!isActive(c, room)) return
+        notifications[room]?.let {
+            // Returning to the notification must never launch the Activity again.
+            val builder = Notification.Builder.recoverBuilder(c, it)
+                .setFullScreenIntent(null, false).setOnlyAlertOnce(true)
+            c.getSystemService(NotificationManager::class.java)?.cancel(id(room))
+            publish(c, room, builder.build())
+        }
+    }
+
+    fun shouldSound(c: Context, room: String): Boolean =
+        isActive(c, room) && prefs(c).getBoolean("sound", true)
+
     fun setUser(c: Context, user: String?) {
         val p = prefs(c)
         if (p.getString("user", null) != user) {
@@ -31,7 +97,10 @@ object ZameelIncomingCall {
     fun isActive(c: Context, room: String): Boolean =
         prefs(c).getString("room", null) == room &&
         prefs(c).getLong("expires", 0) > System.currentTimeMillis()
+    @Synchronized
     fun dismiss(c: Context, room: String) {
+        notifications.remove(room)
+        if (visibleRoom == room) visibleRoom = null
         prefs(c).edit().putLong("closed:$room", System.currentTimeMillis() + 120_000).apply()
         c.getSystemService(NotificationManager::class.java)?.cancel(id(room))
         if (prefs(c).getString("room", null) == room) {
@@ -56,9 +125,15 @@ object ZameelIncomingCall {
         val name = b.getString("caller_name")?.takeIf { it.isNotBlank() } ?: "زميل"
         val video = type == "incoming_video_call"
         val sound = b.getString("play_sound") != "false"
+        prefs(c).edit().putBoolean("sound", sound).apply()
         val manager = c.getSystemService(NotificationManager::class.java) ?: return true
         val soundUri = Uri.parse("android.resource://${c.packageName}/${R.raw.zameel_ringtone}")
         if (Build.VERSION.SDK_INT >= 26) {
+            manager.createNotificationChannel(NotificationChannel(COVERED,
+                "مكالمة زميل المعروضة", NotificationManager.IMPORTANCE_LOW).apply {
+                setSound(null, null); enableVibration(false)
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+            })
             listOf(CHANNEL, SILENT).forEach { channel ->
                 manager.createNotificationChannel(NotificationChannel(channel,
                     "مكالمات زميل الواردة", NotificationManager.IMPORTANCE_HIGH).apply {
@@ -92,11 +167,15 @@ object ZameelIncomingCall {
         builder.setSmallIcon(R.mipmap.ic_launcher).setContentTitle(name)
             .setContentText(if (video) "مكالمة فيديو واردة" else "مكالمة صوتية واردة")
             .setCategory(Notification.CATEGORY_CALL).setVisibility(Notification.VISIBILITY_PUBLIC)
-            .setOngoing(true).setContentIntent(ring).setFullScreenIntent(ring, true)
+            .setOngoing(true).setContentIntent(ring)
             .setOnlyAlertOnce(true)
+        // Android chooses heads-up while unlocked; full-screen is eligible only at the lock screen.
+        if (isLocked(c)) builder.setFullScreenIntent(ring, true)
+        val placeholder = fallbackAvatar(name)
+        builder.setLargeIcon(placeholder)
         if (Build.VERSION.SDK_INT >= 26) builder.setTimeoutAfter(expires - now)
         if (Build.VERSION.SDK_INT >= 31) {
-            val person = Person.Builder().setName(name).setImportant(true).build()
+            val person = Person.Builder().setName(name).setImportant(true).setIcon(Icon.createWithBitmap(placeholder)).build()
             builder.setStyle(Notification.CallStyle.forIncomingCall(person, decline, answer).setIsVideo(video))
         } else {
             builder.addAction(Notification.Action.Builder(android.graphics.drawable.Icon.createWithResource(c, R.mipmap.ic_launcher), "رفض", decline).build())
@@ -108,11 +187,7 @@ object ZameelIncomingCall {
         }
         val notification = builder.build()
         if (sound) notification.flags = notification.flags or Notification.FLAG_INSISTENT
-        try { manager.notify(id(room), notification) }
-        catch (_: SecurityException) { dismiss(c, room) }
-        if (MainActivity.isVisible && isActive(c, room)) {
-            try { ring.send() } catch (_: PendingIntent.CanceledException) {}
-        }
+        publish(c, room, notification)
         val image = b.getString("caller_image").orEmpty()
         if (image.isNotBlank()) images.execute {
             val avatar = loadCallerImage163(image)
@@ -123,12 +198,18 @@ object ZameelIncomingCall {
                     builder.setStyle(Notification.CallStyle.forIncomingCall(person, decline, answer).setIsVideo(video))
                 }
                 if (Build.VERSION.SDK_INT >= 26) builder.setTimeoutAfter((expires-System.currentTimeMillis()).coerceAtLeast(1))
-                try { manager.notify(id(room), builder.build()) } catch (_: SecurityException) { }
+                val updated = builder.build()
+                if (sound) updated.flags = updated.flags or Notification.FLAG_INSISTENT
+                publish(c, room, updated)
             }
         }
         return true
     }
-    fun loadCallerImage163(value: String): android.graphics.Bitmap? {
+    fun loadCallerImage163(value: String): android.graphics.Bitmap? =
+        synchronized(imageLoadLock) { loadCallerImageBytes163(value) }
+
+    private fun loadCallerImageBytes163(value: String): android.graphics.Bitmap? {
+        synchronized(avatars) { avatars.get(value)?.let { return it } }
         var connection: HttpURLConnection? = null
         return try {
             val url = URL(value)
@@ -152,7 +233,9 @@ object ZameelIncomingCall {
             BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
             val options = BitmapFactory.Options().apply { inSampleSize = 1 }
             while (bounds.outWidth / options.inSampleSize > 256 || bounds.outHeight / options.inSampleSize > 256) options.inSampleSize *= 2
-            BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)?.also {
+                synchronized(avatars) { avatars.put(value, it) }
+            }
         } catch (_: Exception) { null } finally {connection?.disconnect()}
     }
 }
@@ -160,16 +243,25 @@ object ZameelIncomingCall {
 class ZameelIncomingCallActivity : Activity() {
     private val handler = Handler(Looper.getMainLooper())
     private var room = ""
+    private var ringtone: android.media.Ringtone? = null
+    private var responding = false
+    private var openedWhileLocked = false
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density + 0.5f).toInt()
+
     private val monitor = object : Runnable {
         override fun run() {
             if (!ZameelIncomingCall.isActive(this@ZameelIncomingCallActivity, room)) {
                 ZameelIncomingCall.dismiss(this@ZameelIncomingCallActivity, room)
+                finish()
+            } else if (openedWhileLocked && !responding &&
+                !ZameelIncomingCall.isLocked(this@ZameelIncomingCallActivity)) {
                 finish()
             } else handler.postDelayed(this, 500)
         }
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        openedWhileLocked = ZameelIncomingCall.isLocked(this)
         if (Build.VERSION.SDK_INT >= 27) { setShowWhenLocked(true); setTurnScreenOn(true) }
         else window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
             android.view.WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON)
@@ -178,7 +270,8 @@ class ZameelIncomingCallActivity : Activity() {
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = android.view.Gravity.CENTER
-            setPadding(36, 48, 36, 48)
+            setPadding(dp(24), dp(24), dp(24), dp(24))
+            layoutDirection = android.view.View.LAYOUT_DIRECTION_RTL
             setBackgroundColor(Color.rgb(20, 22, 27))
         }
         fun label(value: String, size: Float) = TextView(this).apply {
@@ -187,8 +280,9 @@ class ZameelIncomingCallActivity : Activity() {
             setPadding(8, 24, 8, 24)
         }
         layout.addView(label("Zameel — زميل", 20f))
+        val callerName = intent.data?.getQueryParameter("caller_name")?.takeIf { it.isNotBlank() } ?: "زميل"
         val avatar = ImageView(this).apply {
-            setImageResource(android.R.drawable.ic_menu_myplaces)
+            setImageBitmap(ZameelIncomingCall.fallbackAvatar(callerName))
             scaleType = ImageView.ScaleType.CENTER_CROP
             background = android.graphics.drawable.GradientDrawable().apply { shape = android.graphics.drawable.GradientDrawable.OVAL; setColor(Color.DKGRAY) }
             clipToOutline = true
@@ -200,20 +294,69 @@ class ZameelIncomingCallActivity : Activity() {
             val bitmap = ZameelIncomingCall.loadCallerImage163(image)
             runOnUiThread { if (!isFinishing && ZameelIncomingCall.isActive(this, room) && bitmap != null) avatar.setImageBitmap(bitmap) }
         }.start()
-        layout.addView(label(intent.data?.getQueryParameter("caller_name") ?: "زميل", 30f))
+        layout.addView(label(callerName, 26f))
         layout.addView(label(if (intent.data?.getQueryParameter("video") == "true")
             "مكالمة فيديو واردة" else "مكالمة صوتية واردة", 20f))
-        val actions = LinearLayout(this).apply { gravity = android.view.Gravity.CENTER }
+        val actions = LinearLayout(this).apply {
+            gravity = android.view.Gravity.CENTER
+            orientation = LinearLayout.HORIZONTAL
+        }
         for ((title, action) in listOf("رفض" to "decline", "رد" to "accept")) {
             val button = Button(this).apply {
-                text = title; textSize = 20f
-                setOnClickListener { respond(action) }
+                text = title; textSize = 18f; isAllCaps = false
+                minHeight = dp(56); minimumHeight = dp(56)
+                setPadding(dp(8), dp(8), dp(8), dp(8))
+                gravity = android.view.Gravity.CENTER
+                setTextColor(Color.WHITE)
+                background = android.graphics.drawable.GradientDrawable().apply {
+                    cornerRadius = dp(28).toFloat()
+                    setColor(if (action == "accept") Color.rgb(64, 166, 109) else Color.rgb(218, 86, 78))
+                }
+                setOnClickListener {
+                    if (!responding) { responding = true; respond(action) }
+                }
             }
-            actions.addView(button, LinearLayout.LayoutParams(0, 90, 1f).apply { setMargins(12, 24, 12, 24) })
+            actions.addView(button, LinearLayout.LayoutParams(0, -2, 1f).apply { setMargins(dp(6), dp(12), dp(6), dp(12)) })
         }
         layout.addView(actions, LinearLayout.LayoutParams(-1, -2))
-        setContentView(layout)
+        val scroll = ScrollView(this).apply { isFillViewport = true; addView(layout) }
+        val host = FrameLayout(this).apply {
+            setBackgroundColor(Color.rgb(20, 22, 27))
+            addView(scroll, FrameLayout.LayoutParams(-1, -1))
+        }
+        host.setOnApplyWindowInsetsListener { view, insets ->
+            @Suppress("DEPRECATION")
+            view.setPadding(insets.systemWindowInsetLeft, insets.systemWindowInsetTop,
+                insets.systemWindowInsetRight, insets.systemWindowInsetBottom)
+            insets
+        }
+        showCallScreen(host)
+        host.requestApplyInsets()
         handler.post(monitor)
+    }
+    private fun showCallScreen(layout: android.view.View) { setContentView(layout) }
+
+    override fun onStart() {
+        super.onStart()
+        if (!ZameelIncomingCall.isActive(this, room)) { finish(); return }
+        ZameelIncomingCall.screenVisible(this, room)
+        if (ZameelIncomingCall.shouldSound(this, room)) {
+            try {
+                val uri = Uri.parse("android.resource://$packageName/${R.raw.zameel_ringtone}")
+                ringtone = android.media.RingtoneManager.getRingtone(this, uri)?.apply {
+                    audioAttributes = AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE).build()
+                    if (Build.VERSION.SDK_INT >= 28) isLooping = true
+                    play()
+                }
+            } catch (_: Exception) { }
+        }
+    }
+    private fun stopRinging() { ringtone?.stop(); ringtone = null }
+    override fun onStop() {
+        stopRinging()
+        ZameelIncomingCall.screenHidden(this, room)
+        super.onStop()
     }
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
@@ -223,6 +366,7 @@ class ZameelIncomingCallActivity : Activity() {
     private fun respond(action: String) {
         if (!ZameelIncomingCall.isActive(this, room)) { finish(); return }
         handler.removeCallbacksAndMessages(null)
+        stopRinging()
         ZameelIncomingCall.dismiss(this, room)
         val uri = intent.data?.buildUpon()?.clearQuery()
             ?.appendQueryParameter("room_id", room)
@@ -243,5 +387,5 @@ class ZameelIncomingCallActivity : Activity() {
             })
         } else { startActivity(launch); finish() }
     }
-    override fun onDestroy() { handler.removeCallbacksAndMessages(null); super.onDestroy() }
+    override fun onDestroy() { stopRinging(); handler.removeCallbacksAndMessages(null); super.onDestroy() }
 }

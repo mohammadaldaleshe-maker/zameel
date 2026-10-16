@@ -81,14 +81,6 @@ class MainActivity : FlutterActivity() {
                             Uri.parse("package:$packageName")))
                         result.success(null)
                     }
-                    "canFullScreen" -> result.success(Build.VERSION.SDK_INT < 34 ||
-                        getSystemService(NotificationManager::class.java)?.canUseFullScreenIntent() == true)
-                    "requestFullScreen" -> {
-                        if (Build.VERSION.SDK_INT >= 34) startActivity(Intent(
-                            Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT,
-                            Uri.parse("package:$packageName")))
-                        result.success(null)
-                    }
                     "finishDecline" -> {
                         result.success(null)
                         if (getSystemService(android.app.KeyguardManager::class.java)?.isKeyguardLocked == true) finish()
@@ -202,6 +194,11 @@ class MainActivity : FlutterActivity() {
         prepareDecline(intent)
     }
     private fun prepareDecline(intent: Intent?) {
+        val callUri = intent?.data
+        if (callUri?.scheme == "zameel" && callUri.host == "call" &&
+            callUri.getQueryParameter("action") in listOf("accept", "decline")) {
+            ZameelIncomingCall.dismiss(this, callUri.getQueryParameter("room_id").orEmpty())
+        }
         if (Build.VERSION.SDK_INT >= 27 && intent?.data?.host == "call" &&
             intent.data?.getQueryParameter("action") == "decline") setShowWhenLocked(true)
     }
