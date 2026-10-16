@@ -1,8 +1,6 @@
 package com.zameel.app
 
 import android.app.NotificationManager
-
-import android.app.NotificationManager
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -145,6 +143,27 @@ class MainActivity : FlutterActivity() {
                 }
             }
     }
+    private val galleryWriter161 by lazy { GalleryWriter161(this) }
+
+    fun saveToGallery161(
+        file: java.io.File,
+        mime: String,
+        name: String,
+        result: io.flutter.plugin.common.MethodChannel.Result,
+        done: () -> Unit
+    ) {
+        galleryWriter161.save(file, mime, name, result, done)
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        if (galleryWriter161.permission(requestCode, grantResults)) return
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    }
+
     fun saveExportWithPicker(file: java.io.File, mime: String, name: String,
         result: io.flutter.plugin.common.MethodChannel.Result, done: () -> Unit) {
         pendingExport = Triple(file, result, done)
