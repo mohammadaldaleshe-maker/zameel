@@ -47,13 +47,42 @@ object ZameelIncomingCall {
         notifications[room] = notification
         val manager = c.getSystemService(NotificationManager::class.java) ?: return
         val shown = if (visibleRoom == room) {
-            val quiet = Notification.Builder.recoverBuilder(c, notification)
+            val quiet = Notification.Builder.recoverBuilder(c, notification.clone())
                 .setFullScreenIntent(null, false).setOnlyAlertOnce(true)
             if (Build.VERSION.SDK_INT >= 26) quiet.setChannelId(COVERED)
             else quiet.setPriority(Notification.PRIORITY_LOW).setSound(null).setVibrate(null)
             quiet.build().apply { flags = flags and Notification.FLAG_INSISTENT.inv() }
         } else notification
-        try { manager.notify(id(room), shown) } catch (_: SecurityException) { }
+        // Android 14+ can remove a disallowed FSI before validating CallStyle.
+        val permitted = Build.VERSION.SDK_INT < 34 || manager.canUseFullScreenIntent()
+        val safe = if (shown.fullScreenIntent == null || !permitted)
+            standardNotification(c, shown) else shown
+        try {
+            manager.notify(id(room), safe)
+        } catch (error: IllegalArgumentException) {
+            android.util.Log.e("ZameelCalls", "Call notification rejected; retrying standard template", error)
+            try {
+                manager.notify(id(room), standardNotification(c, safe))
+            } catch (fallback: IllegalArgumentException) {
+                android.util.Log.e("ZameelCalls", "Standard call notification rejected", fallback)
+            } catch (denied: SecurityException) {
+                android.util.Log.e("ZameelCalls", "Call notification permission denied", denied)
+            }
+        } catch (denied: SecurityException) {
+            android.util.Log.e("ZameelCalls", "Call notification permission denied", denied)
+        }
+    }
+
+    private fun standardNotification(c: Context, source: Notification): Notification {
+        // Recovered actions retain the original answer/decline PendingIntents.
+        // Replace the template when FSI is absent; keeping CallStyle here crashes Android.
+        return Notification.Builder.recoverBuilder(c, source.clone())
+            .setFullScreenIntent(null, false)
+            .setStyle(Notification.BigTextStyle().bigText(source.extras.getCharSequence(Notification.EXTRA_TEXT)))
+            .build().apply {
+                flags = if (source.flags and Notification.FLAG_INSISTENT != 0)
+                    flags or Notification.FLAG_INSISTENT else flags and Notification.FLAG_INSISTENT.inv()
+            }
     }
 
     @Synchronized
@@ -77,7 +106,7 @@ object ZameelIncomingCall {
         if (!isActive(c, room)) return
         notifications[room]?.let {
             // Returning to the notification must never launch the Activity again.
-            val builder = Notification.Builder.recoverBuilder(c, it)
+            val builder = Notification.Builder.recoverBuilder(c, it.clone())
                 .setFullScreenIntent(null, false).setOnlyAlertOnce(true)
             c.getSystemService(NotificationManager::class.java)?.cancel(id(room))
             publish(c, room, builder.build())
@@ -169,8 +198,9 @@ object ZameelIncomingCall {
             .setCategory(Notification.CATEGORY_CALL).setVisibility(Notification.VISIBILITY_PUBLIC)
             .setOngoing(true).setContentIntent(ring)
             .setOnlyAlertOnce(true)
-        // Android chooses heads-up while unlocked; full-screen is eligible only at the lock screen.
-        if (isLocked(c)) builder.setFullScreenIntent(ring, true)
+        // CallStyle requires a full-screen intent even while unlocked. Android chooses
+        // heads-up vs full-screen; never launch the Activity ourselves.
+        builder.setFullScreenIntent(ring, true)
         val placeholder = fallbackAvatar(name)
         builder.setLargeIcon(placeholder)
         if (Build.VERSION.SDK_INT >= 26) builder.setTimeoutAfter(expires - now)
