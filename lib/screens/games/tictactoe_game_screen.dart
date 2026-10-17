@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../games/mini_games.dart';
 import '../../theme/app_theme.dart';
+import 'game_kit.dart';
 
 // Tic-tac-toe (X and O): against the phone at three levels, or two players on
 // one phone. X always moves first. Against the phone the starting side
@@ -27,6 +28,7 @@ class _TicTacToeGameScreenState extends State<TicTacToeGameScreen> {
   bool _thinking = false;
   int _gameToken = 0;
   List<int> _score = <int>[0, 0, 0];
+  int _confetti = 0;
 
   bool get _ar => widget.isArabic;
   String _t(String ar, String en) => _ar ? ar : en;
@@ -81,6 +83,7 @@ class _TicTacToeGameScreenState extends State<TicTacToeGameScreen> {
       // player), index 1 is the phone (or the O player).
       final who = _mode == 0 ? (winner == _phoneSide ? 1 : 0) : winner - 1;
       _score[who] = _score[who] + 1;
+      if (who == 0) _confetti++;
     } else if (tttFull(_board)) {
       _score[2] = _score[2] + 1;
     }
@@ -126,140 +129,224 @@ class _TicTacToeGameScreenState extends State<TicTacToeGameScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final line = _winningLine();
     return Directionality(
       textDirection: _ar ? TextDirection.rtl : TextDirection.ltr,
-      child: Scaffold(
-        appBar: AppBar(title: Text(_t('إكس أو', 'Tic-Tac-Toe'))),
-        body: ListView(
-          padding: const EdgeInsets.all(16),
+      child: GameScaffold(
+        title: _t('إكس أو', 'Tic-Tac-Toe'),
+        body: Stack(
           children: [
-            SegmentedButton<int>(
-              segments: <ButtonSegment<int>>[
-                ButtonSegment<int>(
-                  value: 0,
-                  label: Text(_t('ضد الهاتف', 'vs Phone')),
-                ),
-                ButtonSegment<int>(
-                  value: 1,
-                  label: Text(_t('لاعبان', 'Two players')),
-                ),
-              ],
-              selected: <int>{_mode},
-              onSelectionChanged: (selection) {
-                _mode = selection.first;
-                _resetAll();
-              },
-            ),
-            if (_mode == 0) const SizedBox(height: 12),
-            if (_mode == 0)
-              SegmentedButton<int>(
-                segments: <ButtonSegment<int>>[
-                  ButtonSegment<int>(value: 0, label: Text(_t('سهل', 'Easy'))),
-                  ButtonSegment<int>(
-                    value: 1,
-                    label: Text(_t('متوسط', 'Medium')),
-                  ),
-                  ButtonSegment<int>(value: 2, label: Text(_t('صعب', 'Hard'))),
-                ],
-                selected: <int>{_level},
-                onSelectionChanged: (selection) {
-                  _level = selection.first;
-                  _resetAll();
-                },
-              ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            ListView(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
               children: [
-                _scoreBox(_mode == 0 ? _t('أنت', 'You') : 'X', _score[0], scheme),
-                _scoreBox(_t('تعادل', 'Draws'), _score[2], scheme),
-                _scoreBox(_mode == 0 ? _t('الهاتف', 'Phone') : 'O', _score[1], scheme),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Center(
-              child: Text(
-                _status(),
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 330),
-                child: GridView.count(
-                  crossAxisCount: 3,
-                  shrinkWrap: true,
-                  mainAxisSpacing: 8,
-                  crossAxisSpacing: 8,
-                  physics: const NeverScrollableScrollPhysics(),
+                GameModeSwitch<int>(
+                  choices: <GameChoice<int>>[
+                    GameChoice<int>(0, _t('ضد الهاتف', 'vs Phone')),
+                    GameChoice<int>(1, _t('لاعبان', 'Two players')),
+                  ],
+                  selected: _mode,
+                  onChanged: (value) {
+                    _mode = value;
+                    _resetAll();
+                  },
+                ),
+                if (_mode == 0) const SizedBox(height: 10),
+                if (_mode == 0)
+                  GameModeSwitch<int>(
+                    choices: <GameChoice<int>>[
+                      GameChoice<int>(0, _t('سهل', 'Easy')),
+                      GameChoice<int>(1, _t('متوسط', 'Medium')),
+                      GameChoice<int>(2, _t('صعب', 'Hard')),
+                    ],
+                    selected: _level,
+                    onChanged: (value) {
+                      _level = value;
+                      _resetAll();
+                    },
+                  ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    for (var i = 0; i < 9; i++) _cell(i, line.contains(i), scheme),
+                    GameScoreChip(
+                      label: _mode == 0 ? _t('أنت', 'You') : 'X',
+                      value: '${_score[0]}',
+                      active: !_finished && _turn == (_mode == 0 ? (_phoneFirst ? 2 : 1) : 1),
+                    ),
+                    GameScoreChip(
+                      label: _t('تعادل', 'Draws'),
+                      value: '${_score[2]}',
+                      accent: kGameGold,
+                    ),
+                    GameScoreChip(
+                      label: _mode == 0 ? _t('الهاتف', 'Phone') : 'O',
+                      value: '${_score[1]}',
+                      accent: const Color(0xFFFF5C8A),
+                      active: !_finished && _turn == (_mode == 0 ? _phoneSide : 2),
+                    ),
                   ],
                 ),
-              ),
+                const SizedBox(height: 14),
+                Center(
+                  child: GameBanner(
+                    text: _status(),
+                    color: _finished ? kGameGold : Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 340),
+                    child: GamePanel(
+                      padding: const EdgeInsets.all(10),
+                      child: AspectRatio(
+                        aspectRatio: 1,
+                        child: Directionality(
+                          textDirection: TextDirection.ltr,
+                          child: Stack(
+                          children: [
+                            Column(
+                              children: [
+                                for (var r = 0; r < 3; r++)
+                                  Expanded(
+                                    child: Row(
+                                      children: [
+                                        for (var c = 0; c < 3; c++)
+                                          Expanded(
+                                            child: _cell(r * 3 + c,
+                                                line.contains(r * 3 + c)),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            if (line.isNotEmpty)
+                              Positioned.fill(
+                                child: IgnorePointer(
+                                  child: TweenAnimationBuilder<double>(
+                                    key: ValueKey<String>('win_${line.join()}'),
+                                    tween: Tween<double>(begin: 0, end: 1),
+                                    duration: const Duration(milliseconds: 500),
+                                    curve: Curves.easeOut,
+                                    builder: (context, value, child) =>
+                                        CustomPaint(
+                                      painter: _WinLinePainter(line, value),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                if (_finished)
+                  Center(
+                    child: GameButton(
+                      onPressed: () => _newGame(),
+                      icon: Icons.refresh_rounded,
+                      label: _t('لعبة جديدة', 'New game'),
+                    ),
+                  ),
+              ],
             ),
-            const SizedBox(height: 20),
-            if (_finished)
-              FilledButton.icon(
-                onPressed: () => _newGame(),
-                icon: const Icon(Icons.refresh_rounded),
-                label: Text(_t('لعبة جديدة', 'New game')),
-              ),
+            Positioned.fill(child: ConfettiBurst(trigger: _confetti)),
           ],
         ),
       ),
     );
   }
 
-  Widget _cell(int index, bool highlighted, ColorScheme scheme) {
+  Widget _cell(int index, bool highlighted) {
     final mark = _board[index];
-    return InkWell(
-      borderRadius: BorderRadius.circular(14),
-      onTap: () => _tap(index),
-      child: Container(
-        decoration: BoxDecoration(
-          color: highlighted ? AppTheme.primaryLight : scheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: highlighted ? AppTheme.primary : Colors.transparent,
-            width: 2,
-          ),
-        ),
-        child: Center(
-          child: Text(
-            mark == 1 ? 'X' : (mark == 2 ? 'O' : ''),
-            textDirection: TextDirection.ltr,
-            style: TextStyle(
-              fontSize: 54,
-              fontWeight: FontWeight.w900,
-              color: mark == 1 ? AppTheme.primary : AppTheme.error,
+    return Padding(
+      padding: const EdgeInsets.all(4),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          if (_board[index] == 0) gameTap();
+          _tap(index);
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          decoration: BoxDecoration(
+            color: highlighted
+                ? Colors.white.withOpacity(0.24)
+                : Colors.black.withOpacity(0.22),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: highlighted ? kGameGold : Colors.white.withOpacity(0.12),
+              width: highlighted ? 2 : 1,
             ),
           ),
+          child: Center(
+            child: mark == 0
+                ? const SizedBox.shrink()
+                : TweenAnimationBuilder<double>(
+                    key: ValueKey<String>('mark_${index}_$mark'),
+                    tween: Tween<double>(begin: 0, end: 1),
+                    duration: const Duration(milliseconds: 320),
+                    curve: Curves.easeOutBack,
+                    builder: (context, value, child) => Transform.scale(
+                      scale: value.clamp(0.0, 1.3).toDouble(),
+                      child: child,
+                    ),
+                    child: mark == 1
+                        ? const Icon(Icons.close_rounded,
+                            size: 64, color: kGameTeal)
+                        : Container(
+                            width: 50,
+                            height: 50,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: const Color(0xFFFF5C8A),
+                                width: 9,
+                              ),
+                            ),
+                          ),
+                  ),
+          ),
         ),
       ),
     );
   }
+}
 
-  Widget _scoreBox(String label, int value, ColorScheme scheme) {
-    return Container(
-      width: 96,
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        children: [
-          Text(
-            '$value',
-            style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900),
-          ),
-          Text(label, style: const TextStyle(fontSize: 12)),
-        ],
-      ),
-    );
+class _WinLinePainter extends CustomPainter {
+  _WinLinePainter(this.line, this.progress);
+
+  final List<int> line;
+  final double progress;
+
+  Offset _center(int index, Size size) {
+    final cell = size.width / 3;
+    return Offset((index % 3 + 0.5) * cell, (index ~/ 3 + 0.5) * cell);
   }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (line.length != 3) return;
+    final a = _center(line[0], size);
+    final b = _center(line[2], size);
+    final end = Offset.lerp(a, b, progress)!;
+    final glow = Paint()
+      ..color = kGameGold.withOpacity(0.45)
+      ..strokeWidth = 16
+      ..strokeCap = StrokeCap.round;
+    final core = Paint()
+      ..color = kGameGold
+      ..strokeWidth = 7
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(a, end, glow);
+    canvas.drawLine(a, end, core);
+  }
+
+  @override
+  bool shouldRepaint(covariant _WinLinePainter oldDelegate) =>
+      oldDelegate.progress != progress || oldDelegate.line != line;
 }

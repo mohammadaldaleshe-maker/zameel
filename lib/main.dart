@@ -89,6 +89,7 @@ import 'screens/social/beautiful_college_screen.dart';
 import 'screens/chat/contact_calls_screen.dart';
 import 'screens/polls_screen.dart';
 import 'screens/private_groups_screen.dart';
+import 'screens/groups/group_chat_screen.dart';
 
 import 'providers/language_provider.dart';
 import 'l10n/translations.dart';
@@ -284,9 +285,32 @@ Future<void> _initAppLinks() async {
 
 final Set<String> _openingCallRooms = <String>{};
 
+/// Wraps the real handler so a call answered on the lock screen can never leave
+/// the app showing over the lock screen when something goes wrong or ends early.
 Future<void> _handlePushNavigationData(Map<String, dynamic> data) async {
+  final answering = data['action']?.toString() == 'accept';
+  final room = data['room_id']?.toString() ?? '';
+  // A duplicate tap for a call that is already opening must not close the app.
+  final alreadyOpening = room.isNotEmpty && _openingCallRooms.contains(room);
   try {
-    if (!await DeviceTrust160.ready()) return;
+    await _handlePushNavigationDataInner(data);
+  } catch (_) {
+    // A failed navigation must not crash the tap handler.
+  } finally {
+    if (answering && !alreadyOpening) {
+      await NativeIncomingCallService.finishDecline();
+    }
+  }
+}
+
+Future<void> _handlePushNavigationDataInner(Map<String, dynamic> data) async {
+  try {
+    // A device already approved in this session must not repeat the server
+    // round trip on every notification tap.
+    final trustedNow = DeviceTrust160.approvedUser != null &&
+        DeviceTrust160.approvedUser ==
+            Supabase.instance.client.auth.currentUser?.id;
+    if (!trustedNow && !await DeviceTrust160.ready()) return;
   } catch (_) {
     return;
   }
@@ -324,6 +348,21 @@ Future<void> _handlePushNavigationData(Map<String, dynamic> data) async {
               clips: [Map<String, dynamic>.from(clip)], initialIndex: 0)));
     return;
   }
+  if (type == 'group_join_request' && data['group_id'] != null) {
+    nav.push(MaterialPageRoute(
+        builder: (_) => PrivateGroupsScreen(
+            openRequestsForGroupId: data['group_id'].toString())));
+    return;
+  }
+  if ((type == 'group_member_joined' || type == 'group_join_accepted') &&
+      data['group_id'] != null) {
+    nav.push(MaterialPageRoute(
+        builder: (_) => GroupChatScreen(
+            groupId: data['group_id'].toString(),
+            groupName: (data['group_name'] ?? '').toString(),
+            isOwner: type == 'group_member_joined')));
+    return;
+  }
   if (type == 'group_invitation' && data['invitation_id'] != null) {
     nav.push(MaterialPageRoute(
         builder: (_) => GroupInvitationScreen(
@@ -345,7 +384,7 @@ Future<void> _handlePushNavigationData(Map<String, dynamic> data) async {
       type == 'like') {
     final id = data['post_id']?.toString();
     if (id != null &&
-        await FeatureControl.instance.check(nav.context, 'feed_posts')) {
+        await FeatureControl.instance.checkQuick(nav.context, 'feed_posts')) {
       try {
         final post = await Supabase.instance.client
             .from('posts')
@@ -399,8 +438,8 @@ Future<void> _handlePushNavigationData(Map<String, dynamic> data) async {
         } catch (_) {}
       }
       if (partnerId.isNotEmpty) {
-        if (!await FeatureControl.instance.check(nav.context, 'direct_chat'))
-          return;
+        if (!await FeatureControl.instance
+            .checkQuick(nav.context, 'direct_chat')) return;
         nav.push(
           MaterialPageRoute(
             builder: (_) => ChatDetailScreen(
@@ -419,6 +458,35 @@ Future<void> _handlePushNavigationData(Map<String, dynamic> data) async {
     final roomId = data['room_id']?.toString() ?? '';
     if (roomId.isEmpty || !_openingCallRooms.add(roomId)) return;
     try {
+      // "Answer" pressed on the call notification: the notification already
+      // carries who is calling and whether it is video, so go straight into the
+      // call instead of re-reading the session and the caller profile first.
+      final rawCallerId = data['caller_id']?.toString().trim() ?? '';
+      final quickCallerId = rawCallerId == 'null' ? '' : rawCallerId;
+      if (data['action']?.toString() == 'accept' && quickCallerId.isNotEmpty) {
+        unawaited(NativeIncomingCallService.dismiss(roomId));
+        if (!await CallInvitationGuard.isRinging(roomId)) {
+          await NativeIncomingCallService.finishDecline();
+          return;
+        }
+        final quickName = data['caller_name']?.toString().trim() ?? '';
+        await nav.push(
+          MaterialPageRoute(
+            builder: (_) => MeetScreen(
+              participantId: quickCallerId,
+              participantName: quickName.isNotEmpty ? quickName : 'Colleague',
+              roomId: roomId,
+              startImmediately: true,
+              startWithVideo: data['video']?.toString() == 'true' ||
+                  data['type']?.toString() == 'incoming_video_call',
+              isInitiator: false,
+            ),
+          ),
+        );
+        // If the phone was locked, leave the app instead of exposing it.
+        await NativeIncomingCallService.finishDecline();
+        return;
+      }
       if (!await FeatureControl.instance.check(nav.context, 'direct_calls'))
         return;
       if (!await CallInvitationGuard.isRinging(roomId)) return;
@@ -531,6 +599,12 @@ Future<void> main() async {
 }
 
 Future<void> _initializeOptionalServices() async {
+  // Install the notification-tap handler first: a tap that cold-starts the app
+  // must not wait for billing, Firebase or token registration before opening.
+  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+    unawaited(PushNotificationService.instance
+        .setTapHandler(_handlePushNavigationData));
+  }
   if (PlayBillingService.enabled) {
     try {
       await PlayBillingService.instance.initialize();

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:ui' as ui;
 
@@ -83,6 +84,12 @@ class PushNotificationService {
       FirebaseMessaging.onBackgroundMessage(
         firebaseMessagingBackgroundHandler,
       );
+      // A tap that started the app is read first, before channels and
+      // permission prompts, so the screen opens as early as possible.
+      final initialMessage = await _messaging!.getInitialMessage();
+      if (initialMessage != null) {
+        unawaited(_handleTapData(initialMessage.data));
+      }
 
       const android = AndroidInitializationSettings('@mipmap/ic_launcher');
       const ios = DarwinInitializationSettings();
@@ -124,11 +131,6 @@ class PushNotificationService {
 
       FirebaseMessaging.onMessage.listen(_onForegroundMessage);
       FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpenedApp);
-
-      final initialMessage = await messaging.getInitialMessage();
-      if (initialMessage != null) {
-        await _handleTapData(initialMessage.data);
-      }
 
       messaging.onTokenRefresh.listen((token) async {
         await _saveToken(token);

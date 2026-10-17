@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../games/cards.dart';
 import '../../games/trix.dart';
 import '../../theme/app_theme.dart';
+import 'game_kit.dart';
 import 'game_widgets.dart';
 
 // Trix against three bots. Rules are described in lib/games/trix.dart.
@@ -62,18 +63,19 @@ class _TrixGameScreenState extends State<TrixGameScreen> {
   Future<void> _advance() async {
     if (_busy) return;
     _busy = true;
+    final startedWith = _game;
     try {
       while (mounted) {
         if (_showLast) {
           await _pause(1300);
-          if (!mounted) return;
+          if (!mounted || startedWith != _game) return;
           setState(() => _showLast = false);
         }
         final game = _game;
         if (game.phase == TrixPhase.chooseContract) {
           if (game.owner == 0) return;
           await _pause(900);
-          if (!mounted) return;
+          if (!mounted || startedWith != _game) return;
           final choice = trixBotChooseContract(
             game.hands[game.owner],
             game.availableContracts(),
@@ -85,7 +87,7 @@ class _TrixGameScreenState extends State<TrixGameScreen> {
         } else if (game.phase == TrixPhase.playing) {
           if (game.currentMustPass) {
             await _pause(game.turn == 0 ? 1000 : 500);
-            if (!mounted) return;
+            if (!mounted || startedWith != _game) return;
             final who = game.turn;
             setState(() {
               _notice = _t(
@@ -98,7 +100,7 @@ class _TrixGameScreenState extends State<TrixGameScreen> {
             return;
           } else {
             await _pause(700);
-            if (!mounted) return;
+            if (!mounted || startedWith != _game) return;
             final card = trixBotPlay(game, game.turn);
             setState(() {
               _notice = '';
@@ -110,7 +112,8 @@ class _TrixGameScreenState extends State<TrixGameScreen> {
         }
       }
     } finally {
-      _busy = false;
+      // A newly started game owns the flag; an abandoned loop must not clear it.
+      if (startedWith == _game) _busy = false;
     }
   }
 
@@ -145,6 +148,7 @@ class _TrixGameScreenState extends State<TrixGameScreen> {
   }
 
   void _restart() {
+    _busy = false;
     setState(() {
       _game = TrixGame();
       _showLast = false;
@@ -169,39 +173,47 @@ class _TrixGameScreenState extends State<TrixGameScreen> {
       },
       child: Directionality(
         textDirection: _ar ? TextDirection.rtl : TextDirection.ltr,
-        child: Scaffold(
-          appBar: AppBar(
-            title: Text(_t('التركس', 'Trix')),
-            actions: [
-              IconButton(
-                tooltip: _t('لعبة جديدة', 'New game'),
-                icon: const Icon(Icons.refresh_rounded),
-                onPressed: _confirmRestart,
-              ),
-            ],
-          ),
-          body: SafeArea(
-            child: Column(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-                    child: Column(
-                      children: [
-                        _playersBar(game),
-                        const SizedBox(height: 8),
-                        _infoLine(game),
-                        const SizedBox(height: 8),
-                        _tableArea(game),
-                        const SizedBox(height: 8),
-                        _actionPanel(game),
-                      ],
+        child: GameScaffold(
+          title: _t('التركس', 'Trix'),
+          actions: [
+            IconButton(
+              tooltip: _t('لعبة جديدة', 'New game'),
+              icon: const Icon(Icons.refresh_rounded),
+              onPressed: _confirmRestart,
+            ),
+          ],
+          body: Stack(
+            children: [
+              Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+                      child: Column(
+                        children: [
+                          _playersBar(game),
+                          const SizedBox(height: 8),
+                          _infoLine(game),
+                          const SizedBox(height: 8),
+                          _tableArea(game),
+                          const SizedBox(height: 10),
+                          _actionPanel(game),
+                        ],
+                      ),
                     ),
                   ),
+                  _handRow(game),
+                ],
+              ),
+              Positioned.fill(
+                child: ConfettiBurst(
+                  trigger: game.phase == TrixPhase.gameOver &&
+                          game.winners().contains(0)
+                      ? 1
+                      : 0,
                 ),
-                _handRow(game),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -217,8 +229,9 @@ class _TrixGameScreenState extends State<TrixGameScreen> {
       runSpacing: 6,
       children: [
         for (var seat = 0; seat < 4; seat++)
-          GamePill(
-            text: gameSeatName(seat, _ar),
+          GameSeatBadge(
+            seat: seat,
+            name: gameSeatName(seat, _ar),
             active: (waiting && game.turn == seat) ||
                 (choosing && game.owner == seat),
             subtitle:
@@ -242,24 +255,59 @@ class _TrixGameScreenState extends State<TrixGameScreen> {
     return Text(
       text,
       textAlign: TextAlign.center,
-      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+      style: const TextStyle(
+        color: Colors.white,
+        fontSize: 15,
+        fontWeight: FontWeight.w800,
+      ),
     );
   }
 
   Widget _tableArea(TrixGame game) {
     if (game.phase == TrixPhase.chooseContract) {
-      return const SizedBox(height: 40);
+      return const SizedBox(height: 20);
     }
     if (game.isLayout) {
-      return Column(
-        children: [
-          for (final suit in allSuits) _layoutRow(game, suit),
-        ],
+      return GamePanel(
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          children: [
+            for (final suit in allSuits) _layoutRow(game, suit),
+          ],
+        ),
       );
     }
-    return SizedBox(
-      height: 190,
-      child: Center(child: _trickArea(game)),
+    final plays = _showLast ? game.lastTrick : game.trick;
+    return GameFeltTable(
+      height: 300,
+      child: Stack(
+        children: [
+          Align(
+            alignment: Alignment.topCenter,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: CardBackFan(count: game.hands[2].length, width: 24),
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 12),
+              child: CardBackFan(
+                  count: game.hands[1].length, width: 22, vertical: true),
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: CardBackFan(
+                  count: game.hands[3].length, width: 22, vertical: true),
+            ),
+          ),
+          Center(child: TrickArea(plays: plays, cardWidth: 42, size: 150)),
+        ],
+      ),
     );
   }
 
@@ -267,22 +315,31 @@ class _TrixGameScreenState extends State<TrixGameScreen> {
     final lo = game.low[suit.index];
     final hi = game.high[suit.index];
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 30,
-            child: Text(
-              suitSymbol(suit),
-              style: TextStyle(fontSize: 24, color: suitColor(suit)),
+          Container(
+            width: 32,
+            height: 32,
+            margin: const EdgeInsetsDirectional.only(end: 6),
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white,
+            ),
+            child: Center(
+              child: Text(
+                suitSymbol(suit),
+                style: TextStyle(
+                    fontSize: 20, color: suitColor(suit), height: 1.0),
+              ),
             ),
           ),
           Expanded(
             child: lo < 0
                 ? const Padding(
-                    padding: EdgeInsets.only(top: 8),
-                    child: Text('—'),
+                    padding: EdgeInsets.only(top: 6),
+                    child: Text('—', style: TextStyle(color: Colors.white54)),
                   )
                 : Wrap(
                     spacing: 2,
@@ -298,35 +355,14 @@ class _TrixGameScreenState extends State<TrixGameScreen> {
     );
   }
 
-  Widget _trickArea(TrixGame game) {
-    final plays = _showLast ? game.lastTrick : game.trick;
-    PlayingCard? cardOf(int seat) {
-      for (final p in plays) {
-        if (p.seat == seat) return p.card;
-      }
-      return null;
-    }
-
-    Widget slot(int seat, Alignment alignment) {
-      final card = cardOf(seat);
-      return Align(
-        alignment: alignment,
-        child: card == null
-            ? const SizedBox(width: 38, height: 54)
-            : GameCardView(card: card, width: 38),
-      );
-    }
-
-    return SizedBox(
-      width: 190,
-      height: 180,
-      child: Stack(
-        children: [
-          slot(0, Alignment.bottomCenter),
-          slot(1, Alignment.centerLeft),
-          slot(2, Alignment.topCenter),
-          slot(3, Alignment.centerRight),
-        ],
+  Widget _panelTitle(String text) {
+    return Text(
+      text,
+      textAlign: TextAlign.center,
+      style: const TextStyle(
+        color: Colors.white,
+        fontWeight: FontWeight.w900,
+        fontSize: 16,
       ),
     );
   }
@@ -334,70 +370,106 @@ class _TrixGameScreenState extends State<TrixGameScreen> {
   Widget _actionPanel(TrixGame game) {
     if (game.phase == TrixPhase.chooseContract) {
       if (game.owner != 0) {
-        return Text(
-          _t('${gameSeatName(game.owner, true)} يختار العقد...', '${gameSeatName(game.owner, false)} is choosing a contract...'),
-          style: const TextStyle(fontWeight: FontWeight.w700),
+        return GameBanner(
+          size: 15,
+          text: _t('${gameSeatName(game.owner, true)} يختار العقد...',
+              '${gameSeatName(game.owner, false)} is choosing a contract...'),
         );
       }
-      return Column(
-        children: [
-          Text(
-            _t('مملكتك — اختر عقداً', 'Your kingdom — choose a contract'),
-            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
-          ),
-          const SizedBox(height: 8),
-          for (final contract in game.availableContracts())
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: _busy ? null : () => _chooseUser(contract),
-                  child: Column(
-                    children: [
-                      Text(
-                        _contractName(contract),
-                        style: const TextStyle(fontWeight: FontWeight.w800),
+      return GamePanel(
+        child: Column(
+          children: [
+            _panelTitle(_t('مملكتك — اختر عقداً', 'Your kingdom — choose a contract')),
+            const SizedBox(height: 10),
+            for (final contract in game.availableContracts())
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Material(
+                  color: Colors.transparent,
+                  child: Ink(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: <Color>[AppTheme.primary, AppTheme.primaryDark],
                       ),
-                      Text(
-                        _contractHelp(contract),
-                        style: const TextStyle(fontSize: 12),
-                        textAlign: TextAlign.center,
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: Colors.white.withOpacity(0.3)),
+                    ),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(18),
+                      onTap: _busy
+                          ? null
+                          : () {
+                              gameTap();
+                              _chooseUser(contract);
+                            },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 10, horizontal: 12),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: Column(
+                            children: [
+                              Text(
+                                _contractName(contract),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              Text(
+                                _contractHelp(contract),
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.85),
+                                  fontSize: 12,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       );
     }
     if (_showLast) {
-      return Text(
-        _t('${gameSeatName(game.lastTrickWinner, true)} ربح اللمّة', '${gameSeatName(game.lastTrickWinner, false)} won the trick'),
-        style: const TextStyle(fontWeight: FontWeight.w700),
+      return GameBanner(
+        size: 16,
+        color: kGameGold,
+        text: _t('${gameSeatName(game.lastTrickWinner, true)} ربح اللمّة',
+            '${gameSeatName(game.lastTrickWinner, false)} won the trick'),
       );
     }
     if (game.phase == TrixPhase.playing) {
       final turnText = game.turn == 0
           ? _t('دورك — اختر ورقة', 'Your turn — play a card')
-          : _t('ينتظر ${gameSeatName(game.turn, true)}...', 'Waiting for ${gameSeatName(game.turn, false)}...');
+          : _t('ينتظر ${gameSeatName(game.turn, true)}...',
+              'Waiting for ${gameSeatName(game.turn, false)}...');
       return Column(
         children: [
-          Text(
-            turnText,
-            style: const TextStyle(fontWeight: FontWeight.w700),
-          ),
+          GameBanner(size: 15, text: turnText),
           if (_notice.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 4),
-              child: Text(_notice),
+              child: Text(
+                _notice,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: kGameGold),
+              ),
             ),
           Padding(
             padding: const EdgeInsets.only(top: 4),
             child: Text(
               _contractHelp(game.contract!),
-              style: const TextStyle(fontSize: 12),
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.75),
+                fontSize: 12,
+              ),
               textAlign: TextAlign.center,
             ),
           ),
@@ -414,53 +486,52 @@ class _TrixGameScreenState extends State<TrixGameScreen> {
     final over = game.phase == TrixPhase.gameOver;
     final chosen = game.contract;
     final winners = game.winners();
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          children: [
-            if (chosen != null)
-              Text(
-                _t('انتهت صفقة ${_contractName(chosen)}', '${_contractName(chosen)} deal finished'),
-                style: const TextStyle(fontWeight: FontWeight.w800),
-              ),
-            const SizedBox(height: 8),
-            for (var seat = 0; seat < 4; seat++)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(gameSeatName(seat, _ar)),
-                    Text(
-                      '${game.lastDealScores[seat]}   →   ${game.totals[seat]}',
-                      textDirection: TextDirection.ltr,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
+    final won = over && winners.contains(0);
+    final title = over
+        ? (won
+            ? _t('🏆 فزت بالمباراة!', '🏆 You won the game!')
+            : _t('🏆 الفائز: ${winners.map((s) => gameSeatName(s, true)).join('، ')}',
+                '🏆 Winner: ${winners.map((s) => gameSeatName(s, false)).join(', ')}'))
+        : (chosen != null
+            ? _t('انتهت صفقة ${_contractName(chosen)}',
+                '${_contractName(chosen)} deal finished')
+            : '');
+    return GameResultCard(
+      won: over ? won : true,
+      title: title,
+      child: Column(
+        children: [
+          for (var seat = 0; seat < 4; seat++)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 3),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    gameSeatName(seat, _ar),
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.9),
+                      fontWeight: seat == 0 ? FontWeight.w900 : FontWeight.w600,
                     ),
-                  ],
-                ),
+                  ),
+                  Text(
+                    '${game.lastDealScores[seat]}   →   ${game.totals[seat]}',
+                    textDirection: TextDirection.ltr,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
               ),
-            const SizedBox(height: 10),
-            if (over)
-              Text(
-                winners.contains(0)
-                    ? _t('🏆 فزت بالمباراة!', '🏆 You won the game!')
-                    : _t('🏆 الفائز: ${winners.map((s) => gameSeatName(s, true)).join('، ')}', '🏆 Winner: ${winners.map((s) => gameSeatName(s, false)).join(', ')}'),
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                  color: AppTheme.primary,
-                ),
-              ),
-            const SizedBox(height: 8),
-            FilledButton.icon(
-              onPressed: over ? _restart : _nextDeal,
-              icon: Icon(over ? Icons.refresh_rounded : Icons.play_arrow_rounded),
-              label: Text(over ? _t('لعبة جديدة', 'New game') : _t('الصفقة التالية', 'Next deal')),
             ),
-          ],
-        ),
+          const SizedBox(height: 12),
+          GameButton(
+            onPressed: over ? _restart : _nextDeal,
+            icon: over ? Icons.refresh_rounded : Icons.play_arrow_rounded,
+            label: over ? _t('لعبة جديدة', 'New game') : _t('الصفقة التالية', 'Next deal'),
+          ),
+        ],
       ),
     );
   }
@@ -473,26 +544,19 @@ class _TrixGameScreenState extends State<TrixGameScreen> {
     final legal = canPlay ? game.legalPlays(0) : <PlayingCard>[];
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(8, 6, 8, 10),
+      padding: const EdgeInsets.fromLTRB(4, 0, 4, 6),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: <Color>[Colors.transparent, Colors.black.withOpacity(0.35)],
+        ),
       ),
-      child: Wrap(
-        alignment: WrapAlignment.center,
-        spacing: 4,
-        runSpacing: 4,
-        children: [
-          for (final card in game.hands[0])
-            GameCardView(
-              card: card,
-              width: 42,
-              enabled: !canPlay || legal.contains(card),
-              highlight: canPlay && legal.contains(card),
-              onTap: canPlay && legal.contains(card)
-                  ? () => _playUser(card)
-                  : null,
-            ),
-        ],
+      child: FannedHand(
+        cards: game.hands[0],
+        canPlay: canPlay,
+        legal: legal,
+        onPlay: _playUser,
       ),
     );
   }

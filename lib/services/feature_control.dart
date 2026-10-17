@@ -56,6 +56,21 @@ class FeatureControl {
     return false;
   }
 
+  /// Same answer as [check] without waiting for the network: when the switches
+  /// were refreshed in the last five minutes and the feature is on, open at
+  /// once and refresh in the background. Otherwise behaves exactly like [check].
+  /// Used when tapping a notification, which should open the screen instantly.
+  Future<bool> checkQuick(BuildContext context, String key) async {
+    final last = _lastRefresh;
+    if (last != null &&
+        DateTime.now().difference(last) < const Duration(minutes: 5) &&
+        enabled(key)) {
+      unawaited(refresh());
+      return true;
+    }
+    return check(context, key);
+  }
+
   /// Also covers a screen reached through an old link or while its switch changes.
   Widget page(String key, Widget child, {bool embedded = false}) =>
       _FeaturePage(featureKey: key, embedded: embedded, child: child);

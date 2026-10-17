@@ -1699,6 +1699,57 @@ class _StoryViewScreenState extends State<StoryViewScreen>
     }
   }
 
+  /// A photo/video story whose caption is cut at three lines in the viewer.
+  String _longMediaCaption171(Map<String, dynamic> story) {
+    final text = story['text']?.toString().trim() ?? '';
+    if (text.isEmpty) return '';
+    final hasMedia = (story['imagePath']?.toString() ?? '').isNotEmpty ||
+        story['imageBytes'] is Uint8List ||
+        (story['videoPath']?.toString() ?? '').isNotEmpty ||
+        story['videoBytes'] is Uint8List;
+    if (!hasMedia) return '';
+    final width = (MediaQuery.sizeOf(context).width - 88).clamp(120.0, 520.0);
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: const TextStyle(fontSize: 16)),
+      maxLines: 3,
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout(maxWidth: width);
+    final long = painter.didExceedMaxLines;
+    painter.dispose();
+    return long ? text : '';
+  }
+
+  Future<void> _showFullCaption171(String text) async {
+    if (mounted) setState(() => _paused161 = true);
+    try {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: const Color(0xFF161B29),
+        shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
+        builder: (sheetContext) => SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+                maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.7),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(22, 22, 22, 28),
+              child: SelectableText(
+                text,
+                textAlign: TextAlign.start,
+                style: const TextStyle(
+                    color: Colors.white, fontSize: 17, height: 1.6),
+              ),
+            ),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _paused161 = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     AppearanceScope.observe(context);
@@ -1847,6 +1898,8 @@ class _StoryViewScreenState extends State<StoryViewScreen>
                               ),
                               child: Text(
                                 text,
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                     color: Colors.white, fontSize: 16),
@@ -1896,6 +1949,33 @@ class _StoryViewScreenState extends State<StoryViewScreen>
               ],
             ),
           ),
+          if (_longMediaCaption171(current).isNotEmpty)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: MediaQuery.paddingOf(context).bottom + 16,
+              child: Center(
+                child: Material(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(999),
+                  child: InkWell(
+                    key: const ValueKey('storyShowMore171'),
+                    borderRadius: BorderRadius.circular(999),
+                    onTap: () =>
+                        _showFullCaption171(_longMediaCaption171(current)),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 18, vertical: 10),
+                      child: Text(
+                        isArabic ? 'عرض المزيد' : 'Show more',
+                        style: const TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           Positioned(
             top: MediaQuery.paddingOf(context).top + 12,
             left: 16,

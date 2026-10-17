@@ -30,6 +30,7 @@ import '../../providers/language_provider.dart';
 import '../../services_community_chat.dart';
 import '../anonymous/anonymous_screen.dart';
 import '../meet/meet_screen.dart';
+import '../../services/call_push_fastpath.dart';
 import 'package:zameel/theme/app_theme.dart';
 import '../../services/screen_awake_service.dart';
 import '../../services/chat_visibility_service.dart';
@@ -1870,6 +1871,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
           'with_video': video,
         },
       );
+      // Ring the other phone right away instead of waiting for the queue.
+      unawaited(CallPushFastPath.ring(roomId));
     } on PostgrestException catch (e) {
       if (!mounted) return;
       final message = e.message.contains('calls_disabled')

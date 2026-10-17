@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../games/mini_games.dart';
 import '../../theme/app_theme.dart';
+import 'game_kit.dart';
 
 // Rock paper scissors: against the phone or two players on one phone.
 // The first side to reach three round wins takes the match.
@@ -25,6 +26,7 @@ class _RpsGameScreenState extends State<RpsGameScreen> {
   RpsMove? _first;
   RpsMove? _second;
   int _result = -1;
+  int _confetti = 0;
 
   bool get _ar => widget.isArabic;
   String _t(String ar, String en) => _ar ? ar : en;
@@ -79,6 +81,7 @@ class _RpsGameScreenState extends State<RpsGameScreen> {
     } else {
       _draws++;
     }
+    if (_over && (_mode == 1 || _wins[0] > _wins[1])) _confetti++;
   }
 
   void _nextRound() {
@@ -118,165 +121,242 @@ class _RpsGameScreenState extends State<RpsGameScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final revealed = _result >= 0;
+    final youWon = _over && _wins[0] > _wins[1];
     return Directionality(
       textDirection: _ar ? TextDirection.rtl : TextDirection.ltr,
-      child: Scaffold(
-        appBar: AppBar(title: Text(_t('حجر ورقة مقص', 'Rock Paper Scissors'))),
-        body: ListView(
-          padding: const EdgeInsets.all(16),
+      child: GameScaffold(
+        title: _t('حجر ورقة مقص', 'Rock Paper Scissors'),
+        body: Stack(
           children: [
-            SegmentedButton<int>(
-              segments: <ButtonSegment<int>>[
-                ButtonSegment<int>(
-                  value: 0,
-                  label: Text(_t('ضد الهاتف', 'vs Phone')),
-                ),
-                ButtonSegment<int>(
-                  value: 1,
-                  label: Text(_t('لاعبان', 'Two players')),
-                ),
-              ],
-              selected: <int>{_mode},
-              onSelectionChanged: (selection) {
-                setState(() => _mode = selection.first);
-                _newGame();
-              },
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            ListView(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
               children: [
-                _scoreBox(_name(0), _wins[0], scheme),
-                _scoreBox(_t('تعادل', 'Draws'), _draws, scheme),
-                _scoreBox(_name(1), _wins[1], scheme),
+                GameModeSwitch<int>(
+                  choices: <GameChoice<int>>[
+                    GameChoice<int>(0, _t('ضد الهاتف', 'vs Phone')),
+                    GameChoice<int>(1, _t('لاعبان', 'Two players')),
+                  ],
+                  selected: _mode,
+                  onChanged: (value) {
+                    setState(() => _mode = value);
+                    _newGame();
+                  },
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    GameScoreChip(
+                      label: _name(0),
+                      value: '${_wins[0]}',
+                      active: revealed && _result == 1,
+                    ),
+                    GameScoreChip(
+                      label: _t('تعادل', 'Draws'),
+                      value: '$_draws',
+                      accent: kGameGold,
+                      active: revealed && _result == 0,
+                    ),
+                    GameScoreChip(
+                      label: _name(1),
+                      value: '${_wins[1]}',
+                      accent: const Color(0xFFFF5C8A),
+                      active: revealed && _result == 2,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Center(
+                  child: Text(
+                    _t('أول من يصل إلى $_target يفوز', 'First to $_target wins'),
+                    style: TextStyle(color: Colors.white.withOpacity(0.75)),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                GamePanel(
+                  padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 8),
+                  child: Column(
+                    children: [
+                      SizedBox(
+                        height: 150,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            _arena(_name(0), revealed ? _first : null,
+                                revealed && _result == 1,
+                                waiting: !revealed && _mode == 1 && _first != null),
+                            Text(
+                              'VS',
+                              style: TextStyle(
+                                color: kGameGold,
+                                fontSize: 24,
+                                fontWeight: FontWeight.w900,
+                                shadows: <Shadow>[
+                                  Shadow(
+                                      color: kGameGold.withOpacity(0.6),
+                                      blurRadius: 12),
+                                ],
+                              ),
+                            ),
+                            _arena(_name(1), revealed ? _second : null,
+                                revealed && _result == 2,
+                                waiting: false),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      GameBanner(
+                        text: revealed ? _resultText() : _prompt(),
+                        size: revealed ? 20 : 16,
+                        color: revealed ? kGameGold : Colors.white,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 18),
+                if (_over)
+                  GameResultCard(
+                    won: youWon || _mode == 1,
+                    title: _matchTitle(),
+                    child: GameButton(
+                      onPressed: _newGame,
+                      icon: Icons.refresh_rounded,
+                      label: _t('مباراة جديدة', 'New match'),
+                    ),
+                  )
+                else if (revealed)
+                  Center(
+                    child: GameButton(
+                      onPressed: _nextRound,
+                      icon: Icons.play_arrow_rounded,
+                      label: _t('الجولة التالية', 'Next round'),
+                    ),
+                  )
+                else
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      for (final move in RpsMove.values) _moveButton(move),
+                    ],
+                  ),
               ],
             ),
-            const SizedBox(height: 8),
-            Center(
-              child: Text(
-                _t('أول من يصل إلى $_target يفوز', 'First to $_target wins'),
-                style: TextStyle(color: scheme.onSurfaceVariant),
-              ),
-            ),
-            const SizedBox(height: 24),
-            if (revealed)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _moveBox(_name(0), _first!),
-                  _moveBox(_name(1), _second!),
-                ],
-              ),
-            if (revealed) const SizedBox(height: 16),
-            if (revealed)
-              Center(
-                child: Text(
-                  _resultText(),
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            if (_over)
-              Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: Center(
-                  child: Text(
-                    _wins[0] > _wins[1]
-                        ? (_mode == 0
-                            ? _t('🏆 فزت بالمباراة!', '🏆 You won the match!')
-                            : _t('🏆 فاز اللاعب ١', '🏆 Player 1 wins'))
-                        : (_mode == 0
-                            ? _t('فاز الهاتف بالمباراة', 'The phone won the match')
-                            : _t('🏆 فاز اللاعب ٢', '🏆 Player 2 wins')),
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                      color: AppTheme.primary,
-                    ),
-                  ),
-                ),
-              ),
-            const SizedBox(height: 20),
-            if (_over)
-              FilledButton.icon(
-                onPressed: _newGame,
-                icon: const Icon(Icons.refresh_rounded),
-                label: Text(_t('مباراة جديدة', 'New match')),
-              )
-            else if (revealed)
-              FilledButton.icon(
-                onPressed: _nextRound,
-                icon: const Icon(Icons.play_arrow_rounded),
-                label: Text(_t('الجولة التالية', 'Next round')),
-              )
-            else ...[
-              Center(
-                child: Text(
-                  _prompt(),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  for (final move in RpsMove.values) _moveButton(move),
-                ],
-              ),
-            ],
+            Positioned.fill(child: ConfettiBurst(trigger: _confetti)),
           ],
         ),
       ),
     );
   }
 
-  Widget _scoreBox(String label, int value, ColorScheme scheme) {
-    return Container(
-      width: 96,
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        children: [
-          Text(
-            '$value',
-            style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900),
-          ),
-          Text(label, style: const TextStyle(fontSize: 12)),
-        ],
-      ),
-    );
+  String _matchTitle() {
+    if (_wins[0] > _wins[1]) {
+      return _mode == 0
+          ? _t('🏆 فزت بالمباراة!', '🏆 You won the match!')
+          : _t('🏆 فاز اللاعب ١', '🏆 Player 1 wins');
+    }
+    return _mode == 0
+        ? _t('فاز الهاتف بالمباراة', 'The phone won the match')
+        : _t('🏆 فاز اللاعب ٢', '🏆 Player 2 wins');
   }
 
-  Widget _moveBox(String label, RpsMove move) {
+  Widget _arena(String label, RpsMove? move, bool winner,
+      {required bool waiting}) {
     return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text(_emoji(move), style: const TextStyle(fontSize: 64)),
-        Text(_label(move)),
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+        TweenAnimationBuilder<double>(
+          key: ValueKey<String>('arena_${label}_${move?.index}_$_wins'),
+          tween: Tween<double>(begin: 0.3, end: 1),
+          duration: const Duration(milliseconds: 420),
+          curve: Curves.easeOutBack,
+          builder: (context, v, child) =>
+              Transform.scale(scale: v, child: child),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            width: 92,
+            height: 92,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: winner
+                    ? const <Color>[Color(0xFFFFE08A), kGameGold]
+                    : <Color>[
+                        Colors.white.withOpacity(0.22),
+                        Colors.white.withOpacity(0.08),
+                      ],
+              ),
+              border: Border.all(
+                color: winner ? Colors.white : Colors.white.withOpacity(0.3),
+                width: winner ? 3 : 1.5,
+              ),
+              boxShadow: winner
+                  ? <BoxShadow>[
+                      BoxShadow(color: kGameGold.withOpacity(0.6), blurRadius: 20),
+                    ]
+                  : const <BoxShadow>[],
+            ),
+            child: Center(
+              child: Text(
+                move != null ? _emoji(move) : (waiting ? '✔️' : '❔'),
+                style: TextStyle(fontSize: move != null ? 50 : 38),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          move != null ? _label(move) : label,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        if (move != null)
+          Text(label,
+              style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12)),
       ],
     );
   }
 
   Widget _moveButton(RpsMove move) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(18),
-      onTap: () => _pick(move),
-      child: Padding(
-        padding: const EdgeInsets.all(10),
+    return GestureDetector(
+      onTap: () {
+        gameTap();
+        _pick(move);
+      },
+      child: Container(
+        width: 96,
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: <Color>[AppTheme.primary, AppTheme.primaryDark],
+          ),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: Colors.white.withOpacity(0.35)),
+          boxShadow: const <BoxShadow>[
+            BoxShadow(
+              color: Color(0x55000000),
+              blurRadius: 10,
+              offset: Offset(0, 5),
+            ),
+          ],
+        ),
         child: Column(
           children: [
-            Text(_emoji(move), style: const TextStyle(fontSize: 52)),
-            Text(_label(move)),
+            Text(_emoji(move), style: const TextStyle(fontSize: 44)),
+            const SizedBox(height: 4),
+            Text(
+              _label(move),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
           ],
         ),
       ),

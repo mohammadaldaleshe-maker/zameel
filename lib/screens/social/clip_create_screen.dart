@@ -428,7 +428,8 @@ class _ClipPreviewPublishScreenState extends State<_ClipPreviewPublishScreen> {
               MentionTextField156(
                 controller: _caption,
                 maxLength: 300,
-                maxLines: 3,
+                minLines: 3,
+                maxLines: 8,
                 decoration: InputDecoration(
                   labelText: ar ? 'وصف اختياري' : 'Optional caption',
                 ),

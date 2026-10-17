@@ -47,7 +47,8 @@ class _LammaChatScreenState extends State<LammaChatScreen> {
         .from('social_lamma_messages')
         .stream(primaryKey: ['id'])
         .eq('lamma_id', widget.lammaId)
-        .order('created_at');
+        // The stream's order() defaults to newest-first; a chat reads oldest-first.
+        .order('created_at', ascending: true);
     _scroll.addListener(() {
       if (!_scroll.hasClients) return;
       _stickToEnd =

@@ -104,10 +104,13 @@ jobs:
           node verification/message_reply_164_test.mjs
           node verification/lamma_165_test.mjs
           node verification/groups_166_test.mjs
+          node verification/group_join_notify_171_test.mjs
           node verification/comments_168_test.mjs
           node verification/push_dispatch_169_test.mjs
+          node verification/call_push_speed_173_test.mjs
           node verification/update_hint_contact_join_169_test.mjs
           node verification/performance_170_test.mjs
+          node verification/profile_stats_172_test.mjs
 
       - name: Build universal and device-specific APKs
         shell: bash

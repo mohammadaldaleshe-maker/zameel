@@ -14,6 +14,7 @@ import '../../services/screen_awake_service.dart';
 import '../../l10n/translations.dart';
 import 'package:zameel/theme/app_theme.dart';
 import 'livekit_meeting_room_screen.dart';
+import '../../widgets/call_widgets171.dart';
 
 // ============================================================
 // ZAMEEL MEET SCREEN
@@ -973,15 +974,35 @@ class _MeetingRoomScreenState extends State<MeetingRoomScreen> {
   String _connectionStateLabel = 'new';
   String _iceStateLabel = 'new';
   int _recoveryAttempts = 0;
+  String? _peerImage;
+  bool _swapped = false;
 
   @override
   void initState() {
     super.initState();
     ScreenAwakeService.enterPersistent();
+    _loadPeerImage();
     _videoOn = widget.startWithVideo;
     _muted = widget.startMuted;
     _speakerOn = widget.startWithVideo;
     _start();
+  }
+
+  // Only used to draw the caller's photo on the call screen.
+  Future<void> _loadPeerImage() async {
+    final id = widget.participantId;
+    if (id == null || id.isEmpty) return;
+    try {
+      final row = await Supabase.instance.client
+          .from('users')
+          .select('profile_image')
+          .eq('id', id)
+          .maybeSingle();
+      final image = row?['profile_image']?.toString() ?? '';
+      if (mounted && image.startsWith('https://')) {
+        setState(() => _peerImage = image);
+      }
+    } catch (_) {}
   }
 
   Future<void> _resolveInitiator() async {
@@ -1378,9 +1399,19 @@ class _MeetingRoomScreenState extends State<MeetingRoomScreen> {
         setState(() {
           _starting = false;
         });
+        final text = e.toString().toLowerCase();
+        final denied = text.contains('permission') ||
+            text.contains('notallowed') ||
+            text.contains('denied');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تعذر بدء الاجتماع: $e')),
+          SnackBar(
+              content: Text(denied
+                  ? 'لا يوجد إذن للميكروفون أو الكاميرا. فعّل الإذن من إعدادات الهاتف ثم أعد المحاولة.'
+                  : 'تعذر بدء الاجتماع: $e')),
         );
+        // Without a microphone nobody can be heard: end the call cleanly
+        // instead of leaving a silent screen and a ringing invitation behind.
+        if (denied) unawaited(_hangUp());
       }
     }
   }
@@ -1946,6 +1977,10 @@ class _MeetingRoomScreenState extends State<MeetingRoomScreen> {
   }
 
   Future<void> _hangUp() async {
+    // One tap, one hang-up: a second tap (or the call-status listener reacting
+    // to our own update) must not end the call or pop the screen twice.
+    if (_closingCall) return;
+    _closingCall = true;
     await AppSoundService.instance.stop();
     try {
       await _sendSignal({'type': 'bye', 'from': _uid});
@@ -2002,10 +2037,46 @@ class _MeetingRoomScreenState extends State<MeetingRoomScreen> {
     super.dispose();
   }
 
+  bool get _linkUnstable =>
+      _connected &&
+      (_connectionStateLabel.contains('Disconnected') ||
+          _connectionStateLabel.contains('Failed') ||
+          _iceStateLabel.contains('Disconnected') ||
+          _iceStateLabel.contains('Failed'));
+
+  String _statusText(bool ar) {
+    if (_connected) return _callDuration;
+    if (_starting) return ar ? 'جاري الاتصال...' : 'Connecting...';
+    if (_standaloneMeeting) {
+      return ar
+          ? 'بانتظار مشارك للانضمام إلى غرفة الاجتماع...'
+          : 'Waiting for a participant to join the meeting room...';
+    }
+    if (_initiator) return ar ? 'يرن...' : 'Ringing...';
+    return ar ? 'جاري الاتصال...' : 'Connecting...';
+  }
+
   @override
   Widget build(BuildContext context) {
     AppearanceScope.observe(context);
     final ar = Provider.of<LanguageProvider>(context).isArabic;
+    final video = widget.startWithVideo;
+    final peerName = widget.participantName ?? 'Zameel Meet';
+    final accent = AppTheme.primary;
+    final localAvailable =
+        video && _videoOn && _localRenderer.srcObject != null;
+    // Swapping only makes sense once the other person's picture exists.
+    final swapped = _swapped && _connected && localAvailable;
+    final showVideoMain = video && _connected;
+    final remoteView = RTCVideoView(
+      _remoteRenderer,
+      objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+    );
+    final localView = RTCVideoView(
+      _localRenderer,
+      mirror: true,
+      objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+    );
     return Directionality(
       textDirection: ar ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
@@ -2013,33 +2084,39 @@ class _MeetingRoomScreenState extends State<MeetingRoomScreen> {
         body: Stack(
           children: [
             Positioned.fill(
-              child: _connected
-                  ? RTCVideoView(
-                      _remoteRenderer,
-                      objectFit:
-                          RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
-                    )
-                  : const Center(
-                      child: Icon(
-                        Icons.person_rounded,
-                        size: 100,
-                        color: Colors.white24,
+              child: CallBackdrop171(imageUrl: _peerImage, accent: accent),
+            ),
+            if (showVideoMain)
+              Positioned.fill(child: swapped ? localView : remoteView),
+            if (showVideoMain)
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withValues(alpha: .55),
+                          Colors.transparent,
+                          Colors.transparent,
+                          Colors.black.withValues(alpha: .65),
+                        ],
+                        stops: const [0, .22, .6, 1],
                       ),
                     ),
-            ),
-            if (_localRenderer.srcObject != null)
-              Positioned(
-                top: 46,
-                right: 16,
-                width: 120,
-                height: 170,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: RTCVideoView(
-                    _localRenderer,
-                    mirror: true,
-                    objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
                   ),
+                ),
+              ),
+            if (localAvailable)
+              Positioned.fill(
+                child: CallDraggablePip171(
+                  topInset: 64,
+                  bottomInset: 250,
+                  onTap: () {
+                    if (_connected) setState(() => _swapped = !_swapped);
+                  },
+                  child: swapped ? remoteView : localView,
                 ),
               ),
             SafeArea(
@@ -2048,90 +2125,179 @@ class _MeetingRoomScreenState extends State<MeetingRoomScreen> {
                   Row(
                     children: [
                       IconButton(
+                        tooltip: ar ? 'إنهاء' : 'End',
                         onPressed: _hangUp,
-                        icon: Icon(Icons.close_rounded, color: Colors.white),
+                        icon: const Icon(Icons.close_rounded,
+                            color: Colors.white),
                       ),
                       Expanded(
                         child: VerifiedName(
                             userId: _participantId ?? widget.participantId,
                             child: Text(
-                              widget.participantName ?? 'Zameel Meet',
+                              peerName,
                               textAlign: TextAlign.center,
-                              style: TextStyle(
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
                                 color: Colors.white,
+                                fontSize: 17,
                                 fontWeight: FontWeight.w800,
                               ),
                             )),
                       ),
                       IconButton(
+                        tooltip: ar ? 'محادثة' : 'Chat',
                         onPressed: () => setState(() => _chatOpen = !_chatOpen),
-                        icon: Icon(Icons.chat_rounded, color: Colors.white),
+                        icon: Icon(
+                          _chatOpen
+                              ? Icons.chat_bubble_rounded
+                              : Icons.chat_bubble_outline_rounded,
+                          color: Colors.white,
+                        ),
                       ),
                     ],
                   ),
-                  if (_connectedAt != null)
-                    Text(_callDuration,
-                        style:
-                            const TextStyle(color: Colors.white, fontSize: 18)),
-                  if (_starting)
+                  if (showVideoMain)
                     Padding(
-                      padding: EdgeInsets.only(top: 20),
-                      child: CircularProgressIndicator(color: Colors.white),
-                    )
-                  else if (!_connected)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 20),
+                      padding: const EdgeInsets.only(top: 2),
                       child: Text(
-                        _standaloneMeeting
-                            ? (ar
-                                ? 'بانتظار مشارك للانضمام إلى غرفة الاجتماع...'
-                                : 'Waiting for a participant to join the meeting room...')
-                            : (ar
-                                ? 'بانتظار الزميل للانضمام...'
-                                : 'Waiting for colleague...'),
-                        style: const TextStyle(color: Colors.white70),
+                        _callDuration,
+                        style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600),
                       ),
                     ),
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.fromLTRB(10, 10, 10, 18),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  if (_linkUnstable)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: CallStatusPill171(
+                        warning: true,
+                        icon: Icons.wifi_off_rounded,
+                        text: ar
+                            ? 'الاتصال ضعيف... إعادة الاتصال'
+                            : 'Weak connection... reconnecting',
+                      ),
+                    ),
+                  if (showVideoMain)
+                    const Spacer()
+                  else
+                    Expanded(
+                      child: Center(
+                        child: SingleChildScrollView(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CallPulseAvatar171(
+                                name: peerName,
+                                imageUrl: _peerImage,
+                                accent: accent,
+                                pulsing: !_connected,
+                              ),
+                              const SizedBox(height: 18),
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 24),
+                                child: Text(
+                                  peerName,
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 26,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 250),
+                                child: Padding(
+                                  key: ValueKey(_connected ? 'timer' : _statusText(ar)),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 28),
+                                  child: Text(
+                                    _statusText(ar),
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: Colors.white
+                                          .withValues(alpha: _connected ? .9 : .7),
+                                      fontSize: _connected ? 20 : 16,
+                                      fontWeight: FontWeight.w600,
+                                      fontFeatures: const [
+                                        FontFeature.tabularFigures()
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(10, 8, 10, 14),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        _control(
-                          icon: _muted
-                              ? Icons.mic_off_rounded
-                              : Icons.mic_rounded,
-                          onTap: _toggleMute,
+                        Wrap(
+                          alignment: WrapAlignment.center,
+                          spacing: 10,
+                          runSpacing: 14,
+                          children: [
+                            CallControlButton171(
+                              icon: _muted
+                                  ? Icons.mic_off_rounded
+                                  : Icons.mic_rounded,
+                              label: _muted
+                                  ? (ar ? 'إلغاء الكتم' : 'Unmute')
+                                  : (ar ? 'كتم' : 'Mute'),
+                              active: _muted,
+                              onTap: _toggleMute,
+                            ),
+                            CallControlButton171(
+                              icon: _speakerOn
+                                  ? Icons.volume_up_rounded
+                                  : Icons.volume_down_rounded,
+                              label: ar ? 'السماعة' : 'Speaker',
+                              active: _speakerOn,
+                              onTap: _toggleSpeaker,
+                            ),
+                            if (video)
+                              CallControlButton171(
+                                icon: _videoOn
+                                    ? Icons.videocam_rounded
+                                    : Icons.videocam_off_rounded,
+                                label: ar ? 'الكاميرا' : 'Camera',
+                                active: !_videoOn,
+                                onTap: _toggleVideo,
+                              ),
+                            if (video)
+                              CallControlButton171(
+                                icon: Icons.cameraswitch_rounded,
+                                label: ar ? 'تبديل' : 'Flip',
+                                onTap: _switchCamera,
+                              ),
+                            if (video)
+                              CallControlButton171(
+                                icon: _screenSharing
+                                    ? Icons.stop_screen_share_rounded
+                                    : Icons.screen_share_rounded,
+                                label: ar ? 'مشاركة' : 'Share',
+                                active: _screenSharing,
+                                onTap: _toggleScreenShare,
+                              ),
+                          ],
                         ),
-                        if (widget.startWithVideo)
-                          _control(
-                            icon: _videoOn
-                                ? Icons.videocam_rounded
-                                : Icons.videocam_off_rounded,
-                            onTap: _toggleVideo,
-                          ),
-                        if (widget.startWithVideo)
-                          _control(
-                            icon: Icons.cameraswitch_rounded,
-                            onTap: _switchCamera,
-                          ),
-                        _control(
-                          icon: _speakerOn
-                              ? Icons.volume_up_rounded
-                              : Icons.hearing_disabled_rounded,
-                          onTap: _toggleSpeaker,
-                        ),
-                        _control(
-                          icon: _screenSharing
-                              ? Icons.stop_screen_share_rounded
-                              : Icons.screen_share_rounded,
-                          onTap: _toggleScreenShare,
-                        ),
-                        _control(
+                        const SizedBox(height: 18),
+                        CallControlButton171(
                           icon: Icons.call_end_rounded,
+                          label: ar ? 'إنهاء' : 'End',
+                          danger: true,
+                          size: 66,
                           onTap: _hangUp,
-                          backgroundColor: Colors.redAccent,
                         ),
                       ],
                     ),
@@ -2143,7 +2309,7 @@ class _MeetingRoomScreenState extends State<MeetingRoomScreen> {
               Positioned(
                 left: 12,
                 right: 12,
-                bottom: 96,
+                bottom: 250,
                 child: Card(
                   child: Padding(
                     padding: const EdgeInsets.all(10),
@@ -2193,21 +2359,6 @@ class _MeetingRoomScreenState extends State<MeetingRoomScreen> {
               ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _control({
-    required IconData icon,
-    required VoidCallback onTap,
-    Color? backgroundColor,
-  }) {
-    return CircleAvatar(
-      radius: 26,
-      backgroundColor: backgroundColor ?? AppTheme.primary,
-      child: IconButton(
-        onPressed: onTap,
-        icon: Icon(icon, color: Colors.white),
       ),
     );
   }

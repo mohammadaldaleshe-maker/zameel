@@ -352,6 +352,7 @@ class _ImagePostState extends State<_ImagePost> {
               kind: 'post',
               id: '${widget.post['id']}',
               header: true,
+              collapsedLines: 4,
               style: TextStyle(
                 color: AppTheme.legacyForeground,
                 fontSize: 16,
@@ -635,6 +636,7 @@ class _VideoPostState extends State<_VideoPost> {
           kind: 'post',
           id: '${widget.post['id']}',
           header: true,
+          collapsedLines: 4,
           style: TextStyle(
             color: AppTheme.legacyForeground,
             fontSize: 14,
@@ -1645,6 +1647,7 @@ class _TextPostState extends State<_TextPost> {
             kind: 'post',
             id: '${widget.post['id']}',
             header: true,
+            collapsedLines: 4,
             style: TextStyle(
               color: AppTheme.legacyForeground,
               fontSize: 16,

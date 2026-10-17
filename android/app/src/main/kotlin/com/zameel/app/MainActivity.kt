@@ -199,8 +199,14 @@ class MainActivity : FlutterActivity() {
             callUri.getQueryParameter("action") in listOf("accept", "decline")) {
             ZameelIncomingCall.dismiss(this, callUri.getQueryParameter("room_id").orEmpty())
         }
-        if (Build.VERSION.SDK_INT >= 27 && intent?.data?.host == "call" &&
-            intent.data?.getQueryParameter("action") == "decline") setShowWhenLocked(true)
+        if (Build.VERSION.SDK_INT >= 27 && intent?.data?.scheme == "zameel" &&
+            intent.data?.host == "call" &&
+            intent.data?.getQueryParameter("action") in listOf("decline", "accept")) {
+            // Answering a voice call while the phone is locked: show the call over
+            // the lock screen. The app finishes itself when the call ends.
+            setShowWhenLocked(true)
+            if (intent.data?.getQueryParameter("action") == "accept") setTurnScreenOn(true)
+        }
     }
 
 

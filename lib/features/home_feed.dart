@@ -82,7 +82,9 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
       if (!mounted) return;
       final arabic =
           Provider.of<LanguageProvider>(context, listen: false).isArabic;
-      AppPermissionsPrompt.maybeAsk(context, arabic);
+      AppPermissionsPrompt.maybeAsk(context, arabic).whenComplete(() {
+        if (mounted) AppPermissionsPrompt.maybeAskFullScreen(context, arabic);
+      });
       ContactJoinSync165.sync();
     });
     _createUserIfNotExists();

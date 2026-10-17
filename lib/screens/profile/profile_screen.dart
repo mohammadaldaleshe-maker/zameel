@@ -1632,6 +1632,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       kind: 'post',
                       id: '${post['id']}',
                       header: true,
+                      collapsedLines: 4,
                       style: const TextStyle(fontSize: 15, height: 1.55)),
                 ),
               ),
@@ -2575,7 +2576,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           postsCount: _posts.length,
           likesCount: _likesReceived,
           commentsCount: _comments,
-          friendsCount: _followers,
+          friendsCount: 0,
           savedBooksCount: _saved,
           activeDays: 0));
   Future<void> _openSaved() async {

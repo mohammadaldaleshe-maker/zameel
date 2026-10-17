@@ -1,5 +1,7 @@
 import '../comments/clip_comments_screen.dart';
 import '../groups/group_invitation_screen.dart';
+import '../groups/group_chat_screen.dart';
+import '../private_groups_screen.dart';
 import '../social/public_clips_strip.dart';
 import '../../main.dart' show ZameelMediaViewer;
 import 'package:zameel/theme/appearance_controller.dart';
@@ -209,7 +211,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           'clip_comment_like'
         ].contains(type) &&
         data['clip_id'] != null) {
-      if (!await FeatureControl.instance.check(context, 'clips')) return;
+      if (!await FeatureControl.instance.checkQuick(context, 'clips')) return;
       final clip = await db
           .from('clips')
           .select()
@@ -243,6 +245,29 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     ProfileScreen(userId: '${data['profile_id']}')));
       return;
     }
+    if (type == 'group_join_request' && data['group_id'] != null) {
+      if (mounted) {
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (_) => PrivateGroupsScreen(
+                    openRequestsForGroupId: '${data['group_id']}')));
+      }
+      return;
+    }
+    if ((type == 'group_member_joined' || type == 'group_join_accepted') &&
+        data['group_id'] != null) {
+      if (mounted) {
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (_) => GroupChatScreen(
+                    groupId: '${data['group_id']}',
+                    groupName: '${data['group_name'] ?? ''}',
+                    isOwner: type == 'group_member_joined')));
+      }
+      return;
+    }
     if (type == 'group_invitation' && data['invitation_id'] != null) {
       if (mounted) {
         Navigator.push(
@@ -270,7 +295,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       return;
     }
     if (type.startsWith('friend_request')) {
-      if (!await FeatureControl.instance.check(context, 'suggested_colleagues'))
+      if (!await FeatureControl.instance.checkQuick(context, 'suggested_colleagues'))
         return;
       Navigator.push(
           context,
@@ -279,12 +304,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       return;
     }
     if (type == 'incoming_video_call' || type == 'incoming_voice_call') {
-      if (!await FeatureControl.instance.check(context, 'direct_calls')) return;
+      if (!await FeatureControl.instance.checkQuick(context, 'direct_calls')) return;
       await _openIncomingCall(n);
       return;
     }
     if (type == 'book_exchange_request' || type == 'book_exchange_response') {
-      if (!await FeatureControl.instance.check(context, 'books_market')) return;
+      if (!await FeatureControl.instance.checkQuick(context, 'books_market')) return;
       final requestId = data['request_id']?.toString();
       if (mounted) {
         Navigator.push(
@@ -302,10 +327,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final postId =
         (data['post_id'] ?? data['target_post_id'])?.toString() ?? '';
     if (postId.isNotEmpty) {
-      if (!await FeatureControl.instance.check(context, 'feed_posts') ||
+      if (!await FeatureControl.instance.checkQuick(context, 'feed_posts') ||
           (!['post_promotion_approved', 'post_mention', 'upload_complete']
                   .contains(type) &&
-              !await FeatureControl.instance.check(context, 'comments')))
+              !await FeatureControl.instance.checkQuick(context, 'comments')))
         return;
       try {
         final post = await db
@@ -342,7 +367,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final actorId =
         n['actor_id']?.toString() ?? data['sender_id']?.toString() ?? '';
     if (conversationId.isNotEmpty && actorId.isNotEmpty) {
-      if (!await FeatureControl.instance.check(context, 'direct_chat')) return;
+      if (!await FeatureControl.instance.checkQuick(context, 'direct_chat')) return;
       final actor = n['actor'];
       final name = actor is Map ? actor['name']?.toString() : null;
       if (mounted) {
@@ -360,7 +385,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
     final storyId = data['story_id']?.toString() ?? '';
     if (storyId.isNotEmpty && mounted) {
-      if (!await FeatureControl.instance.check(context, 'stories')) return;
+      if (!await FeatureControl.instance.checkQuick(context, 'stories')) return;
       Navigator.push(
           context,
           MaterialPageRoute(
@@ -416,7 +441,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         final type = n['type']?.toString() ?? '';
                         final icon = type.startsWith('friend_request')
                             ? Icons.person_add_alt_1_rounded
-                            : type == 'group_invitation'
+                            : (type == 'group_invitation' ||
+                                    type == 'group_join_request' ||
+                                    type == 'group_member_joined' ||
+                                    type == 'group_join_accepted' ||
+                                    type == 'group_join_rejected')
                                 ? Icons.group_add_rounded
                                 : type == 'incoming_video_call'
                                 ? Icons.videocam_rounded
@@ -446,8 +475,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               : AppTheme.adaptiveHighlight,
                           child: ListTile(
                             onTap: () async {
-                              await _read(n);
-                              if (!mounted) return;
+                              // Marking as read happens in the background so the
+                              // screen opens without waiting for the network.
+                              unawaited(_read(n));
                               await _openNotificationSource(n);
                             },
                             leading: CircleAvatar(

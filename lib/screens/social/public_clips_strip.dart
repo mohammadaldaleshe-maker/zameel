@@ -810,8 +810,8 @@ class VerticalClipsViewerState extends State<VerticalClipsViewer> {
                                     kind: 'clip',
                                     id: '${clip['id']}',
                                     header: true,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
+                                    collapsedLines: 2,
+                                    expandedMaxHeight: 140,
                                     style:
                                         const TextStyle(color: Colors.white70),
                                   ),

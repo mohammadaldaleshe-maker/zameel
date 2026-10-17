@@ -79,6 +79,9 @@ class _StatsScreenState extends State<StatsScreen> {
     final friendsCount = _value('friends', widget.friendsCount);
     final savedBooksCount = _value('saved_books', widget.savedBooksCount);
     final activeDays = _value('active_days', widget.activeDays);
+    final followersCount = _value('followers', 0);
+    final clipsCount = _value('clips', 0);
+    final clipViews = _value('clip_views', 0);
 
     final stats = <Map<String, dynamic>>[
       {
@@ -116,6 +119,24 @@ class _StatsScreenState extends State<StatsScreen> {
         'label_ar': 'أيام النشاط',
         'label_en': 'Active Days',
         'value': activeDays
+      },
+      {
+        'icon': Icons.person_add_alt_1_rounded,
+        'label_ar': 'المتابعون',
+        'label_en': 'Followers',
+        'value': followersCount
+      },
+      {
+        'icon': Icons.smart_display_rounded,
+        'label_ar': 'الشورتس',
+        'label_en': 'Shorts',
+        'value': clipsCount
+      },
+      {
+        'icon': Icons.visibility_rounded,
+        'label_ar': 'مشاهدات',
+        'label_en': 'Views',
+        'value': clipViews
       },
     ];
 

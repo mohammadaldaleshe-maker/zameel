@@ -412,9 +412,12 @@ class ZameelIncomingCallActivity : Activity() {
         val launch = Intent(Intent.ACTION_VIEW, uri, this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
-        // Answer requires unlocking before accessing microphone/camera/session.
+        // A voice call can be answered and spoken on without unlocking: the call
+        // screen is shown over the lock screen (like other calling apps). Video
+        // asks to unlock once, because the camera needs the unlocked phone.
         val keyguard = getSystemService(KeyguardManager::class.java)
-        if (action == "accept" && Build.VERSION.SDK_INT >= 26 && keyguard?.isKeyguardLocked == true) {
+        val isVideo = intent.data?.getQueryParameter("video") == "true"
+        if (action == "accept" && isVideo && Build.VERSION.SDK_INT >= 26 && keyguard?.isKeyguardLocked == true) {
             keyguard.requestDismissKeyguard(this, object : KeyguardManager.KeyguardDismissCallback() {
                 override fun onDismissSucceeded() { startActivity(launch); finish() }
                 override fun onDismissCancelled() { finish() }

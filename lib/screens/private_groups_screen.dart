@@ -13,7 +13,11 @@ import 'groups/group_chat_screen.dart';
 // ============================================================
 
 class PrivateGroupsScreen extends StatefulWidget {
-  const PrivateGroupsScreen({super.key});
+  const PrivateGroupsScreen({super.key, this.openRequestsForGroupId});
+
+  /// Set when the screen is opened from a "join request" notification: the
+  /// requests list of that group opens by itself once the groups are loaded.
+  final String? openRequestsForGroupId;
 
   @override
   State<PrivateGroupsScreen> createState() => _PrivateGroupsScreenState();
@@ -22,6 +26,7 @@ class PrivateGroupsScreen extends StatefulWidget {
 class _PrivateGroupsScreenState extends State<PrivateGroupsScreen> {
   List<Map<String, dynamic>> groups = [];
   bool _loading = true;
+  bool _openedRequests = false;
 
   @override
   void initState() {
@@ -53,6 +58,16 @@ class _PrivateGroupsScreenState extends State<PrivateGroupsScreen> {
             .toList();
         _loading = false;
       });
+      final wanted = widget.openRequestsForGroupId;
+      if (wanted != null && !_openedRequests) {
+        _openedRequests = true;
+        final match = groups.where((g) => g['id'] == wanted && g['isOwner'] == true);
+        if (match.isNotEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _showJoinRequests(match.first);
+          });
+        }
+      }
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }

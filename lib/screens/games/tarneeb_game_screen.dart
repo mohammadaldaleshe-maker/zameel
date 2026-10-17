@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../games/cards.dart';
 import '../../games/tarneeb.dart';
 import '../../theme/app_theme.dart';
+import 'game_kit.dart';
 import 'game_widgets.dart';
 
 // Tarneeb against three bots. You sit at the bottom (south); your partner is
@@ -37,30 +38,31 @@ class _TarneebGameScreenState extends State<TarneebGameScreen> {
   Future<void> _advance() async {
     if (_busy) return;
     _busy = true;
+    final startedWith = _game;
     try {
       while (mounted) {
         if (_showLast) {
           await _pause(1300);
-          if (!mounted) return;
+          if (!mounted || startedWith != _game) return;
           setState(() => _showLast = false);
         }
         final game = _game;
         if (game.phase == TarneebPhase.bidding) {
           if (game.turn == 0) return;
           await _pause(700);
-          if (!mounted) return;
+          if (!mounted || startedWith != _game) return;
           final bid = tarneebBotBid(game.hands[game.turn], game.legalBids());
           setState(() => game.placeBid(bid));
         } else if (game.phase == TarneebPhase.chooseTrump) {
           if (game.highBidder == 0) return;
           await _pause(800);
-          if (!mounted) return;
+          if (!mounted || startedWith != _game) return;
           final suit = tarneebBotTrump(game.hands[game.highBidder]);
           setState(() => game.chooseTrump(suit));
         } else if (game.phase == TarneebPhase.playing) {
           if (game.turn == 0) return;
           await _pause(750);
-          if (!mounted) return;
+          if (!mounted || startedWith != _game) return;
           final card = tarneebBotPlay(game, game.turn);
           setState(() {
             _showLast = game.play(card);
@@ -70,7 +72,8 @@ class _TarneebGameScreenState extends State<TarneebGameScreen> {
         }
       }
     } finally {
-      _busy = false;
+      // A newly started game owns the flag; an abandoned loop must not clear it.
+      if (startedWith == _game) _busy = false;
     }
   }
 
@@ -104,6 +107,7 @@ class _TarneebGameScreenState extends State<TarneebGameScreen> {
   }
 
   void _restart() {
+    _busy = false;
     setState(() {
       _game = TarneebGame();
       _showLast = false;
@@ -143,39 +147,47 @@ class _TarneebGameScreenState extends State<TarneebGameScreen> {
       },
       child: Directionality(
         textDirection: _ar ? TextDirection.rtl : TextDirection.ltr,
-        child: Scaffold(
-          appBar: AppBar(
-            title: Text(_t('الطرنيب', 'Tarneeb')),
-            actions: [
-              IconButton(
-                tooltip: _t('لعبة جديدة', 'New game'),
-                icon: const Icon(Icons.refresh_rounded),
-                onPressed: _confirmRestart,
-              ),
-            ],
-          ),
-          body: SafeArea(
-            child: Column(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-                    child: Column(
-                      children: [
-                        _scoreBar(game),
-                        const SizedBox(height: 8),
-                        _infoLine(game),
-                        const SizedBox(height: 8),
-                        _table(game),
-                        const SizedBox(height: 8),
-                        _actionPanel(game),
-                      ],
+        child: GameScaffold(
+          title: _t('الطرنيب', 'Tarneeb'),
+          actions: [
+            IconButton(
+              tooltip: _t('لعبة جديدة', 'New game'),
+              icon: const Icon(Icons.refresh_rounded),
+              onPressed: _confirmRestart,
+            ),
+          ],
+          body: Stack(
+            children: [
+              Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+                      child: Column(
+                        children: [
+                          _scoreBar(game),
+                          const SizedBox(height: 8),
+                          _infoLine(game),
+                          const SizedBox(height: 8),
+                          _table(game),
+                          const SizedBox(height: 10),
+                          _actionPanel(game),
+                        ],
+                      ),
                     ),
                   ),
+                  _handRow(game),
+                ],
+              ),
+              Positioned.fill(
+                child: ConfettiBurst(
+                  trigger: game.phase == TarneebPhase.gameOver &&
+                          game.winnerTeam == 0
+                      ? 1
+                      : 0,
                 ),
-                _handRow(game),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -183,20 +195,35 @@ class _TarneebGameScreenState extends State<TarneebGameScreen> {
   }
 
   Widget _scoreBar(TarneebGame game) {
+    final usActive = game.phase == TarneebPhase.playing && game.turn % 2 == 0;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        GamePill(
-          text: '${_t('نحن', 'Us')}: ${game.score[0]}',
-          subtitle: _t('اللمّات: ${game.tricksWon[0]}', 'Tricks: ${game.tricksWon[0]}'),
+        GameScoreChip(
+          label: '${_t('نحن', 'Us')} • ${_t('لمّات', 'tricks')} ${game.tricksWon[0]}',
+          value: '${game.score[0]}',
+          active: usActive && !_showLast,
         ),
-        Text(
-          _t('الهدف ${game.targetScore}', 'Target ${game.targetScore}'),
-          style: const TextStyle(fontWeight: FontWeight.w700),
+        Column(
+          children: [
+            const Icon(Icons.flag_rounded, color: kGameGold, size: 20),
+            Text(
+              _t('الهدف ${game.targetScore}', 'Target ${game.targetScore}'),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+                fontSize: 12,
+              ),
+            ),
+          ],
         ),
-        GamePill(
-          text: '${_t('هم', 'Them')}: ${game.score[1]}',
-          subtitle: _t('اللمّات: ${game.tricksWon[1]}', 'Tricks: ${game.tricksWon[1]}'),
+        GameScoreChip(
+          label: '${_t('هم', 'Them')} • ${_t('لمّات', 'tricks')} ${game.tricksWon[1]}',
+          value: '${game.score[1]}',
+          accent: const Color(0xFFFF5C8A),
+          active: game.phase == TarneebPhase.playing &&
+              game.turn % 2 == 1 &&
+              !_showLast,
         ),
       ],
     );
@@ -219,11 +246,15 @@ class _TarneebGameScreenState extends State<TarneebGameScreen> {
     return Text(
       text,
       textAlign: TextAlign.center,
-      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+      style: const TextStyle(
+        color: Colors.white,
+        fontSize: 15,
+        fontWeight: FontWeight.w800,
+      ),
     );
   }
 
-  Widget _seatBadge(int seat, TarneebGame game) {
+  Widget _seatBadge(int seat, TarneebGame game, {bool compact = false}) {
     final active = !_showLast &&
         (game.phase == TarneebPhase.playing ||
             game.phase == TarneebPhase.bidding ||
@@ -232,8 +263,10 @@ class _TarneebGameScreenState extends State<TarneebGameScreen> {
             ? game.highBidder == seat
             : game.turn == seat);
     final bid = _bidText(seat);
-    return GamePill(
-      text: gameSeatName(seat, _ar, teams: true),
+    return GameSeatBadge(
+      compact: compact,
+      seat: seat,
+      name: gameSeatName(seat, _ar, teams: true),
       active: active,
       subtitle: bid.isEmpty
           ? '${game.hands[seat].length} ${_t('ورقة', 'cards')}'
@@ -241,136 +274,175 @@ class _TarneebGameScreenState extends State<TarneebGameScreen> {
     );
   }
 
-  Widget _trickArea(TarneebGame game) {
-    final plays = _showLast ? game.lastTrick : game.trick;
-    PlayingCard? cardOf(int seat) {
-      for (final p in plays) {
-        if (p.seat == seat) return p.card;
-      }
-      return null;
-    }
-
-    Widget slot(int seat, Alignment alignment) {
-      final card = cardOf(seat);
-      return Align(
-        alignment: alignment,
-        child: card == null
-            ? const SizedBox(width: 38, height: 54)
-            : GameCardView(card: card, width: 38),
-      );
-    }
-
-    return SizedBox(
-      width: 150,
-      height: 170,
-      child: Stack(
-        children: [
-          slot(0, Alignment.bottomCenter),
-          slot(1, Alignment.centerLeft),
-          slot(2, Alignment.topCenter),
-          slot(3, Alignment.centerRight),
-        ],
-      ),
-    );
-  }
-
   Widget _table(TarneebGame game) {
-    return SizedBox(
-      height: 270,
+    final plays = _showLast ? game.lastTrick : game.trick;
+    return GameFeltTable(
+      height: 330,
       child: Stack(
         children: [
           Align(
             alignment: Alignment.topCenter,
-            child: _seatBadge(2, game),
+            child: Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _seatBadge(2, game),
+                  const SizedBox(height: 4),
+                  CardBackFan(count: game.hands[2].length, width: 24),
+                ],
+              ),
+            ),
           ),
           Align(
             alignment: Alignment.centerLeft,
-            child: _seatBadge(1, game),
+            child: Padding(
+              padding: const EdgeInsets.only(left: 10),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _seatBadge(1, game, compact: true),
+                  const SizedBox(height: 4),
+                  CardBackFan(
+                      count: game.hands[1].length, width: 22, vertical: true),
+                ],
+              ),
+            ),
           ),
           Align(
             alignment: Alignment.centerRight,
-            child: _seatBadge(3, game),
+            child: Padding(
+              padding: const EdgeInsets.only(right: 10),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _seatBadge(3, game, compact: true),
+                  const SizedBox(height: 4),
+                  CardBackFan(
+                      count: game.hands[3].length, width: 22, vertical: true),
+                ],
+              ),
+            ),
           ),
           Align(
             alignment: Alignment.bottomCenter,
-            child: _seatBadge(0, game),
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _seatBadge(0, game),
+            ),
           ),
-          Center(child: _trickArea(game)),
+          Center(child: TrickArea(plays: plays, cardWidth: 42, size: 150)),
         ],
       ),
     );
   }
 
   Widget _suitButton(Suit suit) {
-    return OutlinedButton(
-      onPressed: () => _trumpUser(suit),
-      child: Text(
-        suitSymbol(suit),
-        style: TextStyle(fontSize: 28, color: suitColor(suit)),
+    return GestureDetector(
+      onTap: () {
+        gameTap();
+        _trumpUser(suit);
+      },
+      child: Container(
+        width: 62,
+        height: 62,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: const LinearGradient(
+            colors: <Color>[Colors.white, Color(0xFFE3E7F6)],
+          ),
+          border: Border.all(color: kGameGold, width: 2),
+          boxShadow: <BoxShadow>[
+            BoxShadow(color: kGameGold.withOpacity(0.4), blurRadius: 10),
+          ],
+        ),
+        child: Center(
+          child: Text(
+            suitSymbol(suit),
+            style: TextStyle(fontSize: 32, color: suitColor(suit), height: 1.0),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _panelTitle(String text) {
+    return Text(
+      text,
+      textAlign: TextAlign.center,
+      style: const TextStyle(
+        color: Colors.white,
+        fontWeight: FontWeight.w900,
+        fontSize: 16,
       ),
     );
   }
 
   Widget _actionPanel(TarneebGame game) {
     if (game.phase == TarneebPhase.bidding && game.turn == 0) {
-      return Column(
-        children: [
-          Text(
-            _t('دورك للمزايدة', 'Your turn to bid'),
-            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            alignment: WrapAlignment.center,
-            children: [
-              for (final bid in game.legalBids())
-                bid == 0
-                    ? OutlinedButton(
-                        onPressed: _busy ? null : () => _bidUser(0),
-                        child: Text(_t('تمرير', 'Pass')),
-                      )
-                    : FilledButton(
-                        onPressed: _busy ? null : () => _bidUser(bid),
-                        child: Text('$bid'),
-                      ),
-            ],
-          ),
-        ],
+      return GamePanel(
+        child: Column(
+          children: [
+            _panelTitle(_t('دورك للمزايدة', 'Your turn to bid')),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.center,
+              children: [
+                for (final bid in game.legalBids())
+                  bid == 0
+                      ? GameButton(
+                          primary: false,
+                          onPressed: _busy ? null : () => _bidUser(0),
+                          label: _t('تمرير', 'Pass'),
+                        )
+                      : SizedBox(
+                          width: 76,
+                          child: GameButton(
+                            onPressed: _busy ? null : () => _bidUser(bid),
+                            label: '$bid',
+                          ),
+                        ),
+              ],
+            ),
+          ],
+        ),
       );
     }
     if (game.phase == TarneebPhase.chooseTrump && game.highBidder == 0) {
-      return Column(
-        children: [
-          Text(
-            _t('اختر الورق الرابح', 'Choose the trump suit'),
-            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            alignment: WrapAlignment.center,
-            children: [
-              for (final suit in allSuits) _suitButton(suit),
-            ],
-          ),
-        ],
+      return GamePanel(
+        child: Column(
+          children: [
+            _panelTitle(_t('اختر الورق الرابح', 'Choose the trump suit')),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 12,
+              runSpacing: 10,
+              alignment: WrapAlignment.center,
+              children: [
+                for (final suit in allSuits) _suitButton(suit),
+              ],
+            ),
+          ],
+        ),
       );
     }
     if (_showLast) {
-      return Text(
-        _t('${gameSeatName(game.lastTrickWinner, _ar, teams: true)} ربح اللمّة', '${gameSeatName(game.lastTrickWinner, _ar, teams: true)} won the trick'),
-        style: const TextStyle(fontWeight: FontWeight.w700),
+      return GameBanner(
+        size: 16,
+        color: kGameGold,
+        text: _t('${gameSeatName(game.lastTrickWinner, _ar, teams: true)} ربح اللمّة',
+            '${gameSeatName(game.lastTrickWinner, _ar, teams: true)} won the trick'),
       );
     }
     if (game.phase == TarneebPhase.playing) {
-      return Text(
-        game.turn == 0
+      return GameBanner(
+        size: 15,
+        text: game.turn == 0
             ? _t('دورك — اختر ورقة', 'Your turn — play a card')
-            : _t('ينتظر ${gameSeatName(game.turn, _ar, teams: true)}...', 'Waiting for ${gameSeatName(game.turn, _ar, teams: true)}...'),
-        style: const TextStyle(fontWeight: FontWeight.w700),
+            : _t('ينتظر ${gameSeatName(game.turn, _ar, teams: true)}...',
+                'Waiting for ${gameSeatName(game.turn, _ar, teams: true)}...'),
       );
     }
     if (game.phase == TarneebPhase.handOver ||
@@ -384,46 +456,48 @@ class _TarneebGameScreenState extends State<TarneebGameScreen> {
     final bidTeam = game.highBidder % 2;
     final made = game.tricksWon[bidTeam] >= game.highBid;
     final over = game.phase == TarneebPhase.gameOver;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          children: [
-            Text(
-              made
-                  ? _t('حقق فريق المزايدة مزايدته (${game.highBid})', 'The bidding team made its bid (${game.highBid})')
-                  : _t('فشل فريق المزايدة (${game.highBid})', 'The bidding team failed (${game.highBid})'),
-              style: const TextStyle(fontWeight: FontWeight.w800),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 6),
-            Text(
-              _t(
-                'نحن ${game.lastHandDelta[0] >= 0 ? '+' : ''}${game.lastHandDelta[0]}   •   هم ${game.lastHandDelta[1] >= 0 ? '+' : ''}${game.lastHandDelta[1]}',
-                'Us ${game.lastHandDelta[0] >= 0 ? '+' : ''}${game.lastHandDelta[0]}   •   Them ${game.lastHandDelta[1] >= 0 ? '+' : ''}${game.lastHandDelta[1]}',
+    final won = over && game.winnerTeam == 0;
+    final handText = made
+        ? _t('حقق فريق المزايدة مزايدته (${game.highBid})',
+            'The bidding team made its bid (${game.highBid})')
+        : _t('فشل فريق المزايدة (${game.highBid})',
+            'The bidding team failed (${game.highBid})');
+    return GameResultCard(
+      won: over ? won : made == (bidTeam == 0),
+      title: over
+          ? (won
+              ? _t('🏆 فزتم بالمباراة!', '🏆 Your team won the game!')
+              : _t('خسرتم المباراة', 'Your team lost the game'))
+          : handText,
+      child: Column(
+        children: [
+          if (over)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text(
+                handText,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white.withOpacity(0.8)),
               ),
-              textDirection: TextDirection.ltr,
             ),
-            const SizedBox(height: 10),
-            if (over)
-              Text(
-                game.winnerTeam == 0
-                    ? _t('🏆 فزتم بالمباراة!', '🏆 Your team won the game!')
-                    : _t('خسرتم المباراة', 'Your team lost the game'),
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                  color: AppTheme.primary,
-                ),
-              ),
-            const SizedBox(height: 8),
-            FilledButton.icon(
-              onPressed: over ? _restart : _nextHand,
-              icon: Icon(over ? Icons.refresh_rounded : Icons.play_arrow_rounded),
-              label: Text(over ? _t('لعبة جديدة', 'New game') : _t('اليد التالية', 'Next hand')),
+          Text(
+            _t(
+              'نحن ${game.lastHandDelta[0] >= 0 ? '+' : ''}${game.lastHandDelta[0]}   •   هم ${game.lastHandDelta[1] >= 0 ? '+' : ''}${game.lastHandDelta[1]}',
+              'Us ${game.lastHandDelta[0] >= 0 ? '+' : ''}${game.lastHandDelta[0]}   •   Them ${game.lastHandDelta[1] >= 0 ? '+' : ''}${game.lastHandDelta[1]}',
             ),
-          ],
-        ),
+            textDirection: TextDirection.ltr,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 12),
+          GameButton(
+            onPressed: over ? _restart : _nextHand,
+            icon: over ? Icons.refresh_rounded : Icons.play_arrow_rounded,
+            label: over ? _t('لعبة جديدة', 'New game') : _t('اليد التالية', 'Next hand'),
+          ),
+        ],
       ),
     );
   }
@@ -436,26 +510,19 @@ class _TarneebGameScreenState extends State<TarneebGameScreen> {
     final legal = canPlay ? game.legalPlays(0) : <PlayingCard>[];
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(8, 6, 8, 10),
+      padding: const EdgeInsets.fromLTRB(4, 0, 4, 6),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: <Color>[Colors.transparent, Colors.black.withOpacity(0.35)],
+        ),
       ),
-      child: Wrap(
-        alignment: WrapAlignment.center,
-        spacing: 4,
-        runSpacing: 4,
-        children: [
-          for (final card in game.hands[0])
-            GameCardView(
-              card: card,
-              width: 42,
-              enabled: !canPlay || legal.contains(card),
-              highlight: canPlay && legal.contains(card),
-              onTap: canPlay && legal.contains(card)
-                  ? () => _playUser(card)
-                  : null,
-            ),
-        ],
+      child: FannedHand(
+        cards: game.hands[0],
+        canPlay: canPlay,
+        legal: legal,
+        onPlay: _playUser,
       ),
     );
   }

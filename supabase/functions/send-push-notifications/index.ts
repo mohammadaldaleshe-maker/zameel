@@ -81,15 +81,52 @@ function isInvalidTokenResponse(status: number, body: string) {
 Deno.serve(async (req) => {
   const expectedSecret = Deno.env.get("ZAMEEL_PUSH_WEBHOOK_SECRET");
   const providedSecret = req.headers.get("x-zameel-push-secret");
-  if (!expectedSecret || !(await secretsEqual(providedSecret, expectedSecret))) {
-    return new Response(JSON.stringify({ ok: false, error: "unauthorized" }), {
-      status: 401,
-      headers: { "content-type": "application/json" },
-    });
+  const parsedBody = await req.json().catch(() => null);
+  const requestBody: Record<string, unknown> =
+    parsedBody && typeof parsedBody === "object" && !Array.isArray(parsedBody)
+      ? parsedBody as Record<string, unknown>
+      : {};
+  const secretAccepted =
+    (expectedSecret ? await secretsEqual(providedSecret, expectedSecret) : false);
+  if (!secretAccepted) {
+    // Direct fast path for a ringing call: the CALLER's app asks for the push
+    // right after the call row exists, instead of waiting for the database
+    // queue. The caller is verified by their own login token, and only for a
+    // call they started that is still ringing.
+    const bearer = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
+    const room = String(requestBody.call_room ?? "");
+    let callNotificationId = "";
+    if (bearer && room) {
+      try {
+        const { data: userData } = await supabase.auth.getUser(bearer);
+        const callerId = userData?.user?.id;
+        if (callerId) {
+          const { data: ringing } = await supabase.from("direct_call_sessions")
+            .select("callee_id,status").eq("room_id", room).eq("caller_id", callerId)
+            .maybeSingle();
+          if (ringing?.status === "ringing") {
+            const { data: note } = await supabase.from("notifications").select("id")
+              .eq("user_id", ringing.callee_id)
+              .in("type", ["incoming_video_call", "incoming_voice_call"])
+              .eq("data->>room_id", room)
+              .limit(1).maybeSingle();
+            callNotificationId = String(note?.id ?? "");
+          }
+        }
+      } catch (_) { /* fall through to unauthorized */ }
+    }
+    if (!callNotificationId) {
+      return new Response(JSON.stringify({ ok: false, error: "unauthorized" }), {
+        status: 401,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    // Only this one call invitation may be pushed on this path.
+    delete requestBody.call_ended_room;
+    requestBody.notification_id = callNotificationId;
   }
 
   try {
-    const requestBody = await req.json().catch(() => ({}));
     const serviceAccountRaw = Deno.env.get("FCM_SERVICE_ACCOUNT_JSON");
     if (!serviceAccountRaw) throw new Error("FCM_SERVICE_ACCOUNT_JSON is not configured");
 
@@ -127,9 +164,9 @@ Deno.serve(async (req) => {
     // Recover rows whose previous worker died after claiming them. Migration
     // 069 records processing_started_at at the database layer, so even an
     // older worker active during rollout receives a timestamp automatically.
-    // Thirty minutes is intentionally conservative to avoid replaying a push
-    // that a slow-but-live worker is still sending.
-    const staleProcessingBefore = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+    // Two minutes is far longer than one push takes (FCM calls time out after
+    // 8 seconds), so a crashed worker can no longer hold a push for half an hour.
+    const staleProcessingBefore = new Date(Date.now() - 2 * 60 * 1000).toISOString();
     const { error: staleProcessingError } = await supabase
       .from("push_notification_queue")
       .update({
@@ -167,8 +204,10 @@ Deno.serve(async (req) => {
     let sent = 0;
     let failed = 0;
     let processed = 0;
+    let firstItemError: unknown = null;
 
     for (const item of queue ?? []) {
+    try {
       // Atomically claim this queue row. Multiple webhook invocations can overlap;
       // only the worker whose conditional UPDATE actually matched may send it.
       const { data: claimed, error: claimError } = await supabase
@@ -297,7 +336,7 @@ Deno.serve(async (req) => {
       }
 
       let itemHadFailure = false;
-      for (const device of tokens ?? []) {
+      await Promise.all((tokens ?? []).map(async (device) => {
         // Idempotency is tracked per queue row + device token. If a previous
         // attempt already delivered to this device, retry only the devices that
         // actually failed instead of alerting successful devices twice.
@@ -317,7 +356,7 @@ Deno.serve(async (req) => {
           }
         }
         if (deliveryLedgerAvailable && previousDelivery?.status === "sent") {
-          continue;
+          return;
         }
 
         if (notification.type === "message") {
@@ -331,7 +370,7 @@ Deno.serve(async (req) => {
               attempts: Number(previousDelivery?.attempts ?? 0), last_error: "conversation_visible",
               sent_at: new Date().toISOString(), updated_at: new Date().toISOString(),
             }, { onConflict: "queue_id,token_id" });
-            continue;
+            return;
           }
         }
 
@@ -381,7 +420,7 @@ Deno.serve(async (req) => {
         const platform = String(device.platform ?? "").toLowerCase();
         const androidBubbleMessage = directMessage && platform.startsWith("android");
 
-        if(notification.type === "notification_cancel" && platform !== "android_call_v3_alert151") continue;
+        if(notification.type === "notification_cancel" && platform !== "android_call_v3_alert151") return;
         const androidInteraction = platform === "android_call_v3_alert151" && ["post_like","like","notification_cancel"].includes(notification.type);
         const androidNativeCall = incomingCall && isNativeCallDevice(platform);
         const fcmMessage: Record<string, unknown> = {
@@ -430,17 +469,42 @@ Deno.serve(async (req) => {
 
         const payload = { message: fcmMessage };
 
-        const response = await fetch(
-          `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
-          {
-            method: "POST",
-            headers: {
-              "content-type": "application/json",
-              authorization: `Bearer ${accessToken}`,
+        let response: Response;
+        try {
+          response = await fetch(
+            `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
+            {
+              method: "POST",
+              headers: {
+                "content-type": "application/json",
+                authorization: `Bearer ${accessToken}`,
+              },
+              body: JSON.stringify(payload),
+              signal: AbortSignal.timeout(8000),
             },
-            body: JSON.stringify(payload),
-          },
-        );
+          );
+        } catch (sendError) {
+          // One slow or unreachable device must not hide the others: record it
+          // as failed for retry and let the remaining devices finish.
+          itemHadFailure = true;
+          failed++;
+          const sendErrorText = String(sendError).slice(0, 500);
+          if (deliveryLedgerAvailable) {
+            await supabase.from("push_notification_deliveries").upsert({
+              queue_id: item.id,
+              token_id: device.id,
+              status: "failed",
+              attempts: Number(previousDelivery?.attempts ?? 0) + 1,
+              last_error: sendErrorText,
+              sent_at: null,
+              updated_at: new Date().toISOString(),
+            }, { onConflict: "queue_id,token_id" });
+          }
+          await supabase.from("push_notification_queue").update({
+            last_error: sendErrorText,
+          }).eq("id", item.id);
+          return;
+        }
 
         if (response.ok) {
           sent++;
@@ -455,7 +519,7 @@ Deno.serve(async (req) => {
               updated_at: new Date().toISOString(),
             }, { onConflict: "queue_id,token_id" });
           }
-          continue;
+          return;
         }
 
         const text = await response.text();
@@ -478,13 +542,26 @@ Deno.serve(async (req) => {
         await supabase.from("push_notification_queue").update({
           last_error: text.slice(0, 2000),
         }).eq("id", item.id);
-      }
+      }));
 
       await supabase.from("push_notification_queue").update({
         status: itemHadFailure ? "failed" : "sent",
         processed_at: itemHadFailure ? null : new Date().toISOString(),
       }).eq("id", item.id);
+    } catch (itemError) {
+      // A transient error must never leave this push stuck in "processing":
+      // mark it failed so the one-minute retry sweep picks it up quickly.
+      failed++;
+      firstItemError ??= itemError;
+      await supabase.from("push_notification_queue").update({
+        status: "failed", processed_at: null,
+        last_error: String(itemError).slice(0, 500),
+      }).eq("id", item.id).eq("status", "processing");
     }
+    }
+
+    // Other items were still attempted; now report the failure to the caller.
+    if (firstItemError) throw firstItemError;
 
     return new Response(JSON.stringify({ ok: true, sent, failed, processed }), {
       headers: { "content-type": "application/json" },

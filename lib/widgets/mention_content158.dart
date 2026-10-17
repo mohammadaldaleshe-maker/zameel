@@ -2,6 +2,7 @@ import '../services/mention_display159.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'copyable_text.dart';
+import 'expandable_text171.dart';
 import '../screens/profile/profile_screen.dart';
 
 class MentionContent158 extends StatefulWidget {
@@ -13,7 +14,9 @@ class MentionContent158 extends StatefulWidget {
       this.header = false,
       this.onTap,
       this.maxLines,
-      this.overflow});
+      this.overflow,
+      this.collapsedLines,
+      this.expandedMaxHeight});
   final String? text;
   final String kind, id;
   final TextStyle? style;
@@ -21,6 +24,11 @@ class MentionContent158 extends StatefulWidget {
   final VoidCallback? onTap;
   final int? maxLines;
   final TextOverflow? overflow;
+
+  /// When set (and [maxLines] is not), long text is cut to this many lines with
+  /// a "عرض المزيد" button under it.
+  final int? collapsedLines;
+  final double? expandedMaxHeight;
   @override
   State<MentionContent158> createState() => _MentionContent158State();
 }
@@ -83,17 +91,32 @@ class _MentionContent158State extends State<MentionContent158> {
               const Text('مع الأصدقاء والمتابعين'),
             if (!widget.header ||
                 mentionBody159(widget.text ?? '', names.keys).isNotEmpty)
-              CopyableText(
-                  widget.header
-                      ? mentionBody159(widget.text ?? '', names.keys)
-                      : widget.text,
-                  mentions: {
-                    ...names,
-                    if ((widget.text ?? '').contains('@الجميع')) 'الجميع': '*'
-                  },
-                  style: widget.style,
-                  onTap: widget.onTap,
-                  maxLines: widget.maxLines,
-                  overflow: widget.overflow),
+              _body(),
           ]);
+
+  Widget _body() {
+    final shown = widget.header
+        ? mentionBody159(widget.text ?? '', names.keys)
+        : widget.text;
+    final mentions = {
+      ...names,
+      if ((widget.text ?? '').contains('@الجميع')) 'الجميع': '*'
+    };
+    Widget copyable(int? lines, TextOverflow? overflow) => CopyableText(shown,
+        mentions: mentions,
+        style: widget.style,
+        onTap: widget.onTap,
+        maxLines: lines,
+        overflow: overflow);
+    final collapsed = widget.collapsedLines;
+    if (collapsed == null || widget.maxLines != null) {
+      return copyable(widget.maxLines, widget.overflow);
+    }
+    return ExpandableText171(
+        text: shown ?? '',
+        style: widget.style,
+        collapsedLines: collapsed,
+        expandedMaxHeight: widget.expandedMaxHeight,
+        builder: (context, lines, overflow) => copyable(lines, overflow));
+  }
 }
