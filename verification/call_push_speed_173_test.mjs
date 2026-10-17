@@ -10,7 +10,7 @@ create schema net; create table net.calls(url text, headers jsonb, body jsonb);
 create function net.http_post(url text, headers jsonb default '{}', body jsonb default '{}', timeout_milliseconds int default 1000) returns bigint
  language plpgsql as $$ begin insert into net.calls values(url,headers,body); return 1; end $$;
 create table public.notifications(id uuid primary key default gen_random_uuid(), type text not null);
-create table public.push_notification_queue(id uuid primary key default gen_random_uuid(), notification_id uuid not null, status text not null default 'pending', attempts int not null default 0, last_error text, processed_at timestamptz, processing_started_at timestamptz, created_at timestamptz not null default now());`);
+create table public.push_notification_queue(id uuid primary key default gen_random_uuid(), notification_id uuid not null, status text not null default 'pending', attempts int not null default 0, last_error text, processed_at timestamptz, created_at timestamptz not null default now());`);
 const read = f => fs.readFileSync(new URL(`../supabase/migrations/${f}`, import.meta.url), 'utf8');
 await db.exec(read('20261017140002_169_push_dispatch_targeted.sql'));
 const m173 = read('20261017180001_173_call_push_speed.sql');
@@ -36,13 +36,14 @@ ok(!m173.includes('unit-test-secret'), 'no secret in the migration');
 
 // stuck rows are released, fresh processing rows are untouched
 await db.exec(`delete from public.push_notification_queue;
- insert into public.push_notification_queue(notification_id,status,processing_started_at) values('00000000-0000-4000-8000-000000000001','processing', now() - interval '10 minutes');
- insert into public.push_notification_queue(notification_id,status,processing_started_at) values('00000000-0000-4000-8000-000000000002','processing', now());`);
+ insert into public.push_notification_queue(notification_id,status,created_at) values('00000000-0000-4000-8000-000000000001','processing', now() - interval '10 minutes');
+ insert into public.push_notification_queue(notification_id,status,created_at) values('00000000-0000-4000-8000-000000000002','processing', now());`);
 await db.exec(m173.slice(m173.indexOf('-- Release pushes')));
 const rows = (await db.query(`select notification_id, status from public.push_notification_queue order by notification_id`)).rows;
 ok(rows[0].status === 'failed', 'a push stuck in processing is released');
 ok(rows[1].status === 'processing', 'a push being sent right now is left alone');
 
+ok((await db.query(`select 1 from information_schema.columns where table_name='push_notification_queue' and column_name='processing_started_at'`)).rows.length === 1, 'the processing-time column is installed even if migration 069 was never applied');
 // worker source: caller fast path, parallel devices, timeout, no stuck rows
 const worker = fs.readFileSync(new URL('../supabase/functions/send-push-notifications/index.ts', import.meta.url), 'utf8');
 ok(worker.includes('call_room') && worker.includes('auth.getUser(bearer)'), 'caller fast path is verified by the caller login token');

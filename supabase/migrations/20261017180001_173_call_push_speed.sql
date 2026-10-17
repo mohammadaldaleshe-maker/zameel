@@ -4,7 +4,45 @@
 --    doubling the load exactly when speed matters. It now leaves call rows alone.
 -- 2) Rows stuck in "processing" after a worker crash are released now, so the
 --    one-minute retry sweep can deliver them (the worker also uses a 2-minute limit).
+--    This also installs the processing-time column and trigger from migration 069
+--    if that migration was never applied on this project (safe to repeat).
 begin;
+
+alter table public.push_notification_queue
+  add column if not exists processing_started_at timestamptz;
+
+create or replace function public.set_push_queue_processing_timestamp()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.status = 'processing' then
+    if old.status is distinct from 'processing' or new.processing_started_at is null then
+      new.processing_started_at := now();
+    end if;
+  else
+    new.processing_started_at := null;
+  end if;
+  return new;
+end;
+$$;
+
+revoke execute on function public.set_push_queue_processing_timestamp()
+  from public, anon, authenticated;
+
+drop trigger if exists push_queue_processing_timestamp
+  on public.push_notification_queue;
+
+create trigger push_queue_processing_timestamp
+before update of status on public.push_notification_queue
+for each row
+execute function public.set_push_queue_processing_timestamp();
+
+create index if not exists push_notification_queue_processing_started_idx
+  on public.push_notification_queue(processing_started_at)
+  where status = 'processing';
 
 create or replace function public.zameel_dispatch_queued_push()
 returns trigger
@@ -47,6 +85,6 @@ revoke all on function public.zameel_dispatch_queued_push() from public, anon, a
 update public.push_notification_queue
 set status = 'failed', processed_at = null, last_error = coalesce(last_error, 'released_after_stuck_processing')
 where status = 'processing'
-  and coalesce(processing_started_at, created_at) < now() - interval '2 minutes';
+  and created_at < now() - interval '2 minutes';
 
 commit;
