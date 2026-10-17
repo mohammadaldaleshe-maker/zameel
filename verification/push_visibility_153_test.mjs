@@ -3,6 +3,7 @@ import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
 const {transformSync}=require('esbuild');
 import {incomingCallData,isNativeCallDevice,callEndRecipients} from '../supabase/functions/send-push-notifications/call_push.mjs';
+import {secretsEqual} from '../supabase/functions/_shared/secure_compare.mjs';
 const original=fs.readFileSync(new URL('../supabase/functions/send-push-notifications/index.ts',import.meta.url),'utf8');
 const source=transformSync(original.replace(/^import .*;\r?\n/gm,''),{loader:'ts',format:'cjs'}).code;
 async function run({type='message',suppress=false,visibilityError=null,deviceError=null,deviceAllowed=true,secret='expected'}={}) {
@@ -36,7 +37,7 @@ async function run({type='message',suppress=false,visibilityError=null,deviceErr
    }
    return q;
  }};
- const context=vm.createContext({Deno:{env:{get(name){return name==='FCM_SERVICE_ACCOUNT_JSON'?JSON.stringify({project_id:'test'}):name==='ZAMEEL_PUSH_WEBHOOK_SECRET'?'expected':'test';}},serve(f){handler=f;}},createClient:()=>database,incomingCallData,isNativeCallDevice,callEndRecipients,Response,Request,Date,JSON,console,TextEncoder,URLSearchParams,btoa,atob,
+ const context=vm.createContext({Deno:{env:{get(name){return name==='FCM_SERVICE_ACCOUNT_JSON'?JSON.stringify({project_id:'test'}):name==='ZAMEEL_PUSH_WEBHOOK_SECRET'?'expected':'test';}},serve(f){handler=f;}},createClient:()=>database,secretsEqual,incomingCallData,isNativeCallDevice,callEndRecipients,Response,Request,Date,JSON,console,TextEncoder,URLSearchParams,btoa,atob,
    fetch:async(url,opts)=>{outgoing.push(JSON.parse(opts.body));return new Response('{}',{status:200});}});
  vm.runInContext(source+'\ngetAccessToken = async () => "test-token";',context);
  const response=await handler(new Request('https://worker.test',{method:'POST',headers:{'x-zameel-push-secret':secret,'content-type':'application/json'},body:'{}'}));
