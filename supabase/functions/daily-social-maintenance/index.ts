@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { secretsEqual } from '../_shared/secure_compare.mjs';
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
   status,
@@ -8,7 +9,7 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 Deno.serve(async (request) => {
   if (request.method !== 'POST') return json({ ok: false, error: 'method_not_allowed' }, 405);
   const expected = Deno.env.get('ZAMEEL_MAINTENANCE_SECRET') ?? '';
-  if (!expected || request.headers.get('x-zameel-maintenance-secret') !== expected) {
+  if (!expected || !(await secretsEqual(request.headers.get('x-zameel-maintenance-secret'), expected))) {
     return json({ ok: false, error: 'unauthorized' }, 401);
   }
 

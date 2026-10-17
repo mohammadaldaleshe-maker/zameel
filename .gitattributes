@@ -1,0 +1,24 @@
+# Normalise line endings so Windows (CRLF) and CI/Linux (LF) never produce
+# phantom diffs. The repository stores LF; working copies follow the OS.
+* text=auto
+
+# Never touch binary files.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.icns binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.mp3 binary
+*.wav binary
+*.mp4 binary
+*.jar binary
+*.keystore binary
+*.jks binary
+*.zip binary
+*.node binary

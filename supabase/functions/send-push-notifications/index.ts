@@ -1,5 +1,6 @@
 import { incomingCallData, isNativeCallDevice, callEndRecipients } from "./call_push.mjs";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { secretsEqual } from "../_shared/secure_compare.mjs";
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -65,7 +66,7 @@ function isInvalidTokenResponse(status: number, body: string) {
 Deno.serve(async (req) => {
   const expectedSecret = Deno.env.get("ZAMEEL_PUSH_WEBHOOK_SECRET");
   const providedSecret = req.headers.get("x-zameel-push-secret");
-  if (!expectedSecret || providedSecret !== expectedSecret) {
+  if (!expectedSecret || !(await secretsEqual(providedSecret, expectedSecret))) {
     return new Response(JSON.stringify({ ok: false, error: "unauthorized" }), {
       status: 401,
       headers: { "content-type": "application/json" },
