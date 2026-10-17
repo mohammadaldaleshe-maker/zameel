@@ -180,7 +180,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      Text(isArabic ? 'خاصة' : 'Private'),
+                      Text(isArabic ? 'عامة' : 'Public'),
                       const SizedBox(width: 8),
                       Switch(
                         value: isPrivate,
@@ -190,7 +190,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
                         },
                         activeColor: AppTheme.primary,
                       ),
-                      Text(isArabic ? 'عامة' : 'Public'),
+                      Text(isArabic ? 'خاصة' : 'Private'),
                     ],
                   ),
                 ],
@@ -538,6 +538,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
                 builder: (_) => GroupDetailsScreen(
                   group: group,
                   onLeave: () {},
+                  onJoin: () => _joinGroup(group),
                 ),
               ),
             );
@@ -730,12 +731,14 @@ class GroupDetailsScreen extends StatelessWidget {
   final Map<String, dynamic> group;
   final VoidCallback onLeave;
   final VoidCallback? onDelete;
+  final VoidCallback? onJoin;
 
   const GroupDetailsScreen({
     super.key,
     required this.group,
     required this.onLeave,
     this.onDelete,
+    this.onJoin,
   });
 
   @override
@@ -885,6 +888,40 @@ class GroupDetailsScreen extends StatelessWidget {
                 ),
 
               if (!isJoined) const SizedBox(height: 12),
+
+              if (!isJoined && onJoin != null)
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: group['joinStatus'] == 'pending'
+                        ? null
+                        : () {
+                            Navigator.pop(context);
+                            onJoin?.call();
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: Text(
+                      group['joinStatus'] == 'pending'
+                          ? (isArabic ? 'قيد الانتظار' : 'Pending')
+                          : (group['isPrivate'] == true
+                              ? (isArabic ? 'طلب انضمام' : 'Request to join')
+                              : (isArabic ? 'انضمام' : 'Join')),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ),
+
+              if (!isJoined && onJoin != null) const SizedBox(height: 12),
 
               // Action Buttons
               if (isJoined)

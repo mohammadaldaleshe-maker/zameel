@@ -672,6 +672,7 @@ class ChatDetailScreen extends StatefulWidget {
 
 class _ChatDetailScreenState extends State<ChatDetailScreen>
     with WidgetsBindingObserver, RouteAware {
+  Map<String, dynamic>? _replyTo;
   ModalRoute<dynamic>? _visibilityRoute;
   Timer? _visibilityTimer;
   bool _routeVisible = false;
@@ -1034,6 +1035,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
         context: context,
         builder: (c) => SafeArea(
                 child: Wrap(children: [
+              if (m['deleted'] != true)
+                ListTile(
+                    leading: const Icon(Icons.reply_rounded),
+                    title: const Text('رد'),
+                    onTap: () => Navigator.pop(c, 'reply')),
               if (m['deleted'] != true &&
                   (m['media_url']?.toString() ?? '').isEmpty)
                 ListTile(
@@ -1052,6 +1058,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                     onTap: () => Navigator.pop(c, 'delete_everyone')),
             ])));
     if (action == null || !mounted) return;
+    if (action == 'reply') {
+      setState(() => _replyTo = m);
+      return;
+    }
     if (action == 'edit') {
       final row = await editOwnedContent155(context, 'messages', '${m['id']}');
       if (row != null && mounted) setState(() => m.addAll(row));
@@ -1295,6 +1305,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
     final text = _controller.text.trim();
     if (text.isEmpty || uid == null) return;
     final localId = 'local-${DateTime.now().microsecondsSinceEpoch}';
+    final replyTarget = _replyTo;
     final optimistic = <String, dynamic>{
       'id': localId,
       'content': text,
@@ -1306,14 +1317,27 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
       'delivered_at': null,
       'read_at': null,
       '_sending': true,
+      if (replyTarget != null) 'reply_to_id': replyTarget['id'],
+      if (replyTarget != null) 'reply_preview': _replyPreviewText(replyTarget),
     };
-    setState(() => _messages.add(optimistic));
+    setState(() {
+      _messages.add(optimistic);
+      _replyTo = null;
+    });
     _controller.clear();
     // Keep the existing input connection; sending must not unfocus/refocus it.
     unawaited(_sendTyping(false));
     _scrollToEnd();
     try {
       Map<String, dynamic> row;
+      if (replyTarget != null) {
+        final replied = await db.rpc('zameel_send_reply164', params: {
+          'p_conversation': widget.conversationId,
+          'p_content': text,
+          'p_reply_to': replyTarget['id'],
+        });
+        row = Map<String, dynamic>.from(replied as Map);
+      } else {
       try {
         final result = await db.rpc('send_direct_message', params: {
           'target_conversation_id': widget.conversationId,
@@ -1345,6 +1369,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                 'id,content,sender_id,created_at,edited_at,media_url,media_type,is_read,delivered_at,read_at')
             .single();
       }
+      }
       if (mounted) {
         _mergePersistedMessage(row);
         await _reconcilePersistedMessages();
@@ -1352,8 +1377,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _messages
-            .removeWhere((message) => message['id']?.toString() == localId));
+        setState(() {
+          _messages.removeWhere(
+              (message) => message['id']?.toString() == localId);
+          if (replyTarget != null && _replyTo == null) _replyTo = replyTarget;
+        });
         if (_controller.text.trim().isEmpty) _controller.text = text;
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('تعذر إرسال الرسالة: $e')));
@@ -2225,6 +2253,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                                         crossAxisAlignment:
                                             CrossAxisAlignment.end,
                                         children: [
+                                          _replyQuote(m, mine),
                                           _messageContent(m, mine),
                                           if (m['edited_at'] != null &&
                                               (m['media_url']?.toString() ?? '')
@@ -2282,6 +2311,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                 ],
               ),
             ),
+            if (_replyTo != null) _replyBar(ar),
             Container(
               padding: const EdgeInsets.all(10),
               child: Row(
@@ -2390,6 +2420,61 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
           ],
         ),
       ),
+    );
+  }
+
+  String _replyPreviewText(Map<String, dynamic> m) {
+    if (m['deleted'] == true) return 'تم حذف هذه الرسالة';
+    final text = (m['content']?.toString() ?? '').trim();
+    if ((m['media_url']?.toString() ?? '').isNotEmpty && text.isEmpty) {
+      return '📎 مرفق';
+    }
+    return text.length > 120 ? text.substring(0, 120) : text;
+  }
+
+  Widget _replyQuote(Map<String, dynamic> m, bool mine) {
+    if (m['reply_to_id'] == null) return const SizedBox.shrink();
+    final preview = m['reply_preview']?.toString() ?? '';
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.black.withAlpha(30),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(Icons.reply_rounded,
+            size: 14,
+            color: mine ? Colors.white70 : AppTheme.adaptiveSecondary),
+        const SizedBox(width: 6),
+        Flexible(
+            child: Text(preview.isEmpty ? 'رسالة' : preview,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    fontSize: 12,
+                    color: mine ? Colors.white70 : AppTheme.adaptiveSecondary))),
+      ]),
+    );
+  }
+
+  Widget _replyBar(bool ar) {
+    final target = _replyTo;
+    if (target == null) return const SizedBox.shrink();
+    return Container(
+      color: AppTheme.adaptiveMuted.shade200,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: Row(children: [
+        const Icon(Icons.reply_rounded, size: 18),
+        const SizedBox(width: 8),
+        Expanded(
+            child: Text(_replyPreviewText(target),
+                maxLines: 1, overflow: TextOverflow.ellipsis)),
+        IconButton(
+            tooltip: ar ? 'إلغاء الرد' : 'Cancel reply',
+            icon: const Icon(Icons.close_rounded, size: 18),
+            onPressed: () => setState(() => _replyTo = null)),
+      ]),
     );
   }
 

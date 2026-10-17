@@ -403,6 +403,41 @@ class _LammaScreenState extends State<LammaScreen>
     }
   }
 
+  Future<void> _endLamma(Map<String, dynamic> lamma) async {
+    final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+                title: Text(_ar ? 'إنهاء اللّمّة؟' : 'End this Lamma?'),
+                content: Text(_ar
+                    ? 'ستختفي اللّمّة من القائمة ولن ينضم إليها أحد بعد الآن.'
+                    : 'It will disappear from the list and nobody can join it any more.'),
+                actions: [
+                  TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: Text(_ar ? 'إلغاء' : 'Cancel')),
+                  FilledButton(
+                      style: FilledButton.styleFrom(
+                          backgroundColor: Colors.red),
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: Text(_ar ? 'إنهاء' : 'End'))
+                ]));
+    if (confirmed != true) return;
+    try {
+      await db
+          .from('social_lammas')
+          .update({'status': 'ended'})
+          .eq('id', lamma['id'])
+          .eq('creator_id', db.auth.currentUser!.id);
+      await _load();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(_ar ? 'تم إنهاء اللّمّة ✓' : 'Lamma ended ✓')));
+      }
+    } catch (e) {
+      _error(e);
+    }
+  }
+
   void _openLammaChat(Map<String, dynamic> lamma) => Navigator.push(
       context,
       MaterialPageRoute(
@@ -542,11 +577,19 @@ class _LammaScreenState extends State<LammaScreen>
                       style: const TextStyle(fontWeight: FontWeight.w800)),
                   subtitle: Text(
                       '${ar ? vibe.$1 : vibe.$2} • $count/${l['max_members']}'),
-                  trailing: FilledButton(
-                      onPressed: () => _join(l),
-                      child: Text(member
-                          ? (ar ? 'دخول' : 'Open')
-                          : (ar ? 'انضم' : 'Join')))));
+                  trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                    if (l['creator_id']?.toString() == db.auth.currentUser?.id)
+                      IconButton(
+                          tooltip: ar ? 'إنهاء اللّمّة' : 'End Lamma',
+                          icon: const Icon(Icons.stop_circle_outlined,
+                              color: Colors.red),
+                          onPressed: () => _endLamma(l)),
+                    FilledButton(
+                        onPressed: () => _join(l),
+                        child: Text(member
+                            ? (ar ? 'دخول' : 'Open')
+                            : (ar ? 'انضم' : 'Join')))
+                  ])));
         })
       ]));
 
