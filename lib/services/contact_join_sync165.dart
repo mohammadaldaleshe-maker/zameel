@@ -15,6 +15,7 @@ class ContactJoinSync165 {
 
   static const String _lastKey = 'zameel_contact_join_sync_165';
   static const String _grantedKey = 'zameel_contacts_granted_165';
+  static const String _triedKey = 'zameel_contact_join_tried_165';
   static bool _running = false;
 
   static String hashPhone(String value) {
@@ -42,12 +43,26 @@ class ContactJoinSync165 {
           DateTime.now().difference(last) < const Duration(days: 1)) {
         return;
       }
+      // A failed run must not repeat on every app start: wait six hours.
+      final tried = DateTime.tryParse(prefs.getString(_triedKey) ?? '');
+      if (!force &&
+          tried != null &&
+          DateTime.now().difference(tried) < const Duration(hours: 6)) {
+        return;
+      }
+      await prefs.setString(_triedKey, DateTime.now().toIso8601String());
       // A background run never opens a permission dialog: it only continues
       // when an earlier, explicit request already granted the permission.
       if (!force && prefs.getBool(_grantedKey) != true) return;
       if (!await FlutterContacts.requestPermission(readonly: true)) return;
       await prefs.setBool(_grantedKey, true);
-      final contacts = await FlutterContacts.getContacts(withProperties: true);
+      // Only phone numbers are needed: no thumbnails or photos (those make the
+      // call slow and heavy on phones with many contacts), and no sorting.
+      final contacts = await FlutterContacts.getContacts(
+          withProperties: true,
+          withThumbnail: false,
+          withPhoto: false,
+          sorted: false);
       final hashes = <String>{};
       for (final contact in contacts) {
         for (final phone in contact.phones) {

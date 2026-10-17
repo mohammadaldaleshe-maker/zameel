@@ -963,6 +963,8 @@ class _MeetingRoomScreenState extends State<MeetingRoomScreen> {
   Timer? _signalPollTimer;
   Timer? _connectionWatchdog;
   Timer? _callClock;
+  // Ticks once a second; only the timer labels listen, not the whole screen.
+  final ValueNotifier<int> _callTick = ValueNotifier<int>(0);
   DateTime? _connectedAt;
   bool _closingCall = false;
   bool _routingAudio = false;
@@ -1434,7 +1436,7 @@ class _MeetingRoomScreenState extends State<MeetingRoomScreen> {
     if (mounted && !_connected) {
       _connectedAt ??= DateTime.now();
       _callClock ??= Timer.periodic(const Duration(seconds: 1), (_) {
-        if (mounted) setState(() {});
+        if (mounted) _callTick.value++;
       });
       unawaited(() async {
         await AppSoundService.instance.stop();
@@ -1914,10 +1916,12 @@ class _MeetingRoomScreenState extends State<MeetingRoomScreen> {
     if (_routingAudio) return;
     _routingAudio = true;
     final next = !_speakerOn;
+    // The button changes at once; the phone's audio route follows.
+    if (mounted) setState(() => _speakerOn = next);
     try {
       await _applyAudioRoute(next);
-      if (mounted) setState(() => _speakerOn = next);
     } catch (_) {
+      if (mounted) setState(() => _speakerOn = !next);
       if (mounted)
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text('تعذر تبديل مخرج الصوت. حاول مجددًا.')));
@@ -1981,10 +1985,23 @@ class _MeetingRoomScreenState extends State<MeetingRoomScreen> {
     // to our own update) must not end the call or pop the screen twice.
     if (_closingCall) return;
     _closingCall = true;
-    await AppSoundService.instance.stop();
+    // Leave the screen at once. Telling the other phone and releasing the
+    // camera/microphone happen in the background, so the button never feels
+    // stuck on a slow connection. dispose() releases everything else.
+    final roomId = widget.roomId;
+    final endStatus = (!_connected && _initiator) ? 'cancelled' : 'ended';
+    final uid = _uid;
+    unawaited(AppSoundService.instance.stop());
+    unawaited(_notifyCallEnded(roomId, endStatus, uid));
+    if (mounted) Navigator.pop(context);
+  }
+
+  Future<void> _notifyCallEnded(
+      String? roomId, String endStatus, String? uid) async {
     try {
-      await _sendSignal({'type': 'bye', 'from': _uid});
-      final roomId = widget.roomId;
+      await _sendSignal({'type': 'bye', 'from': uid});
+    } catch (_) {}
+    try {
       if (roomId != null && roomId.isNotEmpty) {
         if (_standaloneMeeting) {
           await Supabase.instance.client.rpc(
@@ -1993,26 +2010,12 @@ class _MeetingRoomScreenState extends State<MeetingRoomScreen> {
           );
         } else {
           await Supabase.instance.client.from('direct_call_sessions').update({
-            'status': (!_connected && _initiator) ? 'cancelled' : 'ended',
+            'status': endStatus,
             'ended_at': DateTime.now().toUtc().toIso8601String()
           }).eq('room_id', roomId);
         }
       }
-      _readyTimer?.cancel();
-      _offerRetryTimer?.cancel();
-      _signalPollTimer?.cancel();
-      _connectionWatchdog?.cancel();
-      for (final track in _localStream?.getTracks() ?? <MediaStreamTrack>[]) {
-        await track.stop();
-      }
-      await _localStream?.dispose();
-      await _remoteStream?.dispose();
-      await _pc?.close();
-      await _releaseAudioRoute();
-      _signalSubscribed = false;
-      await _signal?.unsubscribe();
     } catch (_) {}
-    if (mounted) Navigator.pop(context);
   }
 
   @override
@@ -2023,10 +2026,15 @@ class _MeetingRoomScreenState extends State<MeetingRoomScreen> {
     _signalPollTimer?.cancel();
     _connectionWatchdog?.cancel();
     _callClock?.cancel();
+    _callTick.dispose();
     _signalSubscribed = false;
     _signal?.unsubscribe();
     _pc?.close();
     unawaited(_releaseAudioRoute());
+    // Hanging up no longer waits for this, so release camera and microphone here.
+    for (final track in _localStream?.getTracks() ?? <MediaStreamTrack>[]) {
+      unawaited(track.stop());
+    }
     _localStream?.dispose();
     _remoteStream?.dispose();
     _localRenderer.dispose();
@@ -2160,12 +2168,15 @@ class _MeetingRoomScreenState extends State<MeetingRoomScreen> {
                   if (showVideoMain)
                     Padding(
                       padding: const EdgeInsets.only(top: 2),
-                      child: Text(
-                        _callDuration,
-                        style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600),
+                      child: ValueListenableBuilder<int>(
+                        valueListenable: _callTick,
+                        builder: (_, __, ___) => Text(
+                          _callDuration,
+                          style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600),
+                        ),
                       ),
                     ),
                   if (_linkUnstable)
@@ -2217,17 +2228,20 @@ class _MeetingRoomScreenState extends State<MeetingRoomScreen> {
                                   key: ValueKey(_connected ? 'timer' : _statusText(ar)),
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 28),
-                                  child: Text(
-                                    _statusText(ar),
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: Colors.white
-                                          .withValues(alpha: _connected ? .9 : .7),
-                                      fontSize: _connected ? 20 : 16,
-                                      fontWeight: FontWeight.w600,
-                                      fontFeatures: const [
-                                        FontFeature.tabularFigures()
-                                      ],
+                                  child: ValueListenableBuilder<int>(
+                                    valueListenable: _callTick,
+                                    builder: (_, __, ___) => Text(
+                                      _statusText(ar),
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: Colors.white.withValues(
+                                            alpha: _connected ? .9 : .7),
+                                        fontSize: _connected ? 20 : 16,
+                                        fontWeight: FontWeight.w600,
+                                        fontFeatures: const [
+                                          FontFeature.tabularFigures()
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),

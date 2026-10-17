@@ -1121,7 +1121,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
             for (final item in row['media_items'] as List)
               if (item is Map) item['url']?.toString(),
         ],
-      ]).timeout(const Duration(milliseconds: 1500), onTimeout: () {});
+      ]).timeout(const Duration(milliseconds: 250), onTimeout: () {});
       if (!mounted ||
           requestVersion != _postsRequestVersion ||
           db.auth.currentUser?.id != userId) return;
@@ -1139,12 +1139,12 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
             db.auth.currentUser?.id != userId) return;
         unawaited(
           MediaCacheService.prefetch(
-            loaded.take(8).expand(
+            loaded.take(5).expand(
                   (post) => postMediaItems(post)
                       .where((media) => media.type == 'image')
                       .map((media) => media.url),
                 ),
-            limit: 6,
+            limit: 3,
           ),
         );
       });

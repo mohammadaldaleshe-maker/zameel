@@ -16,8 +16,8 @@ ok(/prewarm[\s\S]*mediaIdentity\(text, storageOrigin: ZameelConfig\.supabaseUrl\
 ok(secure.includes("publicRef.bucket == 'posts'") && secure.includes("'graduation_book'"), 'prewarm only signs the buckets resolve signs');
 
 const home = read('lib/features/home_feed.dart');
-ok(home.includes('SecureMediaService.prewarm(') && home.includes('Duration(milliseconds: 1500)'), 'feed signs a page of media in one capped batch');
-ok(home.includes('loaded.take(8)') && home.includes('limit: 6'), 'more images are prefetched');
+ok(home.includes('SecureMediaService.prewarm(') && home.includes('Duration(milliseconds: 250)'), 'feed signs a page of media in one capped batch');
+ok(home.includes('loaded.take(5)') && home.includes('limit: 3'), 'only the first few images are prefetched, so scrolling is not starved of bandwidth and CPU');
 {
   const batch = home.indexOf('SecureMediaService.prewarm(');
   const shown = home.indexOf('_networkFeedShown = true;');

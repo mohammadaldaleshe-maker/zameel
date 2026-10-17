@@ -35,10 +35,26 @@ class ExpandableText171 extends StatefulWidget {
 class _ExpandableText171State extends State<ExpandableText171> {
   bool _expanded = false;
 
+  // Remembers the answer per text and width, so scrolling a long feed never
+  // lays the same text out again.
+  static final Map<String, bool> _measured = <String, bool>{};
+
   bool _overflows(BuildContext context, double maxWidth) {
     if (widget.text.trim().isEmpty || !maxWidth.isFinite || maxWidth <= 0) {
       return false;
     }
+    // A short single-paragraph text cannot reach the line limit: skip measuring.
+    if (widget.text.length <= widget.collapsedLines * 12 &&
+        !widget.text.contains('\n')) {
+      return false;
+    }
+    final fontSize = (widget.style ?? DefaultTextStyle.of(context).style)
+            .fontSize ??
+        14;
+    final cacheKey =
+        '${widget.collapsedLines}|${maxWidth.round()}|$fontSize|${widget.text.hashCode}|${widget.text.length}';
+    final known = _measured[cacheKey];
+    if (known != null) return known;
     final style = DefaultTextStyle.of(context).style.merge(widget.style);
     final painter = TextPainter(
       text: TextSpan(text: widget.text, style: style),
@@ -48,6 +64,8 @@ class _ExpandableText171State extends State<ExpandableText171> {
     )..layout(maxWidth: maxWidth);
     final exceeded = painter.didExceedMaxLines;
     painter.dispose();
+    if (_measured.length > 400) _measured.clear();
+    _measured[cacheKey] = exceeded;
     return exceeded;
   }
 

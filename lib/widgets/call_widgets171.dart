@@ -1,5 +1,3 @@
-import 'dart:ui' show ImageFilter;
-
 import 'package:flutter/material.dart';
 
 /// Visual building blocks for the in-call screen. They only draw; all call
@@ -17,7 +15,8 @@ class CallBackdrop171 extends StatelessWidget {
   Widget build(BuildContext context) {
     final url = imageUrl;
     final hasImage = url != null && url.isNotEmpty;
-    return Stack(
+    return RepaintBoundary(
+        child: Stack(
       fit: StackFit.expand,
       children: [
         DecoratedBox(
@@ -36,14 +35,15 @@ class CallBackdrop171 extends StatelessWidget {
           ),
         ),
         if (hasImage)
-          ImageFiltered(
-            imageFilter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
-            child: Image.network(
-              url,
-              fit: BoxFit.cover,
-              gaplessPlayback: true,
-              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-            ),
+          // A tiny decode scaled up smoothly looks blurred but costs almost
+          // nothing, unlike a live full-screen blur filter.
+          Image.network(
+            url,
+            fit: BoxFit.cover,
+            cacheWidth: 40,
+            filterQuality: FilterQuality.low,
+            gaplessPlayback: true,
+            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
           ),
         DecoratedBox(
           decoration: BoxDecoration(
@@ -51,7 +51,7 @@ class CallBackdrop171 extends StatelessWidget {
           ),
         ),
       ],
-    );
+    ));
   }
 }
 
@@ -125,7 +125,8 @@ class _CallPulseAvatar171State extends State<CallPulseAvatar171>
       child: Stack(
         alignment: Alignment.center,
         children: [
-          AnimatedBuilder(
+          RepaintBoundary(
+              child: AnimatedBuilder(
             animation: _controller,
             builder: (_, __) {
               return CustomPaint(
@@ -139,7 +140,7 @@ class _CallPulseAvatar171State extends State<CallPulseAvatar171>
                 ),
               );
             },
-          ),
+          )),
           Container(
             width: size,
             height: size,
