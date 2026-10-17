@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../theme/app_theme.dart';
+import '../games/game_kit.dart';
+import '../games/game_widgets.dart';
 
 class TrustGameScreen extends StatefulWidget {
   const TrustGameScreen({super.key, required this.isArabic});
@@ -339,90 +341,767 @@ class _TrustGameScreenState extends State<TrustGameScreen>
         _ => code,
       };
 
-  Widget _coin() => Container(
-        width: 46,
-        height: 46,
+  static const Color _betrayColor = Color(0xFFFF5C8A);
+
+  Widget _coin({double size = 46}) => Container(
+        width: size,
+        height: size,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.amber.shade300,
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: <Color>[Color(0xFFFFE08A), Color(0xFFFFB300)],
+          ),
           border: Border.all(color: Colors.amber.shade800, width: 3),
+          boxShadow: <BoxShadow>[
+            BoxShadow(color: kGameGold.withOpacity(0.45), blurRadius: 14),
+          ],
         ),
-        padding: const EdgeInsets.all(7),
+        padding: EdgeInsets.all(size * 0.15),
         child: Image.asset('assets/branding/zameel_mark.png'),
       );
 
-  Widget _chat() {
-    final rows = (_state['messages'] as List? ?? []).whereType<Map>().toList();
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
+  Widget _balanceBar() {
+    return GamePanel(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _coin(size: 40),
+          const SizedBox(width: 12),
+          Text(
+            _t('رصيدك', 'Balance'),
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.8),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            _coins(_state['balance']),
+            textDirection: TextDirection.ltr,
+            style: const TextStyle(
+              color: kGameGold,
+              fontSize: 26,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _ruleRow(String emoji, Color color, String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: color.withOpacity(0.22),
+              border: Border.all(color: color.withOpacity(0.7)),
+            ),
+            child: Text(emoji, style: const TextStyle(fontSize: 18)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13.5,
+                height: 1.35,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _hero() {
+    Widget face(String emoji, Color color) => Container(
+          width: 74,
+          height: 74,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: <Color>[color, color.withOpacity(0.55)],
+            ),
+            boxShadow: <BoxShadow>[
+              BoxShadow(color: color.withOpacity(0.5), blurRadius: 18),
+            ],
+          ),
+          child: Text(emoji, style: const TextStyle(fontSize: 34)),
+        );
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        face('🤝', kGameTeal),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 14),
+          child: Text(
+            'VS',
+            style: TextStyle(
+              color: Colors.white70,
+              fontWeight: FontWeight.w900,
+              fontSize: 16,
+            ),
+          ),
+        ),
+        face('🗡️', _betrayColor),
+      ],
+    );
+  }
+
+  Widget _lobby(String stake) {
+    return Column(
+      children: [
+        _hero(),
+        const SizedBox(height: 14),
+        Text(
+          _t(
+            'تعاون في عشرة أسئلة… ثم اختر الثقة أو الغدر.',
+            'Cooperate on ten questions… then choose trust or betrayal.',
+          ),
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 17,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 12),
+        GamePanel(
+          child: Column(
+            children: [
+              _ruleRow(
+                '⏱️',
+                kGameGold,
+                _t(
+                  '90 ثانية لكل سؤال. تُحجز $stake عملة من كل لاعب عند بدء المباراة. إجابة مشتركة صحيحة تربح قيمة السؤال.',
+                  '90 seconds per question. Each player reserves $stake coins when the match starts. A shared correct answer earns the question value.',
+                ),
+              ),
+              _ruleRow(
+                '🤝',
+                kGameTeal,
+                _t(
+                  'ثقة + ثقة: استرداد الحجز وتقاسم المكافأة.',
+                  'Trust + trust: stakes returned and reward shared.',
+                ),
+              ),
+              _ruleRow(
+                '🗡️',
+                _betrayColor,
+                _t(
+                  'غدر + ثقة: الغادر يأخذ المكافأة وحجز الطرف الآخر.',
+                  'Betray + trust: betrayer takes the reward and the other stake.',
+                ),
+              ),
+              _ruleRow(
+                '💥',
+                const Color(0xFFB583FF),
+                _t(
+                  'غدر + غدر: خسارة الحجزين والمكافأة.',
+                  'Betray + betray: both lose stakes and reward.',
+                ),
+              ),
+              _ruleRow(
+                '🚪',
+                Colors.white70,
+                _t(
+                  'الانسحاب أو عدم العودة خلال 90 ثانية: خسارة حجزك.',
+                  'Leaving or not returning within 90 seconds forfeits your stake.',
+                ),
+              ),
+              _ruleRow(
+                '🪙',
+                kGameGold,
+                _t(
+                  'عملات زميل افتراضية داخل التطبيق.',
+                  'Zameel coins are virtual in-app coins.',
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        if (_phase == 'waiting') ...[
+          const SizedBox(
+            width: 44,
+            height: 44,
+            child: CircularProgressIndicator(
+              color: kGameTeal,
+              strokeWidth: 4,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            _t(
+              'نبحث عن لاعب عشوائي… لم تُحجز عملاتك بعد.',
+              'Finding a random partner… your coins are not reserved yet.',
+            ),
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white.withOpacity(0.85)),
+          ),
+          const SizedBox(height: 6),
+          GameButton(
+            primary: false,
+            onPressed: _busy ? null : () => _run('zameel_trust_leave'),
+            label: _t('إلغاء البحث', 'Cancel search'),
+          ),
+        ] else
+          GameButton(
+            onPressed: _busy ? null : () => _run('zameel_trust_join'),
+            icon: Icons.sports_esports_rounded,
+            label: _t('ابدأ المباراة', 'Find a match'),
+          ),
+      ],
+    );
+  }
+
+  Widget _statusBar() {
+    final low = _seconds <= 15;
+    final round = (_state['round_no'] as num?)?.toInt() ?? 1;
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              _t(
-                'دردشة المباراة — هويتكما مخفية',
-                'Match chat — identities hidden',
-              ),
+            GamePill(
+              text: '🏆 ${_state['prize'] ?? 0}',
+              subtitle: _t('المكافأة', 'Reward'),
             ),
-            SizedBox(
-              height: 180,
-              child: ListView(
-                controller: _chatScroll,
-                reverse: true,
-                children: rows.reversed
-                    .map(
-                      (r) => Align(
-                        alignment: r['own'] == true
-                            ? AlignmentDirectional.centerStart
-                            : AlignmentDirectional.centerEnd,
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(vertical: 4),
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: r['own'] == true
-                                ? AppTheme.primary.withAlpha(25)
-                                : Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            '${r['own'] == true ? _t('أنت', 'You') : _t('الزميل', 'Partner')}: ${r['body']}',
-                          ),
-                        ),
-                      ),
-                    )
-                    .toList(),
-              ),
-            ),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _message,
-                    minLines: 1,
-                    maxLines: 5,
-                    keyboardType: TextInputType.multiline,
-                    textInputAction: TextInputAction.newline,
-                    onEditingComplete: () {},
-                    maxLength: 500,
-                    onChanged: (_) {
-                      if (_pendingMessageId != null) _pendingMessageId = null;
-                    },
-                    decoration: InputDecoration(
-                      hintText: _t(
-                        'ناقشا الإجابة هنا',
-                        'Discuss the answer here',
-                      ),
-                    ),
-                  ),
-                ),
-                IconButton(
-                  onPressed: _busy ? null : _send,
-                  icon: const Icon(Icons.send),
-                ),
-              ],
+            const SizedBox(width: 12),
+            GamePill(
+              text: '⏱️ $_seconds',
+              active: !low,
+              subtitle: _t('ثانية', 'seconds'),
             ),
           ],
         ),
+        if (_phase == 'questions') ...[
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              for (var i = 1; i <= 10; i++)
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  margin: const EdgeInsets.symmetric(horizontal: 2.5),
+                  width: i == round ? 18 : 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(6),
+                    color: i < round
+                        ? kGameTeal
+                        : i == round
+                            ? kGameGold
+                            : Colors.white.withOpacity(0.25),
+                  ),
+                ),
+            ],
+          ),
+        ],
+        if (_state['last_round'] is Map) ...[
+          const SizedBox(height: 8),
+          GameBanner(
+            size: 13.5,
+            color: _state['last_round']['won'] == true
+                ? kGameTeal
+                : Colors.white70,
+            text: _state['last_round']['won'] == true
+                ? _t('الإجابة السابقة صحيحة ✓', 'Previous answer correct ✓')
+                : _t('السؤال السابق دون مكافأة',
+                    'Previous question earned no reward'),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _optionTile(Map question, List options, int i) {
+    final mine = question['own_selected'] == i;
+    final theirs = question['opponent_selected'] == i;
+    final disabled = _busy || _seconds == 0;
+    const letters = <String>['أ', 'ب', 'ج', 'د', 'هـ', 'و'];
+    const lettersEn = <String>['A', 'B', 'C', 'D', 'E', 'F'];
+    final letter = (widget.isArabic ? letters : lettersEn)[i % 6];
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 9),
+      child: Opacity(
+        opacity: disabled && !mine ? 0.6 : 1,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(18),
+            onTap: disabled
+                ? null
+                : () {
+                    gameTap();
+                    _run(
+                      'zameel_trust_answer',
+                      params: {
+                        'p_match': _match,
+                        'p_round': _state['round_no'],
+                        'p_selected': i,
+                      },
+                    );
+                  },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(18),
+                color: mine
+                    ? kGameTeal.withOpacity(0.28)
+                    : Colors.white.withOpacity(0.10),
+                border: Border.all(
+                  color: mine ? kGameTeal : Colors.white.withOpacity(0.2),
+                  width: mine ? 2 : 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 30,
+                    height: 30,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: mine ? kGameTeal : Colors.white.withOpacity(0.16),
+                    ),
+                    child: Text(
+                      letter,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      '${options[i]}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  if (mine)
+                    const Icon(Icons.check_circle_rounded,
+                        color: kGameTeal, size: 22),
+                  if (theirs)
+                    const Padding(
+                      padding: EdgeInsetsDirectional.only(start: 6),
+                      child: Icon(Icons.people_alt_rounded,
+                          color: kGameGold, size: 22),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _questionPanel(Map question, List options) {
+    final round = (_state['round_no'] as num?) ?? 1;
+    final unit = (_state['reward_unit'] as num?) ?? 10;
+    return Column(
+      children: [
+        GamePanel(
+          child: Column(
+            children: [
+              Text(
+                _t(
+                  'السؤال $round من 10 — قيمته ${round * unit} عملة',
+                  'Question $round of 10',
+                ),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: kGameGold,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                '${question[widget.isArabic ? 'question_ar' : 'question_en'] ?? ''}',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 19,
+                  height: 1.4,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        for (int i = 0; i < options.length; i++) _optionTile(question, options, i),
+        Text(
+          _t(
+            'اختيارك ✓ — اختيار الزميل 👥. تُثبّت الإجابة عند اختياركما الخيار نفسه، ويمكن تغييرها قبل الاتفاق.',
+            'Your choice ✓ — partner choice 👥. The answer locks when both choose the same option; you can change it before agreement.',
+          ),
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.7),
+            fontSize: 12,
+            height: 1.4,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _decisionButton(String choice, String emoji, String label, Color color) {
+    return Expanded(
+      child: Opacity(
+        opacity: _busy ? 0.5 : 1,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(24),
+            onTap: _busy ? null : () => _decision(choice),
+            child: Ink(
+              padding: const EdgeInsets.symmetric(vertical: 26),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: <Color>[color, color.withOpacity(0.55)],
+                ),
+                boxShadow: <BoxShadow>[
+                  BoxShadow(color: color.withOpacity(0.5), blurRadius: 18),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Text(emoji, style: const TextStyle(fontSize: 44)),
+                  const SizedBox(height: 8),
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _decisionPanel() {
+    return Column(
+      children: [
+        GameBanner(text: _t('لحظة القرار…', 'Time to decide…'), size: 24),
+        const SizedBox(height: 4),
+        Text(
+          _t('قرارك سري ولا يمكن تغييره بعد التأكيد.',
+              'Your decision is secret and final once confirmed.'),
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.white.withOpacity(0.75)),
+        ),
+        const SizedBox(height: 16),
+        if (_state['own_choice'] == null)
+          Row(
+            children: [
+              _decisionButton(
+                  'trust', '🤝', _t('ثقة', 'Trust'), const Color(0xFF1DB6A6)),
+              const SizedBox(width: 14),
+              _decisionButton(
+                  'betray', '🗡️', _t('غدر', 'Betray'), _betrayColor),
+            ],
+          )
+        else
+          GamePanel(
+            child: Column(
+              children: [
+                const Icon(Icons.lock_rounded, color: kGameGold, size: 34),
+                const SizedBox(height: 8),
+                Text(
+                  _t(
+                    'تم تثبيت قرارك السري. ننتظر قرار الزميل.',
+                    'Your secret decision is locked. Waiting for your partner.',
+                  ),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                const SizedBox(
+                  width: 26,
+                  height: 26,
+                  child: CircularProgressIndicator(
+                      color: kGameTeal, strokeWidth: 3),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _chat() {
+    final rows = (_state['messages'] as List? ?? []).whereType<Map>().toList();
+    return GamePanel(
+      child: Column(
+        children: [
+          Text(
+            _t(
+              'دردشة المباراة — هويتكما مخفية',
+              'Match chat — identities hidden',
+            ),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 170,
+            child: ListView(
+              controller: _chatScroll,
+              reverse: true,
+              children: rows.reversed.map((r) {
+                final own = r['own'] == true;
+                return Align(
+                  alignment: own
+                      ? AlignmentDirectional.centerStart
+                      : AlignmentDirectional.centerEnd,
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(vertical: 3),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    constraints: const BoxConstraints(maxWidth: 260),
+                    decoration: BoxDecoration(
+                      color: own
+                          ? kGameTeal.withOpacity(0.32)
+                          : Colors.white.withOpacity(0.14),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Text(
+                      '${own ? _t('أنت', 'You') : _t('الزميل', 'Partner')}: ${r['body']}',
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _message,
+                  minLines: 1,
+                  maxLines: 5,
+                  keyboardType: TextInputType.multiline,
+                  textInputAction: TextInputAction.newline,
+                  onEditingComplete: () {},
+                  maxLength: 500,
+                  style: const TextStyle(color: Colors.white),
+                  cursorColor: kGameTeal,
+                  onChanged: (_) {
+                    if (_pendingMessageId != null) _pendingMessageId = null;
+                  },
+                  decoration: InputDecoration(
+                    counterText: '',
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.10),
+                    hintStyle:
+                        TextStyle(color: Colors.white.withOpacity(0.55)),
+                    hintText: _t(
+                      'ناقشا الإجابة هنا',
+                      'Discuss the answer here',
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(22),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 10),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              IconButton(
+                onPressed: _busy ? null : _send,
+                style: IconButton.styleFrom(backgroundColor: kGameTeal),
+                icon: const Icon(Icons.send_rounded, color: Colors.white),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _finished() {
+    final reason = '${_state['reason']}';
+    final payout = (_state['own_payout'] as num?) ?? 0;
+    final stakeN = (_state['stake'] as num?) ?? 50;
+    final net = payout - stakeN;
+    final won = _phase == 'finished' && net > 0;
+    String choiceText(dynamic c) {
+      if (widget.isArabic) return c == 'trust' ? 'ثقة 🤝' : 'غدر 🗡️';
+      return '$c';
+    }
+
+    return Column(
+      children: [
+        GameResultCard(
+          won: won,
+          title: _t('انتهت المباراة', 'Match ended'),
+          child: Column(
+            children: [
+              Text(
+                _reason(reason),
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white.withOpacity(0.85)),
+              ),
+              if (_phase == 'finished') ...[
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _choiceBox(
+                        _t('قرارك', 'You'),
+                        choiceText(_state['own_choice']),
+                        kGameTeal,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _choiceBox(
+                        _t('قرار الزميل', 'Partner'),
+                        choiceText(_state['opponent_choice']),
+                        _betrayColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 12),
+              Text(
+                _t(
+                  'أُضيف إلى رصيدك: ${_coins(payout)} عملة. الصافي بعد الحجز: ${_coins(net)}.',
+                  'Credited: ${_coins(payout)} coins. Net after stake: ${_coins(net)}.',
+                ),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: kGameGold,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (_state['opponent'] is Map) ...[
+          const SizedBox(height: 12),
+          GamePanel(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            child: Row(
+              children: [
+                const CircleAvatar(
+                  backgroundColor: kGameTeal,
+                  child: Icon(Icons.person_rounded, color: Colors.white),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      DefaultTextStyle.merge(
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 16,
+                        ),
+                        child: VerifiedName(
+                          userId: _state['opponent']['id']?.toString(),
+                          child: Text('${_state['opponent']['name'] ?? ''}'),
+                        ),
+                      ),
+                      Text(
+                        _t('زميلك في المباراة', 'Your match partner'),
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.7),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        const SizedBox(height: 14),
+        GameButton(
+          onPressed: _busy
+              ? null
+              : () {
+                  _match = null;
+                  _run('zameel_trust_join');
+                },
+          icon: Icons.refresh_rounded,
+          label: _t('مباراة جديدة', 'New match'),
+        ),
+      ],
+    );
+  }
+
+  Widget _choiceBox(String title, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.7)),
+      ),
+      child: Column(
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.75),
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -443,273 +1122,98 @@ class _TrustGameScreenState extends State<TrustGameScreen>
       },
       child: Directionality(
         textDirection: widget.isArabic ? TextDirection.rtl : TextDirection.ltr,
-        child: Scaffold(
-          appBar: AppBar(
-            title: Text(_t('ثقة أم غدر؟', 'Trust or Betray?')),
-            leading: IconButton(
-              onPressed: _exit,
-              icon: const Icon(Icons.arrow_back),
+        child: GameScaffold(
+          title: _t('ثقة أم غدر؟', 'Trust or Betray?'),
+          actions: [
+            IconButton(
+              tooltip: _t('سجل العملات', 'Coin history'),
+              onPressed: _history,
+              icon: const Icon(Icons.history_rounded),
             ),
-            actions: [
-              IconButton(onPressed: _history, icon: const Icon(Icons.history)),
-              if (_match != null)
-                IconButton(
-                  onPressed: _report,
-                  icon: const Icon(Icons.flag_outlined),
-                ),
-            ],
-          ),
-          body: SafeArea(
-            child: ListView(
-              padding: const EdgeInsets.all(18),
-              children: [
-                if (_state['is_bot'] == true)
-                  const ListTile(
-                      leading: Icon(Icons.smart_toy_outlined),
-                      title: Text('زميل — لاعب آلي'),
-                      subtitle: Text('اختيارات اللاعب الآلي عشوائية')),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _coin(),
-                    const SizedBox(width: 12),
-                    Text(
-                      _t(
-                        'رصيدك: ${_coins(_state['balance'])}',
-                        'Balance: ${_coins(_state['balance'])}',
-                      ),
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                if (_phase == 'lobby' || _phase == 'waiting') ...[
-                  Text(
-                    _t(
-                      'تعاون في عشرة أسئلة… ثم اختر الثقة أو الغدر.',
-                      'Cooperate on ten questions… then choose trust or betrayal.',
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    _t(
-                      '90 ثانية لكل سؤال. تُحجز $stake عملة من كل لاعب عند بدء المباراة. إجابة مشتركة صحيحة تربح قيمة السؤال.',
-                      '90 seconds per question. Each player reserves $stake coins when the match starts. A shared correct answer earns the question value.',
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    _t(
-                      'ثقة + ثقة: استرداد الحجز وتقاسم المكافأة.\nغدر + ثقة: الغادر يأخذ المكافأة وحجز الطرف الآخر.\nغدر + غدر: خسارة الحجزين والمكافأة.\nالانسحاب أو عدم العودة خلال 90 ثانية: خسارة حجزك.\nعملات زميل افتراضية داخل التطبيق.',
-                      'Trust + trust: stakes returned and reward shared.\nBetray + trust: betrayer takes the reward and the other stake.\nBetray + betray: both lose stakes and reward.\nLeaving or not returning within 90 seconds forfeits your stake.\nZameel coins are virtual in-app coins.',
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  if (_phase == 'waiting') ...[
-                    const Center(child: CircularProgressIndicator()),
-                    Text(
-                      _t(
-                        'نبحث عن لاعب عشوائي… لم تُحجز عملاتك بعد.',
-                        'Finding a random partner… your coins are not reserved yet.',
-                      ),
-                    ),
-                    TextButton(
-                      onPressed:
-                          _busy ? null : () => _run('zameel_trust_leave'),
-                      child: Text(_t('إلغاء البحث', 'Cancel search')),
-                    ),
-                  ] else
-                    FilledButton(
-                      onPressed: _busy ? null : () => _run('zameel_trust_join'),
-                      child: Text(_t('ابدأ المباراة', 'Find a match')),
-                    ),
-                ],
-                if (_playing) ...[
-                  Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: 8,
-                    children: [
-                      Chip(
-                        label: Text(
-                          _t(
-                            'المكافأة: ${_state['prize']}',
-                            'Reward: ${_state['prize']}',
-                          ),
-                        ),
-                      ),
-                      Chip(
-                        label: Text(
-                          _t(
-                            'الوقت: $_seconds ثانية',
-                            'Time: $_seconds seconds',
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (_state['last_round'] is Map)
-                    Text(
-                      _state['last_round']['won'] == true
-                          ? _t(
-                              'الإجابة السابقة صحيحة ✓',
-                              'Previous answer correct ✓',
-                            )
-                          : _t(
-                              'السؤال السابق دون مكافأة',
-                              'Previous question earned no reward',
-                            ),
-                    ),
-                ],
-                if (_phase == 'questions') ...[
-                  Text(
-                    _t(
-                      'السؤال ${_state['round_no']} من 10 — قيمته ${(_state['round_no'] as num? ?? 1) * (_state['reward_unit'] as num? ?? 10)} عملة',
-                      'Question ${_state['round_no']} of 10',
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 14),
-                  Text(
-                    '${question[widget.isArabic ? 'question_ar' : 'question_en'] ?? ''}',
-                    style: Theme.of(context).textTheme.titleLarge,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 14),
-                  for (int i = 0; i < options.length; i++)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: OutlinedButton(
-                        onPressed: _busy || _seconds == 0
-                            ? null
-                            : () => _run(
-                                  'zameel_trust_answer',
-                                  params: {
-                                    'p_match': _match,
-                                    'p_round': _state['round_no'],
-                                    'p_selected': i,
-                                  },
-                                ),
-                        style: OutlinedButton.styleFrom(
-                          backgroundColor: question['own_selected'] == i
-                              ? AppTheme.primary.withAlpha(35)
-                              : null,
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(child: Text('${options[i]}')),
-                            if (question['own_selected'] == i)
-                              const Icon(Icons.check),
-                            if (question['opponent_selected'] == i)
-                              const Icon(Icons.people_outline),
-                          ],
-                        ),
-                      ),
-                    ),
-                  Text(
-                    _t(
-                      'اختيارك ✓ — اختيار الزميل ♧. تُثبّت الإجابة عند اختياركما الخيار نفسه، ويمكن تغييرها قبل الاتفاق.',
-                      'Your choice ✓ — partner choice ♧. The answer locks when both choose the same option; you can change it before agreement.',
-                    ),
-                  ),
-                ],
-                if (_phase == 'decision') ...[
-                  Text(
-                    _t('لحظة القرار…', 'Time to decide…'),
-                    style: Theme.of(context).textTheme.headlineSmall,
-                    textAlign: TextAlign.center,
-                  ),
-                  if (_state['own_choice'] == null)
-                    Row(
+            if (_match != null)
+              IconButton(
+                tooltip: _t('إبلاغ', 'Report'),
+                onPressed: _report,
+                icon: const Icon(Icons.flag_outlined),
+              ),
+          ],
+          body: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
+            children: [
+              if (_state['is_bot'] == true)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: GamePanel(
+                    padding: const EdgeInsets.all(10),
+                    child: Row(
                       children: [
+                        const Icon(Icons.smart_toy_rounded,
+                            color: Color(0xFFB583FF)),
+                        const SizedBox(width: 10),
                         Expanded(
-                          child: FilledButton(
-                            onPressed: _busy ? null : () => _decision('trust'),
-                            child: Text(_t('ثقة 🤝', 'Trust 🤝')),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: FilledButton(
-                            onPressed: _busy ? null : () => _decision('betray'),
-                            child: Text(_t('غدر 🗡️', 'Betray 🗡️')),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'زميل — لاعب آلي',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              Text(
+                                'اختيارات اللاعب الآلي عشوائية',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.75),
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
-                    )
-                  else
-                    Text(
-                      _t(
-                        'تم تثبيت قرارك السري. ننتظر قرار الزميل.',
-                        'Your secret decision is locked. Waiting for your partner.',
-                      ),
-                    ),
-                ],
-                if (_playing) ...[const SizedBox(height: 18), _chat()],
-                if ([
-                  'finished',
-                  'cancelled',
-                  'abandoned',
-                ].contains(_phase)) ...[
-                  Text(
-                    _t('انتهت المباراة', 'Match ended'),
-                    style: Theme.of(context).textTheme.headlineSmall,
-                    textAlign: TextAlign.center,
-                  ),
-                  Text(
-                    _reason('${_state['reason']}'),
-                    textAlign: TextAlign.center,
-                  ),
-                  if (_phase == 'finished') ...[
-                    Text(
-                      _t(
-                        'قرارك: ${_state['own_choice'] == 'trust' ? 'ثقة' : 'غدر'}',
-                        'Your choice: ${_state['own_choice']}',
-                      ),
-                    ),
-                    Text(
-                      _t(
-                        'قرار الزميل: ${_state['opponent_choice'] == 'trust' ? 'ثقة' : 'غدر'}',
-                        'Partner choice: ${_state['opponent_choice']}',
-                      ),
-                    ),
-                  ],
-                  Text(
-                    _t(
-                      'أُضيف إلى رصيدك: ${_coins(_state['own_payout'])} عملة. الصافي بعد الحجز: ${_coins((_state['own_payout'] as num? ?? 0) - (_state['stake'] as num? ?? 50))}.',
-                      'Credited: ${_coins(_state['own_payout'])} coins. Net after stake: ${_coins((_state['own_payout'] as num? ?? 0) - (_state['stake'] as num? ?? 50))}.',
                     ),
                   ),
-                  if (_state['opponent'] is Map)
-                    ListTile(
-                      leading: const Icon(Icons.person),
-                      title: VerifiedName(
-                          userId: _state['opponent']['id']?.toString(),
-                          child: Text('${_state['opponent']['name'] ?? ''}')),
-                      subtitle: Text(
-                        _t('زميلك في المباراة', 'Your match partner'),
-                      ),
-                    ),
-                  FilledButton(
-                    onPressed: _busy
-                        ? null
-                        : () {
-                            _match = null;
-                            _run('zameel_trust_join');
-                          },
-                    child: Text(_t('مباراة جديدة', 'New match')),
-                  ),
-                ],
-                if (_busy) const LinearProgressIndicator(),
-                if (_error != null) ...[
-                  Text(_error!, style: const TextStyle(color: Colors.red)),
-                  TextButton(
-                    onPressed: _busy ? null : _refresh,
-                    child: Text(_t('إعادة المحاولة', 'Retry')),
-                  ),
-                ],
+                ),
+              _balanceBar(),
+              const SizedBox(height: 14),
+              if (_phase == 'lobby' || _phase == 'waiting') _lobby(stake),
+              if (_playing) ...[
+                _statusBar(),
+                const SizedBox(height: 12),
               ],
-            ),
+              if (_phase == 'questions') _questionPanel(question, options),
+              if (_phase == 'decision') _decisionPanel(),
+              if (_playing) ...[const SizedBox(height: 16), _chat()],
+              if (['finished', 'cancelled', 'abandoned'].contains(_phase))
+                _finished(),
+              if (_busy)
+                const Padding(
+                  padding: EdgeInsets.only(top: 12),
+                  child: LinearProgressIndicator(
+                    color: kGameTeal,
+                    backgroundColor: Color(0x33FFFFFF),
+                  ),
+                ),
+              if (_error != null) ...[
+                const SizedBox(height: 10),
+                Text(
+                  _error!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Color(0xFFFF8A8A),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Center(
+                  child: GameButton(
+                    primary: false,
+                    onPressed: _busy ? null : _refresh,
+                    label: _t('إعادة المحاولة', 'Retry'),
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
       ),

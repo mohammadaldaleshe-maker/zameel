@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../games/cards.dart';
 import '../../theme/app_theme.dart';
+import 'bot_personas.dart';
 import 'game_kit.dart';
 
 const Color _cardRed = Color(0xFFD32F2F);
@@ -103,14 +104,14 @@ class GameCardView extends StatelessWidget {
             textDirection: TextDirection.ltr,
             style: TextStyle(
               color: color,
-              fontSize: width * 0.3,
+              fontSize: width * 0.34,
               fontWeight: FontWeight.w900,
               height: 1.0,
             ),
           ),
           Text(
             symbol,
-            style: TextStyle(color: color, fontSize: width * 0.26, height: 1.0),
+            style: TextStyle(color: color, fontSize: width * 0.3, height: 1.0),
           ),
         ],
       );
@@ -140,13 +141,13 @@ class GameCardView extends StatelessWidget {
         ),
         child: Stack(
           children: [
-            PositionedDirectional(
-              start: width * 0.07,
+            Positioned(
+              left: width * 0.07,
               top: width * 0.05,
               child: index,
             ),
-            PositionedDirectional(
-              end: width * 0.07,
+            Positioned(
+              right: width * 0.07,
               bottom: width * 0.05,
               child: Transform.rotate(angle: pi, child: index),
             ),
@@ -275,9 +276,9 @@ class FannedHand extends StatelessWidget {
           ? constraints.maxWidth
           : MediaQuery.of(context).size.width;
       final n = cards.length;
-      final cardWidth = min(58.0, max(38.0, available / 6.2));
+      final cardWidth = min(76.0, max(46.0, available / 5.0));
       final cardHeight = cardWidth * 1.42;
-      final maxStep = cardWidth * 0.62;
+      final maxStep = cardWidth * 0.7;
       final step = n <= 1
           ? 0.0
           : min(maxStep, max(8.0, (available - cardWidth - 8) / (n - 1)));
@@ -309,10 +310,13 @@ class FannedHand extends StatelessWidget {
           ),
         ));
       }
-      return SizedBox(
-        height: cardHeight + 36,
-        width: double.infinity,
-        child: Stack(clipBehavior: Clip.none, children: children),
+      return Directionality(
+        textDirection: TextDirection.ltr,
+        child: SizedBox(
+          height: cardHeight + 36,
+          width: double.infinity,
+          child: Stack(clipBehavior: Clip.none, children: children),
+        ),
       );
     });
   }
@@ -503,15 +507,29 @@ class GameSeatBadge extends StatelessWidget {
         children: [
           if (!compact)
             Container(
-              width: 24,
-              height: 24,
+              width: 30,
+              height: 30,
               margin: const EdgeInsetsDirectional.only(end: 6),
-              decoration: BoxDecoration(shape: BoxShape.circle, color: color),
-              child: Icon(
-                seat == 0 ? Icons.person_rounded : Icons.smart_toy_rounded,
-                size: 15,
-                color: Colors.white,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: seat == 0 ? color : null,
               ),
+              child: seat == 0
+                  ? const Icon(
+                      Icons.person_rounded,
+                      size: 18,
+                      color: Colors.white,
+                    )
+                  : (BotCast.current?.at(seat) == null
+                      ? const Icon(
+                          Icons.smart_toy_rounded,
+                          size: 18,
+                          color: Colors.white,
+                        )
+                      : BotAvatar(
+                          persona: BotCast.current!.at(seat)!,
+                          size: 30,
+                        )),
             ),
           Flexible(
             child: Column(
@@ -550,6 +568,17 @@ class GameSeatBadge extends StatelessWidget {
 
 String gameSeatName(int seat, bool ar, {bool teams = false}) {
   if (seat == 0) return ar ? 'أنت' : 'You';
+  final persona = BotCast.current?.at(seat);
+  if (persona != null) {
+    final base = persona.name(ar);
+    if (teams && seat == 2) {
+      final role = ar
+          ? (persona.female ? 'شريكتك' : 'شريكك')
+          : 'partner';
+      return '$base ($role)';
+    }
+    return base;
+  }
   if (teams) {
     if (seat == 2) return ar ? 'شريكك' : 'Partner';
     if (seat == 1) return ar ? 'الخصم ١' : 'Opponent 1';

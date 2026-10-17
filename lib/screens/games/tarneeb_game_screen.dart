@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../games/cards.dart';
 import '../../games/tarneeb.dart';
 import '../../theme/app_theme.dart';
+import 'bot_personas.dart';
 import 'game_kit.dart';
 import 'game_widgets.dart';
 
@@ -28,6 +29,7 @@ class _TarneebGameScreenState extends State<TarneebGameScreen> {
   @override
   void initState() {
     super.initState();
+    BotCast.draw(const <int>[1, 2, 3]);
     WidgetsBinding.instance.addPostFrameCallback((_) => _advance());
   }
 
@@ -166,11 +168,11 @@ class _TarneebGameScreenState extends State<TarneebGameScreen> {
                       child: Column(
                         children: [
                           _scoreBar(game),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 4),
                           _infoLine(game),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
                           _table(game),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 8),
                           _actionPanel(game),
                         ],
                       ),
@@ -277,7 +279,7 @@ class _TarneebGameScreenState extends State<TarneebGameScreen> {
   Widget _table(TarneebGame game) {
     final plays = _showLast ? game.lastTrick : game.trick;
     return GameFeltTable(
-      height: 330,
+      height: 290,
       child: Stack(
         children: [
           Align(
@@ -331,7 +333,7 @@ class _TarneebGameScreenState extends State<TarneebGameScreen> {
               child: _seatBadge(0, game),
             ),
           ),
-          Center(child: TrickArea(plays: plays, cardWidth: 42, size: 150)),
+          Center(child: TrickArea(plays: plays, cardWidth: 46, size: 150)),
         ],
       ),
     );

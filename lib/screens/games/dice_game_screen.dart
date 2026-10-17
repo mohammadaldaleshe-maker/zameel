@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../games/mini_games.dart';
 import '../../theme/app_theme.dart';
+import 'bot_personas.dart';
 import 'game_kit.dart';
 
 // Dice duel: both sides roll one or two dice, the higher total wins the round,
@@ -31,6 +32,7 @@ class _DiceGameScreenState extends State<DiceGameScreen> {
   int _result = -1;
   int _confetti = 0;
 
+  late final BotPersona _bot = BotCast.draw(const <int>[1]).at(1)!;
   bool get _ar => widget.isArabic;
   String _t(String ar, String en) => _ar ? ar : en;
   bool get _over => _wins[0] >= _target || _wins[1] >= _target;
@@ -43,7 +45,7 @@ class _DiceGameScreenState extends State<DiceGameScreen> {
 
   String _name(int side) {
     if (_mode == 0) {
-      return side == 0 ? _t('أنت', 'You') : _t('الهاتف', 'Phone');
+      return side == 0 ? _t('أنت', 'You') : _bot.name(_ar);
     }
     return side == 0 ? _t('اللاعب ١', 'Player 1') : _t('اللاعب ٢', 'Player 2');
   }
@@ -167,6 +169,7 @@ class _DiceGameScreenState extends State<DiceGameScreen> {
                       active: _result == 1,
                     ),
                     GameScoreChip(
+                      avatar: _mode == 0 ? BotAvatar(persona: _bot, size: 28) : null,
                       label: _name(1),
                       value: '${_wins[1]}',
                       accent: const Color(0xFFFF5C8A),

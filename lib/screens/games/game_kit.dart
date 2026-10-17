@@ -236,12 +236,14 @@ class GameScoreChip extends StatelessWidget {
     required this.value,
     this.active = false,
     this.accent,
+    this.avatar,
   });
 
   final String label;
   final String value;
   final bool active;
   final Color? accent;
+  final Widget? avatar;
 
   @override
   Widget build(BuildContext context) {
@@ -268,6 +270,7 @@ class GameScoreChip extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (avatar != null) ...[avatar!, const SizedBox(height: 4)],
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 250),
             transitionBuilder: (child, animation) =>

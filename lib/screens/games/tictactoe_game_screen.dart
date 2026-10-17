@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../games/mini_games.dart';
 import '../../theme/app_theme.dart';
+import 'bot_personas.dart';
 import 'game_kit.dart';
 
 // Tic-tac-toe (X and O): against the phone at three levels, or two players on
@@ -30,6 +31,7 @@ class _TicTacToeGameScreenState extends State<TicTacToeGameScreen> {
   List<int> _score = <int>[0, 0, 0];
   int _confetti = 0;
 
+  late final BotPersona _bot = BotCast.draw(const <int>[1]).at(1)!;
   bool get _ar => widget.isArabic;
   String _t(String ar, String en) => _ar ? ar : en;
   int get _winner => tttWinner(_board);
@@ -99,7 +101,7 @@ class _TicTacToeGameScreenState extends State<TicTacToeGameScreen> {
 
   String _sideName(int side) {
     if (_mode == 0) {
-      return side == _phoneSide ? _t('الهاتف', 'Phone') : _t('أنت', 'You');
+      return side == _phoneSide ? _bot.name(_ar) : _t('أنت', 'You');
     }
     return side == 1 ? _t('اللاعب X', 'Player X') : _t('اللاعب O', 'Player O');
   }
@@ -179,7 +181,8 @@ class _TicTacToeGameScreenState extends State<TicTacToeGameScreen> {
                       accent: kGameGold,
                     ),
                     GameScoreChip(
-                      label: _mode == 0 ? _t('الهاتف', 'Phone') : 'O',
+                      avatar: _mode == 0 ? BotAvatar(persona: _bot, size: 28) : null,
+                      label: _mode == 0 ? _bot.name(_ar) : 'O',
                       value: '${_score[1]}',
                       accent: const Color(0xFFFF5C8A),
                       active: !_finished && _turn == (_mode == 0 ? _phoneSide : 2),

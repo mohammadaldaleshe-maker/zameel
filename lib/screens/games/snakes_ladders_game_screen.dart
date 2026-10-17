@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../games/snakes_ladders.dart';
 import '../../theme/app_theme.dart';
+import 'bot_personas.dart';
 import 'game_kit.dart';
 
 // Snakes and ladders: against the phone or two players on one phone.
@@ -33,12 +34,13 @@ class _SnakesLaddersGameScreenState extends State<SnakesLaddersGameScreen> {
   int _confetti = 0;
   SlMove? _last;
 
+  late final BotPersona _bot = BotCast.draw(const <int>[1]).at(1)!;
   bool get _ar => widget.isArabic;
   String _t(String ar, String en) => _ar ? ar : en;
 
   String _name(int player) {
     if (_mode == 0) {
-      return player == 0 ? _t('أنت', 'You') : _t('الهاتف', 'Phone');
+      return player == 0 ? _t('أنت', 'You') : _bot.name(_ar);
     }
     return player == 0 ? _t('اللاعب ١', 'Player 1') : _t('اللاعب ٢', 'Player 2');
   }
@@ -181,6 +183,9 @@ class _SnakesLaddersGameScreenState extends State<SnakesLaddersGameScreen> {
                   children: [
                     for (var p = 0; p < 2; p++)
                       GameScoreChip(
+                        avatar: _mode == 0 && p == 1
+                            ? BotAvatar(persona: _bot, size: 28)
+                            : null,
                         label: _name(p),
                         value: _game.positions[p] == 0
                             ? '—'

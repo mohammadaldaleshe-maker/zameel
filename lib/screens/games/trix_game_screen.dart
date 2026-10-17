@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../games/cards.dart';
 import '../../games/trix.dart';
 import '../../theme/app_theme.dart';
+import 'bot_personas.dart';
 import 'game_kit.dart';
 import 'game_widgets.dart';
 
@@ -28,6 +29,7 @@ class _TrixGameScreenState extends State<TrixGameScreen> {
   @override
   void initState() {
     super.initState();
+    BotCast.draw(const <int>[1, 2, 3]);
     WidgetsBinding.instance.addPostFrameCallback((_) => _advance());
   }
 
@@ -279,7 +281,7 @@ class _TrixGameScreenState extends State<TrixGameScreen> {
     }
     final plays = _showLast ? game.lastTrick : game.trick;
     return GameFeltTable(
-      height: 300,
+      height: 270,
       child: Stack(
         children: [
           Align(
@@ -305,7 +307,7 @@ class _TrixGameScreenState extends State<TrixGameScreen> {
                   count: game.hands[3].length, width: 22, vertical: true),
             ),
           ),
-          Center(child: TrickArea(plays: plays, cardWidth: 42, size: 150)),
+          Center(child: TrickArea(plays: plays, cardWidth: 46, size: 150)),
         ],
       ),
     );

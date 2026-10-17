@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zameel/games/snakes_ladders.dart';
+import 'package:zameel/screens/games/bot_personas.dart';
 
 void main() {
   group('snakes and ladders board', () {
@@ -121,6 +122,25 @@ void main() {
         }
         expect(game.positions[game.winner], slBoardSize);
       }
+    });
+  });
+
+  group('computer players', () {
+    test('there are men and women with Arabic names', () {
+      expect(kBotPersonas.where((p) => p.female).length, greaterThanOrEqualTo(3));
+      expect(kBotPersonas.where((p) => !p.female).length, greaterThanOrEqualTo(3));
+      for (final p in kBotPersonas) {
+        expect(RegExp(r'^[\u0600-\u06FF]+$').hasMatch(p.nameAr), isTrue);
+      }
+    });
+
+    test('a drawn cast has distinct players for each seat', () {
+      final cast = BotCast.draw(const <int>[1, 2, 3], random: Random(7));
+      final names = <String>{
+        for (final seat in const <int>[1, 2, 3]) cast.at(seat)!.nameAr,
+      };
+      expect(names.length, 3);
+      expect(cast.at(0), isNull);
     });
   });
 }
