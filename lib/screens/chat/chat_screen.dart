@@ -2311,8 +2311,14 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                 ],
               ),
             ),
-            if (_replyTo != null) _replyBar(ar),
+            // Keyed so that showing/hiding the reply bar can never re-create the
+            // composer (which would close and reopen the keyboard).
+            if (_replyTo != null)
+              KeyedSubtree(
+                  key: const ValueKey('direct-chat-reply-bar'),
+                  child: _replyBar(ar)),
             Container(
+              key: const ValueKey('direct-chat-composer-row'),
               padding: const EdgeInsets.all(10),
               child: Row(
                 children: [

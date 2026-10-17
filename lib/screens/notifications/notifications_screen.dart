@@ -1,4 +1,5 @@
 import '../comments/clip_comments_screen.dart';
+import '../groups/group_invitation_screen.dart';
 import '../social/public_clips_strip.dart';
 import '../../main.dart' show ZameelMediaViewer;
 import 'package:zameel/theme/appearance_controller.dart';
@@ -199,8 +200,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Future<void> _openNotificationSource(Map<String, dynamic> n) async {
     final type = n['type']?.toString() ?? '';
     final data = _notificationData(n);
-    if (['upload_complete', 'clip_mention', 'clip_comment_mention']
-            .contains(type) &&
+    if ([
+          'upload_complete',
+          'clip_mention',
+          'clip_comment_mention',
+          'clip_comment',
+          'clip_comment_reply',
+          'clip_comment_like'
+        ].contains(type) &&
         data['clip_id'] != null) {
       if (!await FeatureControl.instance.check(context, 'clips')) return;
       final clip = await db
@@ -234,6 +241,26 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             MaterialPageRoute(
                 builder: (_) =>
                     ProfileScreen(userId: '${data['profile_id']}')));
+      return;
+    }
+    if (type == 'group_invitation' && data['invitation_id'] != null) {
+      if (mounted) {
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (_) => GroupInvitationScreen(
+                    invitationId: '${data['invitation_id']}')));
+      }
+      return;
+    }
+    if (type == 'contact_joined' && data['joined_user_id'] != null) {
+      if (mounted) {
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (_) =>
+                    ProfileScreen(userId: '${data['joined_user_id']}')));
+      }
       return;
     }
     if (type == 'account_verification_review') {
@@ -389,7 +416,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         final type = n['type']?.toString() ?? '';
                         final icon = type.startsWith('friend_request')
                             ? Icons.person_add_alt_1_rounded
-                            : type == 'incoming_video_call'
+                            : type == 'group_invitation'
+                                ? Icons.group_add_rounded
+                                : type == 'incoming_video_call'
                                 ? Icons.videocam_rounded
                                 : type == 'incoming_voice_call'
                                     ? Icons.call_rounded
@@ -399,8 +428,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                                 type == 'post_like')
                                             ? Icons.favorite_rounded
                                             : (type == 'comment' ||
-                                                    type == 'post_comment')
+                                                    type == 'post_comment' ||
+                                                    type == 'clip_comment' ||
+                                                    type == 'comment_reply' ||
+                                                    type == 'clip_comment_reply')
                                                 ? Icons.comment_rounded
+                                                : (type == 'comment_like' ||
+                                                        type ==
+                                                            'clip_comment_like')
+                                                    ? Icons.favorite_rounded
                                                 : Icons.notifications_rounded;
                         final color = AppTheme.adaptiveHighlightInk;
 

@@ -366,6 +366,7 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
                     ),
                   ),
                 SafeArea(
+                  key: const ValueKey('clip-comment-composer-row'),
                   top: false,
                   child: Padding(
                     padding: const EdgeInsets.all(12),
@@ -434,6 +435,17 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
     final edited = createdRaw != null &&
         updatedRaw != null &&
         updatedRaw.difference(createdRaw).inSeconds.abs() > 1;
+    // A reply names the person it answers, e.g. "رداً على سامي".
+    final parentId = comment['parent_comment_id']?.toString() ?? '';
+    var replyToName = '';
+    if (parentId.isNotEmpty) {
+      for (final candidate in _comments) {
+        if (candidate['id']?.toString() == parentId) {
+          replyToName = _nameOf(candidate);
+          break;
+        }
+      }
+    }
 
     return Padding(
       padding: EdgeInsetsDirectional.only(start: (depth * 22).toDouble()),
@@ -509,6 +521,18 @@ class _ClipCommentsScreenState extends State<ClipCommentsScreen> {
                       ],
                     ),
                     const SizedBox(height: 3),
+                    if (replyToName.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: Text(
+                          ar ? 'رداً على $replyToName' : 'Replying to $replyToName',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.primary,
+                          ),
+                        ),
+                      ),
                     MentionContent158(comment['text']?.toString() ?? '',
                         kind: 'clip_comment', id: '${comment['id']}'),
                     const SizedBox(height: 7),

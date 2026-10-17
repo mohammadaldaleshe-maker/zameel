@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../providers/language_provider.dart';
 import 'package:zameel/theme/app_theme.dart';
 import '../services/remaining_services.dart';
+import 'groups/group_chat_screen.dart';
 
 // ============================================================
 // PRIVATE GROUPS SCREEN - المجموعات الخاصة (معدل)
@@ -331,7 +332,21 @@ class _PrivateGroupsScreenState extends State<PrivateGroupsScreen> {
                   final isOwner = group['isOwner'] == true;
                   final requestPending = group['joinStatus'] == 'pending';
 
-                  return Container(
+                  return GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: (isJoined == true || isOwner)
+                        ? () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => GroupChatScreen(
+                                  groupId: group['id']?.toString() ?? '',
+                                  groupName: group['name_ar']?.toString() ?? '',
+                                  isOwner: isOwner,
+                                ),
+                              ),
+                            )
+                        : null,
+                    child: Container(
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -448,6 +463,7 @@ class _PrivateGroupsScreenState extends State<PrivateGroupsScreen> {
                                 ? null
                                 : () => _toggleJoin(index),
                             style: ElevatedButton.styleFrom(
+                              minimumSize: const Size(0, 36),
                               backgroundColor: isJoined
                                   ? AppTheme.adaptiveMuted.shade200
                                   : color,
@@ -479,6 +495,7 @@ class _PrivateGroupsScreenState extends State<PrivateGroupsScreen> {
                           ),
                       ],
                     ),
+                  ),
                   );
                 },
               ),

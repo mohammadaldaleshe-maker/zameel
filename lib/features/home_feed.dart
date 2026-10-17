@@ -76,6 +76,15 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
     });
     BackgroundPublish156.revision.addListener(_uploadChanged156);
     BackgroundPublish156.resume();
+    // Ask once, with an explanation, for the permissions the app needs; then
+    // refresh the (hashed) contact list used for "your contact joined" alerts.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final arabic =
+          Provider.of<LanguageProvider>(context, listen: false).isArabic;
+      AppPermissionsPrompt.maybeAsk(context, arabic);
+      ContactJoinSync165.sync();
+    });
     _createUserIfNotExists();
     _loadCurrentProfileImage();
     // Restore the on-device feed before the network request can replace it.
@@ -1099,6 +1108,21 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
           row['isSaved'] = old['isSaved'] == true;
         }
       }
+      // One batched Storage request signs every object of the page (instead of
+      // one request per image or video). Capped so it can never hold the
+      // posts back; anything it misses is signed individually as before.
+      await SecureMediaService.prewarm(<String?>[
+        for (final row in loaded) ...[
+          row['image_url']?.toString(),
+          row['video_url']?.toString(),
+          if (row['media_items'] is List)
+            for (final item in row['media_items'] as List)
+              if (item is Map) item['url']?.toString(),
+        ],
+      ]).timeout(const Duration(milliseconds: 1500), onTimeout: () {});
+      if (!mounted ||
+          requestVersion != _postsRequestVersion ||
+          db.auth.currentUser?.id != userId) return;
       // Text, author and media placeholders are usable as soon as the query
       // arrives. A slow signed object can no longer hold every post hostage.
       setState(() {
@@ -1113,12 +1137,12 @@ class _HomeFeedScreenState extends State<HomeFeedScreen>
             db.auth.currentUser?.id != userId) return;
         unawaited(
           MediaCacheService.prefetch(
-            loaded.take(5).expand(
+            loaded.take(8).expand(
                   (post) => postMediaItems(post)
                       .where((media) => media.type == 'image')
                       .map((media) => media.url),
                 ),
-            limit: 3,
+            limit: 6,
           ),
         );
       });

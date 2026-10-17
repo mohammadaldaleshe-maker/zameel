@@ -6,17 +6,26 @@ import 'package:flutter/material.dart';
 import '../../services/feature_control.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:typed_data';
+import 'package:image_picker/image_picker.dart';
 import '../../services/remaining_services.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/chat_voice_widgets.dart';
+import '../../widgets/linkified_text165.dart';
+import '../../widgets/video_player_widget.dart';
+import 'group_invite_sheet.dart';
+import 'group_members_screen.dart';
 
 class GroupChatScreen extends StatefulWidget {
   final String groupId;
   final String groupName;
+  final bool isOwner;
 
   const GroupChatScreen({
     super.key,
     required this.groupId,
     required this.groupName,
+    this.isOwner = false,
   });
 
   @override
@@ -30,6 +39,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
   List<Map<String, dynamic>> _messages = [];
   bool _loading = true;
   bool _sending = false;
+  bool _uploading = false;
   RealtimeChannel? _channel;
 
   @override
@@ -82,6 +92,173 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     }
   }
 
+  void _notice(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _chooseAttachment() async {
+    final kind = await showModalBottomSheet<String>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo),
+              title: const Text('صورة من الاستديو'),
+              onTap: () => Navigator.pop(sheetContext, 'image'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.videocam),
+              title: const Text('فيديو من الاستديو'),
+              onTap: () => Navigator.pop(sheetContext, 'video'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.mic),
+              title: const Text('رسالة صوتية'),
+              onTap: () => Navigator.pop(sheetContext, 'voice'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || kind == null) return;
+    if (kind == 'voice') {
+      await _recordVoice();
+      return;
+    }
+    try {
+      final picker = ImagePicker();
+      final picked = kind == 'image'
+          ? await picker.pickImage(
+              source: ImageSource.gallery,
+              imageQuality: 85,
+              maxWidth: 1920,
+            )
+          : await picker.pickVideo(source: ImageSource.gallery);
+      if (picked == null || !mounted) return;
+      final bytes = await picked.readAsBytes();
+      await _sendAttachment(bytes, picked.name, kind);
+    } catch (_) {
+      _notice('تعذر فتح الاستديو. تحقق من صلاحيات الصور والفيديو');
+    }
+  }
+
+  Future<void> _recordVoice() async {
+    if (_uploading) return;
+    final draft = await showDialog<VoiceDraft>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const VoiceRecordingDialog(),
+    );
+    if (draft == null || !mounted) return;
+    await _sendAttachment(
+      draft.bytes,
+      'voice_${DateTime.now().millisecondsSinceEpoch}.m4a',
+      'audio',
+    );
+  }
+
+  String _mimeFor(String kind, String filename) {
+    final extension =
+        filename.contains('.') ? filename.split('.').last.toLowerCase() : '';
+    if (kind == 'audio') return 'audio/mp4';
+    if (kind == 'image') {
+      if (extension == 'png' || extension == 'webp' || extension == 'gif') {
+        return 'image/$extension';
+      }
+      return 'image/jpeg';
+    }
+    if (extension == 'mov') return 'video/quicktime';
+    if (extension == 'webm') return 'video/webm';
+    return 'video/mp4';
+  }
+
+  Future<void> _sendAttachment(
+      Uint8List bytes, String filename, String kind) async {
+    if (_uploading) return;
+    if (bytes.isEmpty) {
+      _notice('تعذر قراءة الملف المختار');
+      return;
+    }
+    if (bytes.length > 20 * 1024 * 1024) {
+      _notice('الحد الأقصى للمرفق 20 ميجابايت');
+      return;
+    }
+    setState(() => _uploading = true);
+    try {
+      final path = await RemainingServices.uploadGroupAttachment(
+        widget.groupId,
+        bytes,
+        filename,
+        _mimeFor(kind, filename),
+      );
+      await RemainingServices.sendGroupMessage(
+        widget.groupId,
+        kind == 'image'
+            ? 'صورة'
+            : kind == 'video'
+                ? 'فيديو'
+                : 'رسالة صوتية',
+        mediaPath: path,
+        mediaType: kind,
+      );
+      await _load();
+    } catch (error) {
+      _notice(RemainingServices.groupErrorText(error, 'تعذر إرسال المرفق'));
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
+  }
+
+  Widget _messageBody(Map<String, dynamic> message, bool isMe) {
+    final path = message['media_url']?.toString() ?? '';
+    final type = message['media_type']?.toString() ?? '';
+    final textColor = isMe ? Colors.white : AppTheme.adaptiveText;
+    if (path.isEmpty || type.isEmpty) {
+      return LinkifiedText165(
+        message['content']?.toString() ?? '',
+        style: TextStyle(color: textColor, fontSize: 15),
+        linkColor: isMe ? Colors.white : AppTheme.primary,
+      );
+    }
+    return FutureBuilder<String?>(
+      future: RemainingServices.groupAttachmentUrl(path),
+      initialData: RemainingServices.cachedGroupAttachmentUrl(path),
+      builder: (context, snapshot) {
+        final url = snapshot.data;
+        if (url == null) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const SizedBox(
+              width: 28,
+              height: 28,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            );
+          }
+          return Text('تعذر فتح المرفق', style: TextStyle(color: textColor));
+        }
+        if (type == 'image') {
+          return GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => _GroupImageViewer(url: url)),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(url,
+                  width: 220, height: 180, fit: BoxFit.cover),
+            ),
+          );
+        }
+        if (type == 'video') {
+          return SizedBox(width: 240, child: VideoPlayerWidget(videoUrl: url));
+        }
+        return ChatVoicePlayer(key: ValueKey(message['id']), url: url);
+      },
+    );
+  }
+
   @override
   void dispose() {
     RemainingServices.removeChannel(_channel);
@@ -96,7 +273,35 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     AppearanceScope.observe(context);
     final me = Supabase.instance.client.auth.currentUser?.id;
     return Scaffold(
-      appBar: AppBar(title: Text(widget.groupName)),
+      appBar: AppBar(
+        title: Text(widget.groupName),
+        actions: [
+          IconButton(
+            tooltip: 'دعوة',
+            icon: const Icon(Icons.person_add_alt_1_rounded),
+            onPressed: () => showGroupInviteSheet(
+              context,
+              groupId: widget.groupId,
+              groupName: widget.groupName,
+              isOwner: widget.isOwner,
+            ),
+          ),
+          IconButton(
+            tooltip: 'الأعضاء',
+            icon: const Icon(Icons.people_rounded),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => GroupMembersScreen(
+                  groupId: widget.groupId,
+                  groupName: widget.groupName,
+                  isOwner: widget.isOwner,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
       body: Column(
         children: [
           Expanded(
@@ -161,15 +366,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                                         ),
                                       )),
                                   const SizedBox(height: 3),
-                                  Text(
-                                    message['content']?.toString() ?? '',
-                                    style: TextStyle(
-                                      color: isMe
-                                          ? Colors.white
-                                          : AppTheme.adaptiveText,
-                                      fontSize: 15,
-                                    ),
-                                  ),
+                                  _messageBody(message, isMe),
                                   if (created != null) ...[
                                     const SizedBox(height: 4),
                                     Text(
@@ -195,6 +392,17 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
               child: Row(
                 children: [
+                  IconButton(
+                    tooltip: 'إرفاق',
+                    onPressed: _uploading ? null : _chooseAttachment,
+                    icon: _uploading
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.add_circle_outline_rounded),
+                  ),
                   Expanded(
                     child: TextField(
                       controller: _controller,
@@ -228,6 +436,25 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _GroupImageViewer extends StatelessWidget {
+  final String url;
+
+  const _GroupImageViewer({required this.url});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(),
+      body: Center(
+        child: InteractiveViewer(
+          child: Image.network(url, fit: BoxFit.contain),
+        ),
       ),
     );
   }

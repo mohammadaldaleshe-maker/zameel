@@ -97,6 +97,63 @@ class SecureMediaService {
     }
   }
 
+  /// Signs many objects with ONE request per bucket and fills the cache, so
+  /// every media widget finds its URL ready instead of asking Storage for it
+  /// one object at a time. Best effort: anything missed is still resolved
+  /// individually by [resolve].
+  static Future<void> prewarm(Iterable<String?> values) async {
+    final userId = _db.auth.currentUser?.id;
+    if (userId == null) return;
+    final epoch = _sessionEpoch;
+    final now = DateTime.now();
+    final wanted = <String, Map<String, String>>{};
+    for (final raw in values) {
+      final text = raw?.trim() ?? '';
+      if (text.isEmpty) continue;
+      var ref = _parsePrivateReference(text);
+      if (ref == null) {
+        final publicRef = _parseSupabaseStorageUrl(text);
+        if (publicRef != null &&
+            (publicRef.bucket == 'posts' ||
+                publicRef.bucket == 'graduation_book')) {
+          ref = publicRef;
+        }
+      }
+      if (ref == null) continue;
+      final key =
+          '$userId:${mediaIdentity(text, storageOrigin: ZameelConfig.supabaseUrl)}';
+      final cached = _signedCache[key];
+      if (cached != null &&
+          cached.expiresAt.isAfter(now.add(const Duration(minutes: 3)))) {
+        continue;
+      }
+      if (_pending.containsKey(key)) continue;
+      final byPath = wanted[ref.bucket] ?? <String, String>{};
+      byPath[ref.path] = key;
+      wanted[ref.bucket] = byPath;
+    }
+    for (final entry in wanted.entries) {
+      try {
+        final signed = await _db.storage
+            .from(entry.key)
+            .createSignedUrls(
+                entry.value.keys.toList(), signedUrlLifetime.inSeconds)
+            .timeout(const Duration(seconds: 12));
+        if (epoch != _sessionEpoch || _db.auth.currentUser?.id != userId) {
+          return;
+        }
+        for (final item in signed) {
+          final key = entry.value[item.path];
+          if (key == null || item.signedUrl.isEmpty) continue;
+          _signedCache[key] = _SignedUrlCacheEntry(
+              url: item.signedUrl, expiresAt: now.add(signedUrlLifetime));
+        }
+      } catch (_) {
+        // Individual resolution remains the fallback.
+      }
+    }
+  }
+
   static Future<void> resolvePost(Map<String, dynamic> post) async {
     final mainUrls = await Future.wait([
       resolve(post['image_url']?.toString()),

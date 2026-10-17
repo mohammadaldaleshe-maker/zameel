@@ -13,7 +13,9 @@ class CallInvitationGuard {
     final created = DateTime.tryParse(row['created_at']?.toString() ?? '');
     if (created == null) return false;
     final age = now.toUtc().difference(created.toUtc());
-    return !age.isNegative && age < maxRingingAge;
+    // The session row is authoritative. A phone clock that is up to 30 seconds
+    // behind the server must not hide a call that is genuinely ringing.
+    return age >= const Duration(seconds: -30) && age < maxRingingAge;
   }
 
   static Future<bool> isRinging(String roomId) async {

@@ -24,6 +24,8 @@ import 'screens/profile/profile_settings_screen.dart';
 import 'widgets/post_media_frame.dart';
 import 'services/watermarked_download_service.dart';
 import 'services/app_release_gate.dart';
+import 'services/app_permissions_prompt.dart';
+import 'services/contact_join_sync165.dart';
 import 'services/sponsored_feed.dart';
 import 'theme/appearance_controller.dart';
 import 'widgets/verified_name.dart';
@@ -50,11 +52,13 @@ import 'package:app_links/app_links.dart';
 import 'theme/app_theme.dart';
 
 import 'screens/comments/comments_screen.dart';
+import 'screens/comments/clip_comments_screen.dart';
 import 'screens/friends/friends_screen.dart';
 import 'screens/friends/suggested_colleagues_section.dart';
 import 'screens/books/books_screen.dart';
 import 'screens/stories/stories_screen.dart';
 import 'screens/groups/groups_screen.dart';
+import 'screens/groups/group_invitation_screen.dart';
 import 'screens/graduation/graduation_screen.dart';
 import 'screens/chat/chat_screen.dart';
 import 'screens/business/business_screen.dart';
@@ -147,7 +151,7 @@ Future<void> _openZameelDeepLink(Uri uri) async {
       const ['zameeljo.com', 'www.zameeljo.com'].contains(uri.host) &&
       uri.pathSegments.length == 3 &&
       uri.pathSegments.first == 's' &&
-      const ['post', 'clip'].contains(uri.pathSegments[1])) {
+      const ['post', 'clip', 'group'].contains(uri.pathSegments[1])) {
     uri = Uri(
         scheme: 'zameel',
         host: uri.pathSegments[1],
@@ -174,6 +178,12 @@ Future<void> _openZameelDeepLink(Uri uri) async {
       nav.push(MaterialPageRoute(
           builder: (_) => VerticalClipsViewer(
               clips: [Map<String, dynamic>.from(clip)], initialIndex: 0)));
+    return;
+  }
+  if (uri.host == 'group' && uri.pathSegments.isNotEmpty) {
+    nav.push(MaterialPageRoute(
+        builder: (_) =>
+            GroupInvitationScreen(inviteCode: uri.pathSegments.first)));
     return;
   }
   if (uri.host == 'uploads') {
@@ -283,6 +293,25 @@ Future<void> _handlePushNavigationData(Map<String, dynamic> data) async {
   final type = (data['notification_type'] ?? data['type'])?.toString() ?? '';
   final nav = await _waitForZameelNavigator();
   if (nav == null) return;
+  if (const ['clip_comment', 'clip_comment_reply', 'clip_comment_like']
+          .contains(type) &&
+      data['clip_id'] != null) {
+    try {
+      final clip = await Supabase.instance.client
+          .from('clips')
+          .select()
+          .eq('id', data['clip_id'])
+          .maybeSingle()
+          .timeout(const Duration(seconds: 12));
+      if (clip != null) {
+        nav.push(MaterialPageRoute(
+            builder: (_) => ClipCommentsScreen(
+                clip: Map<String, dynamic>.from(clip),
+                highlightedCommentId: data['comment_id']?.toString())));
+        return;
+      }
+    } catch (_) {}
+  }
   if (type == 'upload_complete' && data['clip_id'] != null) {
     final clip = await Supabase.instance.client
         .from('clips')
@@ -295,6 +324,12 @@ Future<void> _handlePushNavigationData(Map<String, dynamic> data) async {
               clips: [Map<String, dynamic>.from(clip)], initialIndex: 0)));
     return;
   }
+  if (type == 'group_invitation' && data['invitation_id'] != null) {
+    nav.push(MaterialPageRoute(
+        builder: (_) => GroupInvitationScreen(
+            invitationId: data['invitation_id'].toString())));
+    return;
+  }
   if (type == 'account_verification_review') {
     nav.push(MaterialPageRoute(builder: (_) => const ProfileScreen()));
     return;
@@ -303,6 +338,8 @@ Future<void> _handlePushNavigationData(Map<String, dynamic> data) async {
       (type == 'upload_complete' && data['post_id'] != null) ||
       type == 'post_promotion_approved' ||
       type == 'post_comment' ||
+      type == 'comment_reply' ||
+      type == 'comment_like' ||
       type == 'comment' ||
       type == 'post_like' ||
       type == 'like') {

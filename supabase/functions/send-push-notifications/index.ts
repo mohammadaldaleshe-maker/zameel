@@ -58,6 +58,21 @@ async function getAccessToken(serviceAccount: Record<string, string>) {
   return (await response.json()).access_token as string;
 }
 
+// Warm Edge instances reuse the Google access token (valid for one hour) instead
+// of signing a JWT and calling oauth2.googleapis.com for every single push. The
+// lookup of getAccessToken happens at call time so tests can still replace it.
+let cachedAccessToken: { key: string; token: string; expiresAt: number } | null = null;
+async function accessTokenFor(serviceAccount: Record<string, string>) {
+  const key = String(serviceAccount.client_email ?? "");
+  const now = Date.now();
+  if (cachedAccessToken && cachedAccessToken.key === key && cachedAccessToken.expiresAt - now > 5 * 60 * 1000) {
+    return cachedAccessToken.token;
+  }
+  const token = await getAccessToken(serviceAccount);
+  cachedAccessToken = { key, token, expiresAt: now + 55 * 60 * 1000 };
+  return token;
+}
+
 function isInvalidTokenResponse(status: number, body: string) {
   if (status === 404) return true;
   return body.includes("UNREGISTERED") || body.includes("registration-token-not-registered");
@@ -80,7 +95,7 @@ Deno.serve(async (req) => {
 
     const serviceAccount = JSON.parse(serviceAccountRaw) as Record<string, string>;
     const projectId = serviceAccount.project_id;
-    const accessToken = await getAccessToken(serviceAccount);
+    const accessToken = await accessTokenFor(serviceAccount);
 
     // Cancellation is an authenticated worker command; participants and state
     // are read from the database, never trusted from the webhook body.
@@ -140,6 +155,9 @@ Deno.serve(async (req) => {
       .select("id,notification_id,attempts")
       .in("status", ["pending", "failed"])
       .lt("attempts", 5)
+      // Never-tried rows (attempts = 0) go first so a backlog of old failed
+      // retries can no longer delay a fresh chat message by many seconds.
+      .order("attempts", { ascending: true })
       .order("created_at", { ascending: true })
       .limit(50);
     if (requestBody.notification_id) queueQuery = queueQuery.eq("notification_id", String(requestBody.notification_id));
@@ -251,22 +269,24 @@ Deno.serve(async (req) => {
       let messageSenderAvatar = "";
       let messagePreview = "";
       if (notification.type === "message") {
+        const messageId = String(notification.data?.message_id ?? "").trim();
+        // The sender profile and the message text are independent reads: fetch
+        // them together instead of one after the other.
+        const [{ data: actor }, { data: chatMessage }] = await Promise.all([
+          notification.actor_id
+            ? supabase.from("users").select("name,profile_image")
+              .eq("id", notification.actor_id).maybeSingle()
+            : Promise.resolve({ data: null }),
+          messageId
+            ? supabase.from("messages").select("content,media_type")
+              .eq("id", messageId).maybeSingle()
+            : Promise.resolve({ data: null }),
+        ]);
         if (notification.actor_id) {
-          const { data: actor } = await supabase
-            .from("users")
-            .select("name,profile_image")
-            .eq("id", notification.actor_id)
-            .maybeSingle();
           messageSenderName = String(actor?.name ?? "").trim().slice(0, 80);
           messageSenderAvatar = String(actor?.profile_image ?? "").trim().slice(0, 1200);
         }
-        const messageId = String(notification.data?.message_id ?? "").trim();
         if (messageId) {
-          const { data: chatMessage } = await supabase
-            .from("messages")
-            .select("content,media_type")
-            .eq("id", messageId)
-            .maybeSingle();
           messagePreview = String(chatMessage?.content ?? "").trim().slice(0, 240);
           if (!messagePreview) {
             const mediaType = String(chatMessage?.media_type ?? "").toLowerCase();

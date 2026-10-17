@@ -144,8 +144,13 @@ object ZameelIncomingCall {
         if (type == "call_ended") { dismiss(c, room); return true }
         val recipient = b.getString("recipient_id").orEmpty()
         if (recipient.isEmpty() || recipient != prefs(c).getString("user", null)) return true
-        val expires = b.getString("expires_at_ms")?.toLongOrNull() ?: return true
         val now = System.currentTimeMillis()
+        // Prefer the server-measured time left (ttl_ms) so a phone clock that is
+        // slightly off cannot silently drop a real call. Older pushes without it
+        // keep using the absolute expiry.
+        val ttl = b.getString("ttl_ms")?.toLongOrNull()
+        val expires = if (ttl != null && ttl > 0 && ttl <= 50_000) now + ttl
+            else b.getString("expires_at_ms")?.toLongOrNull() ?: return true
         if (prefs(c).getLong("closed:$room", 0) > now) return true
         if (expires <= now || expires > now + 50_000) return true
         if (isActive(c, room)) return true

@@ -335,6 +335,17 @@ Future<bool> deleteCurrentAccount() async {
 // ZAMEEL APP
 // ============================================================
 
+/// The app-wide SelectionArea must never take keyboard focus away from a text
+/// field. Its default focus node requests focus on long-press and tap gestures,
+/// which closed the keyboard while dragging the caret and while pressing send.
+/// This node can never request focus, so text selection and copy still work but
+/// the active input connection is left alone.
+final FocusNode zameelSelectionFocusNode = FocusNode(
+  debugLabel: 'ZameelSelectionArea',
+  canRequestFocus: false,
+  skipTraversal: true,
+);
+
 class ZameelApp extends StatelessWidget {
   const ZameelApp({super.key});
 
@@ -378,6 +389,7 @@ class ZameelApp extends StatelessWidget {
                 ),
                 child: AppReleaseGate(
                   child: SelectionArea(
+                    focusNode: zameelSelectionFocusNode,
                     child: DeviceSessionMonitor160(
                         child: AccountAccessMonitor(
                       child: Listener(

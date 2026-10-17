@@ -15,6 +15,10 @@ export function incomingCallData(session, notification, callerName, now = Date.n
     caller_id: String(session.caller_id),
     caller_name: String(callerName || 'زميل').slice(0, 80),
     expires_at_ms: String(created + 45_000),
+    // Time left to ring, measured by the server. The phone starts its own timer
+    // from the moment the push arrives, so a phone clock that is a few seconds
+    // slow or fast can no longer make it ignore a real call.
+    ttl_ms: String(Math.max(1, created + 45_000 - now)),
   };
 }
 export function isNativeCallDevice(platform) {

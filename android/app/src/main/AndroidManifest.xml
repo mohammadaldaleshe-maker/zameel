@@ -68,6 +68,7 @@
                 <data android:scheme="zameel" android:host="clip"/>
                 <data android:scheme="zameel" android:host="uploads"/>
                 <data android:scheme="zameel" android:host="notification"/>
+                <data android:scheme="zameel" android:host="group"/>
             </intent-filter>
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW"/>

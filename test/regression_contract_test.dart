@@ -7,7 +7,7 @@ String _read(String path) => File(path).readAsStringSync();
 
 void main() {
   group('Zameel 075 private social discovery contracts', () {
-    test('Insijam is opt-in and private by default', () {
+    test('Insijam database contract stays private and the app UI no longer exposes it', () {
       final sql = _read('supabase/migrations/075_lamma_social_discovery.sql');
       final screen = _read('lib/screens/social/lamma_screen.dart');
       final profile = _read('lib/screens/profile/profile_screen.dart');
@@ -20,22 +20,20 @@ void main() {
           sql,
           contains(
               'revoke all on function public.get_social_discovery_candidates'));
-      expect(screen, matches(RegExp(r"'enabled'\s*:\s*true")));
-      expect(screen, matches(RegExp(r"'enabled'\s*:\s*false")));
-      expect(
-          screen,
-          matches(RegExp(
-              r"matched\s*=\s*await\s+db\.rpc\(\s*'react_social_discovery'")));
+      // Insijam was removed from the app UI in maintenance 04. The database
+      // objects stay untouched, so the server-side privacy contract above still
+      // holds, and the screen must no longer expose the discovery feature.
+      expect(screen, isNot(contains('social_discovery_profiles')));
+      expect(screen, isNot(contains('react_social_discovery')));
       expect(profile, isNot(contains('social_discovery_profiles')));
     });
 
-    test('Lamma and Insijam remain separate experiences', () {
+    test('Lamma screen no longer carries the Insijam experience', () {
       final screen = _read('lib/screens/social/lamma_screen.dart');
-      expect(screen,
-          contains("FeatureControl.instance.visible('insijam') ? 2 : 1"));
       expect(screen, contains('join_social_lamma'));
-      expect(screen, contains('get_social_discovery_candidates'));
-      expect(screen, contains('Adults 18+ only'));
+      expect(screen, contains('leave_social_lamma'));
+      expect(screen, isNot(contains('get_social_discovery_candidates')));
+      expect(screen, isNot(contains("visible('insijam')")));
     });
   });
 

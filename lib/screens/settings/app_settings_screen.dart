@@ -4,6 +4,7 @@ import '../../providers/language_provider.dart';
 import '../../theme/appearance_controller.dart';
 import '../profile/appearance_screen.dart';
 import '../../services/native_incoming_call_service.dart';
+import '../../widgets/contact_join_toggle165.dart';
 
 /// Device presentation and navigation preferences, separate from account data.
 class AppSettingsScreen extends StatelessWidget {
@@ -54,6 +55,7 @@ class AppSettingsScreen extends StatelessWidget {
               },
             ),
           )),
+          ContactJoinToggle165(arabic: ar),
           if (NativeIncomingCallService.supported)
             Card(
                 child: ListTile(

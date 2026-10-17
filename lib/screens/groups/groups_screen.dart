@@ -6,6 +6,9 @@ import '../../providers/language_provider.dart';
 import 'package:zameel/theme/app_theme.dart';
 import '../../services/remaining_services.dart';
 import 'group_chat_screen.dart';
+import 'group_invitation_screen.dart';
+import 'group_invite_sheet.dart';
+import 'group_members_screen.dart';
 
 // ============================================================
 // GROUPS SCREEN
@@ -23,6 +26,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
 
   List<Map<String, dynamic>> myGroups = [];
   List<Map<String, dynamic>> discoverGroups = [];
+  List<Map<String, dynamic>> invitations = [];
   bool _loading = true;
 
   @override
@@ -35,11 +39,16 @@ class _GroupsScreenState extends State<GroupsScreen> {
     try {
       final rows = await RemainingServices.groups();
       final normalized = rows.map(_groupFromRow).toList();
+      var pendingInvitations = <Map<String, dynamic>>[];
+      try {
+        pendingInvitations = await RemainingServices.myGroupInvitations();
+      } catch (_) {}
       if (!mounted) return;
       setState(() {
         myGroups = normalized.where((g) => g['isJoined'] == true).toList();
         discoverGroups =
             normalized.where((g) => g['isJoined'] != true).toList();
+        invitations = pendingInvitations;
         _loading = false;
       });
     } catch (_) {
@@ -263,6 +272,100 @@ class _GroupsScreenState extends State<GroupsScreen> {
   }
 
   // ============================================================
+  // الانضمام برابط دعوة، وقائمة الدعوات المعلقة
+  // ============================================================
+
+  Future<void> _joinWithLink() async {
+    final isArabic =
+        Provider.of<LanguageProvider>(context, listen: false).isArabic;
+    final controller = TextEditingController();
+    final text = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => Directionality(
+        textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+        child: AlertDialog(
+          title: Text(
+              isArabic ? 'الانضمام برابط دعوة' : 'Join with an invite link'),
+          content: TextField(
+            controller: controller,
+            decoration: InputDecoration(
+              hintText:
+                  isArabic ? 'الصق الرابط أو الرمز هنا' : 'Paste the link or code',
+              border: const OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(isArabic ? 'إلغاء' : 'Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, controller.text),
+              child: Text(isArabic ? 'متابعة' : 'Continue'),
+            ),
+          ],
+        ),
+      ),
+    );
+    final code = RemainingServices.groupCodeFromText(text ?? '');
+    if (code.isEmpty || !mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => GroupInvitationScreen(inviteCode: code),
+      ),
+    );
+    if (mounted) _loadGroups();
+  }
+
+  Widget _invitationsBanner(bool isArabic) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTheme.primaryLight,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            isArabic
+                ? 'دعوات للانضمام (${invitations.length})'
+                : 'Invitations (${invitations.length})',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          ...invitations.take(3).map(
+                (invitation) => ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.mail_outline_rounded,
+                      color: AppTheme.primary),
+                  title: Text(invitation['group_name']?.toString() ?? ''),
+                  subtitle: Text(isArabic
+                      ? 'من ${invitation['inviter_name'] ?? 'زميل'}'
+                      : 'From ${invitation['inviter_name'] ?? 'a colleague'}'),
+                  trailing:
+                      const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => GroupInvitationScreen(
+                          invitationId: invitation['id']?.toString(),
+                        ),
+                      ),
+                    );
+                    if (mounted) _loadGroups();
+                  },
+                ),
+              ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
   // الانضمام إلى مجموعة (من الاكتشاف)
   // ============================================================
 
@@ -319,6 +422,11 @@ class _GroupsScreenState extends State<GroupsScreen> {
           centerTitle: true,
           actions: [
             IconButton(
+              onPressed: _joinWithLink,
+              tooltip: isArabic ? 'الانضمام برابط' : 'Join with a link',
+              icon: const Icon(Icons.link_rounded),
+            ),
+            IconButton(
               onPressed: _createGroup,
               icon: const Icon(Icons.add_rounded),
             ),
@@ -359,6 +467,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
+                  if (invitations.isNotEmpty) _invitationsBanner(isArabic),
                   Expanded(
                     child: selectedTab == 0
                         ? _buildMyGroups()
@@ -690,6 +799,7 @@ class _GroupCard extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primary,
                     foregroundColor: Colors.white,
+                    minimumSize: const Size(0, 36),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 8,
@@ -937,6 +1047,7 @@ class GroupDetailsScreen extends StatelessWidget {
                             groupName: isArabic
                                 ? group['name_ar']?.toString() ?? ''
                                 : group['name_en']?.toString() ?? '',
+                            isOwner: isOwner,
                           ),
                         ),
                       );
@@ -959,6 +1070,43 @@ class GroupDetailsScreen extends StatelessWidget {
                       ),
                     ),
                   ),
+                ),
+
+              if (isJoined) const SizedBox(height: 12),
+
+              if (isJoined)
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.person_add_alt_1_rounded),
+                        label: Text(isArabic ? 'دعوة' : 'Invite'),
+                        onPressed: () => showGroupInviteSheet(
+                          context,
+                          groupId: group['id']?.toString() ?? '',
+                          groupName: group['name_ar']?.toString() ?? '',
+                          isOwner: isOwner,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.people_rounded),
+                        label: Text(isArabic ? 'الأعضاء' : 'Members'),
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => GroupMembersScreen(
+                              groupId: group['id']?.toString() ?? '',
+                              groupName: group['name_ar']?.toString() ?? '',
+                              isOwner: isOwner,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
 
               const SizedBox(height: 12),

@@ -29,6 +29,20 @@ class _AppReleaseGateState extends State<AppReleaseGate>
           : 'android';
   String get _cacheKey => 'zameel_release_policy_$_platform';
   bool get _blocked => _policy?['allowed'] == false;
+  bool _hintDismissed = false;
+
+  /// A newer approved build exists but this one is still allowed: show a gentle
+  /// banner (the hard block above is only for builds the administrator stops).
+  bool get _updateAvailable {
+    if (_blocked || _hintDismissed) return false;
+    final latest = int.tryParse('${_policy?['latest_build'] ?? ''}');
+    final url = Uri.tryParse('${_policy?['download_url'] ?? ''}');
+    return latest != null &&
+        latest > zameelBuild &&
+        url != null &&
+        url.scheme == 'https' &&
+        url.host.isNotEmpty;
+  }
   @override
   void initState() {
     super.initState();
@@ -94,9 +108,56 @@ class _AppReleaseGateState extends State<AppReleaseGate>
     }
   }
 
+  Widget _updateBanner(BuildContext context) {
+    return Positioned(
+      left: 12,
+      right: 12,
+      bottom: MediaQuery.of(context).padding.bottom + 76,
+      child: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Material(
+          elevation: 8,
+          borderRadius: BorderRadius.circular(16),
+          color: Theme.of(context).colorScheme.primaryContainer,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+            child: Row(
+              children: [
+                const Icon(Icons.system_update_rounded),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Text(
+                    'يتوفر تحديث جديد لتطبيق زميل. حدّث التطبيق للحصول على آخر الإصلاحات والمزايا.',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => setState(() => _hintDismissed = true),
+                  child: const Text('لاحقاً'),
+                ),
+                FilledButton(
+                  onPressed: _update,
+                  child: const Text('تحديث'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (!_blocked) return widget.child;
+    if (!_blocked) {
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          widget.child,
+          if (_updateAvailable) _updateBanner(context),
+        ],
+      );
+    }
     return PopScope(
         canPop: false,
         child: Scaffold(

@@ -61,12 +61,21 @@ class PostPublishService {
   static bool isSupportedFile(PickedPostMedia file) =>
       allowedExtensions.contains(_extension(file.name));
 
+  /// Longest side and JPEG quality applied to photos picked for a post.
+  static const double _maxPhotoSide = 1600;
+  static const int _photoQuality = 85;
+
   static Future<List<PickedPostMedia>> pickMultipleImages({
     int limit = maxMediaItems,
   }) async {
     if (limit <= 0) return const <PickedPostMedia>[];
-    final picked =
-        await ImagePicker().pickMultiImage(imageQuality: 90, limit: limit);
+    // Photos are resized while picking: a 12 MB camera original made every
+    // viewer download and decode far more than a phone screen can show.
+    final picked = await ImagePicker().pickMultiImage(
+        maxWidth: _maxPhotoSide,
+        maxHeight: _maxPhotoSide,
+        imageQuality: _photoQuality,
+        limit: limit);
     return _wrapXFiles(picked, limit: limit, onlyVideos: false);
   }
 
@@ -82,8 +91,11 @@ class PostPublishService {
     int limit = maxMediaItems,
   }) async {
     if (limit <= 0) return const <PickedPostMedia>[];
-    final picked =
-        await ImagePicker().pickMultipleMedia(imageQuality: 90, limit: limit);
+    final picked = await ImagePicker().pickMultipleMedia(
+        maxWidth: _maxPhotoSide,
+        maxHeight: _maxPhotoSide,
+        imageQuality: _photoQuality,
+        limit: limit);
     return _wrapXFiles(picked, limit: limit);
   }
 
